@@ -25,7 +25,9 @@
 #define NUMDOUBLE 1            /* days of 64-bit processors) actually faster*/
                                /* than float, but uses twice as much memory!*/
 /* NUM must be one of (float|double|longdouble).  Set NUMDOUBLE to (0|1|2),
-   and NUMCHAR to "", "l", or "L". */
+   and NUMCHAR to "", "l", or "L". [NUMCHAR modifies NUM parsing by printf --
+   the 'l' makes the parse a double.]
+ */
 #define NUMCHAR "l"
 
 /**********************************************************************

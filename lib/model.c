@@ -55,7 +55,7 @@ static void ((**gl_f_funcs)()); /* springboard functions list */
 static NUM *gl_minmax; /* Keeps track of minimum and maximum forces */
 
 static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
-  dump_all_fluxon_tree(gl_a->lines);
+  if(fl->fc0->world->verbosity >= 5) dump_all_fluxon_tree(gl_a->lines);
   fluxon_update_neighbors(fl, gl_gl);
   return 0;
 }
@@ -74,10 +74,10 @@ static long w_u_m_springboard(FLUXON *fl, int lab, int link, int depth) {
   return 0;
 }
 
-NUM *world_update_mag(WORLD *a, char global, void ((**f_funcs)())) {
+NUM *world_update_mag(WORLD *a, char global) {
   gl_a = a;
   gl_gl = global;
-  gl_f_funcs = f_funcs;
+  gl_f_funcs = a->f_funcs;
   gl_minmax = 0;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_m_springboard, 0);
   return gl_minmax;
@@ -86,9 +86,7 @@ NUM *world_update_mag(WORLD *a, char global, void ((**f_funcs)())) {
 /**********************************************************************
  *
  * world_relax_step -- relax the world according to a given set of force
- * laws.  You feed in a world, a nearest-radius/actual-motion
- * ratio, a terminal condition, and a list of physics routines 
- * which return forces to sum for the relaxation.
+ * laws.  You feed in a world and a tau-timestep.
  */
 static NUM gl_t;
 static long w_r_s_springboard(FLUXON *fl, int lab, int link, int depth) {
@@ -284,7 +282,7 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     if(r_cl < 0) {
       fprintf(stderr,"A pox upon thee!  Negative distance %g on vertex %d!\n",r_cl,v->label);
       fprintf(stderr,"vertex has %d neighbors\n",v->neighbors.n);
-      exit(13249);
+      r_cl = 0; /* hope the problem goes away */
     }
     
     f_denom = v->f_v_tot + 0.5 * (v->f_s_tot + v->prev->f_s_tot);

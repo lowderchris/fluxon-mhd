@@ -128,12 +128,7 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
      there an easy way to send it back?) */
   projmatrix(pmatrix, V->x, V->next->x);
 
-  //  printf("f_pressure_equi:  V%4d,  n=%d\n",V->label, V->neighbors.n);
-
-
-  if(V->neighbors.n == 0)
-    return;
-    
+  /*printf("f_pressure_equi:  V%4d,  n=%d\n",V->label, V->neighbors.n);*/
 
   for(i=0;i<V->neighbors.n;i++) {
     NUM f_i[3];
@@ -143,13 +138,10 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
 
     right = &verts[i];
     left = (i==0) ? &verts[V->neighbors.n - 1] : &verts[i-1];
-
-    if(V->neighbors.n == 1) {
-      right->open = 1;
-      left->open = 1;
-    }
-      
-    /* perpendicular bisector to r_i goes away.  In the closed case, 
+    
+    /* Calculate delta-phi by calculating the maximal phis and subtracting. 
+     * In the open case, the endpoint phi is the angle at which the 
+     * perpendicular bisector to r_i goes away.  In the closed case, 
      * it's the angle to the vertex.
      */
     if(right->open){
@@ -167,35 +159,24 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
       phi_l += 2 * M_PI;
     
     deltaphi = (phi_r - phi_l);
-    if(deltaphi <= -M_PI) 
-      deltaphi += 2*M_PI;
+    if(deltaphi < -1e-4 ) /* Should be 0; allow for slop */
+      deltaphi += 2 * M_PI;
 
-    //    printf("From %d - %d: deltaphi is %g deg; left->open=%d; right->open=%d\n",((VERTEX *)(V->neighbors.stuff[i]))->label, ((VERTEX *)(V->neighbors.stuff[(i+1)%V->neighbors.n]))->label,deltaphi*180/M_PI,left->open,right->open); 
-    
-    
-    if(deltaphi > M_PI) {
-      fflush(stdout); fflush(stderr);
+    /*    printf("from %d - %d: deltaphi is %g deg; left->open=%d; right->open=%d\n",((VERTEX *)(V->neighbors.stuff[i]))->label, ((VERTEX *)(V->neighbors.stuff[(i+1)%V->neighbors.n]))->label,deltaphi*180/M_PI,left->open,right->open); */
+
+    if(deltaphi > M_PI) 
       fprintf(stderr,"Assertion failed!  deltaphi > M_PI in f_pressure_equi (%18.12g deg)\n",deltaphi*180/M_PI);
-      fprintf(stderr," VERTEX #%d, i=%d: deltaphi=%g\tr=%g\n",N->label,i,deltaphi,N->r);
-      fflush(stderr);
-      deltaphi = 0;
-    }
-    if(deltaphi < 0) {
-      fflush(stdout); fflush(stderr);
-      fprintf(stderr,"Assertion failed! deltaphi < 0 in f_pressure_equi (%18.12g deg)\n",deltaphi*180/M_PI);
-      fprintf(stderr," VERTEX #%d, i=%d: deltaphi=%g\tr=%g\n",N->label,i,deltaphi,N->r);
-      fflush(stderr);
-      deltaphi = 0;
-    }
     
-    
+    /*    fprintf(stderr," VERTEX #%d, i=%d: deltaphi=%g\tr=%g\n",N->label,i,deltaphi,N->r);*/
+
+
     f = deltaphi / M_PI / N->r;
-    
+
     N->scr[2] = 0; /* Make sure we're operating in the perp. plane */
     
     vec_mmult_3d(f_i,pmatrix,N->scr);       /* Put back into 3-D */
-    //    printf("  in plane: (%g,%g,%g); projects back to (%g,%g,%g)\n",N->scr[0],N->scr[1],N->scr[2],f_i[0],f_i[1],f_i[2]); 
-    
+    /*    printf("  in plane: (%g,%g,%g); projects back to (%g,%g,%g)\n",N->scr[0],N->scr[1],N->scr[2],f_i[0],f_i[1],f_i[2]); */
+
     {
       /* Scale to the proper force */
       NUM a = norm_3d(f_i);
@@ -205,14 +186,14 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
       }
       scale_3d(f_i,f_i, - f / a);  /* Scale to the calc. force */
     }
-    
+
     sum_3d(force,force,f_i);
     V->f_s_tot += fabs(f);
   }
-  
+
   sum_3d(V->f_s,V->f_s,force);
 
-  //  printf("f_pressure_equi -- force is (%8g,%8g,%8g), total is (%8g,%8g,%8g)\n\n",force[0],force[1],force[2],V->f_s[0],V->f_s[1],V->f_s[2]);
+  /*printf("f_pressure_equi -- force is (%8g,%8g,%8g), total is (%8g,%8g,%8g)\n\n",force[0],force[1],force[2],V->f_s[0],V->f_s[1],V->f_s[2]);*/
 
   {
     NUM r;
@@ -276,7 +257,6 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
   if(0 && V->next->next  && V->prev->prev) {
     NUM d0[3], d3[3];
     NUM d0n, d3n, sec1, sec2;
-    NUM f;
     
     diff_3d(d0,V->prev->x,V->prev->prev->x);
     d0n = norm_3d(d0);
@@ -287,9 +267,8 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
     sec1 = d0n / inner_3d(d0,d1);
     sec2 = d3n / inner_3d(d2,d3);
 
-    f = (sec2 - sec1)*10;
-    V->f_v_tot += fabs(f);
-    fn +=  f;
+    V->f_v_tot += fabs(sec2 - sec1);
+    fn +=  sec2 - sec1;
   }
 
 
@@ -298,14 +277,12 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
    */
   if(V->prev && V->next) {
     NUM r_clp, r_cln;
-    NUM f;
 
     r_clp = 1.0 / V->prev->r_cl;
     r_cln = 1.0 / V->r_cl;
 
-    f = ( 0.5 * (r_cln - r_clp) ) * 0.1;
-    V->f_v_tot += fabs(f);
-    fn += f;
+    V->f_v_tot += fabs(0.5 * (r_cln - r_clp));
+    fn += 0.5 * (r_cln - r_clp);
   }
     
 

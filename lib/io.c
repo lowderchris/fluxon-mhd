@@ -37,6 +37,7 @@
 
 #include "data.h"
 #include "io.h"
+#include "physics.h" /* for FORCES translation */
 
 /**********************************************************************
  * 
@@ -98,6 +99,7 @@ int footpoint_action(WORLD *world, char *s) {
   static char mscan[80]="";
   static char lscan[80]="";
   static char vscan[80]="";
+  static char gscan[80]="";
 
   /* Skip over initial whitespace and comment characters */
   while(*s && isspace(*s))
@@ -326,8 +328,101 @@ int footpoint_action(WORLD *world, char *s) {
       }
     }      
     break;
+  
+  case 'G': /* GLOBAL <cmd> <arg1> <arg2> ... */
+    {
+      char gcmd[81];
+      int off,n;
+      n = sscanf(s,"%*s %80s %n",gcmd,&off);
+
+      if(n != 1) {
+	static char bstr[80];
+	sprintf(bstr,"Couldn't parse GLOBAL line (n=%d)\n",n);
+	badstr = bstr;
+      } else {
+	switch(*gcmd) {
+	case 'F': /* GLOBAL FORCE ... */
+	  {
+	    int i,j,o2;
+	    char fname[81];
+	    void ((*(f_funcs[N_FORCE_FUNCS]))());
+	    
+	    for(i=0; 
+		s[off] && i<N_FORCE_FUNCS && sscanf(s+off,"%80s %n",fname,&o2);
+		i++) {
+
+	      for(j=0; 
+		  FLUX_FORCES[j].func && strcmp(FLUX_FORCES[j].name,fname);
+		  j++)
+		;
+	      if(FLUX_FORCES[j].func) {
+		f_funcs[i] = FLUX_FORCES[j].func;
+	      } else {
+		long foo;
+		if( sscanf(fname,"0x%x",&foo) )
+		  (void *)(f_funcs[i]) = (void *)foo;
+		else {
+		  static char bstr[160];
+		  sprintf(bstr,"Couldn't parse GLOBAL FORCE LINE (bad force '%s')",o2);
+		  badstr = bstr;
+		  goto global_escape;
+		}
+	      } /* end of scanning branch */
+
+	      off += o2;
+	    } /* end of force specifier loop */
+
+	    for(;i<N_FORCE_FUNCS;i++) /* pad with zeroes */
+	      (void *)(f_funcs[i]) = (void *)0;
+
+	    /* We didn't barf by now -- all forces must be OK.  Copy 'em in. */
+	    for(j=0;j<N_FORCE_FUNCS;j++) 
+	      world->f_funcs[j] = f_funcs[j];
+	  } /* end of GLOBAL FORCE branch */
+	  break;
+
+	case 'P': /* GLOBAL PHOTOSPHERE ... */
+	  {
+	    PLANE *p = (PLANE *)0;
+
+	    if(s[off]!='<') {  /* do nothing for <NONE> */
+	      p = (PLANE *)malloc(sizeof(PLANE));
+	      char phscan[80];
+	      sprintf(phscan,"%%%sf %%%sf %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+	      if( 6 != sscanf(s+off,phscan
+			      ,&(p->origin[0])
+			      ,&(p->origin[1])
+			      ,&(p->origin[2])
+			      ,&(p->normal[0])
+			      ,&(p->normal[1])
+			      ,&(p->normal[2]) ) )
+		badstr = "couldn't parse six values from GLOBAL PHOTOSPHERE ";
+	    }
+	    
+	    if(!badstr) {
+	      if(world->photosphere)
+		free(world->photosphere);
+	      world->photosphere = p;
+	    }
+	  } /* end of GLOBAL PHOTOSPHERE convenience block */
+          break;
+
+	case 'S': /* GLOBAL STATE */
+	  sscanf(s+off,"%d",&(world->state)) || 
+	    (badstr="couldn't parse GLOBAL STATE");
+	  break;
+
+	default: /* GLOBAL <FOO> unrecognized */
+	  fprintf(stderr,"Unrecognized GLOBAL command in line '%s'\n",s);
+	  return 1;
+	  global_escape: break;
+	} /* end of gcmd switch */
+      } /* end of ok-GLOBAL-line branch */
+    } /* end of GLOBAL convenience block */
+    break;
 
   default: /* Oops */
+    fprintf(stderr,"Unrecognized command in line '%s'\n",s);
     return 1;
     break;
   }
@@ -385,6 +480,7 @@ int print_world(WORLD *a, char *header) {
 
 int fprint_world(FILE *file, WORLD *world, char *header) {
   char *s;
+  int i;
 
   if(file==NULL) {
     fprintf(stderr,"print_world: null file supplied. Returning.\n");
@@ -402,8 +498,37 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   /* Output the frame number that's in the world */
   fprintf(file, "\n\n######################################\n\n");
   fprintf(file, "FRAME %ld\n",world->frame_number);
-  fprintf(file, "#  (state when saved was: %d (%s)\n",world->state,world_state_name(world));
 
+
+  /***** Write out global configuration */
+    /* force list */
+  fprintf(file,"GLOBAL FORCES ");
+  for(i=0;i<N_FORCE_FUNCS && world->f_funcs[i];i++) {
+    int j;
+    for(j=0; FLUX_FORCES[j].func && FLUX_FORCES[j].func != world->f_funcs[i]; j++) 
+      ;
+    if(FLUX_FORCES[j].func)
+      fprintf(file,"%s ",FLUX_FORCES[j].name);
+    else 
+      fprintf(file,"0x%x ",world->f_funcs[i]);
+  }
+  fprintf(file,"\n");
+
+  /* photosphere location */
+  fprintf(file, "GLOBAL STATE %d  (%s)\n",world->state,world_state_name(world));
+  fprintf(file,"GLOBAL PHOTOSPHERE ");
+  if(world->photosphere) {
+    static char fmt[80];
+    PLANE *p=world->photosphere;
+
+    sprintf(fmt,"%%%sg %%%sg %%%sg %%%sg %%%sg %%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+    fprintf(file,fmt,p->origin[0],p->origin[1],p->origin[2],p->normal[0],p->normal[1],p->normal[2]);
+
+  } else {
+    fprintf(file,"<NONE>\n");
+  }
+  fprintf(file,"\n"); /* leave an extra space after the globals */
+    
   /* Write out all flux concentration locations */
   fprint_tree(file, world->concentrations, fc_lab_of, fc_ln_of, 0, fprint_fc_line);
 
