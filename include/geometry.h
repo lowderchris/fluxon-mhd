@@ -114,11 +114,13 @@ int find_neighbors_from_list(VERTEX *tp,
 			     VERTEX **where);
 
 
+/* The a_left and a_right differ when the point is open... */
 typedef struct HULL_VERTEX {
   NUM p[2];  /* point coordinates */
-  NUM a;     /* point angle -- cached here to avoid multiple atan2 calls */
-  NUM bisector[3]; /* bisector point -- cached here for use later */
-  char open; /* indicates point is at infinity */
+  NUM a_l;   /* absolute point angle when seen on left */
+  NUM a_r;   /* absolute point angle when seen on right */
+  NUM bisector[3]; /* bisector line description -- cached here for use later */
+  char open;
 } HULL_VERTEX;
 
 void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects);
@@ -129,8 +131,10 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects);
 #define PI 3.141592653589793238462643383279502
 #define DEG2RAD (PI/180.)
 #define RAD2DEG (180./PI)
+#define EPSILON 1e-15
 
 /* regularize an angle that is between -3PI and 3PI, to the range
  * -PI to PI.
  */
 #define TRIM_ANGLE(a) do { if((a)<=-PI) { (a)+=2*PI; } else if((a)>PI) { (a) -= 2*PI; } } while(0)
+
