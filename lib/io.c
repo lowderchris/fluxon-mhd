@@ -303,7 +303,7 @@ int footpoint_action(WORLD *world, char *s) {
 	badstr = "Tried to add a vertex to a nonexistent field line";
       } else {
 	v0 = new_vertex(vertex_label, x0[0], x0[1], x0[2], f);
-	printf("vertex_label = %d; v0->label = %d\n",vertex_label, v0->label);
+	if(world->verbosity > 2) printf("vertex_label = %d; v0->label = %d\n",vertex_label, v0->label);
 	if(add_vertex_pos(f, l1, v0))
 	  badstr = "VERTEX: add_vertex_pos returned error";
       }

@@ -181,7 +181,41 @@ O(n^2).  If $globalflag is zero, then a next-nearest-neighbors
 algorithm is used, which is O(n).  The first time you call this, you 
 had better set $globalflag=1.
 
-=cut
+=head2 verbosity
+
+=for usage
+
+    $v = $world->verbosity();
+    $world->verbosity($v);
+
+Controls the level of, well, verbosity associated with operations on $world.
+High values send insane amounts of stuff out the stderr port.
+
+Some approximate meanings for each verbosity level:
+
+=over 3
+
+=item 0 
+
+Be as quiet as possible
+
+=item 1
+
+Describe global items and iffy conditions
+
+=item 2
+
+Describe activity on a per-fluxon level
+
+=item 3 
+
+Describe activity on a per-vertex/per-fluxel level
+
+=item 4
+
+Describe activity within each vertex operation -- notably neighbor searches.
+
+=back
 
 1;
 

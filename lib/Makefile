@@ -17,7 +17,7 @@ libflux.a: $(MODULES)
 install: $(HEADERS) libflux.a
 	install libflux.a /usr/local/lib
 	install -d /usr/local/include/flux/
-	install ../include/* /usr/local/include/flux/
+	install ../include/*.h /usr/local/include/flux/
 
 lib: libflux.a
 	echo "libflux.a is now up-to-date"

@@ -95,11 +95,15 @@ void world_relax_step(WORLD *a, NUM t) {
 void fluxon_update_neighbors(FLUXON *fl, char global) {
   int i=0;
   VERTEX *v = fl->start;
+  int verbosity = fl->fc0->world->verbosity;
+
+  if(verbosity>=2) printf("fluxon_update_neighbors... (gl=%d), fluxon %d\n",global,fl->label);
+
   while(v->next) {
-    //    printf("\n\nfluxon_update_neighbors... vertex %d\n",v->label);
+    if(verbosity>=3)  printf("\tfluxon_update_neighbors... vertex %d\n",v->label);
     vertex_update_neighbors(v,global);
-    /*    fdump_fluxon(stdout,fl,0);*/
-    //    printf("=============\n\n");
+    if(verbosity>=4)   fdump_fluxon(stdout,fl,0);
+    if(verbosity>=3)   printf("=============\n\n");
     v=v->next;
     i++;
   }
@@ -122,6 +126,7 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
   static NUM output[4];
   NUM *f_min, *f_max, *fr_min, *fr_max;
   int i=0;
+  int verbosity = fl->fc0->world->verbosity;
   VERTEX *v = fl->start;
 
   if(!minmax) {
@@ -134,15 +139,14 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
   fr_min = &minmax[2];
   fr_max = &minmax[3];
   
-  //  printf("fluxon_update_mag (%d): ",fl->label);
+  if(verbosity >= 2)  printf("fluxon_update_mag (fluxon %d): %c",fl->label,(verbosity==2?' ':'\n'));
 
   for(i=0, v=fl->start; v->next; v=v->next, i++) {
     void (**f_func)();
     NUM r;
     int ii;
     HULL_VERTEX *vertices;
-    //    printf("V%4d",v->label);
-    //    printf("."); fflush(stdout);
+    if(verbosity >= 3) { printf("V%4d ",v->label); fflush(stdout); }
 
     /* Update neighbor map and establish neighbors' (r,a) variables, 
      *  which will be used by the physics funcs!  */
@@ -158,10 +162,13 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
     for(f_func = &f_funcs[0]; *f_func; f_func++) 
       (**f_func)(v,vertices);
   }
+  if(verbosity >= 3) printf("\n");
+
 
   /* Find closest approach radius, and calculate total forces */
   
-  /*  printf("Radius - fluxon %d: ",fl->label);*/
+  if(verbosity >= 2) printf("Radius - fluxon %d: %c",fl->label,(verbosity==2?' ':'\n'));
+
   for(v=fl->start->next;v->next;v=v->next) {
     NUM f[3], fns, fnv, fn;
     NUM r = v->r_cl;
@@ -201,10 +208,10 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
     if(*fr_max < 0 || fn/r > *fr_max)
       *fr_max = fn/r;
 
-    // printf("V%4d: r=%g, fmax=%g, frmax=%g ",v->label, r, *f_max, *fr_max);
+    if(verbosity >= 3){ printf("V%4d: r=%g, fmax=%g, frmax=%g ",v->label, r, *f_max, *fr_max); fflush(stdout);}
   }
 
-  //  printf("\n"); fflush(stdout);
+  if(verbosity >= 3)  printf("\n");
   return minmax;
 }
 
@@ -229,6 +236,7 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
   NUM a[3];
   NUM total[3];
   NUM force_factor, f_denom;
+  int verbosity = f->fc0->world->verbosity;
 
   a[2] = a[1] = a[0] = 0;
 
@@ -266,15 +274,14 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     force_factor = (f_denom == 0) ? 1 : ( norm_3d(v->f_t)  / f_denom);
     if(force_factor == 0) force_factor = 1e-3;
 
-    //            printf("fluxon %d, vertex %d: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  force_factor = %g (%g / %g), f_t=(%g,%g,%g)[%g]\t",f->label,v->label, v->x[0],v->x[1],v->x[2], v->r_cl, r_cl, force_factor, norm_3d(v->f_t), f_denom, v->f_t[0],v->f_t[1],v->f_t[2],norm_3d(v->f_t));
+    if(verbosity >= 3)  printf("fluxon %d, vertex %d: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  force_factor = %g (%g / %g), f_t=(%g,%g,%g)[%g]\t",f->label,v->label, v->x[0],v->x[1],v->x[2], v->r_cl, r_cl, force_factor, norm_3d(v->f_t), f_denom, v->f_t[0],v->f_t[1],v->f_t[2],norm_3d(v->f_t));
     
-    
-    //    if(force_factor > 1.0000000001) {
-    //      fprintf(stderr,"fluxon %d, vertex %d: force_factor = %g, >1!  This is allegedly impossible! Exiting!\n",f->label,v->label,force_factor);
-    //      fflush(stdout);
-    //      fflush(stderr);
-    //      exit(12039);
-    //}
+    if(force_factor > 1.00001) {
+      fprintf(stderr,"fluxon %d, vertex %d: force_factor = %g, >1!  This is allegedly impossible! You've got trouble, gov\n",f->label,v->label,force_factor);
+      fflush(stdout);
+      fflush(stderr);
+      exit(12039);
+    }
     
 
     {
@@ -289,7 +296,7 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     scale_3d(a,v->f_t, t * r_cl * force_factor);
     sum_3d(v->x,v->x,a);	     
 
-    //    printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
+    if(verbosity >= 3)    printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
   }
 
   /* Update of start and end positions goes here! */
@@ -316,6 +323,7 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
   int i,j;
   char cpflag=0;
   DUMBLIST *vn;
+  int verbosity = v->line->fc0->world->verbosity;
 
   if(!v) {
     fprintf(stderr,"Vertex_update_neighbors: null vertex ignored!\n");
@@ -330,10 +338,12 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
   dl = gather_neighbor_candidates(v,global);
 
 
-//    printf("vertex_update_neighbors: Vertex %d has %d candidates\n",v->label,dl->n);
-//    for(i=0;i<dl->n;i++)
-//    printf("\t%d\n",((VERTEX *)((dl->stuff)[i]))->label);
-
+  if(verbosity >= 3) {
+    printf("vertex_update_neighbors: Vertex %d has %d candidates\n",v->label,dl->n);
+    if(verbosity >= 4)
+      for(i=0;i<dl->n;i++)
+	printf("\t%d\n",((VERTEX *)((dl->stuff)[i]))->label);
+  }
 
   /* This winnow_neighbor_candidates call isn't strictly necessary --
      hull_neighbors should do the job.  But winnow_neighbor_candidates 
@@ -343,10 +353,13 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
   
   hv = hull_neighbors(v, dl); /* save hv for return */
 
-//   printf("Hull_neighbors returned %d neighbors\n",dl->n);
-//   for(i=0;i<dl->n;i++) 
-//     printf("\t%d\n",((VERTEX *)((dl->stuff)[i]))->label);
-  
+    if(verbosity >= 3) {
+      printf("Hull_neighbors returned %d neighbors\n",dl->n);
+      if(verbosity >= 4)
+	for(i=0;i<dl->n;i++) 
+	  printf("\t%d\n",((VERTEX *)((dl->stuff)[i]))->label);
+    }
+
   /* Walk through both dumblists, updating the neighbors' 
      "nearby" information as needed. */
   for(i=j=0; i<dl->n || j<vn->n;) {
@@ -449,6 +462,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   void **foo;
   int i;
   int n;
+  int verbosity = v->line->fc0->world->verbosity;
 
   if(!v)        /* Paranoia */
     return;
@@ -506,13 +520,14 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     tree_walk(f, fl_lab_of, fl_all_ln_of, line_snarfer);
 
 
-      //    {
-      //      int i;
-      //      printf("gather_neighbor_candidates:  global neighbor add gives:\n\t");
-      //      for(i=0;i<workspace->n;i++)
-      //	printf("%d ",((VERTEX *)(workspace->stuff[i]))->label);
-      //      printf("\n");
-      //    }
+    if(verbosity >= 4)
+          {
+            int i;
+            printf("gather_neighbor_candidates:  global neighbor add gives:\n\t");
+            for(i=0;i<workspace->n;i++)
+      	printf("%d ",((VERTEX *)(workspace->stuff[i]))->label);
+            printf("\n");
+          }
 
 
   }
@@ -532,7 +547,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   /* Sort by vertex number, to avoid simple duplication */
   dumblist_sort(workspace, winnow_cmp_1);
 
-//  printf("gather_neighbor_candidates: sorting yielded %d elements\n",workspace->n);
+  if(verbosity >= 3) printf("gather_neighbor_candidates: sorting yielded %d elements\n",workspace->n);
   return workspace;
 }
 
@@ -639,7 +654,8 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   int i;
   int a,b;
   POINT3D x0;
-  
+  int verbosity = v->line->fc0->world->verbosity;
+
   static HULL_VERTEX *voronoi_buf = 0;
   static int voronoi_bufsiz = 0;
   static DUMBLIST *rejects = 0;
@@ -670,41 +686,39 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   }
 
 
+  
+  if(verbosity >= 5) {
+    printf("V%4d: (%8g, %8g, %8g) -- (%8g, %8g, %8g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
+    for(i=0;i<horde->n;i++) {
+      NUM p0[3], p1[3];
+      fl_segment_deluxe_dist(p0, p1, v, ((VERTEX *)(horde->stuff[i])));
 
-//  if(1) {
-//    printf("V%4d: (%8g, %8g, %8g) -- (%8g, %8g, %8g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
-//    for(i=0;i<horde->n;i++) {
-//      NUM p0[3], p1[3];
-//      fl_segment_deluxe_dist(p0, p1, v, ((VERTEX *)(horde->stuff[i])));
-//
-//      printf("\tV%4d:  3d=%g\tproj dist=%g (%8g, %8g, %8g) -- (%8g, %8g, %8g).  Closest approach: (%8g, %8g, %8g) -- (%8g, %8g, %8g)\n"
-//	     ,((VERTEX *)(horde->stuff[i]))->label
-//	     ,((VERTEX *)(horde->stuff[i]))->r_cl
-//	     ,((VERTEX *)(horde->stuff[i]))->r
-//	     ,((VERTEX *)(horde->stuff[i]))->x[0]
-//	     ,((VERTEX *)(horde->stuff[i]))->x[1]
-//	     ,((VERTEX *)(horde->stuff[i]))->x[2]
-//	     ,((VERTEX *)(horde->stuff[i]))->next->x[0]
-//	     ,((VERTEX *)(horde->stuff[i]))->next->x[1]
-//	     ,((VERTEX *)(horde->stuff[i]))->next->x[2]
-//	     ,p0[0],p0[1],p0[2]
-//	     ,p1[0],p1[1],p1[2]
-//	     );
-//    }
-//  }
+      printf("\tV%4d:  3d=%g\tproj dist=%g (%8g, %8g, %8g) -- (%8g, %8g, %8g).  Closest approach: (%8g, %8g, %8g) -- (%8g, %8g, %8g)\n"
+	     ,((VERTEX *)(horde->stuff[i]))->label
+	     ,((VERTEX *)(horde->stuff[i]))->r_cl
+	     ,((VERTEX *)(horde->stuff[i]))->r
+	     ,((VERTEX *)(horde->stuff[i]))->x[0]
+	     ,((VERTEX *)(horde->stuff[i]))->x[1]
+	     ,((VERTEX *)(horde->stuff[i]))->x[2]
+	     ,((VERTEX *)(horde->stuff[i]))->next->x[0]
+	     ,((VERTEX *)(horde->stuff[i]))->next->x[1]
+	     ,((VERTEX *)(horde->stuff[i]))->next->x[2]
+	     ,p0[0],p0[1],p0[2]
+	     ,p1[0],p1[1],p1[2]
+	     );
+    }
+  }
 
 
   /* Find the 2-D hull.  For now, ask for rejects in order to plot 'em. */
   hull_2d(voronoi_buf,horde,0);
 
-//  #if debug
-//  {
-//    printf("hull_neighbors:  hull trimming gives:\n");
-//    for(i=0;i<horde->n;i++) 
-//      printf("%d ",((VERTEX *)(horde->stuff[i]))->label);
-//    printf("\n");
-//  }
-//  #endif
+  if(verbosity >= 5){
+    printf("hull_neighbors:  hull trimming gives:\n");
+    for(i=0;i<horde->n;i++) 
+      printf("%d ",((VERTEX *)(horde->stuff[i]))->label);
+    printf("\n");
+  }
   
   return voronoi_buf;
 }
@@ -776,9 +790,13 @@ int fix_proximity(VERTEX *V, NUM scale_thresh) {
 int fluxon_fix_proximity(FLUXON *F, NUM scale_thresh) {
   int ret = 0;
   VERTEX *V = F->start;
+  int verbosity = F->fc0->world->verbosity;
+
+  if(verbosity >= 2) printf("fluxon_fix_proximity: fluxon %d\n",F->label);
+
   while(V && V != F->end) {
     VERTEX *Vnext = V->next;
-    printf("  vertex %d\n",V->label);
+    if(verbosity >= 3) printf("  vertex %d\n",V->label);
     ret += fix_proximity(V,scale_thresh);
     V=Vnext;
   }
@@ -790,7 +808,6 @@ int fluxon_fix_proximity(FLUXON *F, NUM scale_thresh) {
 static NUM sc_thr;
 static long sc_acc;
 static long gfp_tramp(FLUXON *fl, int lab, int link, int depth) {
-  printf("handling fluxon %d\n",fl->label);
   sc_acc += fluxon_fix_proximity(fl,sc_thr);
   return 0;
 }
@@ -850,10 +867,9 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
   if(curve_thresh==0)
     curve_thresh = 0.05;
 
-  if(!V || !V->next || !V->prev || !V->line) {
-    //   fprintf(stderr,"check_curvature: ignoring this lousy non-midpoint vertex (%d)\n",(V?V->label:-1));
+  if(!V || !V->next || !V->prev || !V->line) 
     return 0;
-  }
+
 
   diff_3d(d1,V->prev->x,V->x); /* d1 = segment A */
   diff_3d(d2,V->x,V->next->x); /* d2 = segment B */
@@ -931,8 +947,13 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
 int fluxon_fix_curvature(FLUXON *f, NUM curve_thresh) {
   int ret=0;
   VERTEX *V = f->start;
+  int verbosity = f->fc0->world->verbosity;
+
+  if(verbosity >= 2) printf("fluxon_fix_curvature: fluxon %d\n",f->label);
+  
   while(V && V != f->end) {
     VERTEX *Vnext = V->next;
+    if(verbosity >= 3) printf("  vertex %d\n",V->label);
     ret += fix_curvature(V,curve_thresh);
     V=Vnext;
   }
@@ -943,7 +964,6 @@ int fluxon_fix_curvature(FLUXON *f, NUM curve_thresh) {
 static NUM cu_thr;
 static int cu_acc;
 static long cu_tramp(FLUXON *fl, int lab, int link, int depth) {
-  printf("handling fluxon %d\n",fl->label);
   cu_acc += fluxon_fix_curvature(fl, cu_thr);
   return 0;
 }

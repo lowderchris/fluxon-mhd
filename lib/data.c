@@ -279,6 +279,7 @@ WORLD *new_world() {
   a->photosphere = NULL;
   a->image = NULL;
   a->image2 = NULL;
+  a->verbosity = 0;  /* No verbose printouts by default */
   return a;
 }
 

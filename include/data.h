@@ -135,6 +135,8 @@ typedef struct WORLD {
   PLANE *photosphere;
   VERTEX *image, *image2;
   NUM locale_radius;        /* Default radius for concentrations' neighborhoods */
+
+  int verbosity;           /* Verbose flag turns on/off debugging lines */
 } WORLD;
 
 const char *world_state_name(WORLD *a);
