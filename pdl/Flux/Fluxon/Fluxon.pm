@@ -87,4 +87,23 @@ sub vertices {
     @{_vertices(shift)};   # meat is in Fluxon.xs; unwrap the array ref.
 }
 
+
+=pod
+
+=head2 polyline
+
+=for usage
+
+  $polyline = $fluxon->polyline;
+
+=for ref
+
+Return all the vertex locations in a fluxon, as a 3xn PDL.
+
+(mainly useful for visualizations).  the 0th dim is, of course, (x,y,z).
+
+=cut
+
+# Implemented in Fluxon.xs
+
 1;

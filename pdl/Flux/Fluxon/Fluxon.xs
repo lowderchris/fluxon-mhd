@@ -27,6 +27,13 @@
 
 #include <stdio.h>
 
+#include "pdl.h"
+#include "pdlcore.h"
+
+
+static Core* PDL;  /* PDL core functions (run-time linking) */
+static SV* CoreSV; /* gets perl var holding the core structures */
+
 MODULE = Flux::Fluxon      PACKAGE = Flux::Fluxon
 
 char *
@@ -103,11 +110,59 @@ CODE:
 OUTPUT:
   RETVAL
 
+SV *
+polyline(flx)
+ SV *flx
+PREINIT:
+ FLUXON *f;
+ VERTEX *v;
+ PDL_Double *d;
+ pdl *p;
+ SV *psv;
+ int i;
+ PDL_Long dims[2];
+/**********************************************************************
+ * polyline - return a 3xn PDL containing the coordinates of each 
+ * VERTEX in the fluxon.  Useful for rendering.
+ */
+CODE:
+ f = SvFluxon(flx,"Flux::Fluxon::polyline");
 
-    
+ /* Create the PDL and allocate its data */
+ dims[0] = 3;
+ dims[1] = f->v_ct;
+ p = PDL->create(PDL_PERM);
+ PDL->setdims(p,dims,2);
+ p->datatype = PDL_D;
+ PDL->allocdata(p);
+ PDL->make_physical(p);
+ d = p->data;
+
+ /* Loop along the vertices, adding coordinates as we go */
+ for(i=0, v=f->start; 
+     i<f->v_ct && v;
+     v=v->next, i++) {
+  *(d++) = v->x[0];
+  *(d++) = v->x[1];
+  *(d++) = v->x[2];
+ }
+ RETVAL = NEWSV(546,0); /* 546 is arbitrary tag */
+ PDL->SetSV_PDL(RETVAL, p);
+OUTPUT:
+ RETVAL
 
 
+BOOT:
+/**********************************************************************
+ **********************************************************************
+ **** bootstrap code -- load-time dynamic linking to pre-loaded PDL
+ **** modules and core functions.   **/
+ perl_require_pv("PDL::Core");
+ CoreSV = perl_get_sv("PDL::SHARE",FALSE);
+ if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux::Fluxon)");
 
+ PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
+ if (PDL->Version != PDL_CORE_VERSION)
+    Perl_croak(aTHX_ "Flux::Fluxon needs to be recompiled against the newly installed PDL");
 
-
-
+ 
