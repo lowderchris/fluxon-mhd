@@ -155,7 +155,7 @@ void world_relax_step(WORLD *a, NUM t) {
  * 
  * Calls vertex_update_neighbors to process a whole fluxon. 
  * This is wasteful, as it throws away the Voronoi vertex information
- * from each cell.  Use fluxon_update instead -- that handles
+ * from each cell.  Use fluxon_update_mag instead -- that handles
  * physics too.
  */
 void fluxon_update_neighbors(FLUXON *fl, char global) {

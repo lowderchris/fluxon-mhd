@@ -1,14 +1,13 @@
-/* Data structures for flr -- field line and tie point structures 
- *
+/* Data structures for FLUX -- field line and tie point structures 
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Southwest Research Institute, 2004
  * 
- * You may modify and/or distribute this software under the temrs of
+ * You may modify and/or distribute this software under the terms of
  * the Gnu Public License, version 2.  You should have received a copy
  * of the license with this software, in the file COPYING to be found
  * in the top level directory of the distribution.  You may obtain
- * additional copies of the licesnse via http://www.gnu.org or by
+ * additional copies of the license via http://www.gnu.org or by
  * writing to the Free Software Foundation, 59 Temple Place - Suite
  * 330, Boston, MA 02111-1307 USA.
  *
@@ -25,8 +24,8 @@
 #define NUMDOUBLE 1            /* days of 64-bit processors) actually faster*/
                                /* than float, but uses twice as much memory!*/
 /* NUM must be one of (float|double|longdouble).  Set NUMDOUBLE to (0|1|2),
-   and NUMCHAR to "", "l", or "L". [NUMCHAR modifies NUM parsing by printf --
-   the 'l' makes the parse a double.]
+ * and NUMCHAR to "", "l", or "L". [NUMCHAR modifies NUM parsing by printf --
+ * the 'l' makes the parse a double.]
  */
 #define NUMCHAR "l"
 
@@ -268,22 +267,55 @@ inline char fl_eq(NUM a, NUM b);
 #define MALLOC_VL 7
 #define MALLOC_DLS_ARENA 8
 #define MALLOC_PLANE 9
-#define MALLOC_MAXTYPENO 9
+#define MALLOC_MISC 10
+#define MALLOC_MAXTYPENO 10
+
 
 char *malloc_types[MALLOC_MAXTYPENO+1];
 
 
 #define valid_malloc_type(x) ((x)>0 && (x)<=MALLOC_MAXTYPENO)
 
- #define localmalloc(x,y) flux_malloc(x,y)
- #define localfree(x) flux_free(x)
-// #define localmalloc(x,y) malloc(x)
-// #define localfree(x) free(x)
 
+/****************************************
+ * Memory handling options
+ * We have the ability to use either vanilla malloc,
+ * a debugging/fencing malloc, or a perl-SV-based malloc.
+ * If libflux is linked to the PDL front end, then 
+ * you should use the perl malloc.
+ */
+
+#ifdef USE_DEBUGGING_MALLOC
+
+#define localmalloc(x,y) flux_malloc(x,y)
+#define localfree(x) flux_free(x)
 
 void flux_free(void *p);
 char *flux_malloc(long size, int what_for);
 void flux_memcheck();
+
+#else
+#ifdef USE_PERL_MALLOC
+
+#define localmalloc(x,y) flux_perl_malloc(x)
+#define localfree(x) flux_perl_free(x)
+
+ char *flux_perl_malloc(long size);
+ void flux_perl_free(void *where);
+
+#include "EXTERN.h"
+#include "perl.h"
+#include "perlapi.h"
+
+#else
+
+ #define localmalloc(x,y) malloc(x)
+ #define localfree(x) free(x)
+
+#endif /**** use_perl_malloc test ****/
+#endif /**** malloc switch ****/
+
+
 
 #endif /* overall file include */
 

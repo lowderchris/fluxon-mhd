@@ -23,7 +23,7 @@
 #include <flux/io.h>
 #include <flux/model.h>
 #include <flux/physics.h>
-#include <flux/perl.h>
+#include <flux/fluxperl.h>
 
 #include <stdio.h>
 

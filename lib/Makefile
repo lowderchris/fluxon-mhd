@@ -14,6 +14,8 @@
 INCLUDE_DIR = ../include
 ID = $(INCLUDE_DIR)
 
+DFLAGS = -DUSE_DEBUGGING_MALLOC
+
 CFLAGS = -I$(INCLUDE_DIR) -g
 LIBS = -lm
 
@@ -41,8 +43,8 @@ all: 	lib
 clean: 
 	rm -f *~ *.a *.o \#* core a.out $(OBJECTS) *.OOGL sample_output.txt
 
-.c.o:	$(HEADERS)
-	cc $(CFLAGS) -c $?
+%.o:	%.c $(HEADERS) Makefile
+	cc $(CFLAGS) -c $(DFLAGS) $<
 
 
 

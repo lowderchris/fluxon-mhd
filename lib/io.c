@@ -49,6 +49,7 @@
  */
 
 static char buf[BUFSIZ];
+
 char *next_line(FILE *file) {
   char *s;
 
@@ -245,10 +246,10 @@ int footpoint_action(WORLD *world, char *s) {
       fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
       fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
       if(!fc0 || !fc1) {
-	char *badbuf = (char *)malloc(BUFSIZ);
+	char *badbuf = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
 	sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,fc0,fc1,BUFSIZ);
       } else if(fc0->flux * fc1->flux >= 0) {
-	badstr = (char *)malloc(BUFSIZ);
+	badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
 	sprintf(badstr,"This fluxon connects two flux concentrations of the same sign flux, or\none of its flux tubes has zero flux. Line %ld; concentrations %ld (%g) and %ld (%g)\n",fl0, flux0, l0, fc0->flux, l1, fc1->flux);
       }	else {
 	/* Check if the field line exists in either of the two 
@@ -258,7 +259,7 @@ int footpoint_action(WORLD *world, char *s) {
 	if((f = tree_find(world->lines,fl0,fl_lab_of,fl_all_ln_of)) &&
 	   (f->fc0 != fc0 || f->fc1 != fc1)
 	   ) {
-	  badstr = (char *)malloc(BUFSIZ);
+	  badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
 	  sprintf(badstr,"Hey!  fluxon %ld already exists (from conc. %ld - %ld)\n"); 
 	} else {
 	  FLUXON *f0;

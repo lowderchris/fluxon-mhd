@@ -1563,18 +1563,22 @@ inline char fl_eq(NUM a, NUM b) {
 	   );
 }
   
- 
+
 /**********************************************************************
  *
  * flux_malloc
  *
  * A wrapper for malloc that includes optional fencing.
+ * Only gets compiled if you asked for debugging malloc with
+ * -DUSE_DEBUGGING_MALLOC at compile time.
  * 
  */
+#ifdef USE_DEBUGGING_MALLOC
+
 static char *flux_malloc_types[MALLOC_MAXTYPENO] = 
   {"World","Fluxon","Vertex","Flux Concentration",
    "Dumblist","Dumblist stuff field","Vertex list","DLS arena",
-   "Photospheric plane"
+   "Photospheric plane", "Misc"
   };
 
 #define MALLOC_MAXNO (10000)
@@ -1727,3 +1731,33 @@ char *malloc_types[MALLOC_MAXTYPENO+1] = {
   "Dumblist","Dumblist_stuff","Vertex List","DLS Arena",
   "Plane"};
 
+ /* end of debugging-malloc code */
+
+#else
+#ifdef USE_PERL_MALLOC
+
+char *flux_perl_malloc(long size) {
+  char *out;
+  New(0,out,size,char);
+  if(!out) {
+    int i,j;
+    fprintf(stderr,"Out of memory!\n");
+    i=2; j=0;
+    i /= j; /* throw arithmetic exception */
+    exit(3498);
+  }
+  printf("Alloc'ed %d bytes (%x)\n",size,out);
+  fflush(stdout);
+  return out;
+}
+
+void flux_perl_free(void *foo) {
+  //  Safefree(foo);   /* do nothing for now */
+}
+
+#endif
+#endif
+
+  
+
+    
