@@ -546,7 +546,9 @@ static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n) {
   for(i=0;i<n;i++) {
     dumblist_add(workspace,(void *)foo[i]);
     dumblist_snarf(workspace,&(foo[i]->neighbors));
-    dumblist_snarf(workspace,&(foo[i]->nearby));
+    //    dumblist_snarf(workspace,&(foo[i]->nearby));
+    //    dumblist_sort(workspace,winnow_cmp_1);
+    //    dumblist_crunch(workspace,winnow_cmp_1);
   }
 
   /* Purge image pseudo-vertices from the snarfed list */
@@ -611,7 +613,12 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   workspace->n = workspace2->n = 0;
 
   /**********************************************************************/
-  /* Gather the candidates together */
+  /* Gather the candidates together 
+   * This step has had a longish history -- I started out 
+   * grabbing lots and lots of stuff, but "just" neighbors-of-neighbors
+   * (and next and prev links) seems to be sufficient.  In pathological
+   * cases, it might take a couple of timesteps to walk to the appropriate
+   * new neighbor, but that doesn't seem to cause problems in practice.
 
   /* Snarf neighbors */
 
@@ -621,20 +628,18 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     /* Grab neighbors & nearby from vertex & its siblings */
     snarf_list(workspace2,&v,1); 
 
-    //    if(v->next)     snarf_list(workspace2,&(v->next),1);
-    //    if(v->prev)     snarf_list(workspace2,&(v->prev),1);
+        if(v->next)     snarf_list(workspace2,&(v->next),1);
+        if(v->prev)     snarf_list(workspace2,&(v->prev),1);
 
     /* Grab siblings of all the neighbors & nearby */
-    expand_list(workspace2);
+    // expand_list(workspace2);
 
     /* Grab neighbors & nearby of all *those* guys */
-    snarf_list(workspace,(VERTEX **)workspace2->stuff,workspace2->n);
+    //snarf_list(workspace,(VERTEX **)workspace2->stuff,workspace2->n);
 
     /* Remove duplicates to save time in the next step */
-    dumblist_sort(workspace,winnow_cmp_1);
-
-    //    /* Grab siblings of all those guys */
-    //    expand_list(workspace);
+    //dumblist_sort(workspace,winnow_cmp_1);
+    //dumblist_crunch(workspace,winnow_cmp_1);
 
   }
 
@@ -810,11 +815,11 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   if(voronoi_bufsiz <= horde->n*2) {
     voronoi_bufsiz = horde->n*4;
 
-    fprintf(stderr,"   expanding voronoi_buf: horde->n is %d; new bufsiz is %d   ",horde->n,voronoi_bufsiz);
+    //    fprintf(stderr,"   expanding voronoi_buf: horde->n is %d; new bufsiz is %d   ",horde->n,voronoi_bufsiz);
 
     if(voronoi_buf)
-      free(voronoi_buf);
-    voronoi_buf = (HULL_VERTEX *)malloc((voronoi_bufsiz)*sizeof(HULL_VERTEX));
+      localfree(voronoi_buf);
+    voronoi_buf = (HULL_VERTEX *)localmalloc((voronoi_bufsiz)*sizeof(HULL_VERTEX),MALLOC_VL);
 
     if(!voronoi_buf) {
       fprintf(stderr,"Couldn't get memory in hull_neighbors!\n");
@@ -823,31 +828,31 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
 
   }
 
-  fprintf(stderr,"vb");
-
-  
-  if(verbosity >= 5) {
-    printf("V%4d: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
-    for(i=0;i<horde->n;i++) {
-      NUM p0[3], p1[3];
-      fl_segment_deluxe_dist(p0, p1, v, ((VERTEX *)(horde->stuff[i])));
-
-      printf("\tV%4d:  3d=%g\tproj dist=%7.3g (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g).  Closest approach: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n"
-	     ,((VERTEX *)(horde->stuff[i]))->label
-	     ,((VERTEX *)(horde->stuff[i]))->r_cl
-	     ,((VERTEX *)(horde->stuff[i]))->r
-	     ,((VERTEX *)(horde->stuff[i]))->x[0]
-	     ,((VERTEX *)(horde->stuff[i]))->x[1]
-	     ,((VERTEX *)(horde->stuff[i]))->x[2]
-	     ,((VERTEX *)(horde->stuff[i]))->next->x[0]
-	     ,((VERTEX *)(horde->stuff[i]))->next->x[1]
-	     ,((VERTEX *)(horde->stuff[i]))->next->x[2]
-	     ,p0[0],p0[1],p0[2]
-	     ,p1[0],p1[1],p1[2]
-	     );
+  if(verbosity >= 1) {
+    printf(".");
+    
+    if(verbosity >= 5) {
+      printf("V%4d: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
+      for(i=0;i<horde->n;i++) {
+	NUM p0[3], p1[3];
+	fl_segment_deluxe_dist(p0, p1, v, ((VERTEX *)(horde->stuff[i])));
+	
+	printf("\tV%4d:  3d=%g\tproj dist=%7.3g (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g).  Closest approach: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n"
+	       ,((VERTEX *)(horde->stuff[i]))->label
+	       ,((VERTEX *)(horde->stuff[i]))->r_cl
+	       ,((VERTEX *)(horde->stuff[i]))->r
+	       ,((VERTEX *)(horde->stuff[i]))->x[0]
+	       ,((VERTEX *)(horde->stuff[i]))->x[1]
+	       ,((VERTEX *)(horde->stuff[i]))->x[2]
+	       ,((VERTEX *)(horde->stuff[i]))->next->x[0]
+	       ,((VERTEX *)(horde->stuff[i]))->next->x[1]
+	       ,((VERTEX *)(horde->stuff[i]))->next->x[2]
+	       ,p0[0],p0[1],p0[2]
+	       ,p1[0],p1[1],p1[2]
+	       );
+      }
     }
   }
-
 
   /* Find the 2-D hull.  For now, ask for rejects in order to plot 'em. */
   hull_2d(voronoi_buf,horde,0);

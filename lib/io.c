@@ -386,7 +386,7 @@ int footpoint_action(WORLD *world, char *s) {
 	    PLANE *p = (PLANE *)0;
 
 	    if(s[off]!='<') {  /* do nothing for <NONE> */
-	      p = (PLANE *)malloc(sizeof(PLANE));
+	      p = (PLANE *)localmalloc(sizeof(PLANE),MALLOC_PLANE);
 	      char phscan[80];
 	      sprintf(phscan,"%%%sf %%%sf %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
 	      if( 6 != sscanf(s+off,phscan
@@ -401,7 +401,7 @@ int footpoint_action(WORLD *world, char *s) {
 	    
 	    if(!badstr) {
 	      if(world->photosphere)
-		free(world->photosphere);
+		localfree(world->photosphere);
 	      world->photosphere = p;
 	    }
 	  } /* end of GLOBAL PHOTOSPHERE convenience block */

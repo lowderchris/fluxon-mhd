@@ -93,6 +93,22 @@ sub nearby {
   return @{_adjacent($this,1)};     # in Vertex.xs
 }
 
+=pod
 
+=head2 hull
+
+=for ref
+
+Return the hull of a vertex, in 2-D.
+
+Calculates the neighborhood and 2-D projected hull, and returns the 
+coordinates as a PDL.  The output is a 5xN PDL.  The columns are:
+[2d-x, 2d-y, hull-x, hull-y, open]
+where 2d-x and 2d-y are the projected coordinates of the neighbor points,
+and hull-x and hull-y are the coordinates of the hull vertices.
+"open" is a flag indicating whether the associated vertex is "open" (ie
+nonexistent)
+
+=cut
 
 1;

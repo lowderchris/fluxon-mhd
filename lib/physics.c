@@ -165,8 +165,10 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
     deltaphi = (left->a_l - right->a_r);
     TRIM_ANGLE(deltaphi);
 
-    if(deltaphi < -EPSILON)
-      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg)\n",deltaphi*180/M_PI);
+    if(deltaphi < -EPSILON) {
+      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg); correcting to %18.12g\n",deltaphi*180/M_PI,deltaphi*180/M_PI + 360);
+      deltaphi += M_PI+M_PI;
+    }
     
     /*    fprintf(stderr," VERTEX #%d, i=%d: deltaphi=%g\tr=%g\n",N->label,i,deltaphi,N->r);*/
 

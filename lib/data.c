@@ -156,7 +156,8 @@ FLUXON *new_fluxon(      NUM flux,
   int f_no = 0;
   struct FLUXON *nf;
   
-  nf = (struct FLUXON *)malloc(sizeof(struct FLUXON));
+  nf = (struct FLUXON *)localmalloc(sizeof(struct FLUXON),MALLOC_FLUXON);
+
   if(!nf) barf(BARF_MALLOC,"new_fluxon");
   
   nf->flux            = flux;
@@ -205,7 +206,8 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   VERTEX *tp;
   int i;
 
-  tp = (VERTEX *)malloc(sizeof(VERTEX));
+  tp = (VERTEX *)localmalloc(sizeof(VERTEX),MALLOC_VERTEX);
+
   if(!tp) barf(BARF_MALLOC,"new_vertex");
   tp->line = fluxon;
   tp->prev = 0;
@@ -242,7 +244,7 @@ FLUX_CONCENTRATION *new_flux_concentration(
 					   ) {
   FLUX_CONCENTRATION *fc;
   
-  fc = (FLUX_CONCENTRATION *)malloc(sizeof(FLUX_CONCENTRATION));
+  fc = (FLUX_CONCENTRATION *)localmalloc(sizeof(FLUX_CONCENTRATION),MALLOC_VERTEX);
   if(!fc) barf(BARF_MALLOC,"new_flux_concentration");
   fc->world = world;
   fc->flux = flux;
@@ -262,7 +264,7 @@ FLUX_CONCENTRATION *new_flux_concentration(
  *
  */
 WORLD *new_world() {
-  WORLD *a = malloc(sizeof(WORLD));
+  WORLD *a = (WORLD *)localmalloc(sizeof(WORLD),MALLOC_WORLD);
   if(!a) barf(BARF_MALLOC,"new_world");
   
   a->frame_number = 0;
@@ -341,14 +343,14 @@ void delete_vertex(VERTEX *v) {
     return;
   unlink_vertex(v);
   if(v->neighbors.stuff) {
-    free(v->neighbors.stuff);
+    localfree(v->neighbors.stuff);
     v->neighbors.stuff=0;
   }
   if(v->nearby.stuff) {
-    free(v->nearby.stuff);
+    localfree(v->nearby.stuff);
     v->nearby.stuff=0;
   }
-  free(v);
+  localfree(v);
 }
 
 /**********************************************************************
@@ -1085,7 +1087,7 @@ const char *world_state_name(WORLD *a){
  ***** with more than 2^15 things in it.
  *****/
 DUMBLIST *new_dumblist() {
-  DUMBLIST *foo = (DUMBLIST *)malloc(sizeof(DUMBLIST));
+  DUMBLIST *foo = (DUMBLIST *)localmalloc(sizeof(DUMBLIST),MALLOC_DL);
   foo->n = 0;
   foo->size = 0;
   foo->stuff = 0;
@@ -1093,8 +1095,8 @@ DUMBLIST *new_dumblist() {
  
 void free_dumblist(DUMBLIST *foo) {
   if(foo->stuff) 
-    free (foo->stuff);
-  free (foo);
+    localfree (foo->stuff);
+  localfree (foo);
 }
 
 void dumblist_quickadd(DUMBLIST *dl, void *a) {
@@ -1102,7 +1104,7 @@ void dumblist_quickadd(DUMBLIST *dl, void *a) {
   void **foo;
   if(!dl || !a) return;
   if(!(dl->stuff)) {
-    dl->stuff = (void **)malloc( 16*sizeof(void *));
+    dl->stuff = (void **)localmalloc( 16*sizeof(void *),MALLOC_DL_L);
     dl->size = 16;
     dl->n = 1;
     dl->stuff[0] = a;
@@ -1124,7 +1126,7 @@ void dumblist_add(DUMBLIST *dl, void *a) {
      actually fit in the extend-list conditions, but what the heck)
    */
   if(!(dl->stuff)) {
-    dl->stuff = (void **)malloc( 16 * sizeof(void *));
+    dl->stuff = (void **)localmalloc( 16 * sizeof(void *),MALLOC_DL_L);
     dl->size = 16;
     dl->n = 1;
     dl->stuff[0] = a;
@@ -1205,8 +1207,11 @@ void dumblist_grow(DUMBLIST *dl, int size) {
       fprintf(stderr,"dumblist_grow:  size is too big!\n");
       exit(-30);
     }
-    else 
-      fprintf(stderr,"dumblist_grow: Warning -- size is %D!\n",newsize);
+    else {
+      int a,b=0;
+      fprintf(stderr,"dumblist_grow: Warning -- size is %d!\n",newsize);
+      //j      a /= b; // throw an arithmetic exception
+    }
   }
   
   /* This seems to corrupt the arena on my linux box -- replaced 
@@ -1218,11 +1223,11 @@ void dumblist_grow(DUMBLIST *dl, int size) {
     void **oldstuff, **ost, **newstuff;
     int i;
     oldstuff = ost = dl->stuff;
-    dl->stuff = newstuff = (void **)malloc(newsize * sizeof(void *));
+    dl->stuff = newstuff = (void **)localmalloc(newsize * sizeof(void *),MALLOC_DL_L);
     if(ost) {
       for(i=0;i<dl->size; i++)
       *(newstuff++) = *(oldstuff++);
-      free(ost);
+      localfree(ost);
     }
   }
     
@@ -1343,20 +1348,19 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
   void *temp;
   int n = dl->n;
 
-  printf("dumblist_shellsort: n=%d, size=%d ",n,dl->size);
+#ifdef testing_with_bubblesort
   // Bubblesort to make sure shellsort isn't scrozzling memory
-  char done;
+  char done
   do {
-    printf(".");
     done = 1;
     for(i=0;i<n-1;i++) {
-      if(((*cmp)(dl->stuff[i],dl->stuff[i+1])) < 0) {
+      if(((*cmp)(dl->stuff[i],dl->stuff[i+1])) > 0) {
 	void *foo = dl->stuff[i+1];
 	dl->stuff[i+1] = dl->stuff[i];
 	dl->stuff[i] = foo;
 	done = 0;
       }
-      if(((*cmp)(dl->stuff[n-2-i],dl->stuff[n-1-i]))<0) {
+      if(((*cmp)(dl->stuff[n-2-i],dl->stuff[n-1-i]))>0) {
 	void *foo = dl->stuff[n-2-i];
 	dl->stuff[n-2-i] = dl->stuff[n-1-i];
 	dl->stuff[n-1-i] = foo;
@@ -1364,9 +1368,8 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
       }
     }
   } while(!done);
-  printf("\n");
-
-#ifdef not_testing_with_bubblesort
+#endif 
+#ifndef testing_with_bubblesort
   increment = (dl->n / 3) || 1;
 
   while(increment>0)
@@ -1394,7 +1397,7 @@ void dumblist_crunch(DUMBLIST *dl,int((*cmp)(void *a, void *b))) {
   void **a, **b;
   int i,j;
 
-  b = dl->stuff);
+  b = dl->stuff;
   a = &(dl->stuff[1]);
   j =0;
   for(i=1;i<dl->n;i++) {
@@ -1432,12 +1435,10 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   int i;
 
   if( dl->n <= 500 ) { 
-    fprintf(stderr,"   shellsort...   ");
     dumblist_shellsort(dl,cmp);
     dumblist_crunch(dl,cmp);
   } else {
     int odls_size;
-    fprintf(stderr,"   quicksort...   ");
     /* Make sure that there's enough scratch space */
     if(dls_size < dl->size) {
       long levels = 2;
@@ -1460,8 +1461,8 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
        * dls_wk = (void **)realloc(dls_wk, dls_sz * sizeof(void *));
        */
       if(dls_wk)
-	free(dls_wk);
-      dls_wk = (void **)malloc(dls_sz * sizeof(void *));
+	localfree(dls_wk);
+      dls_wk = (void **)localmalloc(dls_sz * sizeof(void *),MALLOC_DLS_ARENA);
     }
     
     /* Launch the sort */
@@ -1503,7 +1504,6 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
     fflush(stderr);
     return;
   }
-  printf("dumblist_snarf: snarfing %d into a list of %d(%d)...\n",source->n,dest->n,dest->size);
   if(dest->size <= dest->n + source->n) 
     dumblist_grow(dest,dest->n + source->n);
   
@@ -1565,3 +1565,148 @@ inline char fl_eq(NUM a, NUM b) {
 }
   
  
+/**********************************************************************
+ *
+ * flux_malloc
+ *
+ * A wrapper for malloc that includes optional fencing.
+ * 
+ */
+static char *flux_malloc_types[MALLOC_MAXTYPENO] = 
+  {"World","Fluxon","Vertex","Flux Concentration",
+   "Dumblist","Dumblist stuff field","Vertex list","DLS arena",
+   "Photospheric plane"
+  };
+
+#define MALLOC_MAXNO (10000)
+static struct flux_malloc_alloc {
+    void *where;
+    long size;
+    int type;
+  } flux_malloc_alloc[MALLOC_MAXNO];
+  static int flux_malloc_next = 0;
+
+  
+char *flux_malloc(long size, int what_for) {
+  char *p;
+  long *p2;
+
+  flux_memcheck();
+  
+  if(flux_malloc_next >= MALLOC_MAXNO){
+    fprintf(stderr,"Filled malloc table; ending test\n");
+    exit(1);
+  }
+
+  if(!valid_malloc_type(what_for)) {
+    fprintf(stderr,"Invalid type received by flux_malloc\n");
+    // Throw an exception
+    {
+    int i = 0;
+    int j = 2;
+    j /= i;
+    }
+    return (void *)0; 
+  }
+
+  // call malloc and pad for the fence.
+  p = (char *)malloc(size + 16 + 16);
+  p2 = (long *)p;
+  *(p2++) = 0xDEADBEEF;
+  *(p2++) = 0xDEADBEEF;
+  *(p2++) = 0xDEADBEEF;
+  *(p2++) = 0xDEADBEEF;
+  p = (char *)p2;
+  p2 = (long *)(p+size);
+  *(p2++) = 0xDEADBEEF;
+  *(p2++) = 0xDEADBEEF;
+  *(p2++) = 0xDEADBEEF;
+  *p2 = 0xDEADBEEF;
+
+  flux_malloc_alloc[flux_malloc_next].where = p;
+  flux_malloc_alloc[flux_malloc_next].size = size;
+  flux_malloc_alloc[flux_malloc_next].type = what_for;
+  flux_malloc_next++;
+  return (void *)p;
+}
+  
+void flux_free(void *p) {
+  int i;
+  int ok = 0;
+  flux_memcheck();
+
+  for(i=0;!ok && i<flux_malloc_next;i++) 
+    if (p==flux_malloc_alloc[i].where) 
+      ok = i ;
+  
+  if(ok) {
+    flux_malloc_alloc[ok].where = 0;
+    flux_malloc_alloc[ok].size = 0;
+    flux_malloc_alloc[ok].type = 0;
+    free(p);
+    return;
+  } else {
+    fprintf(stderr,"%%%%%%flux_free: got an unknown block to free");
+    // Throw an exception
+    {
+      int i=0,j=2;
+      j/=i;
+    }
+    free(p-16);
+    return;
+  }    
+}
+
+void flux_memcheck() {
+  long badct = 0;
+  long freed = 0;
+  int i;
+  char flag =0;
+
+  for(i=0;i<flux_malloc_next;i++) {
+    char type_bad=0;
+    char fence_bad=0;
+    char *p;
+    long *p2;
+    if(!flux_malloc_alloc[i].where) {
+      freed++;
+    } else {
+      p = flux_malloc_alloc[i].where;
+      p2 = (long *)(p-16);
+      fence_bad += (*(p2++) != 0xDEADBEEF);
+      fence_bad += (*(p2++) != 0xDEADBEEF);
+      fence_bad += (*(p2++) != 0xDEADBEEF);
+      fence_bad += (*p2 != 0xDEADBEEF);
+      p2 = (long *)(p+flux_malloc_alloc[i].size);
+      if(!valid_malloc_type(flux_malloc_alloc[i].type)) 
+	type_bad = 1;
+      fence_bad += (*(p2++) != 0xDEADBEEF);
+      fence_bad += (*(p2++) != 0xDEADBEEF);
+      fence_bad += (*(p2++) != 0xDEADBEEF);
+      fence_bad += (*p2 != 0xDEADBEEF);
+    }
+    if(fence_bad) {
+      // Announce the problem
+      fprintf(stderr,"%%%%%%flux_memcheck: slot %d, 0x%x (%s) has a bad fence!\n",i,p,type_bad?"UNKNOWN_TYPE":flux_malloc_types[flux_malloc_alloc[i].type]);
+
+      // mend fence
+      p2 = (long *)(p+flux_malloc_alloc[i].size);
+      *(p2++) = 0xDEADBEEF;
+      *(p2++) = 0xDEADBEEF;
+      *(p2++) = 0xDEADBEEF;
+      *p2 = 0xDEADBEEF;
+      p2 = (long *)(p-16);
+      *(p2++) = 0xDEADBEEF;
+      *(p2++) = 0xDEADBEEF;
+      *(p2++) = 0xDEADBEEF;
+      *p2 = 0xDEADBEEF;
+      fprintf(stderr,"\t\tfixed\n");
+    }
+    
+    if(fence_bad || type_bad)
+      badct++;
+  }
+  fprintf(stderr, "%sflux_memcheck (both-sides fencing): %d table entries (%d freed) OK, %d good, %d bad\n",(badct==0?"   ":"%%%"),i,freed,i-freed-badct,badct);
+}
+
+  

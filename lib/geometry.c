@@ -1150,8 +1150,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     verbosity = w?w->verbosity:0;
   }
 
-
-    
   sort_by_angle_2d(horde);
 
   if(verbosity >= 4) 
@@ -1192,7 +1190,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	perp_bisector_2d( out[i_l].bisector, 0, lv->scr );
       
       if(verbosity >= 5) 
-	printf("\tpos %3d: i_r=%3d, i_l=%3d, l_scr:%5.3g,%5.3g, scr:%5.3g,%5.3g , r_scr:%5.3g,%5.3g\n\t\t",i,i_r,i_l,lv->scr[0],lv->scr[1],iv->scr[0],iv->scr[1],rv->scr[0],rv->scr[1]);
+	printf("\tpos %3d: i_r=%3d, i_l=%3d, l_scr:%5.3g,%5.3g (%5.3g deg), scr:%5.3g,%5.3g (%5.3g deg), r_scr:%5.3g,%5.3g (%5.3g deg)\n\t\t",i,i_r,i_l,lv->scr[0],lv->scr[1],lv->a*180/3.14159,iv->scr[0],iv->scr[1],iv->a*180/3.14159,rv->scr[0],rv->scr[1],rv->a*180/3.14159);
 
 
       /*** Check for pathologies ***/
@@ -1217,6 +1215,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       }
 
       a = lv->a - iv->a;
+
       TRIM_ANGLE(a);
       if( a < EPSILON && a > -EPSILON && lv->r <= iv->r ) {
 	if(verbosity>=5)
@@ -1397,7 +1396,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
  */
 
 
-void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
+void hull_2d_older(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   NUM epsilon=1e-19; // double-precision roundoff
   NUM left[2], right[2], b1[3], *b0;
   NUM a,b;
@@ -1410,7 +1409,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   int i;
 
   int verbosity;
-    
   
   if(horde->n < 1)
     return;
