@@ -11,6 +11,6 @@
 
 #define SvConc(wsv,name) (   ( SvROK(wsv) && sv_derived_from((wsv),"Flux::Concentration") )  ? (FLUX_CONCENTRATION *)(SvIVx(SvRV(wsv))) : ( croak("%s requires a Flux::Concentration.\n",(name)), (FLUX_CONCENTRATION *)0 ) )
 
-#define SvVertex(wsv,name) (   ( SvROK(wsv) && sv_derived_from((wsv),"Flux::Vertex") )  ? (VERTEX *)(SvIVx(SvRV(wsv))) : ( croak("%s requires a Flux::Vertex.\n",(name)), (FLUX_CONCENTRATION *)0 ) )
+#define SvVertex(wsv,name) (   ( SvROK(wsv) && sv_derived_from((wsv),"Flux::Vertex") )  ? (VERTEX *)(SvIVx(SvRV(wsv))) : ( croak("%s requires a Flux::Vertex.\n",(name)), (VERTEX *)0 ) )
 
 

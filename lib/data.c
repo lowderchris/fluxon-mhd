@@ -42,6 +42,7 @@
  *  
  */
 #include "data.h"
+#include "physics.h" /* for declaration of force subroutines */
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -280,6 +281,13 @@ WORLD *new_world() {
   a->image = NULL;
   a->image2 = NULL;
   a->verbosity = 0;  /* No verbose printouts by default */
+
+  /* Put in a sensible default force list */
+  a->f_funcs[0] = f_curvature;
+  a->f_funcs[1] = f_pressure_equi;
+  a->f_funcs[2] = f_vertex;
+  a->f_funcs[3] = 0;
+
   return a;
 }
 

@@ -42,6 +42,10 @@ bootstrap Flux::World;
 package Flux::World;
 use overload '""' => \&_stringify;
 
+
+
+=pod
+
 =head2 read_world
 
 =for usage
@@ -61,6 +65,10 @@ sub read_world {
   shift if(substr($_[0],0,length(__PACKAGE__)) eq __PACKAGE__);
   _read_world(@_);
 }
+
+
+
+=pod
 
 =head2 str2world
 
@@ -95,6 +103,10 @@ sub str2world {
     unlink $fname;
     $world;
 }
+
+
+
+=pod
 
 =head2 write_world
 
@@ -133,16 +145,20 @@ sub string {
     return @lines;
 }
 
+
+=pod
+
 =head2 _stringify
 
 =for ref
 
 Produce a short summary string describing a fluxon model
 
-This is the overloaded stringification routine for Flux::Worlds, so 
-using a World in string context gives you the short summary.  It's implemented
-VERY cheesily and slowly (dumps the whole world to ASCII, then checks how many
-LINE lines and VERTEX lines there are), so, er, fix that.
+This is the overloaded stringification routine for Flux::Worlds, so
+using a World in string context gives you the short summary.  It is
+implemented VERY cheesily and slowly (dumps the whole world to ASCII,
+then checks how many LINE lines and VERTEX lines there are), so, er,
+fix that.
 
 =cut
     
@@ -153,6 +169,10 @@ sub _stringify {
     my @vertices = grep(m/^\s*VERTEX/,@s);
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n";
 }
+
+
+
+=pod
 
 =head2 fix_proximity
 
@@ -171,6 +191,15 @@ You have to have primed the world with at least one timestep or
 update_neighbors call before you do this -- otherwise horrible things might
 happen.
 
+=cut
+
+# Implemented in World.xs
+
+
+
+
+=pod
+
 =head2 fix_curvature
 
 =for usage
@@ -188,6 +217,14 @@ You have to have primed the world with at least one timestep or
 update_neighbors call before you do this -- otherwise horrible things might
 happen.
 
+=cut
+
+# Implemented in World.xs
+
+
+
+=pod
+
 =head2 update_neighbors
 
 =for usage
@@ -202,6 +239,13 @@ a global neighbor search for each fluxel.  The global algorithm is
 O(n^2).  If $globalflag is zero, then a next-nearest-neighbors
 algorithm is used, which is O(n).  The first time you call this, you 
 had better set $globalflag=1.
+
+=cut
+
+# Implemented in World.xs
+
+
+=pod
 
 =head2 verbosity
 
@@ -241,10 +285,11 @@ Describe activity within each vertex operation -- notably neighbor searches.
 
 =cut
 
+# Implemented in World.xs
 
 
 
-
+=pod
 
 =head2 fluxon_ids
 
@@ -263,12 +308,14 @@ of all the fluxons, as a perl list.
 =cut
 
 sub fluxon_ids {
-  my $ref = _fluxons(@_); # Call _fluxons in World.xs
+  my $ref = _fluxon_ids(@_); # Call _fluxons in World.xs
   @$ref;
 }
 
 
 
+
+=pod
 
 =head2 fluxon
 
@@ -287,6 +334,7 @@ Return the fluxon with the given ID, as a Flux::Fluxon object.
 
 
 
+=pod
 
 =head2 fluxons
 
@@ -296,9 +344,55 @@ Return the fluxon with the given ID, as a Flux::Fluxon object.
 
 =for ref
 
-Return the fluxons with the given IDs, as Flux::Fluxon objects.
+Return the fluxon(s) with the given IDs, as a list of Flux::Fluxon objects.
 
 =cut
+
+sub fluxons {
+    my $world = shift;
+    my $id;
+    my @fluxons;
+    while(defined ($id=shift)) {
+	push(@fluxons, &fluxon($world,$id));
+    }
+
+    return @fluxons;
+}
+
+
+=pod
+
+=head2 forces
+
+=for usage
+ 
+  print $world->forces;
+  $world->forces('t_curvature','t_vertex')
+
+=for ref
+
+Return the names of the forces that are queued up to act on each fluxel
+in the simulation, or set them.  The forces have predefined names
+that are present at the top of physics.c.  Unknown forces are referred to
+by hex value, but that way lies madness.
+
+=cut
+
+sub forces {
+    my $me = shift;
+    if(@_==0) {
+	return @{_forces($me)};    # Retrieve forces (in World.xs)
+    } else {
+	my $i = 0;
+	my $s;
+	while($s=shift) {
+	    _set_force($me,$i,$s); # Set forces one at a time (in World.xs)
+	}
+    }
+}
+
+
+
 
 
 1;

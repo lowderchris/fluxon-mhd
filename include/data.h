@@ -125,6 +125,7 @@ typedef struct PLANE {
 #define WORLD_STATE_READY   5
 
 
+#define N_FORCE_FUNCS 30    /* Number of functions allowed in the force list */
 typedef struct WORLD {
   /* Globally memorable fields go here */
   long frame_number;        /* Identifies currently-being-worked-on frame */
@@ -137,6 +138,8 @@ typedef struct WORLD {
   NUM locale_radius;        /* Default radius for concentrations' neighborhoods */
 
   int verbosity;           /* Verbose flag turns on/off debugging lines */
+  
+  void ((*(f_funcs[N_FORCE_FUNCS]))());
 } WORLD;
 
 const char *world_state_name(WORLD *a);

@@ -36,7 +36,7 @@
 #include <flux/perl.h>
 
 #include <stdio.h>
-
+#include <string.h>
 
 /******************************
  * Some helper routines that are used internally
@@ -174,6 +174,9 @@ PREINIT:
 /**********************************************************************
  * _fluxon_ids - generate a perl list of fluxon IDs associated with this
  * world 
+ * 
+ * Hands back an array ref instead of a list, so I don't have to hassle
+ * with the perl stack...
  */
 CODE:
  w = SvWorld(wsv,"Flux::World::fluxon_ids");
@@ -192,10 +195,91 @@ fluxon(wsv,id)
  IV id
 PREINIT:
  WORLD *w;
+ FLUXON *f;
+ SV *sv;
 /**********************************************************************
  * fluxon - generate and return a Flux::Fluxon object associated 
  * with the given id
  */
 CODE:
   w = SvWorld(wsv,"Flux::World::fluxon");
-  RETVAL = 
+  f = (FLUXON *)tree_find(w->lines,id,fl_lab_of,fl_all_ln_of);
+  if(f) {
+     sv = newSViv((IV)(f));
+     RETVAL = newRV_noinc(sv);
+     (void)sv_bless(RETVAL,gv_stashpv("Flux::Fluxon",TRUE));
+  } else {
+     RETVAL = &PL_sv_undef;
+  }
+OUTPUT:
+  RETVAL
+
+
+AV *
+_forces(wsv)
+ SV *wsv
+PREINIT:
+ WORLD *w;
+ SV *sv;
+ int i;
+/**********************************************************************
+ * forces
+ * Retrieve the force list in the World, using strings and the 
+ * conversion array defined at the top of physics.c
+ */
+CODE:
+ w=SvWorld(wsv,"Flux::World::forces");
+
+ av_clear(RETVAL = newAV());
+
+ for(i=0;i<N_FORCE_FUNCS && w->f_funcs[i]; i++) {
+   int j;
+   for(j=0; 
+       FLUX_FORCES[j].func && FLUX_FORCES[j].func != w->f_funcs[i];
+       j++
+       );
+   if(FLUX_FORCES[j].func) {
+     sv = newSVpv(FLUX_FORCES[j].name,strlen(FLUX_FORCES[j].name));
+   } else {
+     char s[80];
+     sprintf(s,"0x%x",(unsigned long)(w->f_funcs[i]));
+     sv = newSVpv(s,strlen(s));
+   }
+   av_store(RETVAL, av_len(RETVAL)+1, sv) || svREFCNT_dec(sv);
+   }
+OUTPUT:
+ RETVAL
+
+void
+_set_force(wsv,where,what)
+SV *wsv
+IV where
+char * what
+PREINIT:
+ WORLD *w;
+ SV *sv;
+ int j;
+/**********************************************************************
+ * _set_force
+ * Try to interpret a string as a force name and set the 
+ * force pointer to it.
+ */
+CODE:
+ w = SvWorld(wsv,"Flux::World::_set_force");
+ if(where >= N_FORCE_FUNCS-1)
+   croak("force index %d not allowed 0<i<%d\n",where,N_FORCE_FUNCS-1);
+ for(j=0;
+     FLUX_FORCES[j].func && strcmp(FLUX_FORCES[j].name,what);
+     j++)
+       ;
+     if(!FLUX_FORCES[j].func) {
+       if(what[0]=='0' && what[1]=='x') {
+	 unsigned long ul;
+	 sscanf(what+2,"%x",&ul);
+	 w->f_funcs[where] = ul;
+       } else {
+         croak("Unknown force function '%s'\n",what);
+       }
+     } else {
+        w->f_funcs[where] = FLUX_FORCES[j].func;
+     }

@@ -13,4 +13,6 @@ libinstall:
 	cd lib; make install
 
 clean:
+	rm -f *~ \#* 
 	cd lib; make clean
+	cd pdl; make clean

@@ -8,6 +8,15 @@
 #include "physics.h"
 #include "geometry.h"
 
+/* global force name table */
+struct FLUX_FORCES FLUX_FORCES[] = {
+  {"f_curvature","simple curvature force over B",f_curvature},
+  {"f_pressure_equi","Kankelborg/DeForest 2001 pressure law over B",f_pressure_equi},
+  {"f_vertex","Vertex distribution pseudo-force",f_vertex},
+  {0,0,0}
+};
+
+
 /* fluxon physics routines get called like this:
  *    force = routine( VERTEX *v );
  * where, on return, force is 0 (error) or a pointer to a static area 

@@ -45,6 +45,66 @@ CODE:
 OUTPUT:
   RETVAL
 
+SV *
+vertex(flx,vno)
+ SV *flx
+ IV vno
+PREINIT:
+ FLUXON *f;
+ VERTEX *v;
+ SV *sv;
+ long i;
+/**********************************************************************
+ * vertex - given a vertex index location, return a Flux::Vertex object
+ * pointing to it.
+ */
+CODE:
+  f = SvFluxon(flx,"Flux::Fluxon::vertex");
+  v = (VERTEX *)0;
+  if(vno >= 0) 
+    for(i=0, v=f->start; i<vno && v; i++, v=v->next)
+      ;
+  if(v) {
+      sv = newSViv((IV)(v));
+      RETVAL = newRV_noinc(sv);
+      (void)sv_bless(RETVAL,gv_stashpv("Flux::Vertex",TRUE));
+  } else {
+      RETVAL = &PL_sv_undef;
+  }
+OUTPUT:
+  RETVAL
+     
+AV *
+_vertices(flx)
+ SV *flx
+PREINIT:
+ FLUXON *f;
+ VERTEX *v;
+ SV *sv,*rv;
+/**********************************************************************
+ * _vertices - return a perl list of all the vertices in a particular 
+ * fluxon. Returns a list ref so I don't have to hassle with the perl 
+ * stack.
+ */
+CODE:
+ f = SvFluxon(flx,"Flux::Fluxon::vertices");
+ RETVAL = newAV();                 /* Initialize array */
+ av_clear(RETVAL);
+ av_extend(RETVAL,f->v_ct);      /* Pre-extend for efficiency */
+ for(v=f->start;   v;   v=v->next) {  /* Loop over vertices */
+   sv = newSViv((IV)(v));             
+   rv = newRV_noinc(sv);
+   (void)sv_bless(rv,gv_stashpv("Flux::Vertex",TRUE));
+   if( !(  av_store(RETVAL, av_len(RETVAL)+1, rv) ) ) {
+     svREFCNT_dec(rv); 
+     v=0;
+   }
+ }
+OUTPUT:
+  RETVAL
+
+
+    
 
 
 
