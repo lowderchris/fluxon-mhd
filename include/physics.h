@@ -1,7 +1,21 @@
 /**********************************************************************
  * physics.h -- physics routine headers for FLEM
+ *
+ * This file is part of FLUX, the Field Line Universal relaXer.
+ * Copyright (c) Southwest Research Institute, 2004
  * 
- * Craig DeForest, 14-Mar-2001
+ * You may modify and/or distribute this software under the temrs of
+ * the Gnu Public License, version 2.  You should have received a copy
+ * of the license with this software, in the file COPYING to be found
+ * in the top level directory of the distribution.  You may obtain
+ * additional copies of the licesnse via http://www.gnu.org or by
+ * writing to the Free Software Foundation, 59 Temple Place - Suite
+ * 330, Boston, MA 02111-1307 USA.
+ *
+ * The software comes with NO WARRANTY.
+ * 
+ * You may direct questions, kudos, gripes, and/or patches to the
+ * author, Craig DeForest, at "deforest@boulder.swri.edu".
  */
  
 #ifndef FLUX_PHYSICS
