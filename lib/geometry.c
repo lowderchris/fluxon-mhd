@@ -1049,10 +1049,7 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
  * sort_by_angle_2d
  * 
  * Given a DUMBLIST of VERTICES containing 2-D points in their
- * scratch spaces, sort them by angle from the origin.  The sorter
- * never returns equality except in a pathological case, because 
- * dumblist_sort removes duplicates, and one generally wants to do that
- * in a controlled way.
+ * scratch spaces, sort them by angle from the origin. 
  *
  * No actual checking of the vector in ->scr is done -- you must
  * pre-set the angle in ->a!  (This is normally done by project_n_fill.)
@@ -1060,14 +1057,14 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
 
 static int angle_cmp(void *a, void *b) {
   if(a==b) return 0;
-  if( ((VERTEX *)a)->a < 0 )
-    ((VERTEX *)a)->a += 2*PI;
-  if( ((VERTEX *)b)->a < 0 )
-    ((VERTEX *)b)->a += 2*PI;
 
-  if( ((VERTEX *)a)->a < ((VERTEX *)b)->a ) return (-1);
-  /*  if( ((VERTEX *)a)->r < ((VERTEX *)b)->r ) return (-1);*/
-  return(1);
+  TRIM_ANGLE( ((VERTEX *)a)->a );
+  TRIM_ANGLE( ((VERTEX *)b)->a );
+
+  if(((VERTEX *)a)->a == ((VERTEX *)b)->a )
+    return ( ((VERTEX *)a)->r < ((VERTEX *)b)->r ) ? -1 : 1;
+	    
+  return ( ((VERTEX *)a)->a < ((VERTEX *)b)->a ) ? -1 : 1;
 }
 
 void sort_by_angle_2d(DUMBLIST *horde) {
@@ -1087,8 +1084,243 @@ void sort_by_angle_2d(DUMBLIST *horde) {
   dumblist_crunch(horde,angle_cmp);
 }  
 
+
 /**********************************************************************
  * hull_2d
+ * 
+ * Given an angle-sorted DUMBLIST of VERTICES containing 2-D points in their 
+ * scratch spaces, find the minimal convex hull of the origin.  
+ * (note that this is different than the conventional "maximal convex hull"
+ * problem). The original DUMBLIST winds up containing the points that were 
+ * used for the hull; you can also pass in a DUMBLIST
+ * that gets the rejects.  On exit, the output array (which you
+ * have to supply, pre-allocated) contains N HULL_VERTEXes
+ * (N is the number of vertices in the final hull).
+ * Each voronoi vertex is the one to the left of the corresponding 
+ * neighbor point.
+ * 
+ * Typical usage:
+ *    <collect dumblist>
+ *    vertices = malloc(sizeof(NUM)*2*horde->n);
+ *    hull_2d(vertices,horde,rejects=dumblist_new());
+ *
+ * If you don't want a list of rejects, pass in NULL for the 
+ * third parameter.
+ * 
+ * Note:  (To avoid the hassle of frequently removing fields from the 
+ * horde DUMBLIST, the code nulls individual rejected elements, then 
+ * crunches 'em all at the end.)
+ *
+ * This is probably the hot spot for the code as a whole, so some
+ * perhaps misguided trades have been made against readability and 
+ * for (hopefully) speed.
+ * 
+ * The sort-by-angle step requires that the projected radius and 
+ * angle fields in the VERTEX be filled; this is performed by 
+ * project_n_fill, which should be called before hull_2d.
+ * *
+ */
+
+#define MOD_INC(a,n) ( ( (++(a)) < (n) ) ? (a) : ((a)=0) )
+#define MOD_DEC(a,n) ( ( (--(a)) >= 0  ) ? (a) : ((a)=(n)-1) )
+#define MOD_NEXT(a,n) ( ((a)<((n)-1)) ? ((a)+1) : 0 )
+#define MOD_PREV(a,n) ( ((a)>0) ? ((a)-1) : 0 )
+
+void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
+  NUM epsilon=1e-19; // double-precision roundoff
+  int n = horde->n;
+  int i, i_r, i_l; /* Current, right, and left indices */
+  int terminus; /* When we get here, we are done (moving target) */
+  int verbosity;
+  char been_there;
+  VERTEX *iv, *rv, *lv;
+  NUM a;
+
+  /* Do nothing if we get a trivial list */
+  if(horde->n < 1) 
+    return;
+
+
+  /* Sort out debugging level. Kind of a kludge, but what the hey... */
+  { 
+    WORLD *w = 0;
+    for(i=0;!w && i<horde->n; i++) 
+      if( (((VERTEX **)(horde->stuff))[i])->line )
+	w = (((VERTEX **)(horde->stuff))[i])->line->fc0->world;
+    verbosity = w?w->verbosity:0;
+  }
+
+
+
+  sort_by_angle_2d(horde);
+
+
+  /* Get ready for main loop -- on entry, the first two candidates
+   * need their perpendicular bisectors calculated...
+   */
+  terminus = i = been_there = 0;
+  i_r = n-1;
+  iv = (VERTEX *)(horde->stuff[ i ]);
+  rv = (VERTEX *)(horde->stuff[i_r]);
+
+  perp_bisector_2d( &(out[ i ].bisector[0]), 0, iv->scr );
+  perp_bisector_2d( &(out[i_r].bisector[0]), 0, rv->scr );
+  intersection_2d( out[i_r].p, iv->scr, rv->scr );
+  a = iv->a - rv->a; TRIM_ANGLE(a);
+  if(a < 0 ||
+     !isfinite(out[i_r].p[0]) || !isfinite(out[i_r].p[1])) {
+    out[i_r].p[0] = out[i_r].p[1] = 0;
+    out[i_r].open = 1;
+  }
+
+  /* Main loop */
+  do {
+    NUM a,b;
+    if(horde->stuff[i]) {    /* Skip over already-zeroed elements */
+
+      char open=0;
+      
+
+      /*** Find next guy and prep his bisector if necessary ***/
+      for(i_l=MOD_NEXT(i,n);  i_l != i && !horde->stuff[i_l]; MOD_INC(i_l,n))
+	;
+      lv = (VERTEX *)(horde->stuff[i_l]);
+      if(!been_there)
+	perp_bisector_2d( &(out[i_l].bisector[0]), 0, lv->scr );
+      
+      /*** Check for pathologies ***/
+      if(i_r == i || i_l == i) {
+	fprintf(stderr,"hull_2d: eliminated all vertices! I give up.\n");
+	exit(54);
+      }
+
+
+
+      /*** Check colinearity and opentude on right & left ***/
+      /* (right could be handled by caching, but it's pretty cheap) */
+      b = iv->a - rv->a;
+      TRIM_ANGLE(a);
+      if( b < EPSILON && b > -EPSILON && rv->r < iv->r )
+	goto reject; /* Colinear with (and farther than) right-side vertex */
+
+
+      a = lv->a - iv->a;
+      TRIM_ANGLE(a);
+      if( a < EPSILON && a > -EPSILON && lv->r < iv->r )
+	goto reject;  /* Colinear with (and farther than) left-side vertex */
+
+      if( a > 0 && a < PI-EPSILON && a > -PI+EPSILON ) {
+	/* Line isn't open on the left, so it intersects on the left.   */
+	intersection_2d( out[ i ].p, lv->scr, iv->scr);
+	
+
+	if( b>0 && b < PI-EPSILON && b > -PI+EPSILON ) {
+	  /* Line isn't open on the right either, so compare intersections */
+	  a = cross_2d( out[i_r].p, out[ i ].p );
+
+	  if( !finite(a) ) {
+	    fprintf(stderr,"ASSERTION FAILED in hull_2d: intersection should exist (but doesn't)\n");
+	  }
+
+	  /*** If intersections were in the wrong order, reject the point ***/
+	  if(a < 0) 
+	    goto reject;
+	}
+
+      } else {
+	/* Line is open on the left -- set the left point to zero */
+	out[i].p[0] = out[i].p[1] = 0;
+	out[i].open = 1;
+      }
+
+
+      /*** Acceptance code ***/
+      been_there = (been_there || (i_l < i));
+      i_r = i;
+      i = i_l;
+      rv = iv;
+      iv = lv;
+      
+      if(0) {
+      reject: 
+	/*** rejection code ***/
+           
+	/* "Normally", we back up when we hit a rejection -- but the 
+	 * first item in the list is an exception -- in that case we 
+         * keep the same right side but walk forward one.  That requires
+	 * updating the intersection information for the right side.
+	 */
+	if(rejects) 
+	  dumblist_add(rejects,horde->stuff[i]);
+	horde->stuff[i] = 0;
+
+	if(been_there || (i > i_r)) {
+
+	  i = i_r;
+	  iv = rv;
+	  
+	  for(i_r=MOD_PREV(i,n); i_r!=i && !horde->stuff[i_r]; MOD_DEC(i_r,n))
+	    ;
+	  rv = (VERTEX *)(horde->stuff[i_r]);
+	  
+
+	} else {
+
+	  i = i_l;
+	  iv = lv;
+
+	  intersection_2d( out[i_r].p, iv->scr, rv->scr );
+	  a = iv->a - rv->a; TRIM_ANGLE(a);
+	  if(a<0 || !isfinite(out[i_r].p[0]) || !isfinite(out[i_r].p[1])) {
+	    out[i_r].p[0] = out[i_r].p[1] = 0;
+	    out[i_r].open = 1;
+	  }
+	}
+	
+	terminus = i_r;
+      }
+
+    }  
+    
+  } while(i != terminus || (i==0 && !been_there));  /* End of main loop */
+
+  /* Finished -- now crunch the dumblist and, simultaneously, the output. */
+  { 
+    int j;
+    HULL_VERTEX *ihv, *jhv;
+    VERTEX **vj;
+    vj = (VERTEX **)(horde->stuff);
+    ihv=jhv = out;
+    for(i=j=0; i<horde->n; i++, ihv++) {
+      VERTEX *hsi = horde->stuff[i];
+      if(hsi) {
+	if(i != j) {
+	  *(vj++) = hsi;
+	  *(jhv++) = *(ihv++);
+	}
+	j++;
+      }
+    }
+    horde->n = j;
+  }
+
+  /* Finally - insert appropriate atan2 angular fields into the output */
+  {
+    HULL_VERTEX *hv = out;
+    for(i=0;i<horde->n;i++) {
+      if(!hv->open)
+	hv->a_r = hv->a_l = atan2(hv->p[1], hv->p[0]);
+      else {
+	hv->a_l =(((VERTEX *)(horde->stuff[i]))->a ) + PI/2;
+	hv->a_r =(((VERTEX *)(horde->stuff[MOD_PREV(i,horde->n)]))->a) - PI/2;
+      }
+    }
+  }
+}
+
+#ifdef never_ever 
+/**********************************************************************
+ * hull_2d_older
  * 
  * Given an angle-sorted DUMBLIST of VERTICES containing 2-D points in their 
  * scratch spaces, find the convex hull of the origin.  
@@ -1119,11 +1351,14 @@ void sort_by_angle_2d(DUMBLIST *horde) {
  * The sort-by-angle step requires that the projected radius and 
  * angle fields in the VERTEX be filled; this is performed by 
  * project_n_fill, which should be called before hull_2d.
+ *
+ * hull_2d_older is an older version of hull_2d that is kept around for 
+ * reference.
  * *
  */
 
 
-void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
+void hull_2d_older(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   NUM epsilon=1e-19; // double-precision roundoff
   NUM left[2], right[2], b1[3], *b0;
   NUM a,b;
@@ -1134,11 +1369,30 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   int j = -1;         /* j gets -1 or the next rightward VERTEX */
   int k = -1;         /* k gets -1 or the next leftward VERTEX */
   int i;
+
+  int verbosity;
+    
   
   if(horde->n < 1)
     return;
 
   sort_by_angle_2d(horde);
+
+  verbosity = (((VERTEX **)(horde->stuff))[0])->line ? 
+    (((VERTEX **)(horde->stuff))[0])->line->fc0->world->verbosity :
+    (horde->n>1) ? 
+       (((VERTEX **)(horde->stuff))[1])->line->fc0->world->verbosity : 
+    0;
+
+
+  if( verbosity >= 4 ) {
+    int i;
+    printf("\nhull_2d: after sort, the horde has %d elements:\n\t\t",horde->n);
+    for(i=0;i<horde->n;i++) {
+      printf("%5.2g(V%4d)   ",180/PI*( ((VERTEX **)(horde->stuff))[i] )->a, ( ((VERTEX **)(horde->stuff))[i])->label);
+    }
+    printf("\n");
+  }
 
   /* Assemble the intersection points with neighbors, rejecting as necessary
    * on the way.  Algorithm:
@@ -1150,6 +1404,9 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
    */
   
   i=0;
+  
+  if(verbosity >= 5) 
+    printf("hull_2d: processing...\n");
   
   do {
     NUM *ivec,*jvec,*kvec;
@@ -1165,43 +1422,46 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	/* Skip degenerate points too -- this should't be necessary
 	   if they've been pre-winnowed; but it's here as a safety check.
 	*/ 
-	  fprintf(stderr,"degen or nan trigger in hull_2d\n"); 
-	  horde->stuff[i] = 0;
+	fprintf(stderr,"degen or nan trigger in hull_2d\n"); 
+	horde->stuff[i] = 0;
       } else {
-
+	
+                     if(verbosity>=5)  printf("\t i=%3d, cache %s ",i,(cache_ok?"ok ":"bad"));
+	
 	/* Neither infinite nor zero -- handle normally */
-      
-      ivec = ((VERTEX *)(horde->stuff[i]))->scr;
-      
-      /* Grab perpendicular bisector for this guy */
-      b0 = &(out[outdex].bisector[0]);
-      perp_bisector_2d(b0, 0, ((VERTEX *)((horde->stuff[i])))->scr);
-      
-      /* Check cache and if necessary calculate the right side */
-      if(cache_ok) { 
-	/* Last item was kept -- copy its vertex info into the LHS. */
-	right[0] = left[0];
-	right[1] = left[1];
-	jvec = ((VERTEX *)(horde->stuff[j]))->scr;
-      } else {
-	/* Last item wasn't kept -- find the previous vertex and 
-	   calculate the intersection for the LHS. */
-	if(j < 0) {
-	  for(j = ( (i>0) ? (i-1) : (horde->n - 1) );
-	      (!horde->stuff[j]) && j!=i;
-	      j = ( (j>0) ? (j-1) : (horde->n - 1) )
-	      )
-	    ;
+	
+	ivec = ((VERTEX *)(horde->stuff[i]))->scr;
+	
+	/* Grab perpendicular bisector for this guy */
+	b0 = &(out[outdex].bisector[0]);
+	perp_bisector_2d(b0, 0, ((VERTEX *)((horde->stuff[i])))->scr);
+	
+	/* Check cache and if necessary calculate the right side */
+	if(cache_ok) { 
+	  /* Last item was kept -- copy its vertex info into the LHS. */
+	  right[0] = left[0];
+	  right[1] = left[1];
+	  jvec = ((VERTEX *)(horde->stuff[j]))->scr;
+	} else {
+	  /* Last item wasn't kept -- find the previous vertex and 
+	     calculate the intersection for the LHS. */
+	  if(j < 0) {
+	    for(j = ( (i>0) ? (i-1) : (horde->n - 1) );
+		(!horde->stuff[j]) && j!=i;
+		j = ( (j>0) ? (j-1) : (horde->n - 1) )
+		)
+	      ;
+	  }
+	  jvec = ((VERTEX *)(horde->stuff[j]))->scr;
+	  if(j==i) 
+	    right[1] = right[0] = NAN;
+	  else {
+	    perp_bisector_2d(b1, 0, jvec);
+	    intersection_2d(right, b0, b1);
+	  }
 	}
-	jvec = ((VERTEX *)(horde->stuff[j]))->scr;
-	if(j==i) 
-	  right[1] = right[0] = NAN;
-	else {
-	  perp_bisector_2d(b1, 0, jvec);
-	  intersection_2d(right, b0, b1);
-	}
-      }
-      
+	
+	if(verbosity>=5) printf("j=%3d ",j);
       
       /* Find next VERTEX */
       for( k= (i+1)%(horde->n);
@@ -1209,7 +1469,10 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	     k = ( (k+1) % horde->n )
 	   )
 	;
+      
       kvec = ((VERTEX *)(horde->stuff[k]))->scr;
+
+      if(verbosity >=5) printf("k=%3d ",k);
       
       if(i==j)
 	reject_collinear=0;
@@ -1239,7 +1502,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 		 , knorm * inorm
 		 ) 
 	   );
-	
+	if(verbosity >= 5) printf("%s collinear ",reject_collinear?"***":"not");
       }
       
       /* Only reject if the neighbors are less than 180 deg from each 
@@ -1258,7 +1521,9 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  ||
 	  reject_collinear
 	  ) {
-	
+
+	if(verbosity >= 5) printf(" REJECT ");
+
 	/* reject */
 	if(rejects) 
 	  dumblist_add(rejects,horde->stuff[i]);
@@ -1279,6 +1544,8 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	j=-1;
       } else {  /* End of rejection code; start of acceptance code */
 	
+	if(verbosity >= 5) printf(" ACCEPT ");
+
 	/* accept */
 	out[outdex].p[0] = left[0];
 	out[outdex].p[1] = left[1];
@@ -1306,6 +1573,8 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  break;
 	}
       }          /* End of acceptance case*/
+      
+      if(verbosity >= 5) printf("\n");
       }            /* End of evaluation case (non-skip) */
     }              /* End of for loop */
     
@@ -1341,3 +1610,5 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   
   return;
 }
+
+#endif

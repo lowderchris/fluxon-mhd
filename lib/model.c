@@ -445,15 +445,29 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
  * from a vertex) and a workspace, and the vertices that are neighbors and 
  * nearby to each of the elements of the list are themselves added to the 
  * workspace.
+ *
  */
+
 static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n) {
-  int i;
+  int i,j;
   for(i=0;i<n;i++) {
     dumblist_add(workspace,(void *)foo[i]);
     dumblist_snarf(workspace,&(foo[i]->neighbors));
     dumblist_snarf(workspace,&(foo[i]->nearby));
   }
+
+  /* Purge image pseudo-vertices from the snarfed list */
+  for(i=j=0;i<workspace->n;i++) {
+    if( (((VERTEX **)(workspace->stuff))[i])->line ) {
+      if(j!=i)
+	workspace->stuff[j] = workspace->stuff[i];
+      j++;
+    }
+  }
+  workspace->n = j;
+
 }
+
 
 /* expand_list
  * Helper routine for expanding a workspace list out:  you feed in 

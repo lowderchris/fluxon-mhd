@@ -164,25 +164,10 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
      * perpendicular bisector to r_i goes away.  In the closed case, 
      * it's the angle to the vertex.
      */
-    if(left->open){
-      phi_r = atan2( N->scr[1], N->scr[0] ) + M_PI_2 ;
-    } else 
-      phi_r = atan2( left->p[1], left->p[0] );
-    if(phi_r < 0)
-      phi_r += 2 * M_PI;
-    
-    if(right->open) {
-      phi_l = atan2( N->scr[1], N->scr[0] ) - M_PI_2 ;
-    } else
-      phi_l = atan2( right->p[1], right->p[0] );
-    if(phi_l < 0)
-      phi_l += 2 * M_PI;
-    
-    deltaphi = (phi_r - phi_l);
+
+    deltaphi = (right->a_r - left->a_l);
     if(deltaphi < -1e-4 ) /* Should be 0; allow for slop */
       deltaphi += 2 * M_PI;
-
-    /*    printf("from %d - %d: deltaphi is %g deg; right->open=%d; left->open=%d\n",((VERTEX *)(V->neighbors.stuff[i]))->label, ((VERTEX *)(V->neighbors.stuff[(i+1)%V->neighbors.n]))->label,deltaphi*180/M_PI,right->open,left->open); */
 
     if(deltaphi > M_PI) 
       fprintf(stderr,"Assertion failed!  deltaphi > M_PI in f_pressure_equi (%18.12g deg)\n",deltaphi*180/M_PI);
@@ -366,28 +351,23 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
     /* open left vertices are OK; open right vertices must be calculated 
      * from the current vertex.
      */
-    if(right->open)
-      righta = - PI/2;
-    else {
-      righta = (right->a - v->a);
-      TRIM_ANGLE(righta);
-    }
+    righta = right->a_r - v->a;
+    TRIM_ANGLE(righta);
 
-    lefta = (left->a - v->a);
+    lefta = left->a_l - v->a;
     TRIM_ANGLE(lefta);
 
     if(righta > lefta) {
-      fprintf(stderr,"ASSERTION FAILED in b_eqa: left rel. angle %7.3g(%c) > right rel. angle %7.3g(%c), vertex %d (neighbor %d, %d of %d)\n",lefta*180/PI,left->open?'o':'c', righta*180/PI, right->open?'o':'c',V->label, v->label, i, n);
+      printf("ASSERTION FAILED in b_eqa: left rel. angle %7.3g(%c) > right rel. angle %7.3g(%c), vertex %d (neighbor %d, %d of %d)\n",lefta*180/PI,left->open?'o':'c', righta*180/PI, right->open?'o':'c',V->label, v->label, i, n);
 
       {
 	int j;
 	for(j=0;j<n;j++) 
-	  //	  printf("\t%s neighbor %2d: label %4d, a=%7.3g (rel. %7.3g)\n",(i==j)?"==>":"  ",j,nv[j]->label,nv[j]->a*180/PI,(nv[j]->a - v->a)*180/PI);
-	  printf("\t%s corner %2d (%c): a=%7.3g (rel. %7.3g)\n",(j==i)?"==>":"   ",j,(verts[j].open?'o':'c'),verts[j].a*180/PI,verts[j].a*180/PI-v->a*180/PI);
+	  printf("\t%s corner %2d (%c): a_l=%7.3g,a_r=%7.3g (rel. %7.3g)\n",(j==i)?"==>":"   ",j,(verts[j].open?'o':'c'),verts[j].a_l*180/PI,verts[j].a_r*180/PI,verts[j].a_l*180/PI-v->a*180/PI);
       }
     }
     
-    if(V->line->fc0->world->verbosity >= 4) {fprintf(stderr,"b_eqa force: VERTEX %5d, neighbor %5d, a=%7.3g, r=%7.3g, righta = %7.3g(%c), lefta=%7.3g(%c)\n",V->label, v->label,v->a*180/PI, v->r, righta*180/PI,right->open?'o':'c',lefta*180/PI,left->open?'o':'c');
+    if(V->line->fc0->world->verbosity >= 4) {printf("b_eqa force: VERTEX %5d, neighbor %5d, a=%7.3g, r=%7.3g, righta = %7.3g(%c), lefta=%7.3g(%c)\n",V->label, v->label,v->a*180/PI, v->r, righta*180/PI,right->open?'o':'c',lefta*180/PI,left->open?'o':'c');
     }
 
     /* formula wants \frac{1}{2r_p^2}; but VERTEX r is 2r, so
@@ -419,7 +399,7 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
     diff_3d(vec1,V->next->x,V->x);
     diff_3d(vec2,V->x,V->prev->x);
 
-    if(V->line->fc0->world->verbosity >= 4) { fprintf(stderr,"b_eqa: vec1=%7.3g,%7.3g,%7.3g; vec2=%7.3g,%7.3g,%7.3g\n",vec1[0],vec1[1],vec1[2],vec2[0],vec2[1],vec2[2]); }
+    if(V->line->fc0->world->verbosity >= 4) { printf("b_eqa: vec1=%7.3g,%7.3g,%7.3g; vec2=%7.3g,%7.3g,%7.3g\n",vec1[0],vec1[1],vec1[2],vec2[0],vec2[1],vec2[2]); }
 
     scale_3d(vec1,vec1,Bmag/norm_3d(vec1));
     scale_3d(vec2,vec2,Bmag/norm_3d(vec2));
@@ -587,18 +567,10 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts) {
     VERTEX *v = nv[i];
     NUM righta, lefta;
 
-    /* Open left vertices are OK; open right vertices must be 
-     * calculated from the current vertex.  Does it make sense to 
-     * share this information across routines?
-     */
-    if(right->open) {
-      righta = - PI/2;
-    } else {
-      righta = right->a - v->a;   
-      TRIM_ANGLE(righta);
-    }
+    righta = right->a_r - v->a;   
+    TRIM_ANGLE(righta);
 
-    lefta = left->a - v->a;
+    lefta = left->a_l - v->a_l;
     TRIM_ANGLE(lefta);
 
     
