@@ -41,7 +41,22 @@ PREINIT:
  */
 CODE: 
   v = SvVertex(vrt,"Flux::Vertex::_stringify");
-  sprintf(str,"vertex %5d (fl %5d): xyz=%5.3g,%5.3g,%5.3g, n=%5d,p=%5d, out/in:%2d/%2d\n",v->label,v->line->label,v->x[0],v->x[1],v->x[2],v->next?v->next->label:0,v->prev?v->prev->label:0,v->neighbors.n,v->nearby.n);
+  if(v->line) {
+	sprintf(str,"vertex %5d (fl %5d): xyz=%5.3g,%5.3g,%5.3g, n=%5d,p=%5d, out/in:%2d/%2d\n",
+	v->label,
+	v->line->label,
+	v->x ? v->x[0]:-1e64,
+	v->x ? v->x[1]:-1e64,
+	v->x ? v->x[2]:-1e64,
+	v->next ? v->next->label : 0,
+	v->prev ? v->prev->label : 0, 
+	v->neighbors.n,
+        v->nearby.n
+        );
+  } else {
+	sprintf(str,"vertex %5d (IMAGE; xyz may be invalid): xyz=%5.3g,%5.3g,%5.3g\n",v->label, v->x?v->x[0]:-1e64, v->x?v->x[1]:-1e64, v->x?v->x[2]:-1e64);
+  }
+
   RETVAL = str;
 OUTPUT:
   RETVAL
@@ -87,4 +102,43 @@ CODE:
  }
 OUTPUT:
  RETVAL
+
+AV *
+_adjacent(svrt,nearby)
+SV *svrt
+IV nearby
+PREINIT:
+ VERTEX *v;
+ DUMBLIST *dl;
+ int i;
+ SV *sv, *rv;
+/**********************************************************************
+ * _adjacent - return a perl list of the neighbors or nearby list for a
+ * vertex. 
+ */
+CODE:
+ v = SvVertex(svrt,"Flux::Vertex::_adjacent");
+ RETVAL = newAV(); /* initialize array */
+ 
+ if(nearby)
+  dl = &(v->nearby);
+ else 
+  dl = &(v->neighbors);
+ 
+ av_clear(RETVAL);
+ av_extend(RETVAL,dl->n);
+ for(i=0; i<dl->n; i++) {
+   VERTEX *v = (VERTEX *)(dl->stuff[i]);
+   sv = newSViv((IV)v);
+   rv = newRV_noinc(sv);
+   (void)sv_bless(rv,gv_stashpv("Flux::Vertex",TRUE));
+   if( !( av_store(RETVAL,i,rv) ) ) {
+	svREFCNT_dec(rv);
+	fprintf(stderr,"Warning: problems with array in _adjacent...\n");
+   }
+ }
+OUTPUT:
+ RETVAL
+
+ 
   

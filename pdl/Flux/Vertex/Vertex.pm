@@ -66,4 +66,33 @@ Return the next vertex on the same fluxon
 # Implemented in Vertex.xs
 
 
+
+=pod
+
+=head2 neighbors
+
+=for ref
+
+Return the neighbors of this vertex, as a perl list of VERTEX objects.
+
+=head2 nearby
+
+=for ref
+
+Return the inverse-neighbor list of this vertex, as a perl list of VERTEX objects.
+
+=cut
+
+sub neighbors {
+  my $this = shift;
+  return @{_adjacent($this,0)};     # in Vertex.xs
+}
+
+sub nearby {
+  my $this = shift; 
+  return @{_adjacent($this,1)};     # in Vertex.xs
+}
+
+
+
 1;
