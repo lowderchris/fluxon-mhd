@@ -1,8 +1,9 @@
 sub simple_relaxer {
-    $file = shift;
-    
-    $w = read_world($file);
-    
+    $w = shift;
+
+    $w = read_world($w)
+      unless(ref $w) ;
+
     $w->render_lines;
     $w->update_neighbors(1);
     
@@ -11,10 +12,10 @@ sub simple_relaxer {
     
     while(1) {
 
-	unless($step % 40) {
-	    $w->fix_curvature(0.1);
-	    $w->fix_proximity(0.3);
-	}
+#	unless($step % 40) {
+#	    $w->fix_curvature(0.1);
+#	    $w->fix_proximity(0.3);
+#	}
 
 	
 	$fmax = $w->update_force(0);
@@ -29,7 +30,9 @@ sub simple_relaxer {
 
 	print "step $step..."; 
 	$step++;
-
+	
+	print "Press <RETURN> for next step:";
+	$a = <STDIN>;
 
     }	
 }

@@ -46,7 +46,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_pressure_equi","(OLD) 2001 pressure law over B (DEPRECATED)",f_pressure_equi},
   {"f_curv_hm","Curvature force law (harmonic mean curvature)",f_curv_hm},
   {"f_curv_m","Curvature force law (mean curvature)",f_curv_m},
-  ///  {"f_p_eqa","Angular equipartition pressure law",f_pressure_eq},
+  {"f_p_eqa_radial","Angular equipartition pressure, radial forces",f_p_eqa_radial},
   {"f_vertex","Vertex distribution pseudo-force",f_vertex},
   {0,0,0}
 };
@@ -344,6 +344,8 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
  * angular equiparition estimate, and delivers a phi-averaged
  * magnitude.  See DeForest notebooks v. VIII, p. 70.
  *
+ * As a side effect, also accumulates the smallest neighbor distance.
+ *
  * The flux is taken from the fluxon itself, in preparation for 
  * future non-uniform-flux-per-fluxon simulations although now 
  * (august 2004) it's not here.
@@ -358,37 +360,49 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
 
   for(i=0;i<n;i++) {
     HULL_VERTEX *left = &(verts[i]);
-    HULL_VERTEX *right = i==0 ? &(verts[n-1]) : &(verts[i-1]);
+    HULL_VERTEX *right = (i==0) ? &(verts[n-1]) : &(verts[i-1]);
     VERTEX *v = nv[i];
-
-    NUM righta = right->a;
+    NUM righta, lefta;
     /* open left vertices are OK; open right vertices must be calculated 
      * from the current vertex.
      */
-    if(right->open) {
-      righta = v->a - PI/2;
-      if(righta <= -PI)
-	righta += 2*PI;
-    } else
-      righta = right->a;
+    if(right->open)
+      righta = - PI/2;
+    else {
+      righta = (right->a - v->a);
+      TRIM_ANGLE(righta);
+    }
 
-    if(righta>left->a)
-      righta -= 2*PI;
+    lefta = (left->a - v->a);
+    TRIM_ANGLE(lefta);
+
+    if(righta > lefta) {
+      fprintf(stderr,"ASSERTION FAILED in b_eqa: left rel. angle %7.3g(%c) > right rel. angle %7.3g(%c), vertex %d (neighbor %d, %d of %d)\n",lefta*180/PI,left->open?'o':'c', righta*180/PI, right->open?'o':'c',V->label, v->label, i, n);
+
+      {
+	int j;
+	for(j=0;j<n;j++) 
+	  //	  printf("\t%s neighbor %2d: label %4d, a=%7.3g (rel. %7.3g)\n",(i==j)?"==>":"  ",j,nv[j]->label,nv[j]->a*180/PI,(nv[j]->a - v->a)*180/PI);
+	  printf("\t%s corner %2d (%c): a=%7.3g (rel. %7.3g)\n",(j==i)?"==>":"   ",j,(verts[j].open?'o':'c'),verts[j].a*180/PI,verts[j].a*180/PI-v->a*180/PI);
+      }
+    }
     
-    if(V->line->fc0->world->verbosity >= 4) {fprintf(stderr,"b_eqa force: VERTEX %5d, neighbor %5d, a=%7.3g, r=%7.3g, righta = %7.3g(%c), left->a=%7.3g(%c)\n",V->label, v->label,v->a*180/PI, v->r, righta*180/PI,right->open?'o':'c',left->a*180/PI,left->open?'o':'c');
+    if(V->line->fc0->world->verbosity >= 4) {fprintf(stderr,"b_eqa force: VERTEX %5d, neighbor %5d, a=%7.3g, r=%7.3g, righta = %7.3g(%c), lefta=%7.3g(%c)\n",V->label, v->label,v->a*180/PI, v->r, righta*180/PI,right->open?'o':'c',lefta*180/PI,left->open?'o':'c');
     }
 
     /* formula wants \frac{1}{2r_p^2}; but VERTEX r is 2r, so
      * we instead use \frac{2}{r^2}...
      */
     Bmag +=  
-          ( 0.5 * ( sin( 2 * ( left->a - v->a ) ) -
-		  sin( 2 * ( righta  - v->a ) ) )
-	  + left->a - righta
-	  ) / (nv[i]->r * nv[i]->r) ;
+      ( 0.5 * ( sin( 2 * lefta ) - sin( 2 * righta ) )
+	  + lefta - righta
+       ) 
+      / 
+      (nv[i]->r * nv[i]->r) ;
+
   }
   
-  Bmag *= V->line->flux * ( 1 / ( 2 * PI * PI ) );
+  Bmag *= V->line->flux * ( 1 / ( PI * PI ) );
 
   V->b_mag = Bmag;
 
@@ -400,22 +414,38 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
    * the no-next-guy case should never happen, but it's here for completeness.
    */
   if(V->next && V->prev) { 
+
     Bmag *= 0.5;  /* WARNING - Bmag no good below here */
     diff_3d(vec1,V->next->x,V->x);
-    scale_3d(vec1,vec1,Bmag/norm_3d(vec1));
     diff_3d(vec2,V->x,V->prev->x);
+
+    if(V->line->fc0->world->verbosity >= 4) { fprintf(stderr,"b_eqa: vec1=%7.3g,%7.3g,%7.3g; vec2=%7.3g,%7.3g,%7.3g\n",vec1[0],vec1[1],vec1[2],vec2[0],vec2[1],vec2[2]); }
+
+    scale_3d(vec1,vec1,Bmag/norm_3d(vec1));
     scale_3d(vec2,vec2,Bmag/norm_3d(vec2));
+
     sum_3d(V->b_vec,vec1,vec2);
+
+
   } else if(V->next) {
+
     diff_3d(vec1,V->next->x,V->x);
-    scale_3d(V->b_vec,V->b_vec,Bmag/norm_3d(vec1));
+    scale_3d(V->b_vec,vec1,Bmag/norm_3d(vec1));
+
   } else if(V->prev) {
+
     diff_3d(vec1,V->x,V->prev->x);
-    scale_3d(V->b_vec,V->b_vec,Bmag/norm_3d(vec1));
+    scale_3d(V->b_vec,vec1,Bmag/norm_3d(vec1));
+
   } else {
+
     fprintf(stderr,"b_eqa: got an invalid VERTEX! I quit!\n");
     exit(99);
+
   }
+
+  if(V->line->fc0->world->verbosity >= 3) { fprintf(stderr,"b_eqa: VERTEX %4d (fluxon %4d); magnetic field mag. is %7.3g (vec is %7.3g, %7.3g, %7.3g)\n", V->label, V->line->label, V->b_mag, V->b_vec[0],V->b_vec[1],V->b_vec[2]); }
+
 
 }
 
@@ -518,8 +548,91 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts) {
     V->a = len;
 }
 
+/**********************************************************************
+ *
+ * f_p_eqa_radial
+ *
+ * Magnetic pressure force, acting radially all the way around the 
+ * Voronoi cell boundary (acts like springs on a corrugated boundary)
+ *
+ * See DeForest notebooks, Vol. VIII, pp 75-76.
+ *
+ */
 
-
-
+void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts) {
+  static NUM scr2d[3],scr3d[3];
+  int i,n;
+  NUM sina, cosa;
+  NUM pmatrix[9];
+  VERTEX **nv = (VERTEX **)(V->neighbors.stuff);
+  NUM fac = V->line->flux * V->line->flux / (PI*PI*PI);
   
+  if(!(V->next))
+    return;
+
+  /* Get the perpendicular-plane projection matrix */
+  /* (This is wasteful - it is generated in geometry.c as well. */
+  /* Is there an easy way to pass it around? */
+  projmatrix(pmatrix,V->x,V->next->x);
   
+  scr2d[0] = scr2d[1] = scr2d[2] = 0;
+
+  n = V->neighbors.n;
+  for(i=0; i< n; i++) {
+    NUM fperp;
+    NUM fpar;
+    NUM factor;
+    HULL_VERTEX *left = &(verts[i]);
+    HULL_VERTEX *right = (i!=0) ? &(verts[i-1]) : &(verts[n-1]);
+    VERTEX *v = nv[i];
+    NUM righta, lefta;
+
+    /* Open left vertices are OK; open right vertices must be 
+     * calculated from the current vertex.  Does it make sense to 
+     * share this information across routines?
+     */
+    if(right->open) {
+      righta = - PI/2;
+    } else {
+      righta = right->a - v->a;   
+      TRIM_ANGLE(righta);
+    }
+
+    lefta = left->a - v->a;
+    TRIM_ANGLE(lefta);
+
+    
+    /* Assemble perpendicular and parallel force components */
+    factor = -fac / (v->r * v->r * v->r);
+    
+    fperp= factor * (0.25 * (sin(2*lefta) - sin(2*righta)) 
+		     + 0.5 * (lefta-righta)
+		     );
+    fpar = factor * ( cos(2*righta) - cos(2*lefta) );
+
+    {
+      NUM s, c;
+      s = sin(v->a);
+      c = cos(v->a);
+      scr2d[0] += c * fperp - s * fpar;
+      scr2d[1] += s * fperp +  c * fpar;
+    }
+
+    if(V->line->fc0->world->verbosity >= 4) {fprintf(stderr,"f_p_eqa_radial: VERTEX %4d, neighbor %5d, a=%7.3g, r=%7.3g, righta=%7.3g(%c), lefta=%7.3g(%c), fperp=%7.3g, fpar=%7.3g\n",V->label,v->label,v->a*180/PI,v->r,lefta*180/PI,left->open?'o':'c',righta*180/PI,right->open?'o':'c',fperp,fpar);
+    }
+
+
+  } /* end of neighbor loop */
+  
+   vec_mmult_3d(scr3d,pmatrix,scr2d); /* Convert to 3-D */
+   //  mat_vmult_3d(scr3d,pmatrix,scr2d); /* COnvert to 3-D */
+
+  if(V->line->fc0->world->verbosity >= 3) { fprintf(stderr,"f_p_eqa_radial: VERTEX %4d (fluxon %4d); total force is %7.3g, %7.3g, %7.3g\n", V->label, V->line->label, scr3d[0],scr3d[1],scr3d[2]); }
+
+
+  sum_3d(V->f_s,V->f_s,scr3d);
+  V->f_s_tot += norm_3d(scr3d);
+  
+  return;
+}
+	

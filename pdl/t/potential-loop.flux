@@ -3,6 +3,8 @@
 #
 
 GLOBAL PHOTOSPHERE 0 0 0 0 0 1
+GLOBAL FORCES b_eqa f_curv_hm f_p_eqa_radial f_vertex
+
 
 FRAME 1
 NEW 1 0 -0 0.001 1

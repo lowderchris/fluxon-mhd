@@ -391,7 +391,7 @@ sub forces {
 	my $i = 0;
 	my $s;
 	while($s=shift) {
-	    _set_force($me,$i,$s); # Set forces one at a time (in World.xs)
+	    _set_force($me,$i++,$s); # Set forces one at a time (in World.xs)
 	}
     }
 }

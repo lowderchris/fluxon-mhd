@@ -173,9 +173,29 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
     v->f_s_tot = v->f_v_tot = 0;
     v->r_s = v->r_v = -1;
 
+    /* Find smallest 'r' associated with this vertex */
+    {
+      int i;
+      v->r_cl = -1;
+      for(i=0;i<v->neighbors.n;i++)
+	if( (v->r_cl < 0) 
+	    || (v->r_cl > (((VERTEX **)(v->neighbors.stuff))[i])->r)
+	    )
+	  v->r_cl = (((VERTEX **)(v->neighbors.stuff))[i])->r;
+    }
+
+
+    if(fl->fc0->world->verbosity >= 3) 
+      printf("---forces:\n");
+
      /* Accumulate forces and relevant lengthscales */
     for(f_func = &f_funcs[0]; *f_func; f_func++) 
       (**f_func)(v,vertices);
+
+
+    if(fl->fc0->world->verbosity >= 3)
+      printf("\n");
+
   }
   if(verbosity >= 3) printf("\n");
 
@@ -260,27 +280,18 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     NUM r_cl= v->r_cl;
     NUM foo[3];
     NUM d,d1;
-    /* Take a step proportional to both the force and the local approach distance */
+    /* Take a step proportional to the force and the harmonic mean of the fluxon length and local approach distance. */
     
     diff_3d(foo,v->next->x,v->x);
     d = norm_3d(foo);
     
     diff_3d(foo,v->x,v->prev->x);
-    if((d1 = norm_3d(foo)) < d)
-      d = d1;
+    d1 = norm_3d(foo);
     
-    if(r_cl > d)
-      r_cl = d;
+    d = 4/(1/d + 1/d1 + 1/r_cl + (v->prev ? 1/v->prev->r_cl : 1/r_cl));
     
-    /* This check is in to combat the asymmetry of the VERTEX -> line
-     * segment association.  We want to step based on the minimum r_cl
-     * on either side of the vertex.
-     */
-    if(r_cl > v->prev->r_cl)
-      r_cl = v->prev->r_cl;
-
     if(r_cl < 0) {
-      fprintf(stderr,"A pox upon thee!  Negative distance %g on vertex %d!\n",r_cl,v->label);
+      fprintf(stderr,"ASSERTION FAILED!  Negative distance %g on vertex %d!\n",r_cl,v->label);
       fprintf(stderr,"vertex has %d neighbors\n",v->neighbors.n);
       r_cl = 0; /* hope the problem goes away */
     }
@@ -295,20 +306,19 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
       fprintf(stderr,"fluxon %d, vertex %d: force_factor = %g, >1!  This is allegedly impossible! You've got trouble, gov\n",f->label,v->label,force_factor);
       fflush(stdout);
       fflush(stderr);
-      exit(12039);
     }
     
 
-    {
-    NUM f2 = 2/(1+1/(force_factor));
-    scale_3d(a,v->f_t, t * r_cl * f2 * f2 / force_factor);
-    }
+    //    {
+    //    NUM f2 = 2/(1+1/(force_factor));
+    //    scale_3d(a,v->f_t, t * r_cl * f2 * f2 / force_factor);
+    //    }
 
-    scale_3d(a,v->f_t, t * r_cl * 1/(1/sqrt(force_factor) + 1/force_factor));
+    //    scale_3d(a,v->f_t, t * r_cl * 1/(1/sqrt(force_factor) + 1/force_factor));
+    
     scale_3d(a,v->f_t,t*r_cl*force_factor);
-    
+    //scale_3d(a,v->f_t, t * r_cl * r_cl * force_factor);
 
-    scale_3d(a,v->f_t, t * r_cl * force_factor);
     sum_3d(v->x,v->x,a);	     
 
     if(verbosity >= 3)    printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
@@ -354,11 +364,13 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
 
 
   if(verbosity >= 3) {
-    printf("vertex_update_neighbors: Vertex %d has %d candidates\n",v->label,dl->n);
+    printf("vertex_update_neighbors: Vertex %d has %d candidates: ",v->label,dl->n);
     if(verbosity >= 4)
       for(i=0;i<dl->n;i++)
-	printf("\t%d\n",((VERTEX *)((dl->stuff)[i]))->label);
+	printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
+    printf("\n");
   }
+
 
   /* This winnow_neighbor_candidates call isn't strictly necessary --
      hull_neighbors should do the job.  But winnow_neighbor_candidates 
@@ -369,10 +381,11 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
   hv = hull_neighbors(v, dl); /* save hv for return */
 
     if(verbosity >= 3) {
-      printf("Hull_neighbors returned %d neighbors\n",dl->n);
+      printf("Hull_neighbors returned %d neighbors: ",dl->n);
       if(verbosity >= 4)
 	for(i=0;i<dl->n;i++) 
-	  printf("\t%d\n",((VERTEX *)((dl->stuff)[i]))->label);
+	  printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
+      printf("\n");
     }
 
   /* Walk through both dumblists, updating the neighbors' 

@@ -129,3 +129,8 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects);
 #define PI 3.141592653589793238462643383279502
 #define DEG2RAD (PI/180.)
 #define RAD2DEG (180./PI)
+
+/* regularize an angle that is between -3PI and 3PI, to the range
+ * -PI to PI.
+ */
+#define TRIM_ANGLE(a) do { if((a)<=-PI) { (a)+=2*PI; } else if((a)>PI) { (a) -= 2*PI; } } while(0)

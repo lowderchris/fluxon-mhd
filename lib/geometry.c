@@ -442,9 +442,7 @@ inline void p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
 
 
 /**********************************************************************
- * Newer version of ls_closest_approach -- should work better.
- *
- * 15-May-2001 CED
+ * ls_closest_approach
  * 
  * You feed in the endpoints of two line segments, and two POINTs. 
  * The two points get the closest-approach points of the two line
@@ -627,159 +625,6 @@ inline void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM 
   }
 }   
 
-
-#ifdef never_ever    
-
-/**********************************************************************
- * ls_closest_approach
- *
- * Find the points of closest approach of two line segments: AB and CD.
- * Return the points (on AB) in p0 and (on CD) in p1.
- * 
- * Still to do:  Deal with the cases when a==b and c==d!
- */
-
-inline void ls_closest_approach(NUM p0[3], NUM p1[3], 
-			 NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
-  int cd_end;
-  NUM a[3],b[3],c[3],d[3];
-  NUM foo[3],bar[3];
-  NUM aa, bb, cc, dd;
-
-  NUM abp,cdp,abzp,cdzp;
-  char cd0=0;
-
-  /* Collapse C and D into the AB-perp plane */
-  diff_3d(b,b0,a0);
-  bb = norm_3d(b);
-  if(bb==0) {
-    /* a==b:  try point-line case */
-    cp_3d(p0,a0);
-
-    /* Move origin to c0 */
-    diff_3d(a,a0,c0);
-    diff_3d(d,d0,c0);
-
-    dd = norm_3d(d);
-    if(dd==0) {
-      /* Really degenerate case:  A==B and C==D */
-      cp_3d(p1,c0);
-      return;
-    }
-
-    aa = inner_3d(d,a) / dd;
-    if(aa < 0) 
-      cp_3d(p1,c0);
-    else if(aa > dd) 
-      cp_3d(p1,d0);
-    else {
-      scale_3d( a, d, aa / dd );
-      sum_3d(p1,a,c0);
-    }
-    
-    return; /* End of A==B case */
-  }
-
-  /* Rotate into the plane perpendicular to AB to solve the most general 
-     case */
-     
-  diff_3d(c,c0,a0); 
-  scale_3d(foo, b, inner_3d(c,b) / (bb*bb));
-  diff_3d(c,c,foo);
-
-  diff_3d(d,d0,a0);
-  scale_3d(foo, b, inner_3d(d,b) / (bb*bb));
-  diff_3d(d,d,foo);
-  
-  /* Find length along CD of the closest linear approach */
-  diff_3d(foo,c,d);
-  cdp = norm_3d(foo);         /* Projected length of cd */
-  
-  if(cdp != 0) {  /* No degeneracies... */
-    cdzp = inner_3d(c,foo) / cdp;  /* Projected distance of C.A. point from C */
-    
-    /* Fix the location of the CD portion, and stick in in p0.  */
-    if(cdzp <= 0)               /* C.A. point is before C on CD */
-      cp_3d(p1,c0);                    /* -- copy C0 to the C.A. point */
-    else if(cdzp >= cdp)        /* C.A. point is beyond D on CD */
-      cp_3d(p1,d0);                    /* -- copy D0 to the C.A. point */
-    else {                      /* C.A. point is on the CD segment (keep) */
-      diff_3d (p1, d0, c0);
-      scale_3d(p1, p1, cdzp / cdp);
-      sum_3d  (p1, p1, c0);
-    }
-
-    /* Carry on to the end */
-
-  } else {
-    /* c==d or ab and cd are parallel. */
-
-    /* Check if c==d. */
-    diff_3d(a,c0,d0);
-    dd = norm2_3d(a);
-    if(dd/size < 1e-9)
-          cp_3d(p1,c0);
-    else {
-
-      /* If we got here, AB and CD are parallel.   Try to make some
-	 sense of the whole situation:  if they don't line up, then 
-	 two endpoints are the correct places to compare.  If they 
-	 do line up, then an appropriate endpoint gets used. */
-
-      /* Put everything into a0-centric coordinates */
-      diff_3d(b,b0,a0);
-      diff_3d(c,c0,a0);
-      diff_3d(d,d0,a0);
-      
-      bb = norm_3d(b);
-      cc = inner_3d(b,c)/bb;
-      dd = inner_3d(b,d)/bb;
-      
-      if(cc>bb && dd>bb) {
-	/* cd line is beyond the far end of the ab line */
-	cp_3d(p0,b0);
-	cp_3d(p1, cc<dd ? c0 : d0);
-      }
-      else if(cc<0 && dd<0) {
-	/* cd line is before the near end of the ab line */
-	cp_3d(p0,a0);
-	cp_3d(p1, cc<dd ? d0 : c0);
-      } else if(cc>0 && cc<bb ) {
-	scale_3d(p0,b,cc/bb);
-	sum_3d(p0,p0,a0);
-	cp_3d(p1,c0);
-      } else /* if(dd>=0 && dd<=bb) */ {
-	scale_3d(p0,b,dd/bb);
-	sum_3d(p0,p0,a0);
-	cp_3d(p1,d0);
-      }
-      return;
-    }
-  }
-  
-  /* Now d contains the location of the closest approach on the CD segment */
-  /* We need only to find the location of closest approach between AB and  */
-  /* that point.  Remember, b, c, and d are all a0-centric, and bb contains*/
-  /* the length of ab. */
-
-  /* Could be optimized -- we clobbered this stuff above but made it at the very top. */
-  diff_3d(c,p1,a0);
-  diff_3d(b,b0,a0);
-
-  cc = inner_3d(c,b) / bb;
-  if( cc < 0 ) 
-    cp_3d(p0,a0);
-  else if(cc > bb) 
-    cp_3d(p0,b0);
-  else {
-    scale_3d(c, b, cc / bb );
-    sum_3d(p0,c,a0);
-  }
-
-  return;
-}
-
-#endif
 
 /**********************************************************************
  * ls_ls_dist
@@ -1312,174 +1157,160 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     
     for(missing=i=0;i<horde->n;i++) {
       if(!horde->stuff[i]){   /* On redos, skip missing elements */
-	if(missing > horde->n){
+	if(missing >= horde->n){
 	  fprintf(stderr,"hull bug:  eliminated all vertices!\n");
 	  exit(53);
 	}
-      } else /* element not missing - evaluate */ { 
-
+      } else if(!finite( ((VERTEX *)horde->stuff[i])->a)) {
 	/* Skip degenerate points too -- this should't be necessary
-	   if they've been pre-winnowed; but it's here for belt-and-
-	   suspenders security. */
-	if(!finite( ((VERTEX *)horde->stuff[i])->a)) {
-	  fprintf(stderr,"degen triggered in hull_2d\n"); 
+	   if they've been pre-winnowed; but it's here as a safety check.
+	*/ 
+	  fprintf(stderr,"degen or nan trigger in hull_2d\n"); 
 	  horde->stuff[i] = 0;
-	  i++;
-	  if(i>=horde->n)
-	    i=0;
-	}
+      } else {
 
-	ivec = ((VERTEX *)(horde->stuff[i]))->scr;
-	
-	/* Grab perpendicular bisector for this guy */
-	b0 = &(out[outdex].bisector[0]);
-	perp_bisector_2d(b0, 0, ((VERTEX *)((horde->stuff[i])))->scr);
-	
-	/* Check cache and if necessary calculate the right side */
-	if(cache_ok) { 
-	  /* Last item was kept -- copy its vertex info into the LHS. */
-	  right[0] = left[0];
-	  right[1] = left[1];
-	  jvec = ((VERTEX *)(horde->stuff[j]))->scr;
-	} else {
-	  /* Last item wasn't kept -- find the previous vertex and 
-	     calculate the intersection for the LHS. */
-	  if(j < 0) {
-	    for(j = ( (i>0) ? (i-1) : (horde->n - 1) );
-		(!horde->stuff[j]) && j!=i;
-		j = ( (j>0) ? (j-1) : (horde->n - 1) )
-		)
-	      ;
-	  }
-	  jvec = ((VERTEX *)(horde->stuff[j]))->scr;
-	  if(j==i) 
-	    right[1] = right[0] = NAN;
-	  else {
-	    perp_bisector_2d(b1, 0, jvec);
-	    intersection_2d(right, b0, b1);
-	  }
+	/* Neither infinite nor zero -- handle normally */
+      
+      ivec = ((VERTEX *)(horde->stuff[i]))->scr;
+      
+      /* Grab perpendicular bisector for this guy */
+      b0 = &(out[outdex].bisector[0]);
+      perp_bisector_2d(b0, 0, ((VERTEX *)((horde->stuff[i])))->scr);
+      
+      /* Check cache and if necessary calculate the right side */
+      if(cache_ok) { 
+	/* Last item was kept -- copy its vertex info into the LHS. */
+	right[0] = left[0];
+	right[1] = left[1];
+	jvec = ((VERTEX *)(horde->stuff[j]))->scr;
+      } else {
+	/* Last item wasn't kept -- find the previous vertex and 
+	   calculate the intersection for the LHS. */
+	if(j < 0) {
+	  for(j = ( (i>0) ? (i-1) : (horde->n - 1) );
+	      (!horde->stuff[j]) && j!=i;
+	      j = ( (j>0) ? (j-1) : (horde->n - 1) )
+	      )
+	    ;
 	}
-	
-	
-	/* Find next VERTEX */
-	for( k= (i+1)%(horde->n);
-	     (!horde->stuff[k]) && k != j;
-	     k = ( (k+1) % horde->n )
-	     )
-	  ;
-	kvec = ((VERTEX *)(horde->stuff[k]))->scr;
-
-	if(i==j)
-	  reject_collinear=0;
+	jvec = ((VERTEX *)(horde->stuff[j]))->scr;
+	if(j==i) 
+	  right[1] = right[0] = NAN;
 	else {
-	  NUM inorm = norm_2d(ivec); 
-	  NUM knorm = norm_2d(kvec);
-	  NUM jnorm = norm_2d(jvec);
-	  perp_bisector_2d(b1, 0, kvec);
-	  intersection_2d(left,b0,b1);
-	
-	  /* Check for collinearity with neighbors, either the 
-	   *  left or right side. 
-	   * It would shave a few usec to stash knorm somewhere and
-	   * reuse for inorm -- but I can't be bothered. */
-	  
-	  reject_collinear = 
-	    (inorm < 1e-6) 
-	    ||
-	    ((jnorm <= inorm) && jnorm != 0 && 
-	     fl_eq(inner_2d( ivec,jvec )
-		   , jnorm * inorm
-		   )
-	     )
-	    ||
-	    ((knorm <= inorm) && knorm != 0 &&
-	     fl_eq(inner_2d( ivec,kvec )
-		   , knorm * inorm
-		   ) 
-	     );
-	
+	  perp_bisector_2d(b1, 0, jvec);
+	  intersection_2d(right, b0, b1);
 	}
-
-	/* Only reject if the neighbors are less than 180 deg from each 
-	 * other and the right and left neighboring vertices are in the wrong
-	 * order (the neighbor bisectors crossed before hitting this one). 
-	 * 
-	 * Alternatively, reject if either neighbor is collinear and shorter
-	 * than the current one.
-	 */
-
-	a = cross_2d(jvec,kvec);
-	b = cross_2d(right,left);
-	//	if( ( (!(j==k)) && (a * b < 0) )
-	if( ( (!(j==k)) &&
-	      finite(a) && finite(b) && (a > 0 && b < 0))
-	    ||
-	    reject_collinear
+      }
+      
+      
+      /* Find next VERTEX */
+      for( k= (i+1)%(horde->n);
+	   (!horde->stuff[k]) && k != j;
+	     k = ( (k+1) % horde->n )
+	   )
+	;
+      kvec = ((VERTEX *)(horde->stuff[k]))->scr;
+      
+      if(i==j)
+	reject_collinear=0;
+      else {
+	NUM inorm = norm_2d(ivec); 
+	NUM knorm = norm_2d(kvec);
+	NUM jnorm = norm_2d(jvec);
+	perp_bisector_2d(b1, 0, kvec);
+	intersection_2d(left,b0,b1);
+	
+	/* Check for collinearity with neighbors, either the 
+	 *  left or right side. 
+	 * It would shave a few usec to stash knorm somewhere and
+	 * reuse for inorm -- but I can't be bothered. */
+	
+	reject_collinear = 
+	  (inorm < 1e-6) 
+	  ||
+	  ((jnorm <= inorm) && jnorm != 0 && 
+	   fl_eq(inner_2d( ivec,jvec )
+		 , jnorm * inorm
+		 )
+	   )
+	  ||
+	  ((knorm <= inorm) && knorm != 0 &&
+	   fl_eq(inner_2d( ivec,kvec )
+		 , knorm * inorm
+		 ) 
+	   );
+	
+      }
+      
+      /* Only reject if the neighbors are less than 180 deg from each 
+       * other and the right and left neighboring vertices are in the wrong
+       * order (the neighbor bisectors crossed before hitting this one). 
+       * 
+       * Alternatively, reject if either neighbor is collinear and shorter
+       * than the current one.
+       */
+      
+      a = cross_2d(jvec,kvec);
+      b = cross_2d(right,left);
+      //	if( ( (!(j==k)) && (a * b < 0) )
+      if( ( (!(j==k)) &&
+	    finite(a) && finite(b) && (a > 0 && b < 0))
+	  ||
+	  reject_collinear
 	  ) {
-	  
-	  /* reject */
-	  if(rejects) 
-	    dumblist_add(rejects,horde->stuff[i]);
+	
+	/* reject */
+	if(rejects) 
+	  dumblist_add(rejects,horde->stuff[i]);
+	
+	horde->stuff[i] = 0;
+	cache_ok = 0;
+	
+	if(i == (horde->n - 1)) {
+	  horde->n--;
+	  redo = 1;
+	}
+	
+	/* Back up to the previous accepted vertex, if there is one. */
+	if(j<i) {
+	  i=j-1; /* the one gets added back in by the for loop */
+	  outdex--;
+	}
+	j=-1;
+      } else {  /* End of rejection code; start of acceptance code */
+	
+	/* accept */
+	out[outdex].p[0] = left[0];
+	out[outdex].p[1] = left[1];
+	
+	/* assignment below */
+	if ( out[outdex].open = !(finite(left[0]) && finite(left[1]) 
+				  && fabs(cross_2d(ivec,kvec)>epsilon)) ) {
+	  out[outdex].a = ((VERTEX *)(horde->stuff[i]))->a + PI/2;
 
-	  horde->stuff[i] = 0;
-	  cache_ok = 0;
-
-	  if(i == (horde->n - 1)) {
-	    horde->n--;
-	    redo = 1;
-	  }
-	  
-	  /* Back up to the previous accepted vertex, if there is one. */
-	  if(j<i) {
-	    i=j-1; /* the one gets added back in by the for loop */
-	    outdex--;
-	  }
-	  j=-1;
-	} else {  /* End of rejection code; start of acceptance code */
-	  
-	  /* accept */
-	  out[outdex].p[0] = left[0];
-	  out[outdex].p[1] = left[1];
-
-	  /* assignment below */
-	  if ( out[outdex].open = !(finite(left[0]) && finite(left[1]) 
-				    && fabs(cross_2d(ivec,kvec)>epsilon)) ) {
-	    out[outdex].a = ((VERTEX *)(horde->stuff[i]))->a + PI/2;
-	    //	    out[outdex].a = atan2(kvec[1],kvec[0])+PI/2;
-	    if(out[outdex].a > PI) 
-	      out[outdex].a -= 2*PI;
-	  } else 
-	    out[outdex].a = atan2(out[outdex].p[1],out[outdex].p[0]);
-	  
-	  
-	  // I don't think that this is actually required 
-	  //   -- CED 24-Aug-2004
-	  //	  /* Clean up doubly-open case... */	  
-	  //	if(out[outdex].open
-	  //	     && outdex > 0
-	  //	     && out[outdex-1].open) {
-	  //	    out[outdex].p[0] = kvec[0]/2;
-	  //	    out[outdex].p[1] = kvec[0]/2;
-	  //	  }
-	  
-	  outdex++;
-	  cache_ok = 1;
-	  j=i;
-	  
-	  if(redo) {
-	    /* To get here, we have to be redoing the first part because
-	     * the last item in the list was rejected.  We only have to 
-	     * redo stuff until the first acceptance, whereupon we are done.
-	     */
-	    redo = 0;
-	    break;
-	  }
-	}          /* End of acceptance case*/
+	  if(out[outdex].a > PI) 
+	    out[outdex].a -= 2*PI;
+	} else 
+	  out[outdex].a = atan2(out[outdex].p[1],out[outdex].p[0]);
+	
+	outdex++;
+	cache_ok = 1;
+	j=i;
+	
+	if(redo) {
+	  /* To get here, we have to be redoing the first part because
+	   * the last item in the list was rejected.  We only have to 
+	   * redo stuff until the first acceptance, whereupon we are done.
+	   */
+	  redo = 0;
+	  break;
+	}
+      }          /* End of acceptance case*/
       }            /* End of evaluation case (non-skip) */
     }              /* End of for loop */
-	
-      
-      
+    
+    
+    
     /* Fix up the horde -- crunch it down to size. */
     for(j=i=0;i<horde->n;i++) {
       if(horde->stuff[i]) {
@@ -1495,18 +1326,18 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     fprintf(stderr,"Eliminated all vertices!\n");
     exit(57);
   }
-
+  
   /* Assertion test -- this should never happen. */
   if(horde->n != outdex) {
     fprintf(stderr,"Assertion failed!  outdex != horde->n (%d != %d)!\n",outdex,horde->n);
   }
-
-/* Clean up doubly-open 0-element case */
-if(horde->n == 1 || ( out[0].open && out[horde->n-1].open ) ) {
-  out[0].p[0] = ((VERTEX *)(horde->stuff[0]))->scr[0] / 2;
-  out[0].p[1] = ((VERTEX *)(horde->stuff[0]))->scr[1] / 2;
-}
-
-
- return;
+  
+  /* Clean up doubly-open 0-element case */
+  if(horde->n == 1 || ( out[0].open && out[horde->n-1].open ) ) {
+    out[0].p[0] = ((VERTEX *)(horde->stuff[0]))->scr[0] / 2;
+    out[0].p[1] = ((VERTEX *)(horde->stuff[0]))->scr[1] / 2;
+  }
+  
+  
+  return;
 }

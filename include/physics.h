@@ -33,7 +33,7 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts); /* calculate B field at vertex */
 void f_curvature(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
 void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 
-void f_p_eqa(VERTEX *V, HULL_VERTEX *verts); /* ang. equipartition pressure */
+void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts); /* ang. equipartition pressure */
 void f_curv_hm(VERTEX *V, HULL_VERTEX *verts); /* harmonic-mean curvature  */ 
 void f_curv_m(VERTEX *V, HULL_VERTEX *verts);  /* normal mean curvature */ 
 
