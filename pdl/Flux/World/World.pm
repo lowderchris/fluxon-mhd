@@ -534,7 +534,8 @@ use PDL;
 sub render_lines {
     my $w = shift;
     my $twiddle = shift;
-
+    my $range=shift;
+    
 
     release3d;
 
@@ -547,8 +548,15 @@ sub render_lines {
     $prgb = $rgb * pdl(1,0,0);
 
     nokeeptwiddling3d;
-    line3d($poly,$rgb);
-    hold3d;
+
+    if(defined $range) {
+      points3d($range,zeroes($range),{PointSize=>0});
+      hold3d;
+      line3d($poly,$rgb);
+    } else {
+      line3d($poly,$rgb);
+      hold3d;
+    }
     points3d($poly,$prgb,{PointSize=>4});
     release3d;
 
