@@ -1,0 +1,17 @@
+This is the FLUX project directory.  
+
+Subdirs are:
+	tests -- specific applications that use the modules
+	         (a little out of date perhaps)
+
+
+        lib -- the central libflux.a core code
+
+	doc -- design documents
+
+	include -- 'c' header files 
+	           (these get installed into /usr/local/include/flux/)
+	
+        pdl -- PDL glue code and perl module
+
+		   

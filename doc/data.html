@@ -1,0 +1,56 @@
+<html>
+<head><title>FLEM modules: data.c</title>
+</head>
+<body>
+
+<h2>FLEM modules: data.c</h2>
+
+<dl>
+<p><dt><code>barf</code>, <code>init_barf</code>
+<dd>Primitive exit handling.  Not used much -- most stuff just exits if it has to.
+That's probably a bug.
+
+<p><dt><code>new_label</code>, <code>new_vertex_label</code>
+<dd>Code to generate new unique identifiers for fluxons and vertices.  The identifiers
+are integers and uniqueness is only guaranteed across a single save file:  as each
+new vertex or fluxon number is encountered, a cached largest-value is incremented.  
+The numbers are longs, so there are plenty.  
+
+<p><dt><code>new_fluxon</code>, <code>new_vertex</code>, <code>new_flux_concentration</code>, <code>new_world</code>
+<dd>Generators for the principal data structures.  Each one returns the appropriate type
+of flux concentration, stuffed with parameters taken from the parameter list.
+
+<p><dt><code>spawn_new_vertex</code>
+<dd>Generator and linker for new vertices:  spawns the new vertex and links it in with
+the neighbor lists and linear geometry of another, already-existing vertex.
+
+<p><dt><code>unlink_vertex</code>, <code>add_vertex_pos</code>, <code>add_vertex_after</code>
+<dd>Vertex linked-list handlers.  Fluxons are, at heart, linked lists of vertices.
+
+<p><dt><code>clear_links</code>, <code>tree_top</code>, <code>tree_walk</code>, <code>tree_find</code>, <code>tree_insert</code>, <code>tree_balance_check</code>, <code>tree_unlink</code>, <code>tree_balance</code>, <code>world_state_name</code>
+<dd><h4>Tree routines</h4>
+
+<p>Generified Tree handlers -- deal with the tree structures that are used for so many
+of our data structures.
+
+<p>Since there are several trees and they need to be threaded in different ways, 
+the tree infrastructure is separate than the data structures themselves:  FLUXONs, 
+flux concentraitons, etc. are all linked into a couple of trees that thread through
+each datum.  So you have to feed some ancillary integers to each of the routines, pointing
+to where in the target structure the tree information lives!  You also end up having
+to do a lot of explicit casting -- the variables are all void * in here.
+
+<p><dt><code>new_dumblist</code>, <code>free_dumblist</code>, <code>dumblist_quickadd</code>, <code>dumblist_add</code>, <code>dumblist_delete</code>, <code>dumblist_rm</code>, <code>dumblist_grow</code>, <code>dumblist_qsort</code>, <code>dumblist_sort</code>, <code>dumblist_snarf</code>, <code>dumblist_clear</code>
+<dd><h4>Dumblist routines</h4>
+
+<p>  Dumblists are just generic list structures -- they're smart, dynamically allocated arrays.  Each dumblist grows to its high water mark and stays fully allocated until you blow the whole thing away.  They're designed as a compromise
+data structure for the numerous small lists of things that we end up dealing with.  
+Because they're generic, you end up doing a lot of casting of (VOID *)'s  
+
+<p>Most of the routines are pretty obvious.  Some catches:  <code>dumblist_rm</code> deletes a single item, whose position is known, from a dumblist.  <code>dumblist_delete</code> 
+deletes all instances of a particular item, whose position is not known, from a dumblist.
+<code>dumblist_qsort</code> is the recursive engine for <code>dumblist_sort</code>.
+
+</dl>
+</body>
+</html>

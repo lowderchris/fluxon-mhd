@@ -1,0 +1,27 @@
+This is Version 0.6 of FLUX, the Field Line Universal relaXer.  
+
+Author:
+	Craig DeForest, Southwest Research Institute
+	deforest@boulder.swri.edu
+
+
+You may modify and/or distribute FLUX under the terms of the GNU Public
+License ("GPL"), version 2.  You should have received a copy of the
+license in the file labelled "COPYRIGHT" in this directory.
+
+If you find the code useful, you are requested (but not required) to 
+let the authors know how you used it.
+
+
+FLUX IS NOT SUBJECT TO WARRANTY OF ANY KIND.  CAVEAT USER.
+
+For an overview of the design of FLUX, look in the file modules.html.
+
+FLUX is currently under development.
+
+FLUX is designed to integrate easily with the perl/PDL data processing
+environment.
+
+
+
+

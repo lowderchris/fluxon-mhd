@@ -1,0 +1,328 @@
+<html>
+<head>
+<title>Design notes: FLR</title>
+</head>
+<body>
+<h2>Design notes for flr: a Field Line Relaxer in C</h2>
+<i>Last update:11-Sep-2000</i>
+
+<p>flr is designed as the "middle ground" in a total field line model.
+It takes a field line description as input (there is a C interface to the
+data structures themselves; or it can read stdin) and relaxes to the minimum
+allowed energy state. 
+
+<p>flr implements DeForest's simplex linear interpolation scheme for
+energetic field line relaxation.
+
+<hr>
+<h3>Contents</h3>
+<a name="contents">
+
+<ul>
+<li><a href="#data">Data Structures</a>
+<li><a href="#neighborhoods">Neighborhoods</a> (geometry)
+<li><a href="#algorithms">Algorithms</a>: A few necessary algorithms forming the meat of the technique
+<li><a href="#model">Model</a>: Some considerations about the detailed physical mode.
+<li><a href="#io">I/O</a>: file formats, graphics, &amp;c.
+
+
+<hr>
+<a name="data"><h4>Data structures</h4>
+
+<p>The boundary conditions are set by the location of physical magnetic
+flux concentrations.  Notionally, flux concentrations are pointlike
+objects in this model.  They are represented with a data structure
+that is used to anchor the endpoints of field lines.  Free endpoints
+(such as are on open field lines) are not attached to any flux
+concentration, but tracked ones are.  A flux concentration holds a
+tree of field lines which start on it, and a total amount of flux.
+(This is redundant since the sum of the field lines' fluxes is the
+same as the flux that belongs to the concentration, but there aren't
+enough flux concentrations for the wastage to be a problem.)  The flux
+concentration also contains a label, a location, and a size.
+
+<p>The physical entities to be modeled are <b>field lines</b>.  A
+field line is a structure that points off into a doubly-linked list of
+vertices, and also has some ancillary information in the field line
+itself: a vertex counter, a register to hold the total energy
+associated with the field line, and some notation about the motion
+rules for the boundary points, if any.  (For example, a semaphore is
+needed to determine whether line endpoint is closed back to the other
+endpoint, anchored to a boundary condition, or free).  The field lines
+form a B-tree, indexed by field line label.
+
+<p>Vertices contain links forward and backward, coordinates, and a list
+of neighboring vertices on other field lines (or on this one).  In addition,
+they contain some sort of pointer to the field line that owns them.  The 
+pointer is needed to be able to recover the magnetic flux associated with the
+line, without traversing all the way to the end of the fieldline.  On the
+other hand, it feels like a wasteful use of space.  If it turns out you can
+get by without it, for God's sake edit it out of the code!
+
+<hr>
+
+<a name="neighborhoods"><h4>Neighborhoods</h4>
+<p>A crucial notion for this computation is that of <i>neighborhood</i> -- the
+neighborhood of a line is the region into which its associated flux can 
+notionally spread.  It is the locus that is closer to the line than to 
+any other, and is important for the formalism.  I'm using "neighborhood" and 
+not "Voronoi Cell", because the Voronoi cells of distributed objects are 
+not simple to calculate, so a quicker-and-dirtier notion is used.
+
+<p>The "neighborhood" of a field line, for the purposes of energetics
+and forces, is the locus that is inside the planar Voronoi cell formed
+by funky-projecting the field line and its nearest neighbors into the plane
+perpendicular to the field line.  "Funky-projection" is chosen for
+the simulation, but I'm starting with "projection of the point of closest
+approach". 
+
+<p>Funky-projection should have some (TBD) geometrical considerations added.
+
+<p>There is a duality between tiepoints and line segments.  I use the two
+terms interchangeably in the following discussion, using a tiepoint to refer
+to the line segment that <i>follows</i> it along the field line. 
+The difference matters in the discussion on forces (elsewhere in this document).
+
+<p>In addition, <i>neighbors</i> are the tiepoints which are responsible
+for forming the boundaries of a given tiepoint's neighborhood.  They are
+``interesting'' from a bookkeeping standpoint:  keeping track of the neighbors
+greatly reduces the computation required to find the neighborhood of each
+point.  It removes a power of N from the computation's order.
+
+<p>In particular, the 2-D neighborhood of each tiepoint is interesting 
+because the tiepoints are what is moved during each timestep.  The basic
+neighborhood-finding algorithm is as follows: 
+
+<p><dl>
+<dt><b>Compile a list of neighbor candidates</b>
+<dd>The candidate neighbors are the former neighbors and <i>their</i>
+neighbors.  no others need apply, so long as no point moves more than 
+half of its neighborhood's width in any timestep.   The list should 
+contain no duplicate <i>tiepoints</i>, though duplicate fieldlines
+are allowed (it's conceivable for two different parts of a field line to
+form different parts of a neighborhood's boundary).
+
+<dt><b>Traverse the neighbor candidate fieldlines to the local point of
+closest approach to the current tiepoint's field line segment.</b>
+<dd>
+
+<dt><b>Project the closest-approach points into the plane perpendicular to 
+the current
+fieldline at the current tiepoint</b>
+<dd>The plane is perpendicular to the
+sum of the directon vectors of the two field line segments at the
+tiepoint.  This yields a list of candidate points in the local field
+line perpendicular plane.  Duplicates should be eliminated at this stage --
+if two candidate points are adjacent to the same tiepoint on a 
+candidate neighboring line, then one should be eliminated.  The candidate
+points should also get sorted into circular order.
+
+<dt><b>Eliminate candidates until only true neighbors remain.</b>
+<dd>A candidate is a neighbor only if its closest-approach point is inside
+the angle formed by the adjacent candidates' bisector lines (see figure)
+<b>(to do: make figure)</b>.
+
+</dl>
+<p>
+The remaining set of points (or, more precisely, the tiepoints with which 
+they are associated) are the new neighbor list.   The area of the 
+locus is readily calculated by summing the areas of the individual triangles
+formed by adjacent neighbors and the original point.
+
+<p> By calculating the change in the area of each neighbor triangle,
+it is possible to develop a formula for the ``force'' on the current
+tiepoint, based on the distribution of its neighborhood. My original
+idea was to minimize the energy numerically without reference to
+force, but upon reflection (and after talking with Kankelborg about
+his rather different method of doing this), it seems that this will
+converge more quickly if the energy is differentiated analytically.
+
+
+<hr>
+<a name="algorithms"><h4>Required algorithms</h4>
+
+<p>Some subsidiary algorithms are required.  Aside from the mechanical
+ones of adding and substracting vertices from field lines, it's necessary
+to be able to:
+
+<p><dl>
+<dt><b>Project neighboring vertices into the perpendicular plane</b>
+<dd>This requires walking along the neighboring field line to find the
+locally closest approach to the current field line, before projecting.
+The projection should also take into account how far along the current
+line the point of closest approach really is.
+
+<p>
+
+<hr>
+<a name="model"><h4>Physical model</h4>
+
+<p>
+At the crux of the model is discovering a workable law for relaxing
+the shapes of modeled field lines.  The usual half-cell offset between
+locations at which derivatives are defined, and locations at which
+spatial values are defined, holds here.  The forces on each field line
+segment are notionally more or less centered on the line, while motion
+happens at the tiepoints at either end of the line.  Forces (per unit
+length) are calculated and assigned to each line segment,
+tiepoint-wise; then the FPL's at each tiepoint are calculated by
+averaging the two adjacent line segment forces. 
+
+<hr>
+<a name="io"><h4>File formats and I/O</h4>
+
+<p>Flux concentraion locations are the fundamental input to the model. 
+What is needed is a way to map flux concentration motion and evolution
+as the model progresses.  The input to the fieldline model is a series of
+input files that each contain a description of current flux concentration
+location.  A flux concentration file has to be able not only to describe
+a new map of concentrations, but also to describe how to change an old
+map to fit a new map.
+
+<p>Some file-wide information has to go at the top of the file.  Information
+at the top of the file includes the timestep number and other stuff that is
+TBD, in keyword/value format.
+
+<p>Individual flux concentration descriptions are marked with
+keywords.  Concentrations are labelled with numbers, so each line
+begins with NEW, DELETE, MOVE, SPLIT, JOIN, EMERGE, or CANCEL.  NEW and
+DELETE are there to set up the file, and act on individual flux
+concentrations.  SPLIT/JOIN allow a single flux concentrations to split into
+two concentrations that contain the same total flux, or for multiple
+concentrations to merge into a single one.  EMERGE and CANCEL are special
+cases of SPLIT and JOIN that act on emerging flux.  They allow spontaneous
+generation and cancellation of pairs of flux concentrations.  All the
+keywords are chosen to have different first letters, so that they may
+be abbreviated :-).
+
+<p>There should be another keyword for moving small bits of flux around, 
+between flux concentrations.  This needs some thought.
+
+<p>Some keywords exist to define fieldline linkages and vertices.  These
+are primarily intended for save-and-restore functionality, so the whole
+suite of motion type commands is not available -- only definition commands.
+These keywords are "LINE" (to define a fieldline) and "VERTEX" (to define
+a vertex within a particular field line).
+
+<p>An additional keyword, FRAME, separates frames in the simulation.
+For example, if the flux tracker is feeding data directly into the 
+field line simulator, the FRAME keyword ells the simulator to stop and 
+simulate the physics before updating the field again.
+
+<p>Fields are whitespace delimited and variable-length, for ease of parsing
+with sscanf().  Blank lines are ignored.
+
+<p>Line formats:
+<dl>
+
+<p><dt><code><b>N[EW]</b> &lt;label&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt; &lt;flux&gt;</code>
+<dd>Creates a new flux concentration out-of-the-blue (no connection map is
+implied!)
+
+<p><dt><code><b>D[ELETE]</b> &lt;label&gt;
+<dd>Deletes the flux concentration &lt;label&gt; from the list.
+
+<p><dt><code><b>M[OVE]</b> &lt;label&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt; [&lt;flux&gt;]
+<dd>Moves the specified flux concentration to the specified location.
+If the flux value is specified, then the flux is updated too.  It is
+not clear what this means physically -- but it will need dealing with,
+because magnetogram images do have noise.
+
+<p><dt><code><b>S[PLIT]</b> &lt;label&gt; &lt;newlabel&gt; &lt;flux1&gt; &lt;flux2&gt;
+<dd>Splits the specified flux concentrations into two different concentrations
+that are colocated.  Should probably be followed by MOVE lines for the two
+separate "child" concentrations.
+
+<p><dt><code><b>J[OIN]</b> &lt;label1&gt; &lt;label2&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt; [&lt;flux&gt;]
+<dd>Joins the two flux concentrations into one that has the same 
+label as the first one, is located at the specified coordinates, and
+has the specified flux (if specified). 
+
+<p><dt><code><b>E[MERGE]</b> &lt;label1&gt; &lt;label2&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt; &lt;x1&gt; &lt;y1&gt; &lt;z1&gt; &lt;flux&gt;
+<dd>Produces two opposite polarity flux concentrations at
+(x,y,z) and (x1,y1,z1).  The first one has the specified flux; the second one has the opposite
+value.  This is different than two N(ew) operations because it implies that the
+two flux concentrations are connected and should be treated differently by the
+field line modeler than two simple additions.
+
+<p><dt><code><b>C[ANCEL]</b> &lt;label1&gt; &lt;label2&gt;
+<dd>The named flux concentrations are both deleted.  They should have 
+roughly opposing flux values.  This is different than two DELETE lines because
+it implies that the two concenctrations are cancelling and should be treated
+differently by the field line modeler than two simple deletions.
+
+<p><dt><code><b>L[INE]</b> &lt;label1&gt; &lt;label2&gt; &lt;FL_label&gt; &lt;flux&gt;
+<dd>A field line is created between flux concentrations &lt;label1&gt; and &lt;label2&gt;, carrying &lt;flux&gt; units of magnetic flux.  The concentrations
+must exist, and the field line's label &lt;FL_label&gt; must be unique in the
+file.  The flux concentrations must have opposite sign, and the field line is
+rearranges so that (A) it always has positive flux, and (B) it always goes
+(as you might expect) from the positive flux concentration to the negative one.
+
+<p><dt><code><b>V[ERTEX]</b> &lt;FL_lab&gt; &lt;pos&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;
+<dd>A vertex is added to the specified field line, at the position indicated. 
+For practical purposes, position counting starts at 1.  Negative positions
+count backwards from the end of the fieldline.  To add to the beginning
+of the fieldline, use position 1.  To add to the end of the fieldline, use
+either a huge position or -2.  The positions 0 and -1 refer to the endpoints
+of the fieldline, which are anchored to the flux concentration.  Access
+to them is left in the I/O space for completeness, but you probably shouldn't
+be messing with them.
+
+<p><dt><code><b>FRAME</b> &lt;Frame_no&gt;
+<dd>A new timestep begins here.  The tracker uses this as a check that the
+frame numbers are still synched.
+
+<p><dt><code><b>FINISHED</b>
+<dd>The timestep ends here.  The tracker sends this when it's done
+sending all the data from a particular frame; the simulator uses this as
+a cue to run its physics before reading more data.
+
+
+</dl>
+
+<p>
+<h4>A sample file</h4>
+
+<p>Here's a sample flux concentration file:
+
+<p><blockquote><pre>
+##############################
+# Flux run 1-Sep-2000 00:00 -- 2-Sep-2000 00:00
+# John Q. Scientist
+# 
+# Distance units are 1-Mm pixels.
+# Flux units are x10^19 Mx.
+#
+# 2 frames
+
+FRAME 0 
+N  1    15.4    20.1    0    18.0
+N  2	19.2	18.0	0   -10.1
+N  5	20.3	33.2	0    15.3
+N  3	11.0	 5.7    0   121.9
+N  4	6.1      9.5    0   -35.3
+FINISHED with frame 0
+
+FRAME 1
+M  1    15.9    22.1    0    16.0
+M  2	20.0	17.0	0   -10.1
+M  5	20.2	33.0	0    15.7
+M  3	12.1	 8.0    0   127.0
+M  4	6.0      9.4    0   -35.3
+E  6   7    7.0    4.1    0    7.1      3.0    0   22.0
+FINISHED with frame 1
+</pre>
+</blockquote>
+
+The file describes four flux concentrations which appear in Frame 0
+and move in Frame 1, and two concentrations (labels 6 and 7) which
+emerge in Frame 1.  Concentration 6 has +22x10<sup>19</sup> Mx, and 7 has 
+-22x10<sup>19</sup> Mx.
+
+<hr>
+
+
+
+
+
+
