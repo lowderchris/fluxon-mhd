@@ -5,6 +5,10 @@
  * calculations.  The 'force laws' manipulate vertex-local 
  * quantities; you may include additional local simulation steps
  * by adding additional routines that carry them out. 
+ *
+ * The force laws actually calculate force per unit length along
+ * the fluxon; the relaxation step should multiply the f/l times
+ * the length of each segment.
  * 
  * Quasi-local simulation steps such as reconnection that require
  * physical quantities in the neighbors will require a second
@@ -13,8 +17,6 @@
  * force-law structure.
  *
  *
- *
- * 
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Southwest Research Institute, 2004
  * 
@@ -42,8 +44,9 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
   {"f_curvature","(OLD) simple curvature force over B (DEPRECATED)",f_curvature},
   {"f_pressure_equi","(OLD) 2001 pressure law over B (DEPRECATED)",f_pressure_equi},
-  {"f_pressure_eq","Angular equipartition pressure law",f_pressure_eq},
-  {"f_curv","Curvature force law (harmonic mean curvature)",f_curv},
+  {"f_curv_hm","Curvature force law (harmonic mean curvature)",f_curv_hm},
+  {"f_curv_m","Curvature force law (mean curvature)",f_curv_m},
+  ///  {"f_p_eqa","Angular equipartition pressure law",f_pressure_eq},
   {"f_vertex","Vertex distribution pseudo-force",f_vertex},
   {0,0,0}
 };
@@ -403,22 +406,22 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
     diff_3d(vec2,V->x,V->prev->x);
     scale_3d(vec2,vec2,Bmag/norm_3d(vec2));
     sum_3d(V->b_vec,vec1,vec2);
-  } elsif(V->next) {
+  } else if(V->next) {
     diff_3d(vec1,V->next->x,V->x);
-    scale_3d(V->b_vec,Bmag/norm_3d(vec1));
-  } elsif(V->prev) {
+    scale_3d(V->b_vec,V->b_vec,Bmag/norm_3d(vec1));
+  } else if(V->prev) {
     diff_3d(vec1,V->x,V->prev->x);
-    scale_3d(V->b_vec,Bmag/norm_3d(vec1));
+    scale_3d(V->b_vec,V->b_vec,Bmag/norm_3d(vec1));
   } else {
     fprintf(stderr,"b_eqa: got an invalid VERTEX! I quit!\n");
     exit(99);
   }
 
 }
-		       
+
 
 /**********************************************************************
- * f_curv
+ * f_curv_hm
  * Curvature `force':   (B^ . \del) B^ 
  *      = b^_x ( db^_x / dx ) + b^_y ( db^_y / dy ) + b^_z ( db^_z / dz )
  * 
@@ -427,15 +430,16 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
  * The curvature force is a vertex-centered force.  There's actually 
  * a little too much information:  not only do we get an angle and a 
  * length, we get an extra length too (there are *two* legs out of the
- * segment, not just one, and they have differing lengths).  I use 
- * the harmonic mean because that's dominated by the smaller of the
- * two lengths rather than by the larger.
+ * segment, not just one, and they have differing lengths).  
+ *
+ * f_curv_hm uses the harmonic mean to find the curvature at the vertex,
+ * which lets the smaller radius dominate the curvature.
  *
  * f_curv is multiplied by the magnetic field magnitude, unlike
  * its deprecated predecessor, f_curvature.
  * 
  */
-void f_curv(VERTEX *V, HULL_VERTEX *verts) {
+void f_curv_hm(VERTEX *V, HULL_VERTEX *verts) {
   NUM recip_l1, recip_l2, recip_len, len;
   NUM b1hat[3];
   NUM b2hat[3];
@@ -465,10 +469,55 @@ void f_curv(VERTEX *V, HULL_VERTEX *verts) {
     V->a = len;
 }
 
-					  
+/**********************************************************************
+ * f_curv_m
+ * Curvature `force':   (B^ . \del) B^ 
+ *      = b^_x ( db^_x / dx ) + b^_y ( db^_y / dy ) + b^_z ( db^_z / dz )
+ * 
+ * but b^ is just l^.
+ *
+ * The curvature force is a vertex-centered force.  There's actually 
+ * a little too much information:  not only do we get an angle and a 
+ * length, we get an extra length too (there are *two* legs out of the
+ * segment, not just one, and they have differing lengths).  
+ *
+ * f_curv_m uses the standard mean to find the curvature at the vertex;
+ * this treats the curvature as spread throughout the fluxon.
+ *
+ * f_curv is multiplied by the magnetic field magnitude, unlike
+ * its deprecated predecessor, f_curvature.
+ * 
+ */
+void f_curv_m(VERTEX *V, HULL_VERTEX *verts) {
+  NUM l1, l2, recip_len, len;
+  NUM b1hat[3];
+  NUM b2hat[3];
+  NUM curve[3];
+  NUM force[3];
 
-		  
+
+  if(!V->next || !V->prev) 
+    return;
+
+  diff_3d(b2hat,V->next->x,V->x);
+  scale_3d(b2hat,b2hat, 1.0 / (l2 = norm_3d(b2hat)));
+
+  diff_3d(b1hat,V->x,V->prev->x);
+  scale_3d(b1hat,b1hat, 1.0 / (l1 = norm_3d(b1hat)));
+
+  recip_len =  2 / ( l1 + l2 );
   
+  diff_3d(curve,b2hat,b1hat);
+  scale_3d(curve,curve, recip_len * V->b_mag);
+
+  sum_3d(V->f_v,V->f_v,curve);
+
+  V->f_v_tot += norm_3d(curve);
+
+  if(V->a < 0 || V->a > ( len = ( (l2  < l1) ? l2 : l1) ) ) /* assignment */
+    V->a = len;
+}
+
 
 
 

@@ -501,8 +501,8 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     /* Grab neighbors & nearby from vertex & its siblings */
     snarf_list(workspace2,&v,1); 
 
-    if(v->next)     snarf_list(workspace2,&(v->next),1);
-    if(v->prev)     snarf_list(workspace2,&(v->prev),1);
+    //    if(v->next)     snarf_list(workspace2,&(v->next),1);
+    //    if(v->prev)     snarf_list(workspace2,&(v->prev),1);
 
     /* Grab siblings of all the neighbors & nearby */
     expand_list(workspace2);
@@ -513,8 +513,8 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     /* Remove duplicates to save time in the next step */
     dumblist_sort(workspace,winnow_cmp_1);
 
-    /* Grab siblings of all those guys */
-    expand_list(workspace);
+    //    /* Grab siblings of all those guys */
+    //    expand_list(workspace);
 
   }
 
