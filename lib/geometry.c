@@ -1075,6 +1075,7 @@ void sort_by_angle_2d(DUMBLIST *horde) {
     VERTEX *v1 = (VERTEX *)(horde->stuff[i]);
     if(!v1 || !finite(v1->a) || !finite(v1->r)) {
       dumblist_rm(horde,i);
+      printf("X"); fflush(stdout);
       i--;
     }
   }
@@ -1124,7 +1125,7 @@ void sort_by_angle_2d(DUMBLIST *horde) {
 #define MOD_INC(a,n) ( ( (++(a)) < (n) ) ? (a) : ((a)=0) )
 #define MOD_DEC(a,n) ( ( (--(a)) >= 0  ) ? (a) : ((a)=(n)-1) )
 #define MOD_NEXT(a,n) ( ((a)<((n)-1)) ? ((a)+1) : 0 )
-#define MOD_PREV(a,n) ( ((a)>0) ? ((a)-1) : 0 )
+#define MOD_PREV(a,n) ( ((a)>0) ? ((a)-1) : ((n)-1) )
 
 void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   NUM epsilon=1e-19; // double-precision roundoff
@@ -1140,6 +1141,14 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   if(horde->n < 1) 
     return;
 
+  if(horde->n == 1) {
+    perp_bisector_2d( &(out[0].bisector[0]),0,((VERTEX *)(horde->stuff[0]))->scr);
+    out[0].open = 1;
+    out[0].p[0] = out[0].p[1] = 0;
+    out[0].a_l = ((VERTEX *)(horde->stuff[0]))->a + PI/2;
+    out[0].a_r = ((VERTEX *)(horde->stuff[0]))->a - PI/2;
+    return;
+  }
 
   /* Sort out debugging level. Kind of a kludge, but what the hey... */
   { 
@@ -1151,8 +1160,11 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   }
 
 
-
+    
   sort_by_angle_2d(horde);
+
+  if(verbosity >= 4) 
+    printf("hull_2d: got %d candidates...\n",horde->n);
 
 
   /* Get ready for main loop -- on entry, the first two candidates
@@ -1165,13 +1177,14 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
   perp_bisector_2d( &(out[ i ].bisector[0]), 0, iv->scr );
   perp_bisector_2d( &(out[i_r].bisector[0]), 0, rv->scr );
-  intersection_2d( out[i_r].p, iv->scr, rv->scr );
+  intersection_2d( out[i_r].p, out[i_r].bisector, out[ i ].bisector );
   a = iv->a - rv->a; TRIM_ANGLE(a);
   if(a < 0 ||
-     !isfinite(out[i_r].p[0]) || !isfinite(out[i_r].p[1])) {
+     !finite(out[i_r].p[0]) || !finite(out[i_r].p[1])) {
     out[i_r].p[0] = out[i_r].p[1] = 0;
     out[i_r].open = 1;
-  }
+  } else
+    out[i_r].open = 0;
 
   /* Main loop */
   do {
@@ -1180,55 +1193,75 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
       char open=0;
       
-
       /*** Find next guy and prep his bisector if necessary ***/
       for(i_l=MOD_NEXT(i,n);  i_l != i && !horde->stuff[i_l]; MOD_INC(i_l,n))
 	;
       lv = (VERTEX *)(horde->stuff[i_l]);
       if(!been_there)
-	perp_bisector_2d( &(out[i_l].bisector[0]), 0, lv->scr );
+	perp_bisector_2d( out[i_l].bisector, 0, lv->scr );
       
+      if(verbosity >= 5) 
+	printf("\tpos %3d: i_r=%3d, i_l=%3d, l_scr:%5.3g,%5.3g, scr:%5.3g,%5.3g , r_scr:%5.3g,%5.3g\n\t\t",i,i_r,i_l,lv->scr[0],lv->scr[1],iv->scr[0],iv->scr[1],rv->scr[0],rv->scr[1]);
+
+
       /*** Check for pathologies ***/
       if(i_r == i || i_l == i) {
+	fflush(stdout);
 	fprintf(stderr,"hull_2d: eliminated all vertices! I give up.\n");
 	exit(54);
       }
 
 
+      if(iv->r == 0)
+	goto reject;
 
       /*** Check colinearity and opentude on right & left ***/
       /* (right could be handled by caching, but it's pretty cheap) */
       b = iv->a - rv->a;
-      TRIM_ANGLE(a);
-      if( b < EPSILON && b > -EPSILON && rv->r < iv->r )
+      TRIM_ANGLE(b);
+      if( b < EPSILON && b > -EPSILON && rv->r < iv->r ) {
+	if(verbosity>=5)
+	  printf("REJECT: colinear and more distant than right side");
 	goto reject; /* Colinear with (and farther than) right-side vertex */
-
+      }
 
       a = lv->a - iv->a;
       TRIM_ANGLE(a);
-      if( a < EPSILON && a > -EPSILON && lv->r < iv->r )
+      if( a < EPSILON && a > -EPSILON && lv->r <= iv->r ) {
+	if(verbosity>=5)
+	  printf("REJECT: colinear and more distant than left side");
 	goto reject;  /* Colinear with (and farther than) left-side vertex */
+      }
 
-      if( a > 0 && a < PI-EPSILON && a > -PI+EPSILON ) {
+      if( a > EPSILON && a < PI-EPSILON) {
 	/* Line isn't open on the left, so it intersects on the left.   */
-	intersection_2d( out[ i ].p, lv->scr, iv->scr);
+	intersection_2d( out[ i ].p, out[ i ].bisector, out[i_l].bisector );
+	out[i].open = 0;
 	
 
-	if( b>0 && b < PI-EPSILON && b > -PI+EPSILON ) {
+	if( b > EPSILON && b < PI-EPSILON) {
+
 	  /* Line isn't open on the right either, so compare intersections */
 	  a = cross_2d( out[i_r].p, out[ i ].p );
 
 	  if( !finite(a) ) {
-	    fprintf(stderr,"ASSERTION FAILED in hull_2d: intersection should exist (but doesn't)\n");
+	    printf("ASSERTION FAILED in hull_2d: intersection should exist (but doesn't)\n\t\tleft_p: %5.2g, %5.2g ;   right_p: %5.2g, %5.2g",out[i].p[0],out[i].p[1],out[i_r].p[0],out[i_r].p[1]);
+	    printf("\n\t\tleft_b: %5.2g, %5.2g, %5.2g;  this_b: %5.2g, %5.2g, %5.2g; right_b: %5.2g, %5.2g, %5.2g\n",out[i_l].bisector[0],out[i_l].bisector[1],out[i_l].bisector[2],out[i].bisector[0],out[i].bisector[1],out[i].bisector[2],out[i_r].bisector[0],out[i_r].bisector[1],out[i_r].bisector[2]);
+	    printf("\t\tlv->a=%5.2g, iv->a=%5.2g, rv->a=%5.2g,   lv-iv: %5.2g,   iv-rv: %5.2g\n",lv->a*180/PI,iv->a*180/PI,rv->a*180/PI,(lv->a-iv->a)*180/PI,(iv->a-rv->a)*180/PI);
+	    goto reject;
 	  }
 
 	  /*** If intersections were in the wrong order, reject the point ***/
-	  if(a < 0) 
+	  if(a < 0) {
+	    if(verbosity>=5)
+	      printf("REJECT: wrong order");
 	    goto reject;
+	  }
 	}
 
       } else {
 	/* Line is open on the left -- set the left point to zero */
+	if(verbosity >= 5) printf(" looks open... ");
 	out[i].p[0] = out[i].p[1] = 0;
 	out[i].open = 1;
       }
@@ -1240,6 +1273,9 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       i = i_l;
       rv = iv;
       iv = lv;
+
+      if(verbosity>=5) 
+	printf("Accept.");
       
       if(0) {
       reject: 
@@ -1252,13 +1288,14 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	 */
 	if(rejects) 
 	  dumblist_add(rejects,horde->stuff[i]);
+
 	horde->stuff[i] = 0;
 
 	if(been_there || (i > i_r)) {
 
 	  i = i_r;
 	  iv = rv;
-	  
+
 	  for(i_r=MOD_PREV(i,n); i_r!=i && !horde->stuff[i_r]; MOD_DEC(i_r,n))
 	    ;
 	  rv = (VERTEX *)(horde->stuff[i_r]);
@@ -1269,56 +1306,67 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  i = i_l;
 	  iv = lv;
 
-	  intersection_2d( out[i_r].p, iv->scr, rv->scr );
+
+
 	  a = iv->a - rv->a; TRIM_ANGLE(a);
-	  if(a<0 || !isfinite(out[i_r].p[0]) || !isfinite(out[i_r].p[1])) {
+	  if(a<0) {
 	    out[i_r].p[0] = out[i_r].p[1] = 0;
 	    out[i_r].open = 1;
+	  }  else {
+	    intersection_2d( out[i_r].p, out[i_r].bisector, out[ i ].bisector );
+	    out[i_r].open = 0;
 	  }
 	}
 	
 	terminus = i_r;
+
       }
 
-    }  
+      if(verbosity >= 5) 
+	printf(" terminus=%d\n",terminus);
+
+    } /* end of non-zeroed-out check */
     
   } while(i != terminus || (i==0 && !been_there));  /* End of main loop */
 
   /* Finished -- now crunch the dumblist and, simultaneously, the output. */
   { 
     int j;
-    HULL_VERTEX *ihv, *jhv;
-    VERTEX **vj;
-    vj = (VERTEX **)(horde->stuff);
-    ihv=jhv = out;
-    for(i=j=0; i<horde->n; i++, ihv++) {
-      VERTEX *hsi = horde->stuff[i];
+
+    for(i=j=0; i<horde->n; i++) {
+      VERTEX *hsi = (VERTEX *)(horde->stuff[i]);
       if(hsi) {
 	if(i != j) {
-	  *(vj++) = hsi;
-	  *(jhv++) = *(ihv++);
+	  if(verbosity >5) printf("  %d:%d->%d ",hsi,i,j);
+	  horde->stuff[j] = hsi;
+	  out[j] = out[i];
 	}
 	j++;
       }
     }
     horde->n = j;
+    if(verbosity>5) printf("\n");
   }
 
   /* Finally - insert appropriate atan2 angular fields into the output */
   {
     HULL_VERTEX *hv = out;
-    for(i=0;i<horde->n;i++) {
+    for(i=0;i<horde->n;i++,hv++) {
       if(!hv->open)
 	hv->a_r = hv->a_l = atan2(hv->p[1], hv->p[0]);
       else {
 	hv->a_l =(((VERTEX *)(horde->stuff[i]))->a ) + PI/2;
-	hv->a_r =(((VERTEX *)(horde->stuff[MOD_PREV(i,horde->n)]))->a) - PI/2;
+	hv->a_r =(((VERTEX *)(horde->stuff[MOD_NEXT(i,horde->n)]))->a) - PI/2;
       }
+      if(verbosity>5) 
+	printf(" %d(%c):a_l=%.3g,a_r=%.3g,p1=%.3g,p2=%.3g  ",i,(hv->open)?'o':'c',180/PI*hv->a_l,180/PI*hv->a_r,hv->p[0],hv->p[1]);
     }
+    if(verbosity>5)
+      printf("\n");
   }
 }
 
-#ifdef never_ever 
+#ifdef never 
 /**********************************************************************
  * hull_2d_older
  * 
@@ -1358,7 +1406,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
  */
 
 
-void hull_2d_older(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
+void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   NUM epsilon=1e-19; // double-precision roundoff
   NUM left[2], right[2], b1[3], *b0;
   NUM a,b;
@@ -1383,7 +1431,7 @@ void hull_2d_older(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     (horde->n>1) ? 
        (((VERTEX **)(horde->stuff))[1])->line->fc0->world->verbosity : 
     0;
-
+  verbosity = 5;
 
   if( verbosity >= 4 ) {
     int i;
@@ -1422,7 +1470,7 @@ void hull_2d_older(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	/* Skip degenerate points too -- this should't be necessary
 	   if they've been pre-winnowed; but it's here as a safety check.
 	*/ 
-	fprintf(stderr,"degen or nan trigger in hull_2d\n"); 
+	printf("degen or nan trigger in hull_2d\n"); 
 	horde->stuff[i] = 0;
       } else {
 	
@@ -1553,12 +1601,20 @@ void hull_2d_older(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	/* assignment below */
 	if ( out[outdex].open = !(finite(left[0]) && finite(left[1]) 
 				  && fabs(cross_2d(ivec,kvec)>epsilon)) ) {
-	  out[outdex].a = ((VERTEX *)(horde->stuff[i]))->a + PI/2;
+	  out[outdex].a_l = ((VERTEX *)(horde->stuff[i]))->a + PI/2;
+	  {
+	    int k;
+	    for(k=MOD_NEXT(i,horde->n);k!=i && !horde->stuff[k]; MOD_INC(k,horde->n))
+	      ;
+	    out[outdex].a_r = ((VERTEX *)(horde->stuff[k]))->a - PI/2;
+	  }
+	  if(out[outdex].a_l > PI) 
+	    out[outdex].a_l -= 2*PI;
+	  if(out[outdex].a_r < -PI)
+	    out[outdex].a_r += 2*PI;
 
-	  if(out[outdex].a > PI) 
-	    out[outdex].a -= 2*PI;
 	} else 
-	  out[outdex].a = atan2(out[outdex].p[1],out[outdex].p[0]);
+	  out[outdex].a_l = out[outdex].a_r = atan2(out[outdex].p[1],out[outdex].p[0]);
 	
 	outdex++;
 	cache_ok = 1;
@@ -1610,5 +1666,5 @@ void hull_2d_older(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   
   return;
 }
-
 #endif
+

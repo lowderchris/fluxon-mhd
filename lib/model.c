@@ -84,6 +84,57 @@ NUM *world_update_mag(WORLD *a, char global) {
 }
 
 /**********************************************************************
+ * world_collect_stats
+ *
+ * Collects neighbor and force stats about the world.  
+ * Mainly useful as a relaxation diagnostic; see 'stats' in the PDL
+ * XS routines.
+ *
+ */
+static struct VERTEX_STATS gl_st;
+static long w_c_s_springboard(FLUXON *fl, int lab, int link, int depth) {
+  fluxon_collect_stats(fl,&gl_st);
+  return 0;
+}
+
+VERTEX_STATS *world_collect_stats(WORLD *a) {
+  gl_st.n = 0;
+  gl_st.f_acc = 
+    gl_st.f_max =
+    gl_st.f_tot_acc =
+    gl_st.f_tot_max =
+    gl_st.n_acc =
+    gl_st.n_max = 0;
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_c_s_springboard, 0);
+  return &gl_st;
+}
+
+void fluxon_collect_stats(FLUXON *fl, VERTEX_STATS *st) {
+  VERTEX *v = fl->start->next;
+  while(v && v->next) {
+    NUM f;
+    st->n++;
+
+    f = norm_3d(v->f_t);
+    if( f > st->f_max ) 
+      st->f_max = f;
+    st->f_acc += f;
+
+    f = v->f_s_tot + ( v->f_v_tot + v->prev->f_v_tot ) / 2;
+    if( f > st->f_tot_max )
+      st->f_tot_max = f;
+    st->f_tot_acc += f;
+
+    if(v->neighbors.n > st->n_max)
+      st->n_max = v->neighbors.n;
+    st->n_acc += v->neighbors.n;
+
+    v = v->next;
+  }
+}
+   
+
+/**********************************************************************
  *
  * world_relax_step -- relax the world according to a given set of force
  * laws.  You feed in a world and a tau-timestep.
@@ -287,15 +338,17 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     
     diff_3d(foo,v->x,v->prev->x);
     d1 = norm_3d(foo);
+
     
-    d = 4/(1/d + 1/d1 + 1/r_cl + (v->prev ? 1/v->prev->r_cl : 1/r_cl));
-    
-    if(r_cl < 0) {
+    if(r_cl <= 0) {
       fprintf(stderr,"ASSERTION FAILED!  Negative distance %g on vertex %d!\n",r_cl,v->label);
       fprintf(stderr,"vertex has %d neighbors\n",v->neighbors.n);
-      r_cl = 0; /* hope the problem goes away */
+      r_cl = 1; /* hope the problem goes away */
     }
     
+    
+    d = 4/(1/d + 1/d1 + 1/r_cl + (v->prev ? 1/v->prev->r_cl : 1/r_cl));
+
     f_denom = v->f_v_tot + 0.5 * (v->f_s_tot + v->prev->f_s_tot);
     force_factor = (f_denom == 0) ? 1 : ( norm_3d(v->f_t)  / f_denom);
     if(force_factor == 0) force_factor = 1e-3;
@@ -316,7 +369,10 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
 
     //    scale_3d(a,v->f_t, t * r_cl * 1/(1/sqrt(force_factor) + 1/force_factor));
     
-    scale_3d(a,v->f_t,t*r_cl*force_factor);
+    /* `forces' are forces per unit length, so multiply times d to bring them down to normal-force level. */
+    /* Throw in another factor of d to account for the fact that you have to take bigger steps, not just */
+    /* equal-sized steps, where d is large. */
+    scale_3d(a,v->f_t, t * d * d * force_factor );
     //scale_3d(a,v->f_t, t * r_cl * r_cl * force_factor);
 
     sum_3d(v->x,v->x,a);	     
@@ -392,6 +448,10 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
      "nearby" information as needed. */
   for(i=j=0; i<dl->n || j<vn->n;) {
     if( (j >= vn->n) || (i < dl->n && (dl->stuff[i] < vn->stuff[j]) ) ) {
+      if(verbosity >= 6) {
+	printf ("[i=%d,j=%d,nbor:%x(%d)]  ",i,j,(dl->stuff[i]),((VERTEX *)(dl->stuff[i]))->label);
+	fflush(stdout);
+      }
       dumblist_add( &( ((VERTEX *)(dl->stuff[i]))->nearby ), v );
       i++;
       cpflag=1;
@@ -715,11 +775,10 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
 
   /* Grow the buffer if necessary. */
   if(voronoi_bufsiz < horde->n) {
-    if(voronoi_buf)
-      free(voronoi_buf);
-    
-    voronoi_bufsiz = horde->n*1.5;
-    voronoi_buf = (HULL_VERTEX *)malloc(voronoi_bufsiz * sizeof(HULL_VERTEX));;
+    voronoi_bufsiz = horde->n*2;
+
+    voronoi_buf = (HULL_VERTEX *)realloc(voronoi_buf, voronoi_bufsiz*sizeof(HULL_VERTEX));
+
     if(!voronoi_buf) {
       fprintf(stderr,"Couldn't get memory in hull_neighbors!\n");
       exit(99);
@@ -758,7 +817,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   if(verbosity >= 5){
     printf("hull_neighbors:  hull trimming gives:\n");
     for(i=0;i<horde->n;i++) 
-      printf("%d ",((VERTEX *)(horde->stuff[i]))->label);
+      printf("%d ",((VERTEX *)(horde->stuff[i]))->label); fflush(stdout);
     printf("\n");
   }
   
@@ -948,27 +1007,24 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
     VERTEX *Vnew;
     NUM P[3], P0[3],P1[3];
 
+    /* Find location of new prior vertex: 1/3 along the previous vec */
+    sum_3d(P0, V->prev->x, V->prev->x);
+    sum_3d(P0, P0, V->x);
+    scale_3d(P0, P0, 1.0/3);
+
+    /* Find location of new next vertex: 2/3 along the current vec */
+    sum_3d(P1, V->next->x, V->next->x);
+    sum_3d(P1, P1, V->x);
+    scale_3d(P1, P1, 1.0/3);
+
     /* Find centroid of triangle */
     sum_3d(P,V->prev->x, V->next->x);
     sum_3d(P, P, V->x);
     scale_3d(P,P,1.0/3);
 
-    /* Find centroid of prior triangle */
-    sum_3d(P0,V->prev->x, V->x);
-    scale_3d(P0, P0, 0.5);
-    sum_3d(P0,P0,V->prev->x);
-    sum_3d(P0,P0,P);
-    scale_3d(P0, P0, 1.0/3);
-
-    /* Find centroid of following triangle */
-    sum_3d(P1,V->x, V->next->x);
-    scale_3d(P1, P1, 0.5);
-    sum_3d(P1, P1, V->next->x);
-    sum_3d(P1, P1, P);
-    scale_3d(P1, P1, 1.0/3);
-
-    /* Write the new location in the current vertex */
-    cp_3d(V->x, P);
+    /* Find location of new current vertex: halfway between P and V->x */
+    sum_3d(P, P, V->x);
+    scale_3d(V->x, P, 0.5);
 
     /* Make the new prior vertex, and link */
     add_vertex_after(V->line, V->prev,
@@ -976,10 +1032,6 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
     add_vertex_after(V->line, V,
 		     new_vertex(0, P1[0],P1[1],P1[2], V->line));
     return 1;
-
-    /*    ret += fix_curvature(V->prev, curve_thresh); */
-    /*    ret += fix_curvature(V->next, curve_thresh);*/
-    /*    ret += fix_curvature(V, curve_thresh);*/
 
   }
   

@@ -58,5 +58,19 @@ int fix_curvature(VERTEX *V, NUM curve_thresh);
 int fluxon_fix_curvature(FLUXON *F, NUM curve_thresh);
 int global_fix_curvature(WORLD *w, NUM curve_thresh);
 
+
+typedef struct VERTEX_STATS {
+  long n;         /* Number of vertices included in stats */
+  NUM f_acc;      /* average resultant magnitude of force */
+  NUM f_max;      /* maximum resultant magnitude */
+  NUM f_tot_acc;  /* average sum-of-magnitudes of forces  */
+  NUM f_tot_max;  /* maximum resultant force */
+  NUM n_acc;    /* average number of neighbors */
+  NUM n_max;    /* maximum number of neighbors */
+} VERTEX_STATS;
+
+VERTEX_STATS *world_collect_stats(WORLD *a);
+void fluxon_collect_stats(FLUXON *fl, VERTEX_STATS *st);
+
 #endif /* overall file include */
 

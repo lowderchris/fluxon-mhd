@@ -217,9 +217,9 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   tp->prev = 0;
   tp->next = 0;
   tp->label = new_vertex_label(label);
-  
-  dumblist_clear((void *)tp + v_neighbor_of);
-  dumblist_clear((void *)tp + v_nearby_of);
+
+  dumblist_clear( &(tp->neighbors) );
+  dumblist_clear( &(tp->nearby) );
 
   return tp;
 }  
@@ -361,6 +361,14 @@ void unlink_vertex(VERTEX *v) {
 
 void delete_vertex(VERTEX *v) {
   unlink_vertex(v);
+  if(v->neighbors.stuff) {
+    free(v->neighbors.stuff);
+    v->neighbors.stuff=0;
+  }
+  if(v->nearby.stuff) {
+    free(v->nearby.stuff);
+    v->nearby.stuff=0;
+  }
   free(v);
 }
 
@@ -1136,7 +1144,7 @@ void dumblist_add(DUMBLIST *dl, void *a) {
   /* If it's a null list, allocate some space (this could 
      actually fit in the extend-list conditions, but what the heck)
    */
-  if(!dl->size || !dl->stuff) {
+  if(!dl->stuff) {
     dl->stuff = (void **)malloc( 16 * sizeof(void *));
     dl->size = 16;
     dl->n = 1;
@@ -1219,32 +1227,17 @@ void dumblist_grow(DUMBLIST *dl, int size) {
       exit(-30);
     }
     else 
-      fprintf(stderr,"dumblist_grow: Warning -- size is %g!\n");
+      fprintf(stderr,"dumblist_grow: Warning -- size is %D!\n",newsize);
   }
 
-  foo = (void **)malloc(newsize * sizeof(void *));
-  if(!foo) {
-    fprintf(stderr,"malloc failed in dumblist_grow.\n");
-    exit(-31);
-  }
-  
-  if(dl->stuff) {
-    a = dl->stuff;
-    b = foo;
-    for(i=0;i<dl->n;i++)
-      *(b++) = *(a++);
-    
-    free(dl->stuff);
-  } else {
-    dl->n = 0;
-  }
-  dl->stuff = foo;
+  dl->stuff = (void **)realloc(dl->stuff,newsize * sizeof(void *));
   dl->size = newsize;
 }
     
 
 static void **dls_wk = 0;
-static long dls_size = 0;
+static long dls_size = 0;         /* Size of dumblist we can currently qsort */
+static long dls_sz = 0;           /* Size of allocated space for qsorting */
 static int ((*dls_cmp)(void *a, void *b));
 
 /* Sort the given dumblist -- just the n elements starting at l --
@@ -1415,20 +1408,27 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   void **dl_a;
   int i;
 
-  if(dl->n <= 100) {
+  if( dl->n <= 500 ) { 
     dumblist_shellsort(dl,cmp);
     dumblist_crunch(dl,cmp);
   } else {
     /* Make sure that there's enough scratch space */
     if(dls_size < dl->size) {
-      if(dls_wk) 
-	free(dls_wk);
+      long levels = 2;
+      unsigned long a;
       /* This is kind of wasteful but should be tiny compared to the
 	 main data structure -- so don't be makin' global gather_neighbor
-	 calls if you can possibly avoid it!
+	 calls if you can possibly avoid it.  
+
+	 Reserve enough space for two copies at each level, and enough
+	 levels to cover the whole depth.
+
       */
-      dls_wk = (void **)malloc((1 + (3 * dl->size)/2) * 31 * sizeof(void *));
-      dls_size = (3 * dl->size)/2;
+      dls_size = a = dl->size * 2;
+      while(a >>= 1)   /* shift and test for nonzero */
+	levels++;
+      dls_sz = (2*dls_size)*levels;
+      dls_wk = (void **)realloc(dls_wk, dls_sz * sizeof(void *));
     }
     
     /* Launch the sort */
@@ -1490,7 +1490,7 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
 inline void dumblist_clear(DUMBLIST *foo) {
   foo->n = 0;
   foo->size = 0;
-  foo->stuff=NULL;
+  foo->stuff= 0;
 }
 
 void dd_vertex_printer(void *a) {

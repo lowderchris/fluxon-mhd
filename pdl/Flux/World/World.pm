@@ -393,6 +393,7 @@ sub forces {
 	while($s=shift) {
 	    _set_force($me,$i++,$s); # Set forces one at a time (in World.xs)
 	}
+	_set_force($me,$i,'');
     }
 }
 
@@ -463,6 +464,25 @@ be in trouble, guv!
 
 =pod
 
+=head2 stats
+
+=for usage
+
+print $a->stats->{n_av};
+
+=for ref
+
+Produces a statistical overview of the simulation, in a hash:  average force
+per unit length on each vertex, average unsigned-total force on each vertex,
+and average number of neighbors per vertex.  The answer comes back in a perl hash ref.
+
+=cut
+
+# Implemented in World.xs
+*stats = \&_stats;
+
+=pod
+
 =head2 render_lines
 
 =for usage
@@ -493,12 +513,69 @@ sub render_lines {
     
     $poly = pdl(0,0,0)->glue(1,@poly);
     $rgb = pdl(0,0,0)->glue(1,@rgb);
+    $prgb = $rgb * pdl(1,0,0);
 
+    nokeeptwiddling3d;
     line3d($poly,$rgb);
+    hold3d;
+    points3d($poly,$prgb,{PointSize=>4});
+    release3d;
 
     keeptwiddling3d  if($twiddle);
     twiddle3d();
     nokeeptwiddling3d;
+}
+
+=pod
+
+
+=head2 polyline
+
+=for ref
+
+Dumps a giant polyline for all fluxons in the simulation.
+
+=cut
+
+sub polyline {
+    my $w = shift;
+    my @l,$l1;
+    @l = map { $_->polyline } $w->fluxons;
+    $l1 = @l[0];
+    return $l1->glue(1,@l[1..$#l]);
+}
+
+
+
+=head2 bfield
+
+Dumps the magnetic field value for all fluxons in the simulation
+
+=cut
+
+sub bfield {
+    my $w = shift;
+    my @l,$l1;
+    @l = map { $_->bfield } $w->fluxons;
+    $l1 = @l[0];
+    return $l1->glue(1,@l[1..$#l]);
+}
+
+
+=head2 dump_vecs
+
+=for ref
+
+Dumps all vectors for all fluxons (see Flux::Fluxon::dump_vecs)
+
+=cut
+
+sub dump_vecs {
+    my $w = shift;
+    my @l,$l1;
+    @l = map { $_->dump_vecs } $w->fluxons;
+    $l1 = @l[0];
+    return $l1->glue(1,@l[1..$#l]);
 }
   
 1;

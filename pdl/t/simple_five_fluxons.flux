@@ -3,6 +3,10 @@
 # a simple test case with two fluxons of two elements each
 
 FRAME 1
+GLOBAL FORCES b_eqa f_curv_hm f_p_eqa_radial f_vertex
+GLOBAL STATE 1  (LOADING)
+GLOBAL PHOTOSPHERE <NONE>
+
 NEW 1   -0.5    -1      00      1
 NEW 2   -0.5    1       00      -1
 
@@ -13,7 +17,7 @@ NEW 5   0    -1     -0.5    1
 NEW 6   0    1      -0.5    -1
 
 NEW 7   0    -1    0.5  1
-NEW 8   0   -1     0.5  -1
+NEW 8   0   1     0.5  -1
 
 NEW 9   0   -1     0  1
 NEW 10  0    1     0  -1

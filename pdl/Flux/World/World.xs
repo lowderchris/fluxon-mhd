@@ -38,6 +38,13 @@
 #include <stdio.h>
 #include <string.h>
 
+
+#include "pdl.h"
+#include "pdlcore.h"
+static Core* PDL; /* PDL core functions (run-time linking)     */
+static SV* CoreSV;/* gets perl var holding the core structures */
+
+
 /******************************
  * Some helper routines that are used internally
  */
@@ -50,6 +57,8 @@ static long fluxons_helper(void *tree, int lab_of, int ln_of, int depth) {
 	svREFCNT_dec(sv);
  return 0;
 }
+
+
 
 /**********************************************************************
  **********************************************************************
@@ -268,7 +277,11 @@ CODE:
  w = SvWorld(wsv,"Flux::World::_set_force");
  if(where >= N_FORCE_FUNCS-1)
    croak("force index %d not allowed 0<i<%d\n",where,N_FORCE_FUNCS-1);
- for(j=0;
+
+ if(*what==0)
+   w->f_funcs[where]=0;
+ else {
+  for(j=0;
      FLUX_FORCES[j].func && strcmp(FLUX_FORCES[j].name,what);
      j++)
        ;
@@ -283,6 +296,7 @@ CODE:
      } else {
         w->f_funcs[where] = FLUX_FORCES[j].func;
      }
+  }
 
 AV *
 _photosphere(wsv,plane=0)
@@ -363,5 +377,42 @@ NV time
 PREINIT:
  WORLD *w;
 CODE:
- w = SvWorld(wsv,"Flux::World::world_relax_step");
+ w = SvWorld(wsv,"Flux::World::relax_step");
  world_relax_step(w,time);
+
+
+HV *
+_stats(wsv)
+SV *wsv
+PREINIT:
+ WORLD *w;
+ struct VERTEX_STATS *st;
+CODE:
+ w = SvWorld(wsv,"Flux::World::stats");
+ st = world_collect_stats(w);	
+ RETVAL = newHV();
+ hv_store(RETVAL, "n",    1, newSViv(st->n),0);
+ if(st->n>0) {
+   hv_store(RETVAL, "f_av",  4, newSVnv(st->f_acc/st->n),     0);	
+   hv_store(RETVAL, "f_max", 4, newSVnv(st->f_max),           0);
+   hv_store(RETVAL, "fs_av", 5, newSVnv(st->f_tot_acc/st->n), 0);
+   hv_store(RETVAL, "fs_max",6, newSVnv(st->f_tot_max),       0);
+   hv_store(RETVAL, "n_av",  4, newSVnv(st->n_acc/st->n),     0);
+   hv_store(RETVAL, "n_max", 5, newSVnv(st->n_max),           0);
+ }
+OUTPUT:
+ RETVAL
+
+
+BOOT:
+/**********************************************************************
+ **********************************************************************
+ **** bootstrap code -- load-time dynamic linking to pre-loaded PDL
+ **** modules and core functions.   **/
+ perl_require_pv("PDL::Core");
+ CoreSV = perl_get_sv("PDL::SHARE",FALSE);
+ if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux::Fluxon)");
+
+ PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
+ if (PDL->Version != PDL_CORE_VERSION)
+    Perl_croak(aTHX_ "Flux::Fluxon needs to be recompiled against the newly installed PDL");

@@ -106,4 +106,52 @@ Return all the vertex locations in a fluxon, as a 3xn PDL.
 
 # Implemented in Fluxon.xs
 
+=pod
+
+=head2 bfield
+
+=for usage
+  
+  $bfield = $fluxon->bfield;
+
+=for ref
+
+Return the B vector at each vertex location in the simulation.
+
+=cut
+
+# Implemented in Fluxon.xs
+
+=pod
+
+=head2 dump_vecs
+
+=for usage
+
+  $stuff = $fluxon->dump_vecs;
+
+=for ref
+
+Returns a xN PDL containing, in each row:
+
+=over 3
+
+=item cols  0- 2: vertex location
+
+=item cols  3- 5: B field vector
+
+=item cols  6- 8: following segment partial force
+
+=item cols  9-11: vertex partial force
+    
+=item col   12:   sum-of-magnitudes for the segment force components
+
+=item col   13:   sum-of-magnitudes for the vertex force components
+
+=back
+
+=cut
+
+# Implemented in Fluxon.xs
+
 1;

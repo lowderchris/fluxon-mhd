@@ -109,10 +109,6 @@ void f_curvature(VERTEX *V, HULL_VERTEX *verts) {
   sum_3d(V->f_v,V->f_v,curve);
   V->f_v_tot += norm_3d(curve);
 
-  if(V->a < 0 || V->a > (len = ( (recip_l2 > recip_l1) ? (1.0/recip_l2) : (1.0/recip_l1) ) ) );
-    V->a = len;
-
-    /*  printf("f_curvature: V%4d, force=(%g,%g,%g)\n",V->label,force[0],force[1],force[2]);*/
 
 }
   
@@ -165,12 +161,11 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
      * it's the angle to the vertex.
      */
 
-    deltaphi = (right->a_r - left->a_l);
-    if(deltaphi < -1e-4 ) /* Should be 0; allow for slop */
-      deltaphi += 2 * M_PI;
+    deltaphi = (left->a_l - right->a_r);
+    TRIM_ANGLE(deltaphi);
 
-    if(deltaphi > M_PI) 
-      fprintf(stderr,"Assertion failed!  deltaphi > M_PI in f_pressure_equi (%18.12g deg)\n",deltaphi*180/M_PI);
+    if(deltaphi < -EPSILON)
+      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg)\n",deltaphi*180/M_PI);
     
     /*    fprintf(stderr," VERTEX #%d, i=%d: deltaphi=%g\tr=%g\n",N->label,i,deltaphi,N->r);*/
 
@@ -244,38 +239,13 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
    *  1/r.
    */
   diff_3d(d1,V->x,V->prev->x);
-  scale_3d(d1, d1, (d1nr = 1.0/(d1n = norm_3d(d1)))); /* assignment */
+  scale_3d(d1, d1, (d1nr = 1.0 / norm_3d(d1))); /* assignment */
 
   diff_3d(d2,V->next->x, V->x);
-  scale_3d(d2, d2, (d2nr = 1.0/(d2n = norm_3d(d2)))); /* assignment */
+  scale_3d(d2, d2, (d2nr = 1.0 / norm_3d(d2)));  /* assignment */
   
   fn = (d1nr - d2nr);
   V->f_v_tot += fabs(fn);
-
-  /* Curvature-attractive force.  This keeps vertices from wandering
-   * away from zones of more curvature.  It's meant to balance the
-   * repulsive force, allowing more concentration of vertices where
-   * they're needed.  The force is the secant of the vertex angle on each side.
-   */
-  
-  /* Exclude endpoint-neighbors  (endpoints already excluded) */
-  if(0 && V->next->next  && V->prev->prev) {
-    NUM d0[3], d3[3];
-    NUM d0n, d3n, sec1, sec2;
-    
-    diff_3d(d0,V->prev->x,V->prev->prev->x);
-    d0n = norm_3d(d0);
-    
-    diff_3d(d3,V->next->next->x,V->next->x);
-    d3n = norm_3d(d3);
-    
-    sec1 = d0n / inner_3d(d0,d1);
-    sec2 = d3n / inner_3d(d2,d3);
-
-    V->f_v_tot += fabs(sec2 - sec1);
-    fn +=  sec2 - sec1;
-  }
-
 
   /* Proximity-attractive force.  This attracts vertices toward places
    * where field lines are interacting. 
@@ -298,7 +268,7 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
    */
 
   sum_3d(force,d1, d2);
-  scale_3d(force, force, 0.1 * fn / norm_3d(force));
+  scale_3d(force, force, 0.5 * fn / norm_3d(force));
 
   /*printf("f_vertex: V%4d, force=(%g,%g,%g)\n",V->label,force[0],force[1],force[2]);*/
 
@@ -570,7 +540,7 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts) {
     righta = right->a_r - v->a;   
     TRIM_ANGLE(righta);
 
-    lefta = left->a_l - v->a_l;
+    lefta = left->a_l - v->a;
     TRIM_ANGLE(lefta);
 
     
@@ -590,7 +560,7 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts) {
       scr2d[1] += s * fperp +  c * fpar;
     }
 
-    if(V->line->fc0->world->verbosity >= 4) {fprintf(stderr,"f_p_eqa_radial: VERTEX %4d, neighbor %5d, a=%7.3g, r=%7.3g, righta=%7.3g(%c), lefta=%7.3g(%c), fperp=%7.3g, fpar=%7.3g\n",V->label,v->label,v->a*180/PI,v->r,lefta*180/PI,left->open?'o':'c',righta*180/PI,right->open?'o':'c',fperp,fpar);
+    if(V->line->fc0->world->verbosity >= 4) {printf("f_p_eqa_radial: VERTEX %4d, neighbor %5d, a=%7.3g, r=%7.3g, righta=%7.3g(%c), lefta=%7.3g(%c), fperp=%7.3g, fpar=%7.3g\n",V->label,v->label,v->a*180/PI,v->r,lefta*180/PI,left->open?'o':'c',righta*180/PI,right->open?'o':'c',fperp,fpar);
     }
 
 
@@ -599,7 +569,7 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts) {
    vec_mmult_3d(scr3d,pmatrix,scr2d); /* Convert to 3-D */
    //  mat_vmult_3d(scr3d,pmatrix,scr2d); /* COnvert to 3-D */
 
-  if(V->line->fc0->world->verbosity >= 3) { fprintf(stderr,"f_p_eqa_radial: VERTEX %4d (fluxon %4d); total force is %7.3g, %7.3g, %7.3g\n", V->label, V->line->label, scr3d[0],scr3d[1],scr3d[2]); }
+  if(V->line->fc0->world->verbosity >= 3) { printf("f_p_eqa_radial: VERTEX %4d (fluxon %4d); total force is %7.3g, %7.3g, %7.3g\n", V->label, V->line->label, scr3d[0],scr3d[1],scr3d[2]); }
 
 
   sum_3d(V->f_s,V->f_s,scr3d);

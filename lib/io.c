@@ -363,7 +363,7 @@ int footpoint_action(WORLD *world, char *s) {
 		  (void *)(f_funcs[i]) = (void *)foo;
 		else {
 		  static char bstr[160];
-		  sprintf(bstr,"Couldn't parse GLOBAL FORCE LINE (bad force '%s')",o2);
+		  sprintf(bstr,"Couldn't parse GLOBAL FORCE LINE (bad force at '%s')",s+off);
 		  badstr = bstr;
 		  goto global_escape;
 		}
