@@ -47,7 +47,8 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_curv_hm","Curvature force law (harmonic mean curvature)",f_curv_hm},
   {"f_curv_m","Curvature force law (mean curvature)",f_curv_m},
   {"f_p_eqa_radial","Angular equipartition pressure, radial forces",f_p_eqa_radial},
-  {"f_vertex","Vertex distribution pseudo-force",f_vertex},
+  {"f_vertex","Vertex distribution pseudo-force (DEPRECATED)",f_vertex},
+  {"f_vert","Vertex distribution pseudo-force",f_vert},
   {0,0,0}
 };
 
@@ -215,7 +216,7 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
 }
 
 /**********************************************************************
- * fluxon_vertex_force
+ * f_vert
  * Pseudoforce that moves vertices along field lines.  Used to keep them 
  * nicely evened out along the lines and to attract them to 
  * curvature.
@@ -223,6 +224,76 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
  * Strictly speaking, this is two forces:  a vertex repulsive force
  * and another force that attracts vertices toward curvature.  But
  * the two should always be used together, so they're included together.
+ *
+ * f_vert is optimized for use with the newer forces that are straight
+ * force-per-unit-length: it is artificially strengthened by the 
+ * local B field magnitude.
+ * 
+ */
+void f_vert(VERTEX *V, HULL_VERTEX *verts) {
+  NUM force[3];
+  NUM d1[3], d2[3];
+  NUM d1nr,d2nr,fn,d1n,d2n;
+
+  /* Exclude endpoints */
+  if(!V->next || !V->prev)
+    return;
+
+
+  /* Repulsive force from nearest neighbors.  The force drops as 
+   *  1/r.
+   */
+  diff_3d(d1,V->x,V->prev->x);
+  scale_3d(d1, d1, (d1nr = 1.0 / norm_3d(d1))); /* assignment */
+
+  diff_3d(d2,V->next->x, V->x);
+  scale_3d(d2, d2, (d2nr = 1.0 / norm_3d(d2)));  /* assignment */
+  
+  fn = (d1nr - d2nr);
+  V->f_v_tot += fabs(fn);
+
+  /* Proximity-attractive force.  This attracts vertices toward places
+   * where field lines are interacting. 
+   */
+  if(V->prev && V->next) {
+    NUM r_clp, r_cln;
+
+    r_clp = 1.0 / V->prev->r_cl;
+    r_cln = 1.0 / V->r_cl;
+
+    V->f_v_tot += fabs(0.5 * (r_cln - r_clp));
+    fn += 0.5 * (r_cln - r_clp);
+  }
+    
+
+  /* Generate a vector along the field line and scale it to the 
+   * calculated force.  
+   *
+   * Finally, stick the force where it belongs in the VERTEX's force vector.
+   */
+
+  sum_3d(force,d1, d2);
+  scale_3d(force, force, 0.2 * fn * (V->b_mag + V->prev->b_mag) / norm_3d(force));
+
+  /*printf("f_vertex: V%4d, force=(%g,%g,%g)\n",V->label,force[0],force[1],force[2]);*/
+
+  sum_3d(V->f_v, V->f_v, force);
+
+  return;
+}
+
+/**********************************************************************
+ * f_vertex
+ * Pseudoforce that moves vertices along field lines.  Used to keep them 
+ * nicely evened out along the lines and to attract them to 
+ * curvature.
+ * 
+ * Strictly speaking, this is two forces:  a vertex repulsive force
+ * and another force that attracts vertices toward curvature.  But
+ * the two should always be used together, so they're included together.
+ *
+ * f_vertex is optimized for the older forces (f_pressure_equi and f_curvature)
+ * that are b-normalized.  Use f_vert with the newer ones.
  * 
  */
 void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
@@ -356,43 +427,9 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
 
   V->b_mag = Bmag;
 
-  /********************
-   * Now calculate the B direction -- it's the average direction of the
-   * two unit vectors associated with the VERTEX (unless the VERTEX is
-   * an endpoint in which case it's the direction of the endpoint!)
-   * Since final endpoints don't have neighbors or forces (fenceposting), 
-   * the no-next-guy case should never happen, but it's here for completeness.
-   */
-  if(V->next && V->prev) { 
-
-    Bmag *= 0.5;  /* WARNING - Bmag no good below here */
-    diff_3d(vec1,V->next->x,V->x);
-    diff_3d(vec2,V->x,V->prev->x);
-
-    if(V->line->fc0->world->verbosity >= 4) { printf("b_eqa: vec1=%7.3g,%7.3g,%7.3g; vec2=%7.3g,%7.3g,%7.3g\n",vec1[0],vec1[1],vec1[2],vec2[0],vec2[1],vec2[2]); }
-
-    scale_3d(vec1,vec1,Bmag/norm_3d(vec1));
-    scale_3d(vec2,vec2,Bmag/norm_3d(vec2));
-
-    sum_3d(V->b_vec,vec1,vec2);
-
-
-  } else if(V->next) {
-
-    diff_3d(vec1,V->next->x,V->x);
-    scale_3d(V->b_vec,vec1,Bmag/norm_3d(vec1));
-
-  } else if(V->prev) {
-
-    diff_3d(vec1,V->x,V->prev->x);
-    scale_3d(V->b_vec,vec1,Bmag/norm_3d(vec1));
-
-  } else {
-
-    fprintf(stderr,"b_eqa: got an invalid VERTEX! I quit!\n");
-    exit(99);
-
-  }
+  /* The B field along the segment points in the same direction as the segment itself. */
+  diff_3d(vec1,V->next->x,V->x);
+  scale_3d(V->b_vec,vec1,Bmag/norm_3d(vec1));
 
   if(V->line->fc0->world->verbosity >= 3) { fprintf(stderr,"b_eqa: VERTEX %4d (fluxon %4d); magnetic field mag. is %7.3g (vec is %7.3g, %7.3g, %7.3g)\n", V->label, V->line->label, V->b_mag, V->b_vec[0],V->b_vec[1],V->b_vec[2]); }
 
@@ -544,6 +581,12 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts) {
     TRIM_ANGLE(lefta);
 
     
+    if(lefta<righta) 
+      lefta += 2*PI;
+
+    if(  (lefta - righta) > PI ) 
+      printf("ASSERTION FAILED: lefta-righta >0 (lefta = %5.3g, righta=%5.3g)\n",lefta,righta);
+    
     /* Assemble perpendicular and parallel force components */
     factor = -fac / (v->r * v->r * v->r);
     
@@ -573,6 +616,7 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts) {
 
 
   sum_3d(V->f_s,V->f_s,scr3d);
+
   V->f_s_tot += norm_3d(scr3d);
   
   return;

@@ -215,10 +215,11 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
     if(verbosity >= 3) { printf("V%4d ",v->label); fflush(stdout); }
 
     /* Update neighbor map and establish neighbors' (r,a) variables, 
-     *  which will be used by the physics funcs!  */
-    vertices = vertex_update_neighbors(v,global);
+     *  which will be used by the physics funcs! */
 
-    /* Zero force accumulators */
+     vertices = vertex_update_neighbors(v,global); 
+
+    /* Zero the vertex's force accumulators */
     v->f_v[0] = v->f_v[1] = v->f_v[2] = 0;
     v->f_s[0] = v->f_s[1] = v->f_s[2] = 0;
     v->f_s_tot = v->f_v_tot = 0;
@@ -255,28 +256,30 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
   
   if(verbosity >= 2) printf("Radius - fluxon %d: %c",fl->label,(verbosity==2?' ':'\n'));
 
-  for(v=fl->start->next;v->next;v=v->next) {
+  for(v=fl->start;v->next;v=v->next) {
     NUM f[3], fns, fnv, fn;
     NUM r = v->r_cl;
     NUM a;
+    
+    diff_3d(f,v->next->x,v->x);
+    a = norm_3d(f);
+    if(a<r && a>0)
+      r=a;
     
     if(v->prev) {
       diff_3d(f, v->x, v->prev->x);
       a = norm_3d(f);
       if(a<r && a>0)
 	r=a;
+
+      sum_3d(f,v->prev->f_s,v->f_s);
+      scale_3d(f,f,0.5);
+    } else {
+      f[0] = v->f_s[0];
+      f[1] = v->f_s[1];
+      f[2] = v->f_s[2];
     }
-
-    if(v->next) {
-      diff_3d(f,v->next->x,v->x);
-      a = norm_3d(f);
-      if(a<r && a>0)
-	r=a;
-    }
-
-    sum_3d(f,v->prev->f_s,v->f_s);
-    scale_3d(f,f,0.5);
-
+    
     fns = (v->r_s > 0) ? (norm_3d(f)) : 0;
     fnv = (v->r_v > 0) ? (norm_3d(v->f_v)) : 0;
     

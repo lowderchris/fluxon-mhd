@@ -530,26 +530,54 @@ it out into a separate file....
 
 use PDL::Graphics::TriD;
 use PDL;
+use PDL::NiceSlice;
 
 sub render_lines {
     my $w = shift;
     my $twiddle = shift;
     my $range=shift;
+    my $opt=shift;
     
+    if(!defined $opt && ref $range eq 'HASH') {
+	$opt = $range;
+	undef $range;
+    }
+
 
     release3d;
 
     my $fid;
     my @poly = map { $w->fluxon($_)->polyline } $w->fluxon_ids;
-    my @rgb = map { ones($_) - (yvals($_)==0) } @poly;
+
+    my @rgb,@prgb;
+    if($opt->{'RGB_CODE'}) {
+	eval $opt->{'RGB_CODE'};
+    } else {
+	@rgb = map { ones($_) - (yvals($_)==0) } @poly;
+    }
+    if($opt->{'PRGB_CODE'}) {
+	eval $opt->{'PRGB_CODE'};
+    } else {
+	@prgb = map { ones($_)*pdl(1,0,0) } @poly;
+    }
     
     $poly = pdl(0,0,0)->glue(1,@poly);
     $rgb = pdl(0,0,0)->glue(1,@rgb);
-    $prgb = $rgb * pdl(1,0,0);
+    $prgb = pdl(0,0,0)->glue(1,@prgb);
+
 
     nokeeptwiddling3d;
 
     if(defined $range) {
+	$pol2 = $poly->copy;
+	$poly->((0)) .= $poly->((0))->clip($range->((0))->minmax);
+	$poly->((1)) .= $poly->((1))->clip($range->((1))->minmax);
+	$poly->((2)) .= $poly->((2))->clip($range->((2))->minmax);
+
+	$ok = ($pol2 == $poly)->prodover;
+	$rgb *= $ok->(*3);
+	$prgb *= $ok->(*3);
+
       points3d($range,zeroes($range),{PointSize=>0});
       hold3d;
       line3d($poly,$rgb);

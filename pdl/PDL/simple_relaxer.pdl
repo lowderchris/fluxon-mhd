@@ -26,7 +26,7 @@ sub simple_relaxer {
 #	    $w->fix_proximity(0.3);
 #	}
 
-	
+	$w->update_neighbors($global);
 	$fmax = $w->update_force($global);
 #	$w->relax_step($dt/$fmax);
 	$w->relax_step($dt);
