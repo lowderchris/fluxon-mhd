@@ -1,6 +1,6 @@
 =head1 NAME
 
-Flux - MHD simulation with fluxons
+Flux - the Field Line Universal relaXer (MHD without resistivity)
 
 =head1 SYNOPSIS
 

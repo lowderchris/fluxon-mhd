@@ -18,10 +18,10 @@ CFLAGS = -I$(INCLUDE_DIR) -g
 LIBS = -lm
 
 
-HEADERS = $(ID)/data.h $(ID)/io.h $(ID)/geometry.h $(ID)/model.h $(ID)/geomview.h $(ID)/hvectext.h $(ID)/physics.h
+HEADERS = $(ID)/data.h $(ID)/io.h $(ID)/geometry.h $(ID)/model.h $(ID)/physics.h
 
-SOURCES = data.c io.c geometry.c model.c geomview.c hvectext.c physics.c
-MODULES = data.o io.o geometry.o model.o geomview.o hvectext.o physics.o
+SOURCES = data.c io.c geometry.c model.c physics.c
+MODULES = data.o io.o geometry.o model.o physics.o
 
 libflux.a: $(MODULES) $(HEADERS) Makefile
 	rm -f libflux.a

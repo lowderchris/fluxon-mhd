@@ -546,7 +546,7 @@ static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n) {
   for(i=0;i<n;i++) {
     dumblist_add(workspace,(void *)foo[i]);
     dumblist_snarf(workspace,&(foo[i]->neighbors));
-    //    dumblist_snarf(workspace,&(foo[i]->nearby));
+    dumblist_snarf(workspace,&(foo[i]->nearby));
     //    dumblist_sort(workspace,winnow_cmp_1);
     //    dumblist_crunch(workspace,winnow_cmp_1);
   }

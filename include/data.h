@@ -270,14 +270,15 @@ inline char fl_eq(NUM a, NUM b);
 #define MALLOC_PLANE 9
 #define MALLOC_MAXTYPENO 9
 
+char *malloc_types[MALLOC_MAXTYPENO+1];
 
 
 #define valid_malloc_type(x) ((x)>0 && (x)<=MALLOC_MAXTYPENO)
 
-// #define localmalloc(x,y) flux_malloc(x,y)
-// #define localfree(x) flux_free(x)
-#define localmalloc(x,y) malloc(x)
-#define localfree(x) free(x)
+ #define localmalloc(x,y) flux_malloc(x,y)
+ #define localfree(x) flux_free(x)
+// #define localmalloc(x,y) malloc(x)
+// #define localfree(x) free(x)
 
 
 void flux_free(void *p);

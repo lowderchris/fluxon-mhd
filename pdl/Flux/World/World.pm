@@ -528,11 +528,13 @@ it out into a separate file....
 
 =cut
 
-use PDL::Graphics::TriD;
 use PDL;
+use PDL::Graphics::TriD;
 use PDL::NiceSlice;
 
-sub render_lines {
+*render_lines = \&render;
+
+sub render {
     my $w = shift;
     my $twiddle = shift;
     my $range=shift;

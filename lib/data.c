@@ -487,7 +487,6 @@ int add_vertex_after(FLUXON *f, VERTEX *neighbor, VERTEX *v) {
     }  
   }
 
-
   /* Fix up neighbor lists */
   if(v->prev) 
     dumblist_snarf(&(v->neighbors),&(v->prev->neighbors));
@@ -1643,7 +1642,7 @@ void flux_free(void *p) {
     flux_malloc_alloc[ok].where = 0;
     flux_malloc_alloc[ok].size = 0;
     flux_malloc_alloc[ok].type = 0;
-    free(p);
+    free((char *)p-16);
     return;
   } else {
     fprintf(stderr,"%%%%%%flux_free: got an unknown block to free");
@@ -1652,7 +1651,7 @@ void flux_free(void *p) {
       int i=0,j=2;
       j/=i;
     }
-    free(p-16);
+    free((char *)p-16);
     return;
   }    
 }
@@ -1662,12 +1661,24 @@ void flux_memcheck() {
   long freed = 0;
   int i;
   char flag =0;
+  static FILE *foo=0;
 
+  if(!foo) {
+    foo = fopen("foo.txt","w");
+  }
+
+  fprintf(foo,"%c======memcheck table:\n",(char)12);
   for(i=0;i<flux_malloc_next;i++) {
     char type_bad=0;
     char fence_bad=0;
     char *p;
     long *p2;
+    fprintf(foo,"%4.4d: 0x%8.8x size=%6.6d (%4.4x) type=%d (%s)\n",
+	   i,flux_malloc_alloc[i].where,
+	   flux_malloc_alloc[i].size,flux_malloc_alloc[i].size,
+	    flux_malloc_alloc[i].type,
+	    malloc_types[flux_malloc_alloc[i].type]
+	   );
     if(!flux_malloc_alloc[i].where) {
       freed++;
     } else {
@@ -1706,7 +1717,13 @@ void flux_memcheck() {
     if(fence_bad || type_bad)
       badct++;
   }
-  fprintf(stderr, "%sflux_memcheck (both-sides fencing): %d table entries (%d freed) OK, %d good, %d bad\n",(badct==0?"   ":"%%%"),i,freed,i-freed-badct,badct);
+  fprintf(foo, "%sflux_memcheck (both-sides fencing): %d table entries (%d freed) OK, %d good, %d bad\n",(badct==0?"   ":"%%%"),i,freed,i-freed-badct,badct);
+  fflush(foo);
 }
 
-  
+char *malloc_types[MALLOC_MAXTYPENO+1] = {
+  "Nothing",
+  "World","Fluxon","Vertex","Flux Conc.",
+  "Dumblist","Dumblist_stuff","Vertex List","DLS Arena",
+  "Plane"};
+
