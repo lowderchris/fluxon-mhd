@@ -311,6 +311,8 @@ WORLD *new_world() {
   a->f_funcs[3] = f_vertex;
   a->f_funcs[4] = 0;
 
+  a->f_over_b_flag = 0;
+
   return a;
 }
 

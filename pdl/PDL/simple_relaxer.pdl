@@ -1,0 +1,64 @@
+sub simple_relaxer {
+    $w = shift;
+    $interactive = shift || 0;
+    $global = shift || 0;
+    $n=shift||0;
+    $auto = shift;
+
+    $step=0 unless($n);
+    $final_step=$n;
+
+#    $w = read_world($w)
+#      unless(ref $w) ;
+
+    print "Initializing neighbors...";      
+    $w->update_neighbors(1);
+    print "ok\n";
+
+    $w->render_lines;
+    
+    $dt = 0.1 unless defined($dt);
+    
+    while(!$final_step || $step<$final_step) {
+
+#	unless($step % 40) {
+#	    $w->fix_curvature(0.1);
+#	    $w->fix_proximity(0.3);
+#	}
+
+	
+	$fmax = $w->update_force($global);
+	$w->relax_step($dt/$fmax);
+
+	$h = $w->stats;
+	
+	$t += $dt/$fmax;
+	printf(" time is now %7.3g (%d vertices; fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$fmax,$h->{f_av},$h->{fs_av},
+	$h->{n_av});
+
+	if($auto) {	
+	   $dt0 = $dt unless(defined $dt0);
+	   $ratio = $h->{f_av}/$h->{fs_av};
+	   $dt = $dt0 * $ratio;
+	   print "\t\tratio=$ratio; new dt=$dt\n";
+	}
+
+	unless($step %3 ) {
+	    $w->render_lines($interactive);
+	}
+
+#	unless($step % 100) {
+#	    $w->fix_proximity(0.25);
+#	    $w->fix_curvature(0.2);
+#        }
+
+	print "step $step..."; 
+	$step++;
+	
+#	print "Press <RETURN> for next step:";
+#	$a = <STDIN>;
+
+    }	
+}
+
+1;

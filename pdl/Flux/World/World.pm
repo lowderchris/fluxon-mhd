@@ -170,7 +170,9 @@ sub _stringify {
     my @s = $me->string;
     my @lines = grep(m/^\s*LINE/,@s);
     my @vertices = grep(m/^\s*VERTEX/,@s);
-    return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n";
+    return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n".
+	"\tForces (".($me->_b_flag?"":"not")." B-normalized): ".join(", ",$me->forces)."\n";
+
 }
 
 =pod
@@ -397,6 +399,35 @@ sub forces {
     }
 }
 
+
+=pod
+
+=head2 b_flag
+
+=for usage
+ 
+  print $world->b_flag;
+  $world->b_flag(1);
+
+=for ref
+
+Returns the state of the B-normalization flag in the World.
+When set, the flag causes all the forces to be treated as if the 
+local magnetic field magnitude were divided out.  This is appropriate
+for the older forces (f_pressure_equi and f_curvature) but not
+for the newer ones.
+
+=cut
+
+sub b_flag {
+    my $me = shift;
+    if(@_==0) {
+	return $me->_b_flag;    # Retrieve forces (in World.xs)
+    } else {
+	$me->_set_b_flag(@_);
+	return;
+    }
+}
 
 
 =pod

@@ -439,7 +439,7 @@ void f_curv_hm(VERTEX *V, HULL_VERTEX *verts) {
   recip_len =  ( recip_l1 + recip_l2 ) / 2;
   
   diff_3d(curve,b2hat,b1hat);
-  scale_3d(curve,curve, recip_len * V->b_mag);
+  scale_3d(curve,curve, recip_len * (2 / (1/V->prev->b_mag + 1/V->b_mag) ) );
 
   sum_3d(V->f_v,V->f_v,curve);
 
@@ -488,7 +488,7 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts) {
   recip_len =  2 / ( l1 + l2 );
   
   diff_3d(curve,b2hat,b1hat);
-  scale_3d(curve,curve, recip_len * V->b_mag);
+  scale_3d(curve,curve, recip_len * 0.5 * (V->prev->b_mag + V->b_mag));
 
   sum_3d(V->f_v,V->f_v,curve);
 

@@ -407,6 +407,11 @@ int footpoint_action(WORLD *world, char *s) {
 	  } /* end of GLOBAL PHOTOSPHERE convenience block */
           break;
 
+	case 'B':  /* BFIELD_NORMALIZATION */
+	  { int i;
+	    sscanf(s+off,"%d",&i) || (badstr="couldn't parse F_OVER_B state");
+	    world->f_over_b_flag = i;
+	  }
 	case 'S': /* GLOBAL STATE */
 	  sscanf(s+off,"%d",&(world->state)) || 
 	    (badstr="couldn't parse GLOBAL STATE");
@@ -527,6 +532,8 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   } else {
     fprintf(file,"<NONE>\n");
   }
+
+  fprintf(file,"GLOBAL BFIELD_NORMALIZATION %d",world->f_over_b_flag);
   fprintf(file,"\n"); /* leave an extra space after the globals */
     
   /* Write out all flux concentration locations */

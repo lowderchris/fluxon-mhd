@@ -284,6 +284,15 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
 
     fn = norm_3d(v->f_t);
 
+    if(fl->fc0->world->f_over_b_flag==0)
+      if(v->prev) 
+	fn /= 0.5 * (v->b_mag + v->prev->b_mag);
+      else 
+	fn /= 0.5 * v->b_mag; /* This 0.5 makes it easier to be consistent on the last segment (where 
+			       * open boundary conditions will require a ghost last segment after the 
+			       * final vertex).
+			       */
+
     /* Check max, min, etc. */
     if(*f_min < 0 || fn < *f_min)
       *f_min = fn;
@@ -298,6 +307,7 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
   }
 
   if(verbosity >= 3)  printf("\n");
+  
   return minmax;
 }
 
@@ -372,7 +382,11 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     /* `forces' are forces per unit length, so multiply times d to bring them down to normal-force level. */
     /* Throw in another factor of d to account for the fact that you have to take bigger steps, not just */
     /* equal-sized steps, where d is large. */
-    scale_3d(a,v->f_t, t * d * d * force_factor );
+    if(f->fc0->world->f_over_b_flag==0) {
+      scale_3d(a,v->f_t, t * d * d * force_factor );
+    } else {
+      scale_3d(a,v->f_t, t * d * d * force_factor / v->b_mag);
+    }
     //scale_3d(a,v->f_t, t * r_cl * r_cl * force_factor);
 
     sum_3d(v->x,v->x,a);	     

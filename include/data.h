@@ -91,7 +91,8 @@ typedef struct VERTEX {
   POINT3D scr; 		
   NUM r,a;      
 
-     /* Magnetic field info is calculated by b_vec in physics.c. */
+     /* Magnetic field info is calculated by b_vec in physics.c.   */
+     /* Remember that it is segment-centered, not vertex-centered. */
   POINT3D b_vec;                /* Stores the local B vector */
   NUM     b_mag;                /* Stores the magnitude of the B field */
 
@@ -169,6 +170,7 @@ typedef struct WORLD {
   int verbosity;           /* Verbose flag turns on/off debugging lines */
   
   void ((*(f_funcs[N_FORCE_FUNCS]))());
+  char f_over_b_flag;      /* flag indicating whether forces are normalized by B field */
 } WORLD;
 
 const char *world_state_name(WORLD *a);

@@ -298,6 +298,37 @@ CODE:
      }
   }
 
+
+IV
+_b_flag(wsv)
+ SV *wsv
+PREINIT:
+ WORLD *w;
+/**********************************************************************
+ * _b_flag
+ * Retrieve the state of the B normalization flag
+ */
+CODE:
+ w=SvWorld(wsv,"Flux::World::forces");
+ RETVAL = w->f_over_b_flag;
+OUTPUT:
+ RETVAL
+
+void
+_set_b_flag(wsv,flag)
+SV *wsv
+IV flag
+PREINIT:
+ WORLD *w;
+/**********************************************************************
+ * _set_b_flag
+ * Set the state of the B normalization flag
+ */
+CODE:
+ w = SvWorld(wsv,"Flux::World::_set_force");
+ w->f_over_b_flag = flag;
+
+
 AV *
 _photosphere(wsv,plane=0)
 SV *wsv
