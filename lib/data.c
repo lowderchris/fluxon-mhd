@@ -303,10 +303,11 @@ WORLD *new_world() {
   a->verbosity = 0;  /* No verbose printouts by default */
 
   /* Put in a sensible default force list */
-  a->f_funcs[0] = f_curvature;
-  a->f_funcs[1] = f_pressure_equi;
-  a->f_funcs[2] = f_vertex;
-  a->f_funcs[3] = 0;
+  a->f_funcs[0] = b_eqa;
+  a->f_funcs[1] = f_curv;
+  a->f_funcs[2] = f_p_eqa;
+  a->f_funcs[3] = f_vertex;
+  a->f_funcs[4] = 0;
 
   return a;
 }

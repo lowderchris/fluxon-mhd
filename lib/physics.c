@@ -2,7 +2,18 @@
  * physics.c
  * 
  * Contains force laws and other directly physics-related 
- * calculations.
+ * calculations.  The 'force laws' manipulate vertex-local 
+ * quantities; you may include additional local simulation steps
+ * by adding additional routines that carry them out. 
+ * 
+ * Quasi-local simulation steps such as reconnection that require
+ * physical quantities in the neighbors will require a second
+ * pass through the data (to update all local calculations such as
+ * magnetic field), but can also be implemented using the same 
+ * force-law structure.
+ *
+ *
+ *
  * 
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Southwest Research Institute, 2004
@@ -28,8 +39,11 @@
 
 /* global force name table */
 struct FLUX_FORCES FLUX_FORCES[] = {
-  {"f_curvature","simple curvature force over B",f_curvature},
-  {"f_pressure_equi","Kankelborg/DeForest 2001 pressure law over B",f_pressure_equi},
+  {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
+  {"f_curvature","(OLD) simple curvature force over B (DEPRECATED)",f_curvature},
+  {"f_p_eqa","(OLD) 2001 pressure law over B (DEPRECATED)",f_p_eqa},
+  {"f_pressure_eq","2004 angular equipartition pressure law",f_pressure_eq},
+  {"f_curv","DeForest/Kankelborg 2004 curvature law",f_curv},
   {"f_vertex","Vertex distribution pseudo-force",f_vertex},
   {0,0,0}
 };
@@ -46,8 +60,11 @@ struct FLUX_FORCES FLUX_FORCES[] = {
 
 /**********************************************************************
  **********************************************************************
- * The forces used for field line manipulation have |B| divided out of
- * them, to simplify their calculation.  
+ * The older forces used for field line manipulation had |B| divided out of
+ * them, to simplify their calculation.   They are kept here, warts and
+ * all, for reference.  But they are deprecated.  So instead of 
+ * f_curvature and f_pressure_equi, use f_curv and f_p_eqa
+ *
  *
 
 /**********************************************************************
@@ -303,3 +320,35 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
 }
  
  
+
+/**********************************************************************
+ **********************************************************************
+ *****
+ ***** newer forces are NOT divided by B.
+ * 
+ * Note that you need a B calculation _in_advance_ of any of the other
+ * force or geometrical calculations.  The B routines must calculate
+ * not only the magnetic field but also the projected distances and 
+ * angles to the relevant other points.
+ * 
+ *  [ note: r and a may already be set by the hull_2d routine -- 
+ *    check that? ]
+ */
+
+/**********************************************************************
+ * b_eqa
+ *  
+ * Not truly a force, but required for the others.  Calculates 
+ * B and |B| and inserts them into the VERTEX.  b_eqa uses the 
+ * angular equiparition estimate, and delivers a phi-averaged
+ * magnitude.  See DeForest notebooks v. VIII, p. 62.
+ * 
+ */
+void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
+  NUM Bmag;
+  DUMBLIST *ndl=&(V->neighbors); /* neighbor dumblist */
+  NUM n = V->neighbors.n;
+  VERTEX **nv = (VERTEX **)V->neighbors.stuff
+
+  
+

@@ -77,15 +77,25 @@ typedef struct DUMBLIST {
 
 typedef struct VERTEX {
   struct FLUXON *line;                      /* Which line are we on? */
-  struct VERTEX *prev,*next;  /* List links        */
-  POINT3D x;                                /* x,y,z location */
-  POINT3D scr;                /* Scratch vector -- comes in handy for 
-			       * generating neighbor lists and the like */
+  struct VERTEX *prev,*next;  
+
+     /* Vertex location in physical space */
+  POINT3D x;           
+
+     /* neighbors & nearby - infrastructure for geometrical work */
   DUMBLIST neighbors;
   DUMBLIST nearby;
 
-  NUM r,a;                      /* Scratch radius and angle for neighbor stuff */
+     /* Scratch space used when this vertex is considered as a neighbor of
+      * someone else; part of force calculation. */
+  POINT3D scr; 		
+  NUM r,a;      
 
+     /* Magnetic field info is calculated by b_vec in physics.c. */
+  POINT3D b_vec;                /* Stores the local B vector */
+  NUM     b_mag;                /* Stores the magnitude of the B field */
+
+     /* Force accumulators are filled by the force functions in physics.c. */
   POINT3D f_v;                  /* Stores force on the vertex */
   POINT3D f_s;                  /* Stores force on the following segment */
   POINT3D f_t;                  /* Stores total force */

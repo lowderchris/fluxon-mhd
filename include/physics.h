@@ -16,6 +16,7 @@
  * 
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
+ *
  */
  
 #ifndef FLUX_PHYSICS
@@ -27,9 +28,19 @@
 
 #include <stdio.h>
 
-void f_curvature(VERTEX *V, HULL_VERTEX *verts);
-void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts);
-void f_vertex(VERTEX *V, HULL_VERTEX *verts);
+void b_vec(VERTEX *V, HULL_VERTEX *verts); /* calculate B field at vertex */
+
+void f_curvature(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
+void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
+
+void f_p_eqa(VERTEX *V, HULL_VERTEX *verts); /* ang. equipartition pressure */
+void f_curv(VERTEX *V, HULL_VERTEX *verts);  /* curvature force */ 
+
+void f_vertex(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
+
+
+                                                   
+
 
 /* F_CONV_TABLE is an array that associates function names with 
  * jumptable entries.  The actual array is defined in physics.c.

@@ -115,8 +115,9 @@ int find_neighbors_from_list(VERTEX *tp,
 
 
 typedef struct HULL_VERTEX {
-  NUM p[2];
-  char open;
+  NUM p[2];  /* point coordinates */
+  NUM a;     /* point angle -- cached here to avoid multiple atan2 calls */
+  char open; /* indicates point is at infinity */
 } HULL_VERTEX;
 
 void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects);

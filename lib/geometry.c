@@ -1214,7 +1214,7 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
  * in a controlled way.
  *
  * No actual checking of the vector in ->scr is done -- you must
- * pre-set the angle in ->a!
+ * pre-set the angle in ->a!  (This is normally done by project_n_fill.)
  */
 
 static int angle_cmp(void *a, void *b) {
@@ -1275,10 +1275,9 @@ void sort_by_angle_2d(DUMBLIST *horde) {
  * perhaps misguided trades have been made against readability and 
  * for (hopefully) speed.
  * 
- * The sort_by_angle_2d call also has a desirable side effect of 
- * stuffing the neighbors' ->r values with radii from the current point.
- * That's used in model.c and physics.c -- do search on "->r" to find
- * out where.
+ * The sort-by-angle step requires that the projected radius and 
+ * angle fields in the VERTEX be filled; this is performed by 
+ * project_n_fill, which should be called before hull_2d.
  * 
  */
 
@@ -1298,32 +1297,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   if(horde->n < 1)
     return;
 
-
-  //  printf("\n\nhull_2d:  entry has %d members: {",horde->n);
-  //for(i=0;i<horde->n;i++)
-  //    printf("  V%d{%g,%g [%g =?= %g]},  ", ((VERTEX *)horde->stuff[i])->label, ((VERTEX *)horde->stuff[i])->scr[0],((VERTEX *)horde->stuff[i])->scr[1],atan2(((VERTEX *)horde->stuff[i])->scr[1],((VERTEX *)horde->stuff[i])->scr[0]) * RAD2DEG,((VERTEX *)horde->stuff[i])->a * RAD2DEG);
-  // printf("{0,0}}\n");
-
-
   sort_by_angle_2d(horde);
-
-
-  //  printf("hull_2d: On entry, horde has %d members (post sort)\n",horde->n);
-  //  for(i=0;i<horde->n;i++)
-  //    printf("  V%d{%g,%g [%g =?= %g]},  ", ((VERTEX *)horde->stuff[i])->label, ((VERTEX *)horde->stuff[i])->scr[0],((VERTEX *)horde->stuff[i])->scr[1],atan2(((VERTEX *)horde->stuff[i])->scr[1],((VERTEX *)horde->stuff[i])->scr[0]) * RAD2DEG,((VERTEX *)horde->stuff[i])->a * RAD2DEG);
-  //  printf("{0,0}}\n");
-
-  
-  //  {
-    //    int i;
-    //    printf("  $pre = pdl([[0,0]");
-    //    for(i=0;i<horde->n;i++) {
-    //      printf(",[%g,%g]",((VERTEX *)horde->stuff[i])->scr[1],
-    //	     ((VERTEX *)horde->stuff[i])->scr[2]);
-    //    }
-    //    printf("]);  ###HORDE-POINTS###   \n");
-    //  }
-
 
   /* Assemble the intersection points with neighbors, rejecting as necessary
    * on the way.  Algorithm:
@@ -1341,16 +1315,24 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     int missing;
     
     for(missing=i=0;i<horde->n;i++) {
-      if(horde->stuff[i]){   /* On redos, skip missing elements */
+      if(!horde->stuff[i]){   /* On redos, skip missing elements */
+	if(missing > horde->n){
+	  fprintf(stderr,"hull bug:  eliminated all vertices!\n");
+	  exit(53);
+	}
+      } else {  /* Normal path -- element is not missing... */
+
 
 	/* Skip degenerate points too -- this should't be necessary
-	   if they've been pre-winnowed. */
-		if(!finite( ((VERTEX *)horde->stuff[i])->a)) {
-		  horde->stuff[i] = 0;
-		  i++;
-		  if(i>=horde->n)
-		    i=0;
-		}
+	   if they've been pre-winnowed; but it's here for belt-and-
+	   suspenders security. */
+	if(!finite( ((VERTEX *)horde->stuff[i])->a)) {
+	  fprintf(stderr,"degen triggered in hull_2d\n"); 
+	  horde->stuff[i] = 0;
+	  i++;
+	  if(i>=horde->n)
+	    i=0;
+	}
 
 	ivec = ((VERTEX *)(horde->stuff[i]))->scr;
 	
@@ -1435,14 +1417,9 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	//	if( ( (!(j==k)) && (a * b < 0) )
 	if( ( (!(j==k)) &&
 	      finite(a) && finite(b) && (a > 0 && b < 0))
-	      //>0 && b<0)
-	    //	    ((cross_2d(jvec,kvec) > 0) &&
-	    //	     (cross_2d(left,right) < 0)
-	    //	     )
-	    //	    )
 	    ||
 	    reject_collinear
-	    ) {
+	  ) {
 	  
 	  /* reject */
 	  if(rejects) 
@@ -1450,19 +1427,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
 	  horde->stuff[i] = 0;
 	  cache_ok = 0;
-
-	  //          if(redo) {
-	  //	    /* On redo, rejection takes a little more care:
-	  //	     * since we're back at the beginning of the output
-	  //	     * list, we have to crunch the whole hull down.
-	  //	     */
-	  //	    int l,m;
-	  //	    for(m=0,l=1;l<outdex;l++,m++) {
-	  //	      out[m].p[0] = out[l].p[0];
-	  //	      out[m].p[1] = out[l].p[1];
-	  //	      out[m].open = out[m].open;
-	  //	    }
-	  //	  }
 
 	  if(i == (horde->n - 1)) {
 	    horde->n--;
@@ -1481,15 +1445,25 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  /* accept */
 	  out[outdex].p[0] = right[0];
 	  out[outdex].p[1] = right[1];
-	  out[outdex].open = !(finite(right[0]) && finite(right[1]) 
-			       && fabs(cross_2d(ivec,kvec)>epsilon));
 
-	  /* Clean up doubly-open case... */	  if(out[outdex].open
-	     && outdex > 0
-	     && out[outdex-1].open) {
-	    out[outdex].p[0] = kvec[0]/2;
-	    out[outdex].p[1] = kvec[0]/2;
-	  }
+	  /* assignment below */
+	  if ( out[outdex].open = !(finite(right[0]) && finite(right[1]) 
+				    && fabs(cross_2d(ivec,kvec)>epsilon)) ) {
+	    out[outdex].a = atan2(kvec[1],kvec[0])+PI/2;
+	    out[outdex].a -= 2*PI if(out[outdex].a > PI);
+	  } else 
+	    out[outdex].a = atan2(out[outdex].p[1],out[outdex].p[2]);
+	}
+
+	// I don't think that this is actually required 
+	//   -- CED 24-Aug-2004
+	//	  /* Clean up doubly-open case... */	  
+	//	if(out[outdex].open
+	//	     && outdex > 0
+	//	     && out[outdex-1].open) {
+	//	    out[outdex].p[0] = kvec[0]/2;
+	//	    out[outdex].p[1] = kvec[0]/2;
+	//	  }
 	    
 	  outdex++;
 	  cache_ok = 1;
@@ -1505,12 +1479,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  }
 	}          /* End of acceptance case*/
       }      /* End of nulled-out entry skipper */
-      else {
-	if(missing > horde->n){
-	  fprintf(stderr,"hull bug:  eliminated all vertices!\n");
-	  exit(53);
-	}
-      }
     }              /* End of for loop */
 
 

@@ -173,7 +173,7 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
     v->f_s_tot = v->f_v_tot = 0;
     v->r_s = v->r_v = -1;
 
-    /* Accumulate forces and relevant lengthscales */
+     /* Accumulate forces and relevant lengthscales */
     for(f_func = &f_funcs[0]; *f_func; f_func++) 
       (**f_func)(v,vertices);
   }
