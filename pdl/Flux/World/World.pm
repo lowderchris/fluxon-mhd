@@ -351,12 +351,16 @@ Return the fluxon(s) with the given IDs, as a list of Flux::Fluxon objects.
 
 sub fluxons {
     my $world = shift;
+    if(!@_) {
+
+      push(@_,$world->fluxon_ids);
+    }
     my $id;
     my @fluxons;
     while(defined ($id=shift)) {
-	push(@fluxons, &fluxon($world,$id));
+      push(@fluxons, &fluxon($world,$id));
     }
-
+    
     return @fluxons;
 }
 
