@@ -174,21 +174,20 @@ FLUXON *new_fluxon(      NUM flux,
   if(c1 == NULL) {
     fprintf(stderr,"new_fluxon:  no starting flux conc.!  Proceeding anyway...\n");
 
-  } else {
-    clear_links(&(nf->start_links));
-    nf->start_links.sum = nf->flux;
-    nf->fc0 = c1;
-  }
+  } 
+  clear_links(&(nf->start_links));
+  nf->start_links.sum = nf->flux;
+  nf->fc0 = c1;
+
 
   if(c2 == NULL) {
     fprintf(stderr,"new_fluxon: no ending flux conc.!  Proceeding anyway...\n");
-
-  } else {
-    clear_links(&(nf->end_links));
-    nf->end_links.sum = nf->flux;
-    nf->fc1 = c2;
   }
-  
+
+  clear_links(&(nf->end_links));
+  nf->end_links.sum = nf->flux;
+  nf->fc1 = c2;
+
   nf->plasmoid = 0;
 
   return nf;
@@ -208,49 +207,25 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
 
   tp = (VERTEX *)malloc(sizeof(VERTEX));
   if(!tp) barf(BARF_MALLOC,"new_vertex");
+  tp->line = fluxon;
+  tp->prev = 0;
+  tp->next = 0;
+
   tp->x[0] = x;
   tp->x[1] = y;
   tp->x[2] = z;
-  tp->line = fluxon;
-  tp->b_mag = 0;
-  tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
-  tp->prev = 0;
-  tp->next = 0;
-  tp->label = new_vertex_label(label);
 
   dumblist_clear( &(tp->neighbors) );
   dumblist_clear( &(tp->nearby) );
 
+
+  tp->b_mag = 0;
+  tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
+
+  tp->label = new_vertex_label(label);
+
   return tp;
 }  
-
-
-#ifdef never
-#/**********************************************************************
-# * spawn_new_vertex
-# * Generates a new vertex, links it into the given fluxon, and does
-# * neighbor sloshing to seed the next round of neighbor calculation.
-# */
-#inline VERTEX *spawn_new_vertex(NUM x, NUM y, NUM z, VERTEX *V) {
-#  int k;
-#  VERTEX *V1 = new_vertex(0,x,y,z,V->line);
-#  
-#  /* Snarf the neighbor list */
-#  dumblist_snarf(&(V1->neighbors),&(V->neighbors));
-#  
-#  /* Add the new vertex to the neighbors' nearby lists, and also */
-#  /* reverse-link everything for consideration later. */
-#  
-#  for(k=0;k<V1->neighbors.n;k++) {
-#    dumblist_add( &(((VERTEX *)(V1->neighbors.stuff[k]))->nearby),    (void *)V1 );
-#    dumblist_add( &(((VERTEX *)(V1->neighbors.stuff[k]))->neighbors), (void *)V1 );
-#    dumblist_add( &(V1->nearby), V1->neighbors.stuff[k] );
-#  }
-#  
-#  add_vertex_after(V->line, V, V1);
-#  return(V1);
-#}
-#endif
 
 /**********************************************************************
  * new_flux_concentration
@@ -306,12 +281,12 @@ WORLD *new_world() {
 
   /* Put in a sensible default force list */
   a->f_funcs[0] = b_eqa;
-  a->f_funcs[1] = f_curvature;
-  a->f_funcs[2] = f_pressure_equi; 
-  a->f_funcs[3] = f_vertex;
+  a->f_funcs[1] = f_curv_m;
+  a->f_funcs[2] = f_p_eqa_radial; 
+  a->f_funcs[3] = f_vert;
   a->f_funcs[4] = 0;
 
-  a->f_over_b_flag = 0;
+  a->f_over_b_flag = 1; 
 
   return a;
 }
@@ -362,6 +337,8 @@ void unlink_vertex(VERTEX *v) {
 }
 
 void delete_vertex(VERTEX *v) {
+  if(!v) 
+    return;
   unlink_vertex(v);
   if(v->neighbors.stuff) {
     free(v->neighbors.stuff);
@@ -1124,7 +1101,7 @@ void dumblist_quickadd(DUMBLIST *dl, void *a) {
   int i;
   void **foo;
   if(!dl || !a) return;
-  if(!dl->size || !dl->stuff) {
+  if(!(dl->stuff)) {
     dl->stuff = (void **)malloc( 16*sizeof(void *));
     dl->size = 16;
     dl->n = 1;
@@ -1146,7 +1123,7 @@ void dumblist_add(DUMBLIST *dl, void *a) {
   /* If it's a null list, allocate some space (this could 
      actually fit in the extend-list conditions, but what the heck)
    */
-  if(!dl->stuff) {
+  if(!(dl->stuff)) {
     dl->stuff = (void **)malloc( 16 * sizeof(void *));
     dl->size = 16;
     dl->n = 1;
@@ -1158,7 +1135,7 @@ void dumblist_add(DUMBLIST *dl, void *a) {
   /* (this is what makes it dumb...) */
   for(foo=dl->stuff,i=0;i<dl->n && *foo != a;foo++,i++)
     ;
-  if(*foo == a) 
+  if(i<dl->n) 
     return;
   
   /* OK, a isn't in the list -- add it on the end. */
@@ -1231,9 +1208,25 @@ void dumblist_grow(DUMBLIST *dl, int size) {
     else 
       fprintf(stderr,"dumblist_grow: Warning -- size is %D!\n",newsize);
   }
-
-  dl->stuff = (void **)realloc(dl->stuff,newsize * sizeof(void *));
-  dl->size = newsize;
+  
+  /* This seems to corrupt the arena on my linux box -- replaced 
+   * with more pedestrian version below.  --CED 07-Oct-2004
+   *
+   * dl->stuff = (void **)realloc(dl->stuff,newsize * sizeof(void *));
+   */
+  {
+    void **oldstuff, **ost, **newstuff;
+    int i;
+    oldstuff = ost = dl->stuff;
+    dl->stuff = newstuff = (void **)malloc(newsize * sizeof(void *));
+    if(ost) {
+      for(i=0;i<dl->size; i++)
+      *(newstuff++) = *(oldstuff++);
+      free(ost);
+    }
+  }
+    
+    dl->size = newsize;
 }
     
 
@@ -1343,11 +1336,37 @@ void **dumblist_qsort(void **l, int n, void **wk_start) {
 /******************************
  * dumblist_shellsort is a basic comb/shell sorter.
  * It's useful for lists too small to need quicksort (up to, say, 50 elements).
+ * @@@ DIRTY - FIXME
  */
 void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
   int i,j,increment;
   void *temp;
-   
+  int n = dl->n;
+
+  printf("dumblist_shellsort: n=%d, size=%d ",n,dl->size);
+  // Bubblesort to make sure shellsort isn't scrozzling memory
+  char done;
+  do {
+    printf(".");
+    done = 1;
+    for(i=0;i<n-1;i++) {
+      if(((*cmp)(dl->stuff[i],dl->stuff[i+1])) < 0) {
+	void *foo = dl->stuff[i+1];
+	dl->stuff[i+1] = dl->stuff[i];
+	dl->stuff[i] = foo;
+	done = 0;
+      }
+      if(((*cmp)(dl->stuff[n-2-i],dl->stuff[n-1-i]))<0) {
+	void *foo = dl->stuff[n-2-i];
+	dl->stuff[n-2-i] = dl->stuff[n-1-i];
+	dl->stuff[n-1-i] = foo;
+	done = 0;
+      }
+    }
+  } while(!done);
+  printf("\n");
+
+#ifdef not_testing_with_bubblesort
   increment = (dl->n / 3) || 1;
 
   while(increment>0)
@@ -1364,6 +1383,7 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
       }
       increment >>= 1;
     }
+#endif
 }
 
 /******************************
@@ -1374,7 +1394,8 @@ void dumblist_crunch(DUMBLIST *dl,int((*cmp)(void *a, void *b))) {
   void **a, **b;
   int i,j;
 
-  a = (b = dl->stuff) + 1;
+  b = dl->stuff);
+  a = &(dl->stuff[1]);
   j =0;
   for(i=1;i<dl->n;i++) {
     if((*cmp)(b,a)) {
@@ -1411,9 +1432,12 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   int i;
 
   if( dl->n <= 500 ) { 
+    fprintf(stderr,"   shellsort...   ");
     dumblist_shellsort(dl,cmp);
     dumblist_crunch(dl,cmp);
   } else {
+    int odls_size;
+    fprintf(stderr,"   quicksort...   ");
     /* Make sure that there's enough scratch space */
     if(dls_size < dl->size) {
       long levels = 2;
@@ -1426,11 +1450,18 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
 	 levels to cover the whole depth.
 
       */
+      odls_size = dls_size;
       dls_size = a = dl->size * 2;
       while(a >>= 1)   /* shift and test for nonzero */
 	levels++;
       dls_sz = (2*dls_size)*levels;
-      dls_wk = (void **)realloc(dls_wk, dls_sz * sizeof(void *));
+      
+      /* realloc seems to bust the arena -- so manually reallocate...
+       * dls_wk = (void **)realloc(dls_wk, dls_sz * sizeof(void *));
+       */
+      if(dls_wk)
+	free(dls_wk);
+      dls_wk = (void **)malloc(dls_sz * sizeof(void *));
     }
     
     /* Launch the sort */
@@ -1472,11 +1503,11 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
     fflush(stderr);
     return;
   }
-
+  printf("dumblist_snarf: snarfing %d into a list of %d(%d)...\n",source->n,dest->n,dest->size);
   if(dest->size <= dest->n + source->n) 
     dumblist_grow(dest,dest->n + source->n);
   
-  for(b=source->stuff, c=dest->stuff+dest->n, i=0; i<source->n; i++) {
+  for(b=source->stuff, c=&(dest->stuff[dest->n]), i=0; i<source->n; i++) {
     *(c++) = *(b++);
   }
   

@@ -344,7 +344,11 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     NUM r_cl= v->r_cl;
     NUM foo[3];
     NUM d,d1;
-    /* Take a step proportional to the force and the harmonic mean of the fluxon length and local approach distance. */
+
+
+
+    // Calculate the harmonic mean of the relevant segment lengths
+    // and the closest neighbor approach distance.
     
     diff_3d(foo,v->next->x,v->x);
     d = norm_3d(foo);
@@ -352,7 +356,8 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     diff_3d(foo,v->x,v->prev->x);
     d1 = norm_3d(foo);
 
-    
+    d = 4/(1/d + 1/d1 + 1/r_cl + (v->prev ? 1/v->prev->r_cl : 1/r_cl));
+
     if(r_cl <= 0) {
       fprintf(stderr,"ASSERTION FAILED!  Negative distance %g on vertex %d!\n",r_cl,v->label);
       fprintf(stderr,"vertex has %d neighbors\n",v->neighbors.n);
@@ -360,9 +365,8 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     }
     
     
-    d = 4/(1/d + 1/d1 + 1/r_cl + (v->prev ? 1/v->prev->r_cl : 1/r_cl));
-
     f_denom = v->f_v_tot + 0.5 * (v->f_s_tot + v->prev->f_s_tot);
+
     force_factor = (f_denom == 0) ? 1 : ( norm_3d(v->f_t)  / f_denom);
     if(force_factor == 0) force_factor = 1e-3;
 
@@ -374,23 +378,35 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
       fflush(stderr);
     }
     
+    /* `forces' are 2-D projections (forces per unit length).  
+     *  Multiply times d to get the total force, and again times d 
+     *  for stiffness.
+     */
 
-    //    {
-    //    NUM f2 = 2/(1+1/(force_factor));
-    //    scale_3d(a,v->f_t, t * r_cl * f2 * f2 / force_factor);
-    //    }
-
-    //    scale_3d(a,v->f_t, t * r_cl * 1/(1/sqrt(force_factor) + 1/force_factor));
-    
-    /* `forces' are forces per unit length, so multiply times d to bring them down to normal-force level. */
-    /* Throw in another factor of d to account for the fact that you have to take bigger steps, not just */
-    /* equal-sized steps, where d is large. */
     if(f->fc0->world->f_over_b_flag==0) {
+      /* Old-style forces with B divided out */
+
       scale_3d(a,v->f_t, t * d * d * force_factor );
+
     } else {
-      scale_3d(a,v->f_t, t * d * d * force_factor / v->b_mag);
+      /* More recent forces with B included.  Since we're acting
+       * at a vertex, we have to average Bmag between the previous and
+       * next segment. 
+      */
+      double b_mag_mean = v->b_mag;
+      if(v->prev) {
+	b_mag_mean += v->prev->b_mag;
+	b_mag_mean *= 0.5;
+      }
+
+      //      scale_3d(a,v->f_t, t * d * d * force_factor / b_mag_mean);
+      //      scale_3d(a,v->f_t, t * d * force_factor / b_mag_mean);
+      //      scale_3d(a,v->f_t, t * force_factor / b_mag_mean);
+              scale_3d(a,v->f_t, t * force_factor / sqrt(b_mag_mean));
+      //      scale_3d(a,v->f_t, t * d * d * force_factor );
+
+
     }
-    //scale_3d(a,v->f_t, t * r_cl * r_cl * force_factor);
 
     sum_3d(v->x,v->x,a);	     
 
@@ -791,10 +807,14 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   project_n_fill(v, horde); /* in geometry.c */
 
   /* Grow the buffer if necessary. */
-  if(voronoi_bufsiz < horde->n) {
-    voronoi_bufsiz = horde->n*2;
+  if(voronoi_bufsiz <= horde->n*2) {
+    voronoi_bufsiz = horde->n*4;
 
-    voronoi_buf = (HULL_VERTEX *)realloc(voronoi_buf, voronoi_bufsiz*sizeof(HULL_VERTEX));
+    fprintf(stderr,"   expanding voronoi_buf: horde->n is %d; new bufsiz is %d   ",horde->n,voronoi_bufsiz);
+
+    if(voronoi_buf)
+      free(voronoi_buf);
+    voronoi_buf = (HULL_VERTEX *)malloc((voronoi_bufsiz)*sizeof(HULL_VERTEX));
 
     if(!voronoi_buf) {
       fprintf(stderr,"Couldn't get memory in hull_neighbors!\n");
@@ -803,6 +823,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
 
   }
 
+  fprintf(stderr,"vb");
 
   
   if(verbosity >= 5) {

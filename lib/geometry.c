@@ -774,6 +774,7 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   if(Plen==0)
     return -1;
 
+  // inverse FOURTH POWER sine!
   /* Scale by the inverse square sine of the projection angle:  */
   /* AB x (closest).  Note that this makes the metric asymmetric! */
    
@@ -783,21 +784,11 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   scale_3d(seg,seg,1.0/norm_3d(seg));
   cross(cr,P,seg);
   a = norm2_3d(cr);
+  a *= a;               // sin^2 --> sin^4
 
   if(a == 0) 
     return -1;
 
-#ifdef never
-  diff_3d(seg,v1->next->x,v1->x);
-  scale_3d(seg,seg,1.0/norm_3d(seg));
-  cross(cr,P,seg);
-  b = norm_3d(cr);
-
-  if(b == 0)
-    return -1;
-
-  return Plen / a / b ;
-#endif
   return Plen / a;
 
 }

@@ -171,7 +171,7 @@ sub _stringify {
     my @lines = grep(m/^\s*LINE/,@s);
     my @vertices = grep(m/^\s*VERTEX/,@s);
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n".
-	"\tForces (".($me->_b_flag?"":"not")." B-normalized): ".join(", ",$me->forces)."\n";
+	"\tForces (".($me->_b_flag?"normal":"B-normalized")." forces): ".join(", ",$me->forces)."\n";
 
 }
 

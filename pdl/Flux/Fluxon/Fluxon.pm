@@ -148,6 +148,12 @@ Returns a xN PDL containing, in each row:
 
 =item col   13:   sum-of-magnitudes for the vertex force components
 
+=item col   14:   r_s  - projected neighborhood radius for segment forces
+
+=item col   15:   r_v  - projected neighborhood radius for vertex forces
+
+=item col   16:   r_cl - closest neighbor approach projected radius
+
 =back
 
 =cut
