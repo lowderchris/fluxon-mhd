@@ -1,3 +1,8 @@
+##############################
+# simple_curvature -- 
+# a simple 2-D system with a few bent fluxons.
+# (Hand-assembled in the distant past)
+
 FRAME 1
 NEW   1					00	00	00	1.0
 NEW   2					02	00	00	-1.0

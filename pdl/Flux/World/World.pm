@@ -29,12 +29,15 @@ A Flux::World object is just a pointer off into hyperspace.
 =cut
 
 BEGIN {
+
+use PDL::Graphics::TriD; 
+
 package Flux::World;
 
 require Exporter;
 require DynaLoader;
 @ISA = qw(Exporter DynaLoader);
-@EXPORT = qw( read_world write_world);
+@EXPORT = qw( read_world write_world str2world );
 
 bootstrap Flux::World;
 }
@@ -169,8 +172,6 @@ sub _stringify {
     my @vertices = grep(m/^\s*VERTEX/,@s);
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n";
 }
-
-
 
 =pod
 
@@ -413,6 +414,87 @@ pass in a list ref, it is used to set the photospheric plane parameters.
 
 sub photosphere {
     return @{_photosphere(@_)};
+}
+
+
+=pod
+
+=head2 update_force
+
+=for usage
+
+$world->update_force;
+$world->update_force($globalflag);
+
+=for ref
+
+Walks through the world and updates the forces on each vertex.  You should 
+update the neighbors before the first time you run update_force.
+(the C side of this is called "world_update_mag" for historical reasons).
+The $globalflag determines whether the neighbor determination should be 
+global (nonzero; slow) or local (zero; default; much faster).
+
+=cut
+
+# Implemented in World.xs
+
+=pod
+
+=head2 relax_step
+
+=for usage
+
+$world->relax_step($dt);
+
+=for ref
+
+Updates positions of the vertices after the forces have been calculated.
+Takes one step toward relaxation.  Warning -- if $dt is too big you'll 
+be in trouble, guv!
+
+=cut
+
+# Implemented in World.xs
+
+
+=pod
+
+=head2 render_lines
+
+=for usage
+
+ $world->render_lines
+
+=for ref
+
+Produces a simple 3-D plot of all the field lines in a World, using PDL::TriD.
+This bit of code has the potential to expand without limit -- it might be good to break
+it out into a separate file....
+
+=cut
+
+use PDL::Graphics::TriD;
+use PDL;
+
+sub render_lines {
+    my $w = shift;
+    my $twiddle = shift;
+
+
+    release3d;
+
+    my $fid;
+    my @poly = map { $w->fluxon($_)->polyline } $w->fluxon_ids;
+    my @rgb = map { ones($_) - (yvals($_)==0) } @poly;
+    
+    $poly = pdl(0,0,0)->glue(1,@poly);
+    $rgb = pdl(0,0,0)->glue(1,@rgb);
+
+    line3d($poly,$rgb);
+
+    keeptwiddling3d  if($twiddle);
+    twiddle3d();
+    nokeeptwiddling3d;
 }
   
 1;

@@ -276,7 +276,7 @@ CODE:
        if(what[0]=='0' && what[1]=='x') {
 	 unsigned long ul;
 	 sscanf(what+2,"%x",&ul);
-	 w->f_funcs[where] = ul;
+	 (void *)(w->f_funcs[where]) = (void *)ul;
        } else {
          croak("Unknown force function '%s'\n",what);
        }
@@ -338,3 +338,30 @@ CODE:
 OUTPUT:
  RETVAL
 
+NV
+update_force(wsv,global=0)
+SV *wsv
+IV global
+PREINIT:
+ WORLD *w;
+ NUM *minmax;
+/**********************************************************************
+ * update_force
+ * Updates the forces everywhere in the model.
+ */
+CODE:
+ w = SvWorld(wsv,"Flux::World::update_force");
+ minmax = world_update_mag(w,global);
+ RETVAL = minmax[1];
+OUTPUT:
+ RETVAL
+
+void
+relax_step(wsv,time)
+SV *wsv
+NV time
+PREINIT:
+ WORLD *w;
+CODE:
+ w = SvWorld(wsv,"Flux::World::world_relax_step");
+ world_relax_step(w,time);
