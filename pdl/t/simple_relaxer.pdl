@@ -1,0 +1,37 @@
+sub simple_relaxer {
+    $file = shift;
+    
+    $w = read_world($file);
+    
+    $w->render_lines;
+    $w->update_neighbors(1);
+    
+    $step=0;
+    $dt = 0.2;
+    
+    while(1) {
+
+	unless($step % 40) {
+	    $w->fix_curvature(0.1);
+	    $w->fix_proximity(0.3);
+	}
+
+	
+	$fmax = $w->update_force(0);
+	$w->relax_step($dt/$fmax);
+	
+	$t += $dt;
+	print " time is now $t\n";
+	
+	unless($step % 2) {
+	    $w->render_lines(0);
+	}
+
+	print "step $step..."; 
+	$step++;
+
+
+    }	
+}
+
+1;
