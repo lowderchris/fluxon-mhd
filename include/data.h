@@ -256,5 +256,33 @@ inline void dumblist_grow(DUMBLIST *dl, int size);
 inline void dumblist_clear(DUMBLIST *dl);
 
 inline char fl_eq(NUM a, NUM b);
+
+
+/* defines for debugging malloc wrapper in data.c */
+#define MALLOC_WORLD 1
+#define MALLOC_FLUXON 2
+#define MALLOC_VERTEX 3
+#define MALLOC_FC 4
+#define MALLOC_DL 5
+#define MALLOC_DL_L 6
+#define MALLOC_VL 7
+#define MALLOC_DLS_ARENA 8
+#define MALLOC_PLANE 9
+#define MALLOC_MAXTYPENO 9
+
+
+
+#define valid_malloc_type(x) ((x)>0 && (x)<=MALLOC_MAXTYPENO)
+
+// #define localmalloc(x,y) flux_malloc(x,y)
+// #define localfree(x) flux_free(x)
+#define localmalloc(x,y) malloc(x)
+#define localfree(x) free(x)
+
+
+void flux_free(void *p);
+char *flux_malloc(long size, int what_for);
+void flux_memcheck();
+
 #endif /* overall file include */
 
