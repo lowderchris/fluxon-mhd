@@ -1,8 +1,6 @@
 /**********************************************************************
  * io.c -- I/O routines for FLEM
  *
- * Craig DeForest, 3-Oct-2000; this sentence last modified 1-Jan-2001.
- *
  * Mostly text I/O; now has graphics output for extra cheesy flavor!
  * OpenGL output is implemented, well, oddly.  The model is one of
  * building a display list and then, well, displaying it.  You send
@@ -10,6 +8,25 @@
  * current implementation just writes a perl script that uses the OpenGL
  * glue to display the list you want.  Then when you close/display the
  * visual, it closes the file and executes the script. 
+ *
+ *
+ *
+ * This file is part of FLUX, the Field Line Universal relaXer.
+ * Copyright (c) Southwest Research Institute, 2004
+ * 
+ * You may modify and/or distribute this software under the temrs of
+ * the Gnu Public License, version 2.  You should have received a copy
+ * of the license with this software, in the file COPYING to be found
+ * in the top level directory of the distribution.  You may obtain
+ * additional copies of the licesnse via http://www.gnu.org or by
+ * writing to the Free Software Foundation, 59 Temple Place - Suite
+ * 330, Boston, MA 02111-1307 USA.
+ *
+ * The software comes with NO WARRANTY.
+ * 
+ * You may direct questions, kudos, gripes, and/or patches to the
+ * author, Craig DeForest, at "deforest@boulder.swri.edu".
+ *
  */
 
 #include <stdio.h>
