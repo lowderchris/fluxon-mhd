@@ -898,7 +898,7 @@ inline int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
     out[0] = Q[0]/2;
     out[1] = Q[1]/2;
     
-    out[2] = - Q[0]/Q[1]; /* Perp. slope = (- delta-Y / delta-X). */
+    out[2] = - Q[0]/Q[1]; /* Perp. slope = (- delta-X / delta-Y). */
     return !finite(out[2]);
   }    
 
@@ -906,7 +906,8 @@ inline int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
   out[0] = ( Q[0] + P[0] ) / 2;
   out[1] = ( Q[1] + P[1] ) / 2;
   
-  out[2] = - ( (Q[1]-P[1]) / (Q[0]-P[0]) );
+  // out[2] = - ( (Q[1]-P[1]) / (Q[0]-P[0]) );
+ out[2] = - ( (Q[0]-P[0]) / (Q[1]-P[1]) );
   return !finite(out[2]);
 }
 

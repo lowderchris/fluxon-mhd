@@ -1404,8 +1404,8 @@ void dumblist_crunch(DUMBLIST *dl,int((*cmp)(void *a, void *b))) {
       b++; j++;
       if(b != a) 
 	*b = *a;
-      a++;
     }
+    a++;
   }
   dl->n = j+1;
 }
