@@ -316,7 +316,7 @@ CODE:
   PLANE *newp;
   /* set */
   if(!SvROK(plane) || SvTYPE(SvRV(plane))!= SVt_PVAV) 
-    croak("Flux::World::_set_plane: 2nd arg must be array ref");
+    croak("Flux::World::_set_plane: 2nd arg must be undef or array ref");
   av = (AV *)SvRV(plane);
   if(av_len(av)<0) {
     newp = 0;

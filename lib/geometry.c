@@ -25,10 +25,6 @@
 #include "data.h"
 #include "geometry.h"
 
-#define PI 3.141592653589793238462643383279502
-#define DEG2RAD (PI/180.)
-#define RAD2DEG (180./PI)
-
 /**********************************************************************
  **********************************************************************
  *****  Vector basics
@@ -1256,7 +1252,7 @@ void sort_by_angle_2d(DUMBLIST *horde) {
  * that gets the rejects.  On exit, the output array (which you
  * have to supply, pre-allocated) contains N HULL_VERTEXes
  * (N is the number of vertices in the final hull).
- * Each voronoi vertex is the one to the right of the corresponding 
+ * Each voronoi vertex is the one to the left of the corresponding 
  * neighbor point.
  * 
  * Typical usage:
@@ -1278,20 +1274,20 @@ void sort_by_angle_2d(DUMBLIST *horde) {
  * The sort-by-angle step requires that the projected radius and 
  * angle fields in the VERTEX be filled; this is performed by 
  * project_n_fill, which should be called before hull_2d.
- * 
+ * *
  */
 
 
 void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   NUM epsilon=1e-19; // double-precision roundoff
-  NUM right[2], left[2], b0[3],b1[3];
+  NUM left[2], right[2], b1[3], *b0;
   NUM a,b;
   int outdex = 0;
   char cache_ok = 0;
   char reject_collinear;
   char redo = 0;
-  int j = -1;         /* j gets -1 or the next leftward VERTEX */
-  int k = -1;         /* k gets -1 or the next rightward VERTEX */
+  int j = -1;         /* j gets -1 or the next rightward VERTEX */
+  int k = -1;         /* k gets -1 or the next leftward VERTEX */
   int i;
   
   if(horde->n < 1)
@@ -1301,9 +1297,9 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
   /* Assemble the intersection points with neighbors, rejecting as necessary
    * on the way.  Algorithm:
-   *   - Calculate right vertex.
-   *   - Check if you have a cached left vertex and if not, calculate one.
-   *   - Compare cached left vertex and newly calculated right vertex
+   *   - Calculate left vertex.
+   *   - Check if you have a cached right vertex and if not, calculate one.
+   *   - Compare cached right vertex and newly calculated left vertex
    *   - Reject if necessary, voiding the cache.
    *   - Repeat until you get to an old, accepted vertex.
    */
@@ -1320,8 +1316,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  fprintf(stderr,"hull bug:  eliminated all vertices!\n");
 	  exit(53);
 	}
-      } else {  /* Normal path -- element is not missing... */
-
+      } else /* element not missing - evaluate */ { 
 
 	/* Skip degenerate points too -- this should't be necessary
 	   if they've been pre-winnowed; but it's here for belt-and-
@@ -1337,13 +1332,14 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	ivec = ((VERTEX *)(horde->stuff[i]))->scr;
 	
 	/* Grab perpendicular bisector for this guy */
+	b0 = &(out[outdex].bisector[0]);
 	perp_bisector_2d(b0, 0, ((VERTEX *)((horde->stuff[i])))->scr);
 	
-	/* Check cache and if necessary calculate the left side */
+	/* Check cache and if necessary calculate the right side */
 	if(cache_ok) { 
 	  /* Last item was kept -- copy its vertex info into the LHS. */
-	  left[0] = right[0];
-	  left[1] = right[1];
+	  right[0] = left[0];
+	  right[1] = left[1];
 	  jvec = ((VERTEX *)(horde->stuff[j]))->scr;
 	} else {
 	  /* Last item wasn't kept -- find the previous vertex and 
@@ -1357,10 +1353,10 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  }
 	  jvec = ((VERTEX *)(horde->stuff[j]))->scr;
 	  if(j==i) 
-	    left[1] = left[0] = NAN;
+	    right[1] = right[0] = NAN;
 	  else {
 	    perp_bisector_2d(b1, 0, jvec);
-	    intersection_2d(left, b0, b1);
+	    intersection_2d(right, b0, b1);
 	  }
 	}
 	
@@ -1380,10 +1376,10 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  NUM knorm = norm_2d(kvec);
 	  NUM jnorm = norm_2d(jvec);
 	  perp_bisector_2d(b1, 0, kvec);
-	  intersection_2d(right,b0,b1);
+	  intersection_2d(left,b0,b1);
 	
 	  /* Check for collinearity with neighbors, either the 
-	   *  right or left side. 
+	   *  left or right side. 
 	   * It would shave a few usec to stash knorm somewhere and
 	   * reuse for inorm -- but I can't be bothered. */
 	  
@@ -1405,7 +1401,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	}
 
 	/* Only reject if the neighbors are less than 180 deg from each 
-	 * other and the left and right neighboring vertices are in the wrong
+	 * other and the right and left neighboring vertices are in the wrong
 	 * order (the neighbor bisectors crossed before hitting this one). 
 	 * 
 	 * Alternatively, reject if either neighbor is collinear and shorter
@@ -1413,7 +1409,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	 */
 
 	a = cross_2d(jvec,kvec);
-	b = cross_2d(left,right);
+	b = cross_2d(right,left);
 	//	if( ( (!(j==k)) && (a * b < 0) )
 	if( ( (!(j==k)) &&
 	      finite(a) && finite(b) && (a > 0 && b < 0))
@@ -1439,32 +1435,33 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	    outdex--;
 	  }
 	  j=-1;
-
 	} else {  /* End of rejection code; start of acceptance code */
 	  
 	  /* accept */
-	  out[outdex].p[0] = right[0];
-	  out[outdex].p[1] = right[1];
+	  out[outdex].p[0] = left[0];
+	  out[outdex].p[1] = left[1];
 
 	  /* assignment below */
-	  if ( out[outdex].open = !(finite(right[0]) && finite(right[1]) 
+	  if ( out[outdex].open = !(finite(left[0]) && finite(left[1]) 
 				    && fabs(cross_2d(ivec,kvec)>epsilon)) ) {
-	    out[outdex].a = atan2(kvec[1],kvec[0])+PI/2;
-	    out[outdex].a -= 2*PI if(out[outdex].a > PI);
+	    out[outdex].a = ((VERTEX *)(horde->stuff[i]))->a + PI/2;
+	    //	    out[outdex].a = atan2(kvec[1],kvec[0])+PI/2;
+	    if(out[outdex].a > PI) 
+	      out[outdex].a -= 2*PI;
 	  } else 
-	    out[outdex].a = atan2(out[outdex].p[1],out[outdex].p[2]);
-	}
-
-	// I don't think that this is actually required 
-	//   -- CED 24-Aug-2004
-	//	  /* Clean up doubly-open case... */	  
-	//	if(out[outdex].open
-	//	     && outdex > 0
-	//	     && out[outdex-1].open) {
-	//	    out[outdex].p[0] = kvec[0]/2;
-	//	    out[outdex].p[1] = kvec[0]/2;
-	//	  }
-	    
+	    out[outdex].a = atan2(out[outdex].p[1],out[outdex].p[0]);
+	  
+	  
+	  // I don't think that this is actually required 
+	  //   -- CED 24-Aug-2004
+	  //	  /* Clean up doubly-open case... */	  
+	  //	if(out[outdex].open
+	  //	     && outdex > 0
+	  //	     && out[outdex-1].open) {
+	  //	    out[outdex].p[0] = kvec[0]/2;
+	  //	    out[outdex].p[1] = kvec[0]/2;
+	  //	  }
+	  
 	  outdex++;
 	  cache_ok = 1;
 	  j=i;
@@ -1478,10 +1475,11 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	    break;
 	  }
 	}          /* End of acceptance case*/
-      }      /* End of nulled-out entry skipper */
+      }            /* End of evaluation case (non-skip) */
     }              /* End of for loop */
-
-
+	
+      
+      
     /* Fix up the horde -- crunch it down to size. */
     for(j=i=0;i<horde->n;i++) {
       if(horde->stuff[i]) {

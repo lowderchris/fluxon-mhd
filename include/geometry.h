@@ -117,8 +117,15 @@ int find_neighbors_from_list(VERTEX *tp,
 typedef struct HULL_VERTEX {
   NUM p[2];  /* point coordinates */
   NUM a;     /* point angle -- cached here to avoid multiple atan2 calls */
+  NUM bisector[3]; /* bisector point -- cached here for use later */
   char open; /* indicates point is at infinity */
 } HULL_VERTEX;
 
 void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects);
 #endif /* overall file include */
+
+
+
+#define PI 3.141592653589793238462643383279502
+#define DEG2RAD (PI/180.)
+#define RAD2DEG (180./PI)

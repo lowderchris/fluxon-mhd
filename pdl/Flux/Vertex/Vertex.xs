@@ -49,19 +49,20 @@ PREINIT:
 CODE: 
   v = SvVertex(vrt,"Flux::Vertex::_stringify");
   if(v->line) {
-	sprintf(str,"vertex %5d (fl %5d): xyz=%5.3g,%5.3g,%5.3g, n=%5d,p=%5d, out/in:%2d/%2d\n",
+	sprintf(str,"vertex %5d (fl %5d): xyz=%7.3g,%7.3g,%7.3g, |B|=%7.3g, n=%5d,p=%5d, out/in:%2d/%2d\n",
 	v->label,
 	v->line->label,
 	v->x ? v->x[0]:-1e64,
 	v->x ? v->x[1]:-1e64,
 	v->x ? v->x[2]:-1e64,
+	v->b_mag,
 	v->next ? v->next->label : 0,
 	v->prev ? v->prev->label : 0, 
 	v->neighbors.n,
         v->nearby.n
         );
   } else {
-	sprintf(str,"vertex %5d (IMAGE; xyz may be invalid): xyz=%5.3g,%5.3g,%5.3g\n",v->label, v->x?v->x[0]:-1e64, v->x?v->x[1]:-1e64, v->x?v->x[2]:-1e64);
+	sprintf(str,"vertex %5d (IMAGE; xyz may be invalid): xyz=%7.3g,%7.3g,%7.3g\n",v->label, v->x?v->x[0]:-1e64, v->x?v->x[1]:-1e64, v->x?v->x[2]:-1e64);
   }
 
   RETVAL = str;

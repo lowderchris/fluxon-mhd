@@ -212,6 +212,8 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   tp->x[1] = y;
   tp->x[2] = z;
   tp->line = fluxon;
+  tp->b_mag = 0;
+  tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
   tp->prev = 0;
   tp->next = 0;
   tp->label = new_vertex_label(label);
@@ -304,8 +306,8 @@ WORLD *new_world() {
 
   /* Put in a sensible default force list */
   a->f_funcs[0] = b_eqa;
-  a->f_funcs[1] = f_curv;
-  a->f_funcs[2] = f_p_eqa;
+  a->f_funcs[1] = f_curvature;
+  a->f_funcs[2] = f_pressure_equi; 
   a->f_funcs[3] = f_vertex;
   a->f_funcs[4] = 0;
 

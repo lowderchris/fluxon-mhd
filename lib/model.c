@@ -555,8 +555,8 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 	 space */
       reflect(v->line->fc0->world->image->x, v->x, phot);
       reflect(v->line->fc0->world->image->next->x, v->next->x, phot);
+      dumblist_add(workspace, v->line->fc0->world->image);
     }
-    dumblist_add(workspace, v->line->fc0->world->image);
   }
 
   /* Sort by vertex number, to avoid simple duplication */
@@ -703,12 +703,12 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
 
   
   if(verbosity >= 5) {
-    printf("V%4d: (%8g, %8g, %8g) -- (%8g, %8g, %8g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
+    printf("V%4d: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
     for(i=0;i<horde->n;i++) {
       NUM p0[3], p1[3];
       fl_segment_deluxe_dist(p0, p1, v, ((VERTEX *)(horde->stuff[i])));
 
-      printf("\tV%4d:  3d=%g\tproj dist=%g (%8g, %8g, %8g) -- (%8g, %8g, %8g).  Closest approach: (%8g, %8g, %8g) -- (%8g, %8g, %8g)\n"
+      printf("\tV%4d:  3d=%g\tproj dist=%7.3g (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g).  Closest approach: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n"
 	     ,((VERTEX *)(horde->stuff[i]))->label
 	     ,((VERTEX *)(horde->stuff[i]))->r_cl
 	     ,((VERTEX *)(horde->stuff[i]))->r

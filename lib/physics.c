@@ -41,9 +41,9 @@
 struct FLUX_FORCES FLUX_FORCES[] = {
   {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
   {"f_curvature","(OLD) simple curvature force over B (DEPRECATED)",f_curvature},
-  {"f_p_eqa","(OLD) 2001 pressure law over B (DEPRECATED)",f_p_eqa},
-  {"f_pressure_eq","2004 angular equipartition pressure law",f_pressure_eq},
-  {"f_curv","DeForest/Kankelborg 2004 curvature law",f_curv},
+  {"f_pressure_equi","(OLD) 2001 pressure law over B (DEPRECATED)",f_pressure_equi},
+  {"f_pressure_eq","Angular equipartition pressure law",f_pressure_eq},
+  {"f_curv","Curvature force law (harmonic mean curvature)",f_curv},
   {"f_vertex","Vertex distribution pseudo-force",f_vertex},
   {0,0,0}
 };
@@ -150,28 +150,28 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
   for(i=0;i<V->neighbors.n;i++) {
     NUM f_i[3];
     NUM phi_l, phi_r, deltaphi, f;
-    HULL_VERTEX *right, *left;
+    HULL_VERTEX *left, *right;
     VERTEX *N = (VERTEX *)V->neighbors.stuff[i];
 
-    right = &verts[i];
-    left = (i==0) ? &verts[V->neighbors.n - 1] : &verts[i-1];
+    left = &verts[i];
+    right = (i==0) ? &verts[V->neighbors.n - 1] : &verts[i-1];
     
     /* Calculate delta-phi by calculating the maximal phis and subtracting. 
      * In the open case, the endpoint phi is the angle at which the 
      * perpendicular bisector to r_i goes away.  In the closed case, 
      * it's the angle to the vertex.
      */
-    if(right->open){
+    if(left->open){
       phi_r = atan2( N->scr[1], N->scr[0] ) + M_PI_2 ;
     } else 
-      phi_r = atan2( right->p[1], right->p[0] );
+      phi_r = atan2( left->p[1], left->p[0] );
     if(phi_r < 0)
       phi_r += 2 * M_PI;
     
-    if(left->open) {
+    if(right->open) {
       phi_l = atan2( N->scr[1], N->scr[0] ) - M_PI_2 ;
     } else
-      phi_l = atan2( left->p[1], left->p[0] );
+      phi_l = atan2( right->p[1], right->p[0] );
     if(phi_l < 0)
       phi_l += 2 * M_PI;
     
@@ -179,7 +179,7 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
     if(deltaphi < -1e-4 ) /* Should be 0; allow for slop */
       deltaphi += 2 * M_PI;
 
-    /*    printf("from %d - %d: deltaphi is %g deg; left->open=%d; right->open=%d\n",((VERTEX *)(V->neighbors.stuff[i]))->label, ((VERTEX *)(V->neighbors.stuff[(i+1)%V->neighbors.n]))->label,deltaphi*180/M_PI,left->open,right->open); */
+    /*    printf("from %d - %d: deltaphi is %g deg; right->open=%d; left->open=%d\n",((VERTEX *)(V->neighbors.stuff[i]))->label, ((VERTEX *)(V->neighbors.stuff[(i+1)%V->neighbors.n]))->label,deltaphi*180/M_PI,right->open,left->open); */
 
     if(deltaphi > M_PI) 
       fprintf(stderr,"Assertion failed!  deltaphi > M_PI in f_pressure_equi (%18.12g deg)\n",deltaphi*180/M_PI);
@@ -330,9 +330,7 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
  * force or geometrical calculations.  The B routines must calculate
  * not only the magnetic field but also the projected distances and 
  * angles to the relevant other points.
- * 
- *  [ note: r and a may already be set by the hull_2d routine -- 
- *    check that? ]
+ *
  */
 
 /**********************************************************************
@@ -341,14 +339,138 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
  * Not truly a force, but required for the others.  Calculates 
  * B and |B| and inserts them into the VERTEX.  b_eqa uses the 
  * angular equiparition estimate, and delivers a phi-averaged
- * magnitude.  See DeForest notebooks v. VIII, p. 62.
+ * magnitude.  See DeForest notebooks v. VIII, p. 70.
+ *
+ * The flux is taken from the fluxon itself, in preparation for 
+ * future non-uniform-flux-per-fluxon simulations although now 
+ * (august 2004) it's not here.
  * 
  */
 void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
-  NUM Bmag;
-  DUMBLIST *ndl=&(V->neighbors); /* neighbor dumblist */
-  NUM n = V->neighbors.n;
-  VERTEX **nv = (VERTEX **)V->neighbors.stuff
+  NUM Bmag = 0;
+  static NUM vec1[3],vec2[3];
+  VERTEX **nv = (VERTEX **)(V->neighbors.stuff);
+  int n = V->neighbors.n;
+  int i;
 
+  for(i=0;i<n;i++) {
+    HULL_VERTEX *left = &(verts[i]);
+    HULL_VERTEX *right = i==0 ? &(verts[n-1]) : &(verts[i-1]);
+    VERTEX *v = nv[i];
+
+    NUM righta = right->a;
+    /* open left vertices are OK; open right vertices must be calculated 
+     * from the current vertex.
+     */
+    if(right->open) {
+      righta = v->a - PI/2;
+      if(righta <= -PI)
+	righta += 2*PI;
+    } else
+      righta = right->a;
+
+    if(righta>left->a)
+      righta -= 2*PI;
+    
+    if(V->line->fc0->world->verbosity >= 4) {fprintf(stderr,"b_eqa force: VERTEX %5d, neighbor %5d, a=%7.3g, r=%7.3g, righta = %7.3g(%c), left->a=%7.3g(%c)\n",V->label, v->label,v->a*180/PI, v->r, righta*180/PI,right->open?'o':'c',left->a*180/PI,left->open?'o':'c');
+    }
+
+    /* formula wants \frac{1}{2r_p^2}; but VERTEX r is 2r, so
+     * we instead use \frac{2}{r^2}...
+     */
+    Bmag +=  
+          ( 0.5 * ( sin( 2 * ( left->a - v->a ) ) -
+		  sin( 2 * ( righta  - v->a ) ) )
+	  + left->a - righta
+	  ) / (nv[i]->r * nv[i]->r) ;
+  }
+  
+  Bmag *= V->line->flux * ( 1 / ( 2 * PI * PI ) );
+
+  V->b_mag = Bmag;
+
+  /********************
+   * Now calculate the B direction -- it's the average direction of the
+   * two unit vectors associated with the VERTEX (unless the VERTEX is
+   * an endpoint in which case it's the direction of the endpoint!)
+   * Since final endpoints don't have neighbors or forces (fenceposting), 
+   * the no-next-guy case should never happen, but it's here for completeness.
+   */
+  if(V->next && V->prev) { 
+    Bmag *= 0.5;  /* WARNING - Bmag no good below here */
+    diff_3d(vec1,V->next->x,V->x);
+    scale_3d(vec1,vec1,Bmag/norm_3d(vec1));
+    diff_3d(vec2,V->x,V->prev->x);
+    scale_3d(vec2,vec2,Bmag/norm_3d(vec2));
+    sum_3d(V->b_vec,vec1,vec2);
+  } elsif(V->next) {
+    diff_3d(vec1,V->next->x,V->x);
+    scale_3d(V->b_vec,Bmag/norm_3d(vec1));
+  } elsif(V->prev) {
+    diff_3d(vec1,V->x,V->prev->x);
+    scale_3d(V->b_vec,Bmag/norm_3d(vec1));
+  } else {
+    fprintf(stderr,"b_eqa: got an invalid VERTEX! I quit!\n");
+    exit(99);
+  }
+
+}
+		       
+
+/**********************************************************************
+ * f_curv
+ * Curvature `force':   (B^ . \del) B^ 
+ *      = b^_x ( db^_x / dx ) + b^_y ( db^_y / dy ) + b^_z ( db^_z / dz )
+ * 
+ * but b^ is just l^.
+ *
+ * The curvature force is a vertex-centered force.  There's actually 
+ * a little too much information:  not only do we get an angle and a 
+ * length, we get an extra length too (there are *two* legs out of the
+ * segment, not just one, and they have differing lengths).  I use 
+ * the harmonic mean because that's dominated by the smaller of the
+ * two lengths rather than by the larger.
+ *
+ * f_curv is multiplied by the magnetic field magnitude, unlike
+ * its deprecated predecessor, f_curvature.
+ * 
+ */
+void f_curv(VERTEX *V, HULL_VERTEX *verts) {
+  NUM recip_l1, recip_l2, recip_len, len;
+  NUM b1hat[3];
+  NUM b2hat[3];
+  NUM curve[3];
+  NUM force[3];
+
+
+  if(!V->next || !V->prev) 
+    return;
+
+  diff_3d(b2hat,V->next->x,V->x);
+  scale_3d(b2hat,b2hat, (recip_l2 = 1.0 / norm_3d(b2hat)));
+
+  diff_3d(b1hat,V->x,V->prev->x);
+  scale_3d(b1hat,b1hat, (recip_l1 = 1.0 /norm_3d(b1hat)));
+
+  recip_len =  ( recip_l1 + recip_l2 ) / 2;
+  
+  diff_3d(curve,b2hat,b1hat);
+  scale_3d(curve,curve, recip_len * V->b_mag);
+
+  sum_3d(V->f_v,V->f_v,curve);
+
+  V->f_v_tot += norm_3d(curve);
+
+  if(V->a < 0 || V->a > (len = ( (recip_l2 > recip_l1) ? (1.0/recip_l2) : (1.0/recip_l1) ) ) );
+    V->a = len;
+}
+
+					  
+
+		  
   
 
+
+
+  
+  
