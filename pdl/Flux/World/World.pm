@@ -393,8 +393,28 @@ sub forces {
 
 
 
+=pod
 
+=head2 photosphere
 
+=for usage
+
+ $phot = pdl($world->photosphere);
+ $world->photosphere([$phot->list]);
+
+=for ref
+
+With no additional arguments, returns a six-element list containing the 
+(origin, normal-vector) coordinates of the photospheric plane, or a
+zero-element list indicating that there is no photospheric plane.  If you
+pass in a list ref, it is used to set the photospheric plane parameters.
+
+=cut
+
+sub photosphere {
+    return @{_photosphere(@_)};
+}
+  
 1;
 
 

@@ -283,3 +283,58 @@ CODE:
      } else {
         w->f_funcs[where] = FLUX_FORCES[j].func;
      }
+
+AV *
+_photosphere(wsv,plane=0)
+SV *wsv
+SV *plane
+PREINIT:
+ WORLD *w;
+ SV *sv;
+ AV *av;
+ int i;
+/**********************************************************************
+ * _photosphere
+ * Set the location of the photospheric plane from a perl array
+ */
+CODE:
+ w = SvWorld(wsv,"Flux::World::_set_plane");
+ av_clear(RETVAL = newAV());
+ if(plane==0 || plane==&PL_sv_undef) {
+   /* dump */
+   if(w->photosphere) {
+     av_extend(RETVAL,6);
+     PLANE *p = w->photosphere;
+     sv=newSVnv(p->origin[0]); av_store(RETVAL,0,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->origin[1]); av_store(RETVAL,1,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->origin[2]); av_store(RETVAL,2,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->normal[0]); av_store(RETVAL,3,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->normal[1]); av_store(RETVAL,4,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->normal[2]); av_store(RETVAL,5,sv) || svREFCNT_dec(sv);
+   }
+ } else {
+  PLANE *newp;
+  /* set */
+  if(!SvROK(plane) || SvTYPE(SvRV(plane))!= SVt_PVAV) 
+    croak("Flux::World::_set_plane: 2nd arg must be array ref");
+  av = (AV *)SvRV(plane);
+  if(av_len(av)<0) {
+    newp = 0;
+  } else {
+    SV **s1;
+    (newp = (PLANE *)malloc(sizeof(PLANE))) || (croak("malloc failed"),(PLANE *)0);
+    s1 = av_fetch(av,0,0); newp->origin[0] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,1,0); newp->origin[1] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,2,0); newp->origin[2] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,3,0); newp->normal[0] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,4,0); newp->normal[1] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,5,0); newp->normal[2] = SvNV(s1?*s1:&PL_sv_undef);
+  }
+  if(w->photosphere) {
+    free(w->photosphere);
+  }
+  w->photosphere = newp;
+}
+OUTPUT:
+ RETVAL
+

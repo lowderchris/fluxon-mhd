@@ -277,9 +277,14 @@ WORLD *new_world() {
   a->state = WORLD_STATE_NEW;
   a->concentrations = NULL;
   a->lines = NULL;
+
   a->photosphere = NULL;
-  a->image = NULL;
-  a->image2 = NULL;
+  /* Initialize the two dummy vertices for the mirroring */
+  a->image = new_vertex(1,0,0,0,NULL);
+  a->image2 = new_vertex(2,0,0,0,NULL);
+  a->image->next = a->image2;
+  a->image2->prev = a->image;
+
   a->verbosity = 0;  /* No verbose printouts by default */
 
   /* Put in a sensible default force list */
