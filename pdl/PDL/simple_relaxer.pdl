@@ -28,12 +28,13 @@ sub simple_relaxer {
 
 	
 	$fmax = $w->update_force($global);
-	$w->relax_step($dt/$fmax);
+#	$w->relax_step($dt/$fmax);
+	$w->relax_step($dt);
 
 	$h = $w->stats;
 	
 	$t += $dt/$fmax;
-	printf(" time is now %7.3g (%d vertices; fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$fmax,$h->{f_av},$h->{fs_av},
+	printf(" time is now %10.4g (%d vertices; fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$fmax,$h->{f_av},$h->{fs_av},
 	$h->{n_av});
 
 	if($auto) {	
@@ -44,7 +45,7 @@ sub simple_relaxer {
 	}
 
 	unless($step %3 ) {
-	    $w->render_lines($interactive);
+	    $w->render_lines($interactive,$range);
 	}
 
 #	unless($step % 100) {
