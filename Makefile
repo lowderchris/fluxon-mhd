@@ -5,7 +5,8 @@
 # to figure it out -- CED 18-Aug-2004
 
 all: 
-	cd lib; make all
+	pushd lib; make all; popd
+	pushd pdl; make all; popd
 
 install: libinstall
 
