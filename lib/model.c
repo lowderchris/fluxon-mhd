@@ -684,7 +684,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
    * The projected vectors go into the vertices' scratch space.    
    */
 
-  project_n_fill(v, horde);
+  project_n_fill(v, horde); /* in geometry.c */
 
   /* Grow the buffer if necessary. */
   if(voronoi_bufsiz < horde->n) {

@@ -28,6 +28,13 @@
 
 #include <stdio.h>
 
+#include "pdl.h"
+#include "pdlcore.h"
+
+static Core* PDL; /* PDL core functions (run-time linking)     */
+static SV* CoreSV;/* gets perl var holding the core structures */
+
+
 MODULE = Flux::Vertex      PACKAGE = Flux::Vertex
 
 char *
@@ -118,13 +125,14 @@ PREINIT:
  */
 CODE:
  v = SvVertex(svrt,"Flux::Vertex::_adjacent");
- RETVAL = newAV(); /* initialize array */
- 
+
  if(nearby)
   dl = &(v->nearby);
  else 
   dl = &(v->neighbors);
  
+
+ RETVAL = newAV(); /* initialize array */
  av_clear(RETVAL);
  av_extend(RETVAL,dl->n);
  for(i=0; i<dl->n; i++) {
@@ -141,4 +149,53 @@ OUTPUT:
  RETVAL
 
  
-  
+SV *
+hull(svrt,global=0)
+SV *svrt
+char global
+PREINIT:
+ VERTEX *v;
+ pdl *p;
+ HULL_VERTEX *hull_verts;
+ PDL_Long dims[2];
+ int i;
+ PDL_Double *d;
+CODE:
+ v = SvVertex(svrt,"Flux::Vertex::hull");
+
+ hull_verts = vertex_update_neighbors(v, global);
+ 
+ /* Now stuff the hull vertices into the first PDL. */
+ p = PDL->create(PDL_PERM);
+ dims[0] = 5;
+ dims[1] = v->neighbors.n;
+ PDL->setdims(p,dims,2);	
+ p->datatype = PDL_D;
+ PDL->allocdata(p);
+ PDL->make_physical(p);
+ d =  p->data;
+ for(i=0;i<v->neighbors.n; i++) {
+   *(d++) = ((VERTEX *)(v->neighbors.stuff[i]))->scr[0];
+   *(d++) = ((VERTEX *)(v->neighbors.stuff[i]))->scr[1];
+   *(d++) = hull_verts[i].p[0];
+   *(d++) = hull_verts[i].p[1];
+   *(d++) = (double)(hull_verts[i].open);
+ }
+ RETVAL = NEWSV(545,0); /* 545 is arbitrary tag */
+ PDL->SetSV_PDL(RETVAL,p);
+OUTPUT:
+ RETVAL
+
+BOOT:
+/**********************************************************************
+ **********************************************************************
+ **** bootstrap code -- load-time dynamic linking to pre-loaded PDL
+ **** modules and core functions.   **/
+ perl_require_pv("PDL::Core");
+ CoreSV = perl_get_sv("PDL::SHARE",FALSE);
+ if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux::Fluxon)");
+
+ PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
+ if (PDL->Version != PDL_CORE_VERSION)
+    Perl_croak(aTHX_ "Flux::Fluxon needs to be recompiled against the newly installed PDL");
+
