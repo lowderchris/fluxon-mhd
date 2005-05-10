@@ -146,13 +146,21 @@ typedef struct PLANE {
   NUM normal[3];
 } PLANE;
 
+#define PHOT_NONE 0
+#define PHOT_PLANE 1
+#define PHOT_SPHERE 2
+
+typedef struct PHOTOSPHERE {
+  PLANE *plane;
+  int   type;
+} PHOTOSPHERE;
+
 #define WORLD_STATE_NEW     0
 #define WORLD_STATE_LOADING 1
 #define WORLD_STATE_LOADED  2
 #define WORLD_STATE_WORKING 3
 #define WORLD_STATE_RELAXED 4
 #define WORLD_STATE_READY   5
-
 
 #define N_FORCE_FUNCS 30    /* Number of functions allowed in the force list */
 typedef struct WORLD {
@@ -162,7 +170,7 @@ typedef struct WORLD {
   FLUX_CONCENTRATION *concentrations;
   FLUXON *lines;
 
-  PLANE *photosphere;
+  PHOTOSPHERE photosphere;
   VERTEX *image, *image2;
   NUM locale_radius;        /* Default radius for concentrations' neighborhoods */
 
@@ -308,10 +316,18 @@ void flux_memcheck();
 #include "perlapi.h"
 
 #else
+#ifdef USE_PADDED_MALLOC
 
+ #define localmalloc(x,y) flux_padded_malloc(x)
+ #define localfree(x) flux_padded_free(x)
+
+#else
+
+/*** Default case: just use normal malloc ***/
  #define localmalloc(x,y) malloc(x)
  #define localfree(x) free(x)
 
+#endif /**** use_padded_malloc test ***/
 #endif /**** use_perl_malloc test ****/
 #endif /**** malloc switch ****/
 
