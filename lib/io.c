@@ -385,26 +385,35 @@ int footpoint_action(WORLD *world, char *s) {
 	case 'P': /* GLOBAL PHOTOSPHERE ... */
 	  {
 	    PLANE *p = (PLANE *)0;
+	    int typ;
+	    int nval;
 
 	    if(s[off]!='<') {  /* do nothing for <NONE> */
 	      p = (PLANE *)localmalloc(sizeof(PLANE),MALLOC_PLANE);
 	      char phscan[80];
-	      sprintf(phscan,"%%%sf %%%sf %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
-	      if( 6 != sscanf(s+off,phscan
+	      sprintf(phscan,"%%%sf %%%sf %%%sf %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+	      if( 6 > (nval = sscanf(s+off,phscan
 			      ,&(p->origin[0])
 			      ,&(p->origin[1])
 			      ,&(p->origin[2])
 			      ,&(p->normal[0])
 			      ,&(p->normal[1])
-			      ,&(p->normal[2]) ) )
+			      ,&(p->normal[2])
+			      ,&typ
+				     ) ) )
 		badstr = "couldn't parse six values from GLOBAL PHOTOSPHERE ";
 	    }
-	    
+
+	    if(nval==6)
+	      typ = PHOT_PLANE;
+
 	    if(!badstr) {
-	      if(world->photosphere)
-		localfree(world->photosphere);
-	      world->photosphere = p;
+	      world->photosphere.type = typ;
+	      if(world->photosphere.plane)
+		localfree(world->photosphere.plane);
+	      world->photosphere.plane = p;
 	    }
+	    world->photosphere.type = PHOT_PLANE;
 	  } /* end of GLOBAL PHOTOSPHERE convenience block */
           break;
 
@@ -525,10 +534,10 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   fprintf(file,"GLOBAL PHOTOSPHERE ");
   if(world->photosphere) {
     static char fmt[80];
-    PLANE *p=world->photosphere;
+    PLANE *p=world->photosphere.plane;
 
-    sprintf(fmt,"%%%sg %%%sg %%%sg %%%sg %%%sg %%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
-    fprintf(file,fmt,p->origin[0],p->origin[1],p->origin[2],p->normal[0],p->normal[1],p->normal[2]);
+    sprintf(fmt,"%%%sg %%%sg %%%sg %%%sg %%%sg %%%sg %%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+    fprintf(file,fmt,p->origin[0],p->origin[1],p->origin[2],p->normal[0],p->normal[1],p->normal[2],world->photosphere.type);
 
   } else {
     fprintf(file,"<NONE>\n");

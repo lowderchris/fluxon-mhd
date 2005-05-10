@@ -621,15 +621,20 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
    * new neighbor, but that doesn't seem to cause problems in practice.
 
   /* Snarf neighbors */
-
   if(!global) {
     VERTEX *v1;
-
+    
+    if(verbosity >= 3) 
+      printf("Using local neighbors...");
+    
     /* Grab neighbors & nearby from vertex & its siblings */
-    snarf_list(workspace2,&v,1); 
-
-        if(v->next)     snarf_list(workspace2,&(v->next),1);
-        if(v->prev)     snarf_list(workspace2,&(v->prev),1);
+    snarf_list(workspace,&v,1); 
+    
+    if(v->next)     snarf_list(workspace,&(v->next),1);
+    if(v->prev)     snarf_list(workspace,&(v->prev),1);
+    
+    if(verbosity >=3)
+      printf("Found %d ...",workspace->n);
 
     /* Grab siblings of all the neighbors & nearby */
     // expand_list(workspace2);
@@ -649,6 +654,9 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   */
   if(global || (workspace->n == 0)) {
     FLUXON *f;
+
+    if(verbosity >= 3)
+      printf("Using global neighbors...");
 
     /* Snarf every vertex into the list! (sloooow) */
     f = v->line;
@@ -674,13 +682,45 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 
   /* If there's a photosphere, add the dummy photospheric mirror image */
   if(v->next) {
-    PLANE *phot;
-    if(phot = v->line->fc0->world->photosphere) { /* assignment */
+    PHOTOSPHERE *phot;
+    PLANE *p;
+    if(phot = &(v->line->fc0->world->photosphere)) { /* assignment */
       /* Generate image and stuff it into the image point in the world
 	 space */
-      reflect(v->line->fc0->world->image->x, v->x, phot);
-      reflect(v->line->fc0->world->image->next->x, v->next->x, phot);
-      dumblist_add(workspace, v->line->fc0->world->image);
+      p = phot->plane;
+      switch(phot->type) {
+	PLANE pl;
+	POINT pt;
+      case PHOT_SPHERE:
+	/* Construct the perpendicular plane */
+
+	/* midpoint of fluxel */
+	sum_3d(pt,v->x,v->next->x);
+	scale_3d(pt,pt,0.5);
+	
+	/* unit vector from center of Sun toward fluxel */
+	diff_3d(pt, pt, p.origin );
+	scale_3d(pl.normal, pt, 1.0/norm_3d(pt));
+
+	/* first 'normal' coordinate of plane is solar radius: */
+	/* generate 1 solar radius vector and offset to find   */
+	/* tangent-plane origin */
+	scale_3d(pl.origin, pl.normal, p.normal[0]);
+	sum_3d(pl.origin, pl.origin, p.origin);
+
+
+	p=pl;
+	/* fall through to reflect from tangent plane */
+	  
+      case PHOT_PLANE:
+	reflect(v->line->fc0->world->image->x, v->x, p);
+	reflect(v->line->fc0->world->image->next->x, v->next->x, p);
+	dumblist_add(workspace, v->line->fc0->world->image);
+	break;
+      default:
+	fprintf(stderr,"Illegal photosphere type %d!\n",phot->type);
+	exit(13);
+      }
     }
   }
 

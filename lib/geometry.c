@@ -1283,21 +1283,23 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	horde->stuff[i] = 0;
 
 	if(been_there || (i > i_r)) {
-
 	  i = i_r;
+
 	  iv = rv;
 
 	  for(i_r=MOD_PREV(i,n); i_r!=i && !horde->stuff[i_r]; MOD_DEC(i_r,n))
 	    ;
+	  terminus =i_r;
 	  rv = (VERTEX *)(horde->stuff[i_r]);
 	  
 
 	} else {
 
 	  i = i_l;
+          terminus = i_r;
 	  iv = lv;
 
-
+	  been_there = 0;
 
 	  a = iv->a - rv->a; TRIM_ANGLE(a);
 	  if(a<0) {
@@ -1309,7 +1311,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  }
 	}
 	
-	terminus = i_r;
 
       }
 

@@ -53,8 +53,7 @@ static SV* CoreSV;/* gets perl var holding the core structures */
 static AV *fluxons_av;
 static long fluxons_helper(void *tree, int lab_of, int ln_of, int depth) {
  SV *sv = newSViv(((FLUXON *)tree)->label);
- if(  !(  av_store(fluxons_av, av_len(fluxons_av)+1, sv)  )   )
-	svREFCNT_dec(sv);
+ av_store(fluxons_av, av_len(fluxons_av)+1, sv) || svREFCNT_dec(sv);
  return 0;
 }
 

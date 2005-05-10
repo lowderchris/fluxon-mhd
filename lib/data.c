@@ -272,7 +272,9 @@ WORLD *new_world() {
   a->concentrations = NULL;
   a->lines = NULL;
 
-  a->photosphere = NULL;
+  a->photosphere.type = 0;
+  a->photosphere.plane = NULL;
+
   /* Initialize the two dummy vertices for the mirroring */
   a->image = new_vertex(1,0,0,0,NULL);
   a->image2 = new_vertex(2,0,0,0,NULL);
@@ -1433,7 +1435,7 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   void **dl_a;
   int i;
 
-  if( dl->n <= 500 ) { 
+  if( 1 || dl->n <= 500 ) {             /* always use shellsort for now... */
     dumblist_shellsort(dl,cmp);
     dumblist_crunch(dl,cmp);
   } else {
@@ -1571,6 +1573,19 @@ inline char fl_eq(NUM a, NUM b) {
  * A wrapper for malloc that includes optional fencing.
  * Only gets compiled if you asked for debugging malloc with
  * -DUSE_DEBUGGING_MALLOC at compile time.
+ *
+ * flux_malloc allocates a fence of size fencecount*sizeof(long) 
+ * on either side of each newly allocated bit of memory, then fills
+ * the fences with 0xDEADBEEF, and monitors them on every memory operation.
+ * If the fences get touched, a warning gets printed.
+ * 
+ * Of course, there is a rather severe hit on performance! 
+ * 
+ * With small fences (4 longs), memory contention issues still
+ * appear in the perl side -- notably, the malloc arena gets corrupted
+ * and the code crashes.  But none of the fences ever sustains a hit.
+ * With large fences (100 longs), the crashes go away -- but none
+ * of the fences ever seem to get touched. 
  * 
  */
 #ifdef USE_DEBUGGING_MALLOC
@@ -1589,7 +1604,9 @@ static struct flux_malloc_alloc {
   } flux_malloc_alloc[MALLOC_MAXNO];
   static int flux_malloc_next = 0;
 
-  
+#define fencecount (100)
+#define fencesize  (4*fencecount)
+
 char *flux_malloc(long size, int what_for) {
   char *p;
   long *p2;
@@ -1611,20 +1628,16 @@ char *flux_malloc(long size, int what_for) {
     }
     return (void *)0; 
   }
-
+  
   // call malloc and pad for the fence.
-  p = (char *)malloc(size + 16 + 16);
+  p = (char *)malloc(size + 2*fencesize);
   p2 = (long *)p;
-  *(p2++) = 0xDEADBEEF;
-  *(p2++) = 0xDEADBEEF;
-  *(p2++) = 0xDEADBEEF;
-  *(p2++) = 0xDEADBEEF;
+  { int i;
+  for(i=0;i<fencecount;i++) *(p2++) = 0xDEADBEEF;
   p = (char *)p2;
   p2 = (long *)(p+size);
-  *(p2++) = 0xDEADBEEF;
-  *(p2++) = 0xDEADBEEF;
-  *(p2++) = 0xDEADBEEF;
-  *p2 = 0xDEADBEEF;
+  for(i=0;i<fencecount;i++) *(p2++) = 0xDEADBEEF;
+  }
 
   flux_malloc_alloc[flux_malloc_next].where = p;
   flux_malloc_alloc[flux_malloc_next].size = size;
@@ -1646,7 +1659,7 @@ void flux_free(void *p) {
     flux_malloc_alloc[ok].where = 0;
     flux_malloc_alloc[ok].size = 0;
     flux_malloc_alloc[ok].type = 0;
-    free((char *)p-16);
+    free((char *)p-fencesize);
     return;
   } else {
     fprintf(stderr,"%%%%%%flux_free: got an unknown block to free");
@@ -1655,7 +1668,7 @@ void flux_free(void *p) {
       int i=0,j=2;
       j/=i;
     }
-    free((char *)p-16);
+    free((char *)p-fencesize);
     return;
   }    
 }
@@ -1670,7 +1683,6 @@ void flux_memcheck() {
   if(!foo) {
     foo = fopen("foo.txt","w");
   }
-
   fprintf(foo,"%c======memcheck table:\n",(char)12);
   for(i=0;i<flux_malloc_next;i++) {
     char type_bad=0;
@@ -1686,36 +1698,33 @@ void flux_memcheck() {
     if(!flux_malloc_alloc[i].where) {
       freed++;
     } else {
+      int ii;
       p = flux_malloc_alloc[i].where;
-      p2 = (long *)(p-16);
-      fence_bad += (*(p2++) != 0xDEADBEEF);
-      fence_bad += (*(p2++) != 0xDEADBEEF);
-      fence_bad += (*(p2++) != 0xDEADBEEF);
-      fence_bad += (*p2 != 0xDEADBEEF);
+      p2 = (long *)(p-fencesize);
+      
+      for(ii=0; ii<fencecount;ii++) 
+	fence_bad += (*(p2++) != 0xDEADBEEF);
       p2 = (long *)(p+flux_malloc_alloc[i].size);
       if(!valid_malloc_type(flux_malloc_alloc[i].type)) 
 	type_bad = 1;
-      fence_bad += (*(p2++) != 0xDEADBEEF);
-      fence_bad += (*(p2++) != 0xDEADBEEF);
-      fence_bad += (*(p2++) != 0xDEADBEEF);
-      fence_bad += (*p2 != 0xDEADBEEF);
+      for(ii=0; ii<fencecount; ii++)
+	fence_bad += (*(p2++) != 0xDEADBEEF);
     }
     if(fence_bad) {
+      int ii;
+      char buf[fencecount*2+10];
+      char *s=buf;
       // Announce the problem
-      fprintf(stderr,"%%%%%%flux_memcheck: slot %d, 0x%x (%s) has a bad fence!\n",i,p,type_bad?"UNKNOWN_TYPE":flux_malloc_types[flux_malloc_alloc[i].type]);
-
-      // mend fence
-      p2 = (long *)(p+flux_malloc_alloc[i].size);
-      *(p2++) = 0xDEADBEEF;
-      *(p2++) = 0xDEADBEEF;
-      *(p2++) = 0xDEADBEEF;
-      *p2 = 0xDEADBEEF;
-      p2 = (long *)(p-16);
-      *(p2++) = 0xDEADBEEF;
-      *(p2++) = 0xDEADBEEF;
-      *(p2++) = 0xDEADBEEF;
-      *p2 = 0xDEADBEEF;
-      fprintf(stderr,"\t\tfixed\n");
+      fprintf(stderr,"%%%%%%flux_memcheck: slot %d, 0x%x (%s) has a bad fence! (%d bad longs)\n",i,p,type_bad?"UNKNOWN_TYPE":flux_malloc_types[flux_malloc_alloc[i].type],fence_bad);
+      for(ii=0;ii<fencecount;ii++) {
+	*(s++) = ( ((long *)(flux_malloc_alloc[i].where - fencesize))[ii]==0xDEADBEEF ) ? 'X' : '.';
+      }
+      *(s++) = ' '; *(s++) = '|'; *(s++) = ' ';
+      for(ii=0;ii<fencecount;ii++) {
+	*(s++) = ( ((long *)(flux_malloc_alloc[i].where + flux_malloc_alloc[i].size))[ii]==0xDEADBEEF ) ? 'X' : '.';
+      }
+      fprintf(stderr,"  MAP: %s\n",buf);
+      // Should mend the fence here...
     }
     
     if(fence_bad || type_bad)
@@ -1736,6 +1745,12 @@ char *malloc_types[MALLOC_MAXTYPENO+1] = {
 #else
 #ifdef USE_PERL_MALLOC
 
+/******************************
+ * perl malloc uses the perl allocator; this was an idea 
+ * to avoid memory contention issues that cropped up with the 
+ * perl interface.  It doesn't help.
+ * --CED 27-Oct-2004
+ */
 char *flux_perl_malloc(long size) {
   char *out;
   New(0,out,size,char);
@@ -1755,6 +1770,25 @@ void flux_perl_free(void *foo) {
   //  Safefree(foo);   /* do nothing for now */
 }
 
+#else
+#ifdef USE_PADDED_MALLOC
+
+/********** 
+ * Padded malloc allocates more space but doesn't keep track of it.  That
+ * seems to make the perl allocator happy, I'm not sure why. (allocation pattern
+ * is similar to debugging malloc, but we don't bother with keeping track of the
+ * fencing).  
+ *  --CED 27-Oct-2004
+ */
+#define padding (500)
+char *flux_padded_malloc(long size) {
+  return malloc(size+2*padding)+padding;
+}
+
+void flux_padded_free( void *foo ) {
+  free(foo-padding);
+}
+#endif  
 #endif
 #endif
 

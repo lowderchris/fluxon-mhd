@@ -1,36 +1,9 @@
-=head2 simple_relaxer
-
-=for ref 
-
-Basic (demonstration) FLUX relaxation engine
-
-You type 
-
-   simple_relaxer($world, $int_flag, $global, $n, $auto)
-
-where C<$world> is a FLUX world object, $int_flag specifies whether
-runtime rendering should be interactive or no at each time step
-(usually 0), $global indicates whether neighbor finding should be
-global (usually 0), $n is the final timestep to undergo, and $auto indicates
-whether the timestep should be set automatically.  
-
-simple_relaxer uses a lot of global variables, for easier debugging;
-this could interfere with other uses than testing and demo.
-
-C<$dt> is a global variable used for input -- it's the amount of relaxation
-time per time step.  If you leave it undefined it gets set to 0.1 (that's
-0.1 linear-approximation e-folding times per timestep).
-
-=cut
-
-
 sub simple_relaxer {
     $w = shift;
     $interactive = shift || 0;
     $global = shift || 0;
     $n=shift||0;
     $auto = shift;
-    $movie_template = shift;
 
     $step=0 unless($n);
     $final_step=$n;
@@ -38,11 +11,13 @@ sub simple_relaxer {
 #    $w = read_world($w)
 #      unless(ref $w) ;
 
-    print "Initializing neighbors...";      
-    $w->update_neighbors(1);
-    print "ok\n";
+    if($step==0) {
+      print "Initializing neighbors...";      
+      $w->update_neighbors(1);
+      print "ok\n";
+    }
 
-    $w->render_lines($interactive);
+    $w->render_lines;
     
     $dt = 0.1 unless defined($dt);
     
@@ -71,12 +46,8 @@ sub simple_relaxer {
 	   print "\t\tratio=$ratio; new dt=$dt\n";
 	}
 
-	unless($step %3 ) {
+	unless($step %10 ) {
 	    $w->render_lines($interactive,$range);
-	    if($movie_template) {
-	      $frame = grabpic3d();
-	      wim($frame,sprintf("%s_%5.5d.png",$movie_template,$step));
-	    }
 	}
 
 #	unless($step % 100) {

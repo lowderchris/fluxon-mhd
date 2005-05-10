@@ -243,8 +243,8 @@ void f_vert(VERTEX *V, HULL_VERTEX *verts) {
   if(!V->next || !V->prev)
     return;
 
-  /* Explicitly find Bmag at the vertex... */
-  Bmag = (V->b_mag + V->prev->b_mag)*0.5;
+  /* Scale forces to the maximum of the B values in our vicinity */
+  Bmag = (V->b_mag > V->prev->b_mag) ? V->b_mag : V->prev->b_mag ;
 
   /* Repulsive force from nearest neighbors.  The force drops as 
    *  1/r.
@@ -275,7 +275,7 @@ void f_vert(VERTEX *V, HULL_VERTEX *verts) {
    */
   
   sum_3d(force,d1, d2);
-  scale_3d(force, force, 0.2 * fn * Bmag / norm_3d(force));
+  scale_3d(force, force, 0.5 * fn * Bmag / norm_3d(force));
   
   sum_3d(V->f_v, V->f_v, force);
 
@@ -525,7 +525,9 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts) {
   recip_len =  2 / ( l1 + l2 );
   
   diff_3d(curve,b2hat,b1hat);
-  scale_3d(curve,curve, recip_len * 0.5 * (V->prev->b_mag + V->b_mag));
+  scale_3d(curve, curve, recip_len * V->line->flux);
+
+  //  scale_3d(curve,curve, recip_len * 0.5 * (V->prev->b_mag + V->b_mag));
 
   sum_3d(V->f_v,V->f_v,curve);
 
