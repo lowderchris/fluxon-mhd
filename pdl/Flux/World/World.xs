@@ -340,15 +340,17 @@ PREINIT:
 /**********************************************************************
  * _photosphere
  * Set the location of the photospheric plane from a perl array
+ * (set to a plane only now)
  */
 CODE:
  w = SvWorld(wsv,"Flux::World::_set_plane");
  av_clear(RETVAL = newAV());
+ w->photosphere.type=1;
  if(plane==0 || plane==&PL_sv_undef) {
    /* dump */
-   if(w->photosphere) {
+   if(w->photosphere.plane) {
      av_extend(RETVAL,6);
-     PLANE *p = w->photosphere;
+     PLANE *p = w->photosphere.plane;
      sv=newSVnv(p->origin[0]); av_store(RETVAL,0,sv) || svREFCNT_dec(sv);
      sv=newSVnv(p->origin[1]); av_store(RETVAL,1,sv) || svREFCNT_dec(sv);
      sv=newSVnv(p->origin[2]); av_store(RETVAL,2,sv) || svREFCNT_dec(sv);
@@ -374,10 +376,11 @@ CODE:
     s1 = av_fetch(av,4,0); newp->normal[1] = SvNV(s1?*s1:&PL_sv_undef);
     s1 = av_fetch(av,5,0); newp->normal[2] = SvNV(s1?*s1:&PL_sv_undef);
   }
-  if(w->photosphere) {
-    free(w->photosphere);
+  if(w->photosphere.plane) {
+    free(w->photosphere.plane);
+    w->photosphere.plane=0;
   }
-  w->photosphere = newp;
+  w->photosphere.plane = newp;
 }
 OUTPUT:
  RETVAL

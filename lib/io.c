@@ -532,7 +532,7 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   /* photosphere location */
   fprintf(file, "GLOBAL STATE %d  (%s)\n",world->state,world_state_name(world));
   fprintf(file,"GLOBAL PHOTOSPHERE ");
-  if(world->photosphere) {
+  if(world->photosphere.plane) {
     static char fmt[80];
     PLANE *p=world->photosphere.plane;
 

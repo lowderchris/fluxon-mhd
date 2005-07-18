@@ -690,7 +690,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
       p = phot->plane;
       switch(phot->type) {
 	PLANE pl;
-	POINT pt;
+	POINT3D pt;
       case PHOT_SPHERE:
 	/* Construct the perpendicular plane */
 
@@ -699,17 +699,17 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 	scale_3d(pt,pt,0.5);
 	
 	/* unit vector from center of Sun toward fluxel */
-	diff_3d(pt, pt, p.origin );
+	diff_3d(pt, pt, p->origin );
 	scale_3d(pl.normal, pt, 1.0/norm_3d(pt));
 
 	/* first 'normal' coordinate of plane is solar radius: */
 	/* generate 1 solar radius vector and offset to find   */
 	/* tangent-plane origin */
-	scale_3d(pl.origin, pl.normal, p.normal[0]);
-	sum_3d(pl.origin, pl.origin, p.origin);
+	scale_3d(pl.origin, pl.normal, p->normal[0]);
+	sum_3d(pl.origin, pl.origin, p->origin);
 
 
-	p=pl;
+	*p=pl;
 	/* fall through to reflect from tangent plane */
 	  
       case PHOT_PLANE:
