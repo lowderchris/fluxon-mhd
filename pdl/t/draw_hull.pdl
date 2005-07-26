@@ -1,5 +1,5 @@
 *PDL::Graphics::PGPLOT::Window::draw_hull = \&draw_hull;
-
+use PDL::NiceSlice;
 sub draw_hull {	
     my $w = shift;
     my $vertex = shift;
@@ -8,9 +8,14 @@ sub draw_hull {
     my $hull = $vertex->hull;
 
     $w->points($hull->(0:1)->mv(0,-1)->dog,$opt);
-    $w->hold;
+	my $wh = $w->held;
+
+    $w->hold unless($wh);
+
     $w->line($hull->(2:3)->mv(0,-1)->dog);
+
     $w->line($hull->(2,pdl($hull->dim(1)-1,0)), $hull(3,pdl($hull->dim(1)-1,0)));
-    $w->release;
+
+    $w->release unless($wh);
 }
     

@@ -187,6 +187,47 @@ CODE:
 OUTPUT:
  RETVAL
 
+SV *
+proj_neighbors(svrt,global=0)
+SV *svrt
+char global
+PREINIT:
+ VERTEX *v;
+ pdl *p;
+ DUMBLIST *dl;
+ PDL_Long dims[2];
+ int i;
+ PDL_Double *d;
+CODE:
+ v = SvVertex(svrt,"Flux::Vertex::proj_neighbors");
+
+ if(global) {
+  dl = gather_neighbor_candidates(v,1);
+ } else {
+  vertex_update_neighbors(v,1);
+  dl = &(v->neighbors);
+ }
+ project_n_fill(v,dl);
+ 
+ /* Now stuff the dumblist of vertices into the return PDL. */
+ p = PDL->create(PDL_PERM);
+ dims[0] = 3;
+ dims[1] = dl->n;
+ PDL->setdims(p,dims,2);	
+ p->datatype = PDL_D;
+ PDL->allocdata(p);
+ PDL->make_physical(p);
+ d =  p->data;
+ for(i=0;i<dl->n; i++) {
+   *(d++) = ((VERTEX *)(dl->stuff[i]))->scr[0];
+   *(d++) = ((VERTEX *)(dl->stuff[i]))->scr[1];
+   *(d++) = ((VERTEX *)(dl->stuff[i]))->label;
+ }
+ RETVAL = NEWSV(545,0); /* 545 is arbitrary tag */
+ PDL->SetSV_PDL(RETVAL,p);
+OUTPUT:
+ RETVAL
+
 BOOT:
 /**********************************************************************
  **********************************************************************

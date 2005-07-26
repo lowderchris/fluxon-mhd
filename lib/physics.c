@@ -106,8 +106,11 @@ void f_curvature(VERTEX *V, HULL_VERTEX *verts) {
   recip_len =  ( recip_l1 + recip_l2 ) / 2;
   
   diff_3d(curve,b2hat,b1hat);
+
   scale_3d(curve,curve, recip_len);
+
   sum_3d(V->f_v,V->f_v,curve);
+
   V->f_v_tot += norm_3d(curve);
 
 
@@ -191,8 +194,9 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
     }
 
     sum_3d(force,force,f_i);
-    V->f_s_tot += fabs(f);
+    V->f_s_tot += fabs(f)+fabs(f);
   }
+  scale_3d(force,force,2.0);
 
   sum_3d(V->f_s,V->f_s,force);
 

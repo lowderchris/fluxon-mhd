@@ -111,4 +111,26 @@ nonexistent)
 
 =cut
 
+# Implemented in Vertex.xs
+
+=head2 proj_neighbors
+
+=for usage
+
+    $xyl = $vertex->proj_neighbors(0); # just neighbor vertices
+    $xyl = $vertex->proj_neighbors(1); # all vertices in the World
+
+=for ref
+
+Return just the neighbors, projected into the perpendicular plane of the 
+vertex's segment using the fancy projection.  The output is a 3xN PDL.
+The columns are: [2d-x,2d-y,label] where 'label' is the label of the other vertex.
+
+Takes a single parameter - a global flag to indicate that all vertices, not just the
+precalculated neighbors, are to be included in the calculation.
+
+=cut
+
+# Implemented in Vertex.xs
+
 1;

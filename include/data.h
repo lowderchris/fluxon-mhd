@@ -29,6 +29,8 @@
  */
 #define NUMCHAR "l"
 
+#include <stdlib.h>
+
 /**********************************************************************
  * Data structures
  * 
@@ -66,7 +68,9 @@ typedef struct TREE {
 } TREE;
   
 
+#ifndef NULL
 #define NULL ((void *)0)
+#endif
 
 typedef struct DUMBLIST {
   void **stuff;

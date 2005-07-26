@@ -11,5 +11,29 @@ Problems with ultralarge forces (ultrasmall distances) in the last fluxel...
 	 but that was a symptom of some sort of proximity problem.
 
 
+----------------------------------------------------------------------
+
+19-July-2005
+
+- asymmetry in potential relaxation with older laws (180 degree rotation; 
+problem with projection?)
+
+	- (test with simple-9 -- reproduces OK)
+	- (simple-4: no problem)
+	- (simple-5: no problem)
+	(requires nontrivial geometry....)
+
+	- simple-8: immediate problem; blows up on the z axis.  Sounds like
+	an angular fencepost error -- either in the Voronoi code or the force
+	law.
+	
+20-July-2005
+	- Problem is with newer hull code, which seems to screw up nontrivial
+	  configurations.  Use 'draw_hull' and simple-8.flux to see.
+	- Hmmm... Seems not to be due to the hull code but rather to the projection
+	  code.  Use 'proj_neighbors' to identify (missing some additional vertices
+	  in some cases)
+
+
 	 
 	 

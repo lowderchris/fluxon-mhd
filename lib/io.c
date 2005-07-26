@@ -402,18 +402,22 @@ int footpoint_action(WORLD *world, char *s) {
 			      ,&typ
 				     ) ) )
 		badstr = "couldn't parse six values from GLOBAL PHOTOSPHERE ";
-	    }
+	      
+	      if(nval==6)
+		typ = PHOT_PLANE;
+	      
+	      if(!badstr) {
+		world->photosphere.type = typ;
+		if(world->photosphere.plane)
+		  localfree(world->photosphere.plane);
+		world->photosphere.plane = p;
+	      }
+	      world->photosphere.type = PHOT_PLANE;
 
-	    if(nval==6)
-	      typ = PHOT_PLANE;
-
-	    if(!badstr) {
-	      world->photosphere.type = typ;
-	      if(world->photosphere.plane)
-		localfree(world->photosphere.plane);
-	      world->photosphere.plane = p;
+	    } else { /* <NONE> */
+	      world->photosphere.plane = 0;
+	      world->photosphere.type = 0;
 	    }
-	    world->photosphere.type = PHOT_PLANE;
 	  } /* end of GLOBAL PHOTOSPHERE convenience block */
           break;
 

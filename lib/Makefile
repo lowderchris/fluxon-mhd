@@ -16,9 +16,10 @@ ID = $(INCLUDE_DIR)
 
 # DFLAGS = -DUSE_DEBUGGING_MALLOC
 # DFLAGS = -I/usr/lib/perl5/5.8.5/i686-linux/CORE -DUSE_PERL_MALLOC
-DFLAGS = -DUSE_PADDED_MALLOC
+#DFLAGS = -DUSE_PADDED_MALLOC
 
 CFLAGS = -I$(INCLUDE_DIR) -g
+#CFLAGS = -I$(INCLUDE_DIR) -O3
 LIBS = -lm
 
 
@@ -30,9 +31,11 @@ MODULES = data.o io.o geometry.o model.o physics.o
 libflux.a: $(MODULES) $(HEADERS) Makefile
 	rm -f libflux.a
 	ar ru libflux.a $(MODULES)
+	ranlib libflux.a
 
 install: $(HEADERS) libflux.a
 	install libflux.a /usr/local/lib
+	ranlib /usr/local/lib/libflux.a
 	install -d /usr/local/include/flux/
 	install ../include/*.h /usr/local/include/flux/
 

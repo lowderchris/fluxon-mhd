@@ -20,7 +20,6 @@
  *
  */
 #include <math.h>
-#include <bits/nan.h>
 #include <stdio.h>
 #include "data.h"
 #include "geometry.h"
@@ -729,15 +728,15 @@ inline NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTE
     return -1;
 
   if(v0==v1 || v0==v1->next || v0->next == v1)
-    return -1;
+    return 0;
 
   /* Make local copies of the points before truncating! */
   cp_3d(X0,v1->x);
   cp_3d(X1,v1->next->x);
 
-      if( (mask_halfspace(v0,       X0,X1, 1) < 0) ||
-    (mask_halfspace(v0->next, X0,X1,-1) < 0) )
-    return -1;
+  if( (mask_halfspace(v0,       X0,X1, 1) < 0) ||
+  (mask_halfspace(v0->next, X0,X1,-1) < 0) )
+  return -1;
 
   ls_closest_approach(P0, P1, v0->x, v0->next->x, X0, X1);
 
@@ -761,11 +760,11 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
 
   /* Exclude trivial cases, adjacent-segment case, and next-nearest-segment case. */
   /* (farther segments aren't as likely to cause trouble) */
-  if(!v0 || !v1 || !v0->next || !v1->next ||  
-     v0==v1 || 
-     (v0->next == v1) || (v1->next->next == v1) || 
-     (v1->next == v0) || (v1->next->next == v0) )
-    return -1.0;
+  if(!v0 || !v1 || !v0->next || !v1->next)
+    return -1;
+
+  if(v0==v1 ||   (v0->next == v1) ||  (v1->next == v0) )
+    return -1;
 
   ls_closest_approach(P0,P1,v0->x,v0->next->x,v1->x,v1->next->x);
 
@@ -906,8 +905,8 @@ inline int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
   out[0] = ( Q[0] + P[0] ) / 2;
   out[1] = ( Q[1] + P[1] ) / 2;
   
-  // out[2] = - ( (Q[1]-P[1]) / (Q[0]-P[0]) );
- out[2] = - ( (Q[0]-P[0]) / (Q[1]-P[1]) );
+  /* Slope is negative reciprocal */
+  out[2] = - ( (Q[0]-P[0]) / (Q[1]-P[1]) );
   return !finite(out[2]);
 }
 
@@ -995,6 +994,10 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
     v1 = (VERTEX *)((horde->stuff)[i]);
     
     r = fl_segment_deluxe_dist(p0, p1, v, v1);
+
+    if((v->line->fc0->world->verbosity + (r>=0))>=5)
+      printf("\nfl_segment_deluxe_dist returned %g for vertex %d\n",r,v1->label);
+
     if(r<0) {
       horde->stuff[i] = 0;
       crunch=1;
@@ -1009,7 +1012,15 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
       mat_vmult_3d(v1->scr,pm,X0); /* Project into the perpendicular plane */
 
       len = norm_2d(v1->scr);      /* * 2-D * length of vector */
+
+      if(v->line->fc0->world->verbosity >= 5) 
+	printf("len=%g for vertex %d\n",len,v1->label);
+
       if(len <= 0) {
+
+	if(v->line->fc0->world->verbosity == 4) 
+	  printf("len=%g for vertex %d\n",len,v1->label);
+
 	horde->stuff[i] = 0;
 	crunch=1;
       }

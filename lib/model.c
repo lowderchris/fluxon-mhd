@@ -340,7 +340,7 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
   a[2] = a[1] = a[0] = 0;
 
 
-  for(v=v->next;v && v->next; v=v->next) {
+  for(v=v->next; v && v->next; v=v->next) {
     NUM r_cl= v->r_cl;
     NUM foo[3];
     NUM d,d1;
@@ -356,15 +356,14 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     diff_3d(foo,v->x,v->prev->x);
     d1 = norm_3d(foo);
 
-    d = 4/(1/d + 1/d1 + 1/r_cl + (v->prev ? 1/v->prev->r_cl : 1/r_cl));
-
     if(r_cl <= 0) {
       fprintf(stderr,"ASSERTION FAILED!  Negative distance %g on vertex %d!\n",r_cl,v->label);
       fprintf(stderr,"vertex has %d neighbors\n",v->neighbors.n);
       r_cl = 1; /* hope the problem goes away */
     }
-    
-    
+
+    d = 4/(1/d + 1/d1 + 1/r_cl + 1/v->prev->r_cl);
+
     f_denom = v->f_v_tot + 0.5 * (v->f_s_tot + v->prev->f_s_tot);
 
     force_factor = (f_denom == 0) ? 1 : ( norm_3d(v->f_t)  / f_denom);
@@ -399,11 +398,11 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
 	b_mag_mean *= 0.5;
       }
 
-      //      scale_3d(a,v->f_t, t * d * d * force_factor / b_mag_mean);
-      //      scale_3d(a,v->f_t, t * d * force_factor / b_mag_mean);
-      //      scale_3d(a,v->f_t, t * force_factor / b_mag_mean);
-              scale_3d(a,v->f_t, t * force_factor / sqrt(b_mag_mean));
-      //      scale_3d(a,v->f_t, t * d * d * force_factor );
+            scale_3d(a,v->f_t, t * d * d * force_factor / b_mag_mean);
+	    //      scale_3d(a,v->f_t, t * d * force_factor / b_mag_mean);
+	    //      scale_3d(a,v->f_t, t * force_factor / b_mag_mean);
+	    //      scale_3d(a,v->f_t, t * force_factor / sqrt(b_mag_mean));
+	    //      scale_3d(a,v->f_t, t * d * d * force_factor );
 
 
     }
@@ -607,10 +606,11 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   if(!workspace) 
     workspace = new_dumblist();
 
-  if(!workspace2)
-    workspace2 = new_dumblist();
+  //  if(!workspace2)
+  //    workspace2 = new_dumblist();
 
-  workspace->n = workspace2->n = 0;
+  workspace->n = 0;
+  //  workspace2->n = 0;
 
   /**********************************************************************/
   /* Gather the candidates together 
@@ -637,7 +637,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
       printf("Found %d ...",workspace->n);
 
     /* Grab siblings of all the neighbors & nearby */
-    // expand_list(workspace2);
+    expand_list(workspace);
 
     /* Grab neighbors & nearby of all *those* guys */
     //snarf_list(workspace,(VERTEX **)workspace2->stuff,workspace2->n);
@@ -684,9 +684,15 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   if(v->next) {
     PHOTOSPHERE *phot;
     PLANE *p;
-    if(phot = &(v->line->fc0->world->photosphere)) { /* assignment */
+    if(v->line->fc0->world->photosphere.type) { /* assignment */
       /* Generate image and stuff it into the image point in the world
 	 space */
+      
+      if(verbosity >= 4){
+	printf("using photosphere (type is %d)...",v->line->fc0->world->photosphere.type);
+	fflush(stdout);
+      }
+      phot = &(v->line->fc0->world->photosphere);
       p = phot->plane;
       switch(phot->type) {
 	PLANE pl;
