@@ -433,7 +433,145 @@ CODE:
  }
 OUTPUT:
  RETVAL
+ 
 
+AV *
+_ls_dist_test(a_0,a_1,a_2,b_0,b_1,b_2,c_0,c_1,c_2,d_0,d_1,d_2)
+NV a_0
+NV a_1
+NV a_2
+NV b_0
+NV b_1
+NV b_2
+NV c_0
+NV c_1
+NV c_2
+NV d_0
+NV d_1
+NV d_2
+PREINIT:
+  NUM a[3],b[3],c[3],d[3],P0[3],P1[3];
+CODE:
+/******************************
+ *
+ * _ls_dist_test: debuggging cruft.
+ * This method should properly never be called, but it is present to 
+ * enable testing of the ls_closest_approach function in the libraries.
+ * You feed in two line-segments and get back the closest approach points.
+ * The interface is rather primitive.
+ */
+  a[0] = a_0; a[1]=a_1; a[2]=a_2;
+  b[0] = b_0; b[1]=b_1; b[2]=b_2;
+  c[0] = c_0; c[1]=c_1; c[2]=c_2;
+  d[0] = d_0; d[1]=d_1; d[2]=d_2;
+  ls_closest_approach(P0,P1,a,b,c,d);
+  RETVAL = newAV();
+  av_clear(RETVAL);
+  av_extend(RETVAL,6);
+  av_store(RETVAL, 0,newSVnv(P0[0]));
+  av_store(RETVAL, 1,newSVnv(P0[1]));
+  av_store(RETVAL, 2,newSVnv(P0[2]));
+  av_store(RETVAL, 3,newSVnv(P1[0]));
+  av_store(RETVAL, 4,newSVnv(P1[1]));
+  av_store(RETVAL, 5,newSVnv(P1[2]));
+OUTPUT:
+ RETVAL
+
+AV *
+_p_ls_dist_test(a_0,a_1,a_2,b_0,b_1,b_2,c_0,c_1,c_2)
+NV a_0
+NV a_1
+NV a_2
+NV b_0
+NV b_1
+NV b_2
+NV c_0
+NV c_1
+NV c_2
+PREINIT:
+  NUM a[3],b[3],c[3],P[3];
+CODE:
+/******************************
+ *
+ * _p_ls_dist_test: debugging cruft.
+ * Test the p_ls_closest_approach function
+ */
+  a[0] = a_0; a[1]=a_1; a[2]=a_2;
+  b[0] = b_0; b[1]=b_1; b[2]=b_2;
+  c[0] = c_0; c[1]=c_1; c[2]=c_2;
+  p_ls_closest_approach(P,a,b,c);
+  RETVAL = newAV();
+  av_clear(RETVAL);
+  av_extend(RETVAL,3);
+  av_store(RETVAL,0,newSVnv(P[0]));
+  av_store(RETVAL,1,newSVnv(P[1]));
+  av_store(RETVAL,2,newSVnv(P[2]));
+OUTPUT:
+ RETVAL
+
+AV *
+_projmatrix(a_0,a_1,a_2,b_0,b_1,b_2)
+NV a_0
+NV a_1
+NV a_2
+NV b_0
+NV b_1
+NV b_2
+PREINIT:
+   NUM a[3],b[3];
+   NUM matrix[9];
+CODE:
+/*******************************
+ * _projmatrix: interface to the geometry.c projmatrix code
+ */
+ a[0] = a_0; a[1] = a_1; a[2] = a_2;
+ b[0] = b_0; b[1] = b_1; b[2] = b_2;
+ projmatrix(matrix,a,b);
+ RETVAL = newAV();
+ av_clear(RETVAL);
+ av_extend(RETVAL,9);
+ av_store(RETVAL,0,newSVnv(matrix[0]));
+ av_store(RETVAL,1,newSVnv(matrix[1]));
+ av_store(RETVAL,2,newSVnv(matrix[2]));
+ av_store(RETVAL,3,newSVnv(matrix[3]));
+ av_store(RETVAL,4,newSVnv(matrix[4]));
+ av_store(RETVAL,5,newSVnv(matrix[5]));
+ av_store(RETVAL,6,newSVnv(matrix[6]));
+ av_store(RETVAL,7,newSVnv(matrix[7]));
+ av_store(RETVAL,8,newSVnv(matrix[8]));
+OUTPUT:
+ RETVAL
+
+AV *
+_mat_vmult_3d(m_0,m_1,m_2,m_3,m_4,m_5,m_6,m_7,m_8,a_0,a_1,a_2);
+NV m_0
+NV m_1
+NV m_2
+NV m_3
+NV m_4
+NV m_5
+NV m_6
+NV m_7
+NV m_8
+NV a_0
+NV a_1
+NV a_2
+PREINIT:
+	NUM a[3],b[3],m[9];
+CODE:
+ a[0] = a_0; a[1] = a_1; a[2] = a_2;
+ m[0] = m_0; m[1] = m_1; m[2] = m_2;
+ m[3] = m_3; m[4] = m_4; m[5] = m_5;
+ m[6] = m_6; m[7] = m_7; m[8] = m_8;
+ mat_vmult_3d(b,m,a);
+ RETVAL = newAV();
+ av_clear(RETVAL);
+ av_extend(RETVAL,3);
+ av_store(RETVAL,0,newSVnv(b[0]));
+ av_store(RETVAL,1,newSVnv(b[1]));
+ av_store(RETVAL,2,newSVnv(b[2]));
+OUTPUT:
+ RETVAL
 
 BOOT:
 /**********************************************************************

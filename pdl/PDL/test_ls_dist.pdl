@@ -1,0 +1,46 @@
+use Flux;
+
+$ab0 = pdl([0,0,-0.5],[0,0,0.5]);
+$cd0 = pdl([0,0,-0.5],[0,0,0.5]);
+
+
+$w=pgwin(xs,size=>[5,5]);
+$frameno = 0;
+`rm -rf test-frames; mkdir test-frames`;
+
+for( $cd_r = 0.9; $cd_r < 1.5; $cd_r+= 0.5 ) {
+    print "cd_r=$cd_r\n";
+    my $w1 = pgwin(dev=>"cd_r=${cd_r}.ps/vcps",size=>[8,10.5],nx=>floor(360/28),ny=>360/30);
+    for($cd_alpha=0; $cd_alpha < 360; $cd_alpha += 10) {
+	for($cd_theta=0; $cd_theta < 360; $cd_theta += 2) {
+	    my $w2 = pgwin(dev=>sprintf("test-frames/frame-%4.4d.gif/gif",$frameno++),size=>[4,4]);
+	    $cda = $cd_alpha*3.14159/180;
+	    $cdt = $cd_theta*3.14159/180;
+	    $cd_offset = -pdl(0,sin($cda),cos($cda)) * $cd_r;
+	    
+	    $cd_rmat = pdl([1,0,0],[0,cos($cdt),sin($cdt)],[0,-sin($cdt),cos($cdt)]);
+	    $cd = ($cd_rmat x $cd0->(*1))->((0)) + $cd_offset;
+	    
+	    print "ab=",join(",",$ab0->list),"; cd=",join(',',$cd->list),"\n";
+	    $out = Flux::World::_ls_dist_test($ab0->list,$cd->list);
+	    $title = "r: $cdr; alpha: $cd_alpha; theta: $cd_theta";
+	    print "\n--------------\n$title";
+	    foreach $w($w2){
+		$w->env(-2,2,-2,2,{title=>$title,j=>1});
+		$w->hold;
+		$w->line([$ab0->((1))->list],[$ab0->((2))->list]);
+		$w->line([$cd->((1))->list],[$cd->((2))->list]);
+		$w->line([$out->[1],$out->[4]],[$out->[2],$out->[5]],{color=>4});
+		$w->points([$out->[1],$out->[4]],[$out->[2],$out->[5]],{color=>4});
+		$w->text(" c",$cd->at(1,0),$cd->at(2,0));
+		$w->text(" d",$cd->at(1,1),$cd->at(2,1));
+		$w->text(" a",$ab0->at(1,0),$ab0->at(2,0));
+		$w->text(" b",$ab0->at(1,1),$ab0->at(2,1));
+		$w->release;
+	    }
+	    $w2->close;
+	    
+	}
+    }
+    $w->close;
+}

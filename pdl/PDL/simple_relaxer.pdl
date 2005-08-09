@@ -23,20 +23,16 @@ sub simple_relaxer {
     
     while(!$final_step || $step<$final_step) {
 
-#	unless($step % 40) {
-#	    $w->fix_curvature(0.1);
-#	    $w->fix_proximity(0.3);
-#	}
 
 	$w->update_neighbors($global);
 	$fmax = $w->update_force($global);
-#	$w->relax_step($dt/$fmax);
+
 	$w->relax_step($dt);
+	$t += $dt;
 
 	$h = $w->stats;
 	
-	$t += $dt/$fmax;
-	printf(" time is now %10.4g (%d vertices; fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$fmax,$h->{f_av},$h->{fs_av},
+	printf(" time is now %10.4g (%d vertices; fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_ma},$h->{f_av},$h->{fs_av},
 	$h->{n_av});
 
 	if($auto) {	
@@ -46,12 +42,12 @@ sub simple_relaxer {
 	   print "\t\tratio=$ratio; new dt=$dt\n";
 	}
 
-	unless($step %10 ) {
+	unless($step % 10 ) {
 	    $w->render_lines($interactive,$range);
 	}
 
 #	unless($step % 100) {
-#	    $w->fix_proximity(0.25);
+#	    $w->fix_proximity(1);
 #	    $w->fix_curvature(0.2);
 #        }
 

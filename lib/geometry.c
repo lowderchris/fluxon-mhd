@@ -33,6 +33,13 @@
 /**********************************************************************
  * norm - find the length of a vector.  2-d or 3-d.
  */
+inline NUM norm2_2d(NUM *x) {
+  NUM out;
+  out = *x * *x; x++;;
+  out += *x * *x;
+  return out;
+}
+
 inline NUM norm_2d(NUM *x) {
   NUM out;
   out = *x * *x; x++;
@@ -129,7 +136,6 @@ inline void cp_3d(NUM *a, NUM *b) {
   *(a++) = *(b++);
   *(a) = *(b);
 }
-
 
 
 
@@ -350,7 +356,7 @@ inline NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1) {
   l = norm_3d(x); 
   if(!l)                    /* Degenerate case -- x0==x1 */
     return cart_3d(p0,x0);
-
+ 
   diff_3d(p,p0,x0);
 
   a = inner_3d(p,x)/l;         /* a = ( (p-x0) . (x1-x0) ) / |x1 - x0| */
@@ -413,28 +419,29 @@ inline NUM l_l_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
  * extended line's closest approach to C, or the line segment's
  * closest approach to C.  Scant degeneracy checking is done, because
  * the algorithm works more-or-less gracefully in nearly-degenerate cases.
+ * 
+ * returns the alpha coefficient, which can often be safely ignored.
  */
-inline void p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
+
+NUM p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
   NUM c[3];
-  NUM len2,r;
+  NUM r;
 
   diff_3d(p0, b0, a0);
-  len2 = norm2_3d(p0);
-  
-  if(len2) {
-    diff_3d(c, c0, a0);
-    r = inner_3d(p0, c) / len2;
-    if(r<0) 
-      cp_3d(p0,a0);
-    else if(r > 1)
-      cp_3d(p0,b0);
-    else {
-      scale_3d(p0, p0, r);
-      sum_3d(p0, p0, a0);
-    }
-  } else {
-    /* len==0:  degenerate case */
+  if( p0[0]==0 && p0[1]==0 && p0[2]==0 ) {
     cp_3d(p0,a0);
+  } else {
+    
+    diff_3d(c, c0, a0);
+    r = inner_3d(p0, c) / inner_3d(p0,p0); /* r gets (b.c/b.b) */
+    if(r<0)                                /* less than 0: before a */
+      cp_3d(p0,a0);
+    else if(r > 1)                         /* greater than 1: after b */
+      cp_3d(p0,b0);
+    else {                                 /* between 0-1: on ab line segment */
+      scale_3d(p0, p0, r);
+      sum_3d(p0, p0, a0);                  /* put p0 back into original coordinates. */
+    }
   }
   return;
 }
@@ -446,184 +453,196 @@ inline void p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
  * You feed in the endpoints of two line segments, and two POINTs. 
  * The two points get the closest-approach points of the two line
  * segments.
+ * 
+ * There are nine cases to consider: four endpoint-to-endpoint cases,
+ * four endpoint-to-line cases, and one line-to-line case.
+ * 
+ * Method:
+ *   - handle degenerate cases.
+ * 
+ *   - Consider the line-to-line case.  If it's valid, use it and return.
+ *
+ *   - Consider the endpoint-to-line cases. If one is valid, use it and return.
+ *
+ *   - Consider the endpoint-to-endpoint cases.
  *
  */
 
 
-inline void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
-  
-  NUM a[3], b[3], c[3], d[3];
-  NUM aa, bb, cc, dd, size;
+void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
+  NUM q1[3],q2[3], b[3], c[3], d[3], scr[3];
+  NUM mat[9];
+  NUM alpha,beta,d2;
 
-  /* Build an epsilon scale by finding the max. components of A and B. */
-  /* bb is just a convenient scratch space here.   What a pain -- but  */
-  /* maybe it'll pay off in robustness later. */
-
-  size = fabs(a[0]);
-  if((bb = fabs(a[1]))>size)
-    size = bb;
-  if((bb = fabs(a[2]))>size)
-    size = bb;
-  if((bb = fabs(c[0]))>size)
-    size = bb;
-  if((bb = fabs(c[1]))>size)
-    size = bb;
-  if((bb = fabs(c[2]))>size)
-    size = bb;
-
-  /* If the scale really is zero, we're done. */
-  if(size == 0) {
-    p0[0] = p0[1] = p0[2] = p1[0] = p1[1] = p1[2] = 0;
-    return;
-  }
-  
-
-  /* Step 1:  Find the closest approach on CD.  */
-  diff_3d(b,b0,a0);
-  bb = norm2_3d(b);
-  
-  if(bb/size > 1e-9) {
-    NUM fract;
-    NUM P,Q,R;
-    NUM c1[3], d1[3];
-    /* Normal branch -- AB is not trivial.  We need to find the C.A.
-       point on CD to A, to B, and to the AB extended line.  All 3 
-       get parametrized by distance along CD.  (See DeForest notebooks
-       vol. V, p. 84) */
-
-    /* First, find Q -- the point of closest approach of the AB
-       extended line. */
-
-    diff_3d(c,c0,a0);
-    scale_3d(a, b, inner_3d(c,b) / bb);
-    diff_3d(c1, c, a);
-
-    diff_3d(d,d0,a0);
-    scale_3d(a, b, inner_3d(d,b) / bb);
-    diff_3d(d1, d, a);
-
-    /* Now c and d contain projected points in the AB perpendicular plane.
-       AB is a point in that plane.  Figure how far along we need to go. 
+  /******************************
+   * Check for degenerate cases: two points, or point-line
+   */
+  {
+    char ab0,cd0;
+    ab0=(a0[0]==b0[0] && a0[1]==b0[1] && a0[2]==b0[2]);
+    cd0=(c0[0]==d0[0] && c0[1]==d0[1] && c0[2]==d0[2]);
     
-    /* Translate d to a c-based origin. */
-    diff_3d(d1, d1, c1);
-    dd = norm2_3d(d1);
-    if(dd/bb > 1e-9) { /* exclude parallel case -- save for later */
-      NUM fract;
-      char foo;
-
-      /* Normal branch -- CD is not trivial and not parallel to AB. */
-      
-      /* the origin would get translated to -c; just flip the sign of the 
-	 dot product, instead of flipping the vector. */
-      Q = - inner_3d(d1, c1) / dd;
-
-
-      /* OK, now we have Q, and the lines are not parallel.  Find P and R. */
-      /* P is the closest-approach parameter between A and C, unrotated.   */
-      /* From above, b, c, and d are unprojected but translated so that    */
-      /* a0 is the origin.  For both P and R, we bring C to the origin and */
-      /* find the scaled dot product of (A or B) and D'.  That's trivial   */
-      /* for P, because A is at the origin so no actual translation is     */
-      /* necessary (A' == -C, so   A'.D' == -(C.D')  ). */
-
-      diff_3d(d1,d,c);
-      dd = norm2_3d(d1);
-
-      /* P case:  similar to the Q case in that A is at the origin so we can */
-      /* just reverse the sign of the dot product instead of doing another   */
-      /* vector translation. */
-      P = - inner_3d(d1, c) / dd;
-
-      /* R case:  B isn't at the origin, so a translation is required to */
-      /* bring C to the origin. Here, c1 is a convenient scratch space.  */
-      diff_3d(c1, b, c);
-      R = inner_3d(c1, d1) / dd;
-
-
-      foo = ((P<Q) <<2 ) | ( (Q<R) << 1 ) | (P<R) ;
-      switch(foo) {
-	case 7:  case 0:         fract = Q; break;   /* PQR, RQP */
-	case 3:  case 4:         fract = P; break;   /* QPR, RPQ */
-	case 5:  case 2:         fract = R; break;   /* PRQ, QRP */
-	default:      
-	  fprintf(stderr,"(ls_closest_approach: foo=%d. Inconceivable!)\n"
-		  ,foo); 
-	  exit(435); 
-	  break;
-      }
-
-      if(fract < 0)
-	cp_3d(p1, c0);
-      else if(fract > 1)
-	cp_3d(p1, d0);
-      else {
-	diff_3d(p1, d0, c0);
-	scale_3d(p1, p1, fract);
-	sum_3d(p1, p1, c0);
-      }
-      
-      /* Find the closest approach of AB to the CD point */
-      p_ls_closest_approach(p0, a0, b0, p1);
-      return;
-      
-    } else {
-      diff_3d(a, d, c);
-      aa = norm2_3d(a);
-      if(aa/size < 1e-9) {
-	
-	/* CD is trivial */
-	cp_3d(p1, c0);
-	p_ls_closest_approach(p0, a0, b0, p1);
+    if(ab0) {
+      cp_3d(p0,a0);
+      if(cd0) {
+	cp_3d(p1,c0);
 	return;
-	
       } else {
-	NUM bl, cl, dl;
-	
-	/* Parallel case -- not a hot spot. */
-	diff_3d(b, b0, a0);
-	diff_3d(c, c0, a0);
-	diff_3d(d, d0, a0);
-	
-	bl = norm2_3d(b);
-	cl = inner_3d(c, b) / bl;
-	dl = inner_3d(d, b) / bl;
-	
-	if(cl < 0 && dl < 0) {
-	  cp_3d(p0, a0);
-	  cp_3d(p1, (cl > dl) ? c0 : d0);
-	  
-	} else if(cl > 1 && dl > 1) {
-	  cp_3d(p0, b0);
-	  cp_3d(p1, (cl < dl) ? c0 : d0);
-	  
-	} else if(cl > 0 && cl < 1) {
-	  cp_3d(p1, c0);
-	  p_ls_closest_approach(p0, a0, b0, p1);
-	  
-	} else if(dl > 0 && dl < 1) {
-	  cp_3d(p1, d0);
-	  p_ls_closest_approach(p0, a0, b0, p1);
-	  
-	} else {
-	  /* To get here, cl and dl must be on opposite extremes of AB */
-	  cp_3d(p0, a0);
-	  p_ls_closest_approach(p1, c0, d0, p0);
-	}
-	
+	p_ls_closest_approach(p1,c0,d0,a0);
 	return;
-	
       }
+    } 
+    if(cd0){
+      cp_3d(p1,c0);
+      p_ls_closest_approach(p0,a0,b0,c0);
     }
   }
-  else {
-    /* bb is near 0 -- ab is trivial */
+  
+  /******************************
+   * Find the closest approach of the *lines* AB and CD.
+   */
+  
+  /***********
+   * Place a at the origin and rotate so that b points in the positive z direction
+   */
+  
+  projmatrix(mat,a0,b0);
+  
+  diff_3d(scr,b0,a0);
+  mat_vmult_3d(b,mat,scr);
+  
+  diff_3d(scr,c0,a0);
+  mat_vmult_3d(c,mat,scr);
+  
+  diff_3d(scr,d0,a0);
+  mat_vmult_3d(c,mat,scr);
+  
+  /*  printf("ls_closest_approach (in ab frame):\n\tb is %g,%g,%g\n\tc is %g,%g,%g\n\td is %g,%g,%g\n",b[0],b[1],b[2],c[0],c[1],c[2],d[0],d[1],d[2]); */
+  
+  /**********
+   * Find the closest approach of the line cd to the origin.  Works by
+   * displacing c to the origin and projecting a perpendicular to the
+   * cd line until it lands on cd.  The vector is (cd) (
+   * (cd).(ca)/(cd.cd) ) But cd.ca is just -(cd.ac), so we can avoid
+   * having to actually displace...
+   */
+  diff_3d(scr,d,c);
+  d2 = norm2_2d(scr);
+  if(d2==0) {
+    
+    /* Both lines are parallel along the z axis.  b>0, a=0. */
+    
+    if( c[2] < 0 && d[2] < 0 ) {
+      cp_3d(p0, a0);
+      cp_3d(p1, (c[2] >= d[2]) ? c0 : d0);
+      return;
+    } 
+
+    if( c[2] > b[2]  && d[2] > b[2] ) {
+      cp_3d(p0, b0);
+      cp_3d(p1, (c[2] <= d[2]) ? c0 : d0);
+      return;
+    }
+    
+    if( c[2] >=0 && c[2] <= b[2] ) {
+      cp_3d( p1, c0 );
+      alpha = c[2]/b[2];
+      scale_3d( scr, a0, (1.0-alpha) );
+      scale_3d(  p0, b0, alpha );
+      sum_3d( p0, p0, scr );
+      return;
+    }
+
+    if( d[2] >= 0 && d[2] <= b[2] ) {
+      cp_3d( p1, d0 );
+      alpha = d[2]/b[2];
+      scale_3d( scr, a0, (1.0-alpha) );
+      scale_3d( p0, b0, alpha );
+      sum_3d( p0, p0, scr );
+      return;
+    }
+
+    /* got here: cd must straddle ab, so a is a right answer. */
     cp_3d(p0, a0);
-    p_ls_closest_approach(p1, c0, d0, p0);
+    alpha = (0 - c[2]) / (d[2]-c[2]);
+    scale_3d( scr, c0, (1.0-alpha) );
+    scale_3d( p1,  d0, alpha );
+    sum_3d(p1, p1, scr);
+    return;
+  } /* end of parallel-lines case */
+
+
+  /********************
+   * now calculate the alpha along cd of the closest approach point (in the plane).
+  alpha = - inner_2d(scr,c) / d2;
+
+  /**********
+   * Using alpha, find the altitude in the current space 
+   * of the closest approach, and use that to calculate beta.
+   */
+  beta = ( (1.0-alpha) * c[2] + alpha * d[2] ) / b[2];
+
+
+  if(alpha >= 0 && alpha <= 1 && beta >= 0 && beta <= 1) {
+    /* The line-line case is valid: copy and return. */
+
+    scale_3d(scr, c0, (1.0-alpha) );
+    scale_3d(p1,  d0, alpha );
+    sum_3d(p1, p1, scr);
+    
+    scale_3d(scr, a0, (1.0-beta) );
+    scale_3d(p0,  b0, beta );
+    sum_3d(p0, p0, scr);
     return;
   }
-}   
 
+  /**********
+   * line-line is invalid.  Try the four endpoint-line cases
+   * (which includes thhe four endpoint-endpoint cases too).
+   * Boneheaded but certain.
+   */
+  {  
+    char found_one = 0;
+    NUM d2,c2;
+    
+    /* Check AB - C */
+    p_ls_closest_approach(scr, a0, b0, c0);
+    d2 = cart2_3d(c0,scr);
+    cp_3d(p0,scr);
+    cp_3d(p1,c0);
+    
+    /* Check AB - D */
+    p_ls_closest_approach(scr, a0, b0, d0);
+    c2 = cart2_3d(d0,scr);
+    if( c2<d2 ) {
+      d2 = c2;
+      cp_3d(p0,scr);
+      cp_3d(p1,d0);
+    }
+  
+    /* Check A - CD */
+    p_ls_closest_approach(scr, c0, d0, a0);
+    c2 = cart2_3d(a0,scr);
+    if( c2<d2 ) {
+      d2 = c2;
+      cp_3d(p1,scr);
+      cp_3d(p0,a0);
+    }
+
+    /* Check B - CD */
+    p_ls_closest_approach(scr, c0, d0, b0);
+    c2 = cart2_3d(b0,scr);
+    if( c2<d2 ) {
+      d2=c2;
+      cp_3d(p1,scr);
+      cp_3d(p0,b0);
+    }
+  }
+   
+  return;
+}
+
+  
 
 /**********************************************************************
  * ls_ls_dist
@@ -714,10 +733,12 @@ inline NUM fl_segment_masked_dist(VERTEX *v0, VERTEX *v1) {
 
 
 /**********************************************************************
- * fl_segment_deluxe_dist
+ * fl_segment_masked_deluxe_dist
  * You feed in an X0 and X1, and they get stuffed with the points of closest
  * approach of the segments.  You also get the distance back. 
  * 
+ * This function is deprecated -- the smoothly masked fl_segment_deluxe_dist is
+ * preferred.
  */
   NUM X0[3], X1[3];
 inline NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1){
@@ -745,8 +766,11 @@ inline NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTE
 
 /**********************************************************************
  * fl_segment_dist
+ * fl_segment_deluxe_dist
  * Given two pointers to VERTEXes, return the closest approach of their
  * two line segments.  If either is invalid, return -1.
+ * The deluxe_dist accepts two points, which get filled with the 
+ * points of closest approach of the two line segments.
  *
  */
 NUM fl_segment_dist(VERTEX *v0, VERTEX *v1) {
@@ -772,6 +796,11 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   Plen = norm_3d(P);
   if(Plen==0)
     return -1;
+
+  if (v1->line->fc0->world->verbosity >= 5) {
+    printf("\nfl_segment_deluxe_dist: v0=%d,v1=%d; Plen is %g\n",v0->label,v1->label,Plen);
+    printf("P0=(%g,%g,%g); P1=(%g,%g,%g)\n",P0[0],P0[1],P0[2],P1[0],P1[1],P1[2]);
+  }
 
   // inverse FOURTH POWER sine!
   /* Scale by the inverse square sine of the projection angle:  */
@@ -810,7 +839,7 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
  * then it's rotated about the Y axis into the Z axis.  See 
  * DeForest notebooks, vol. IV-A, p. 177.
  */
-inline void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
+inline void projmatrix(NUM *out, NUM *x1_3, NUM *x0_3) {
   NUM a[3];
   NUM r2d,r3d;
   NUM m1[9];
@@ -852,6 +881,9 @@ inline void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
   *(m++) = 0;           *(m++) = 0;            *(m)   = 1;
 
   m=m2;
+  //  *(m++) = a[2] / r3d;  *(m++) = 0;            *(m++) = -r2d / r3d;
+  //  *(m++) = 0;            *(m++) = 1;            *(m++) =  0;
+  //  *(m++) = r2d / r3d;   *(m++) = 0;            *(m)   = a[2]/r3d;
   *(m++) = -a[2] / r3d;  *(m++) = 0;            *(m++) = r2d / r3d;
   *(m++) = 0;            *(m++) = 1;            *(m++) =  0;
   *(m++) = -r2d / r3d;   *(m++) = 0;            *(m)   = -a[2]/r3d;
@@ -983,8 +1015,9 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
   char crunch = 0;
 
   if(!v->next) {
-    fprintf(stderr,"Hey!  Not supposed to happen! (project_n_fill)\n");
-    exit(34);
+    fprintf(stderr,"Hey!  Don't feed end vertices to project_n_fill....\n");
+    fflush(stderr);
+    return;
   }
 
   projmatrix(pm,v->x,v->next->x);

@@ -69,6 +69,40 @@ CODE:
 OUTPUT:
   RETVAL
 
+long 
+id(vrt)
+ SV *vrt
+PREINIT:
+ VERTEX *v;
+ SV *dv;
+/**********************************************************************
+ * id - return the longint ID as a perl scalar 
+ */
+CODE:
+ v = SvVertex(vrt,"Flux::Vertex::id");
+ RETVAL = v->label;
+OUTPUT:
+ RETVAL
+
+SV *
+fluxon(vrt)
+ SV *vrt
+PREINIT:
+ FLUXON *f;
+ VERTEX *v;
+ SV *sv;
+/**********************************************************************
+ * fluxon - return the containing fluxon, as a Flux::Fluxon object
+ */
+CODE:
+  v = SvVertex(vrt,"Flux::Vertex::fluxon");
+  f = v->line;
+  sv = newSViv((IV)(f));
+  RETVAL = newRV_noinc(sv);
+  (void)sv_bless(RETVAL,gv_stashpv("Flux::Fluxon",TRUE));
+OUTPUT:
+ RETVAL
+
 SV *
 next(vrt)
  SV *vrt

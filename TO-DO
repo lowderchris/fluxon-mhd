@@ -33,6 +33,9 @@ problem with projection?)
 	- Hmmm... Seems not to be due to the hull code but rather to the projection
 	  code.  Use 'proj_neighbors' to identify (missing some additional vertices
 	  in some cases)
+7-August-2005
+	- Hmmm.. fl_segment_deluxe_dist is giving trouble.
+	- Actually, it's ls_closest_approach.
 
 
 	 

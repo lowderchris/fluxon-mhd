@@ -78,7 +78,7 @@ inline NUM cart_3d(NUM *x1, NUM *x2);
 inline NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1);  /* point-line dist */
 inline NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1); /* point-line segment dist */
 inline NUM l_l_dist( NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]); /* line-line dist */
-inline void p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]);
+inline NUM p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]);
 inline void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]);
 inline NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]); /* seg-seg dist */
 

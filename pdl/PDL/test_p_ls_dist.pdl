@@ -1,0 +1,24 @@
+use Flux;
+
+$ab0 = pdl([0,0,-0.5],[0,0,0.5]);
+$c0 = pdl([0,0,0]);
+
+
+$w=pgwin(xs,size=>[5,5]);
+
+for( $cd_r = 0.4; $cd_r < 1.5; $cd_r+= 0.5 ) {
+    for($cd_alpha=0; $cd_alpha < 360; $cd_alpha += 15) {
+	    $cda = $cd_alpha*3.14159/180;
+	    $cd_offset = pdl(0,sin($cda),cos($cda)) * $cd_r;
+	    $c = $c0+$cd_offset;
+	    $out = Flux::World::_p_ls_dist_test($ab0->list,$c->list);
+	    $w->env(-2,2,-2,2);
+	    $w->hold;
+	    $w->line([$ab0->((1))->list],[$ab0->((2))->list]);
+	    $w->line([$c->at(1),out->[1]],[$c->at(2),$out->[2]],{color=>7});
+	    $w->points([$out->[1]],[$out->[2]],{color=>7});
+	    $w->points([$c->at(1)],[$c->at(2)]);
+	    $w->release;
+	    sleep 1;
+    }
+}

@@ -544,6 +544,7 @@ sub render {
 	$opt = $range;
 	undef $range;
     }
+    $opt= {} unless defined($opt);
 
 
     release3d;
@@ -575,24 +576,77 @@ sub render {
 	$poly->((0)) .= $poly->((0))->clip($range->((0))->minmax);
 	$poly->((1)) .= $poly->((1))->clip($range->((1))->minmax);
 	$poly->((2)) .= $poly->((2))->clip($range->((2))->minmax);
-
+	
 	$ok = ($pol2 == $poly)->prodover;
 	$rgb *= $ok->(*3);
 	$prgb *= $ok->(*3);
-
-      points3d($range,zeroes($range),{PointSize=>0});
-      hold3d;
-      line3d($poly,$rgb);
+	
+	points3d($range,zeroes($range),{PointSize=>0});
+	hold3d;
+	points3d($poly,$prgb,{PointSize=>4});
     } else {
-      line3d($poly,$rgb);
-      hold3d;
+	points3d($poly,$prgb,{PointSize=>4});
+	hold3d;
     }
-    points3d($poly,$prgb,{PointSize=>4});
-    release3d;
+    
+    ##############################
+    my $boxmax = $poly->mv(-1,0)->maximum;
+    my $boxmin = $poly->mv(-1,0)->minimum;
+    my $shift =($boxmax-$boxmin)*0.05;
+    $boxmin -= $shift;
+    $boxmax += $shift;
+    my $shift =($boxmax-$boxmin)*0.05;
+    $boxmin -= $shift;
+    $boxmax += $shift;
 
+    ##############################
+    # Generate line strips for each fluxon...
+    my $rgbdex = 0;
+    my @id = $w->fluxon_ids;
+    my $w3d = PDL::Graphics::TriD::get_current_window();
+
+    for my $i(0..$#id) {
+	print "i=$i; fluxon is $id[$i]\n";
+	my $fp = $w->fluxon($id[$i])->polyline;
+	my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
+
+	my $l = new PDL::Graphics::TriD::LineStrip($normal_coords,$rgb[$i]);
+	$w3d->add_object($l);
+
+#	line3d($fp,$rgb[$i]);
+
+	unless(defined($opt->{label}) && !$opt->{label}) {
+	    ##############################
+	    # Label each point in the fluxon...
+	    # This is really cheesy since label seems to take normalized coordinates 
+	    # and I can't seem to figure the interface for normalizing plot coordinates.
+	    # The normalixzation is done by start_scale, add_scale, and finish_scale in
+	    # Graphics/TriD/Graph.pm within PDL, but they are somewhat opaque to me.
+	    use PDL::Graphics::TriD::Labels;
+	    my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
+		    
+	    for my $j(0..$#labels) {
+		my $l = new PDL::Graphics::TriD::Labels($normal_coords->(:,($j)),
+							{Strings=>["$labels[$j]"],
+							 Font=>$PDL::Graphics::TriD::GL::fontbase});
+		$w3d->add_object($l);
+	    }
+	}
+    }
+
+
+    print "ok.  Adding...\n";
+    print "ok.  twiddling...\n";
+
+    release3d;
     keeptwiddling3d  if($twiddle);
+    print "twiddling...\n";
     twiddle3d();
+    print "ok\n";
     nokeeptwiddling3d;
+
+#    print "returning...\n";
+
 }
 
 =pod
@@ -616,6 +670,8 @@ sub polyline {
 
 
 
+=pod
+
 =head2 bfield
 
 Dumps the magnetic field value for all fluxons in the simulation
@@ -630,6 +686,8 @@ sub bfield {
     return $l1->glue(1,@l[1..$#l]);
 }
 
+
+=pod
 
 =head2 dump_vecs
 
@@ -646,6 +704,32 @@ sub dump_vecs {
     $l1 = @l[0];
     return $l1->glue(1,@l[1..$#l]);
 }
+
+=pod
+
+=head2 vertex
+
+=for ref
+
+Retrieves a vertex by number, or returns undef if it doesn't exist.
+
+=cut
+
+sub vertex {
+    my $me = shift;
+    my $id = shift;
+
+    my @fluxons = $me->fluxons;
+    foreach my $f(@fluxons) {
+	foreach my $v($f->vertices) {
+	    return $v if($v->id==$id);
+	}
+    }
+    return undef;
+}
+
+
+
   
 1;
 

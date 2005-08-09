@@ -1,0 +1,14 @@
+use Flux;
+
+$a0 = zeroes(3);
+
+for ($x=-1;$x<1; $x+= 0.2){
+	for($y=-1;$y<1;$y+=0.2){
+		for($z=-1;$z<1;$z+=0.2){
+			$b0 = pdl($x,$y,$z);
+			$pm = Flux::World::_projmatrix($a0->list,$b0->list);
+			$v = Flux::World::_mat_vmult_3d(@$pm,$b0->list);
+			printf("b0= %6.2f,%6.2f,%6.2f    projected: %6.2f, %6.2f, %6.2f    length:%6.2f  det = %6.3f\n", ,$b0->list, @$v, sqrt(($b0*$b0)->sumover)->list, det(pdl($pm)->reshape(3,3))->at(0));
+	}
+}
+}

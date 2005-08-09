@@ -49,6 +49,31 @@ sub stringify {
 
 =pod
 
+=head2 id
+
+=for ref
+
+Return the integer id of the vertex
+
+=cut
+
+# Implemented in Vertex.xs
+
+=pod
+
+=head2 fluxon
+
+=for ref
+
+Return the fluxon associated with the vertex
+
+=cut
+
+# Implemented in Vertex.xs
+
+
+=pod
+
 =head2 prev
 
 =for ref
@@ -132,5 +157,85 @@ precalculated neighbors, are to be included in the calculation.
 =cut
 
 # Implemented in Vertex.xs
+
+=head2 plot_neighbors
+
+=for usage
+
+    $v->plot_neighbors($window, $global, $hull, [$env_opt]);
+
+=for ref
+
+Makes a 2-D plot of the neighbors of a particular vertex, with or without hull vertices.
+The $window should be an open PGPLOT window.  This is useful mainly for debugging but is
+a handy tool.  $global is a global flag to be handed to proj_neighbors; $hull indicates
+whether the hull should be plotted on the same diagram; and $env_opt, if present, is an 
+options hash to be passwd into the PGPLOT plotting routine.
+
+=cut
+use PDL::NiceSlice;
+
+sub plot_neighbors {
+    my($me, $window, $global, $hull, $env_opt) = @_;
+
+    $window->release;
+
+    my $xyl = $me->proj_neighbors($global);
+    
+    $env_opt = {} unless (defined $env_opt and ref $env_opt eq 'HASH');
+    $env_opt->{title}="Projected neighbors of vertex ".$me->id 
+	unless defined($env_opt->{title});
+
+    $window->points($xyl->((0)),$xyl->((1)),$env_opt);
+    $window->hold;
+
+    for my $i(0..$xyl->dim(1)-1){
+	$window->text(" ".$xyl->at(2,$i),$xyl->at(0,$i),$xyl->at(1,$i),{color=>3,charsize=>0.67});
+    }
+
+    if($hull) {
+	my $hul = $me->hull();
+	for $i(0..$hul->dim(1)-1) {
+	    my $row = $hul->(:,($i));
+	    my $r2 = $hul->range([0,$i+1],[5,0],'p')->sever;
+	    if($row->((4))) {
+		# open vertex
+		if($row->((1))){
+		    my $slope = - $row->((0))/$row->((1));
+		    my $x1 = ($row->((1))>0)?-10000:10000;
+		    my $xy0 = $r2->(2:3);
+		    
+		    my $y1 = ($x1- $xy0->((0))) * $slope  +  $xy0->((1));
+		    $window->line([$xy0->((0)),$x1],[$xy0->((1)),$y1],{color=>2});
+		} else {
+		    $window->line([$r2->((2)),$r2->((2))],
+				  [$r2->((3)),($row->((0))>0)?10000:-10000],
+				  {color=>2}
+				  );
+		}
+
+	    } elsif($r2->((4))) {
+		# next vertex is open
+		if($row->((1))){
+		    my $slope = - $row->((0))/$row->((1));
+		    my $x1 = ($row->((1))>0)?-10000:10000;
+		    my $xy0 = $row->(2:3);
+		    
+		    my $y1 = ($x1- $xy0->((0))) * $slope  +  $xy0->((1));
+		    $window->line([$xy0->((0)),$x1],[$xy0->((1)),$y1],{color=>2});
+		} else {
+		    $window->line([$row->((2)),$row->((2))],
+				  [$row->((3)),($row->((0))>0)?-10000:10000],
+				  {color=>2}
+				  );
+		}
+	    } else {
+		$hv = $hul->range([2,$i],[2,2],'p');
+		$window->line($hv->((0)),$hv->((1)),{color=>2});
+	    }
+	}
+    }
+}
+
 
 1;

@@ -43,13 +43,25 @@ connected by piecewise-linear flux elements ("fluxels").
 
 =item Flux::Vertex
 
-A single element of a fluxon.
+A single element of a fluxon.  A vertex contains location and connectivity information
+to the next and previous vertices along the same fluxon.
 
 =back
 
+=head1 METHODS
+
+The Flux module itself contains only some geometrical debugging and visualization stuff. 
+Check the Flux::World module for information on building a FLUX simulation.
+
+=cut
+
+
+
+=pod
+
 =head1 AUTHOR
 
-FLUX is copyright (c) 2004 by Craig DeForest. Development was funded
+FLUX is copyright (c) 2004-2005 by Craig DeForest. Development was funded
 under grants from NASA's Living With a Star program.  The code is
 distributable under the terms of the Gnu Public License ("GPL"),
 version 2.  You should have received a copy of the GPL with FLUX, in the
@@ -66,6 +78,9 @@ use Flux::World;
 use Flux::Fluxon;
 use Flux::Vertex;
 use Flux::Concentration;
+
+
+
 
 
 1;
