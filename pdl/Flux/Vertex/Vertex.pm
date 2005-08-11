@@ -190,7 +190,7 @@ sub plot_neighbors {
     $window->hold;
 
     for my $i(0..$xyl->dim(1)-1){
-	$window->text(" ".$xyl->at(2,$i),$xyl->at(0,$i),$xyl->at(1,$i),{color=>3,charsize=>0.67});
+	$window->text($xyl->at(2,$i),$xyl->at(0,$i),$xyl->at(1,$i),{color=>3,charsize=>0.67,justification=>0.5*int(rand(3))});
     }
 
     if($hull) {

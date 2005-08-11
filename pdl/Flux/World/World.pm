@@ -729,9 +729,115 @@ sub vertex {
 }
 
 
+=pod
 
+=head2 _hull_points
+
+=for usage
+
+    $hull = PDL::World::_hull_points($points);
+
+=for ref
+
+This is not a method at all, but rather a subroutine in the
+Flux::World package, intended for testing and debugging the
+minimum-hull routine.  It accepts a 2xN PDL containing points on the
+plane, and returns a 6xM PDL containing hull information. On output,
+the columns are as follows:
+
+=over 3
+
+=item 0,1
+
+The coordinates of a neighbor point
+
+=item 2,3
+
+The coordinates of the corresponding leftward hull point if it exists, or the
+(left,right) exit angles in radians if it doesn't.  
+
+=item 4
+
+A flag that is 0 if the hull point exists and 1 if it doesn't.
+
+=item 5
+
+The index of this neighbor in the original input array.
+
+=back
+
+Note that M <= N in all cases; rejected points are ignored.
+The output is suitable to feeding into _plot_hull, below.
+
+=cut
+
+# implemented in World.xs
+
+=pod
+
+=head2 _plot_hull
+
+=for usage
+
+    $w = pgwin(dev=>"/xs", size=>[5,5]);
+    PDL::World::_plot_hull($w, PDL::World::_hull_points($points) [, $points]);
+
+=for ref
+
+Interprets and plots a 6xN hull PDL returned by _hull_points.  If you
+include the optional $points parameter, then those points are all plotted too.
+
+If you want a particular title or scaling you should call $win->env beforehand and then 
+hold $win.  $win is released on exit.
+
+=cut
+
+sub _plot_hull {
+    my $win = shift;
+    my $hull = shift;
+    my $points = shift;
+
+    # Plot all points in set, if presented
+    if(defined $points) {
+	$win->points($points->((0)),$points->((1)),{color=>2});
+	$win->hold;
+	for $i(0..$points->dim(1)-1){
+	    $win->text($i,$points->((0),($i)),$points->((1),($i)),{color=>2});
+	}
+    }
+
+    # Plot all points in neighbors.
+    $win->points($hull->((0)),$hull->((1)),{color=>3});
+    $win->hold;
+    for $i(0..$hull->dim(1)-1){
+	$win->text($i,$hull->at(0,$i),$hull->at(1,$i),{color=>3});
+	$win->line(pdl(0,$hull->at(0,$i)),pdl(0,$hull->at(1,$i)),{color=>3});
+    }
+
+    print "Drawing hull....\n";
+    # Draw all hull lines
+    for my $i(0..$hull->dim(1)-1){
+	my $r = $hull->range([2,$i],[3,2],'p');
+
+	unless($r->at(2,0) || $r->at(2,1)) {
+	    $win->line($r->((0)), $r->((1)),{color=>4});
+	} elsif($r->at(2,0)) {
+	    my $x1 = $r->at(0,1) + 2000 * cos($r->at(1,0));
+	    my $y1 = $r->at(1,1) + 2000 * sin($r->at(1,0));
+	    $win->line(pdl($r->at(0,1),$x1),pdl($r->at(1,1),$y1),{color=>5});
+	} elsif($r->at(2,1)) {
+	    my $x1 = $r->at(0,0) + 2000 * cos($r->at(0,1));
+	    my $y1 = $r->at(1,0) + 2000 * sin($r->at(0,1));
+	    $win->line(pdl($r->at(0,0),$x1),pdl($r->at(1,0),$y1),{color=>6});
+	}
+    }
+
+    $win->points(0,0,{symsize=>3,charsize=>3,color=>1});
+
+    $win->release;
+}
+
+	    
   
 1;
-
-
 

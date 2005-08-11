@@ -506,7 +506,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
    * Place a at the origin and rotate so that b points in the positive z direction
    */
   
-  projmatrix(mat,a0,b0);
+  projmatrix(mat,b0,a0);
   
   diff_3d(scr,b0,a0);
   mat_vmult_3d(b,mat,scr);
@@ -839,7 +839,7 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
  * then it's rotated about the Y axis into the Z axis.  See 
  * DeForest notebooks, vol. IV-A, p. 177.
  */
-inline void projmatrix(NUM *out, NUM *x1_3, NUM *x0_3) {
+inline void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
   NUM a[3];
   NUM r2d,r3d;
   NUM m1[9];

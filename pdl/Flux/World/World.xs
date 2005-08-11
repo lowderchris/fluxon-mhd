@@ -288,7 +288,7 @@ CODE:
        if(what[0]=='0' && what[1]=='x') {
 	 unsigned long ul;
 	 sscanf(what+2,"%x",&ul);
-	 (void *)(w->f_funcs[where]) = (void *)ul;
+	 ((void **)(w->f_funcs))[where] = (void *)ul;
        } else {
          croak("Unknown force function '%s'\n",what);
        }
@@ -572,6 +572,122 @@ CODE:
  av_store(RETVAL,2,newSVnv(b[2]));
 OUTPUT:
  RETVAL
+
+SV *
+_hull_points(pts)
+SV *pts
+PREINIT:
+	pdl *p;
+	pdl *o;
+	DUMBLIST *horde,*rejects;
+	HULL_VERTEX *hull;
+	int i,j;
+CODE:
+/********************************************************************************
+ * _hull_points - debugging routine for geometry.c code.  Accepts a 2xN PDL containing 2-D
+ * points, and constructs a hull containing the origin and the points.  Returns the hull
+ * in a 6xN PDL.  The (0,1) columns are the coordinates of the selected neighbors.  
+ * (2,3) columns are the coordinates of each hull corner (if it is closed), or the 
+ * angles of exit of the two branches of the hull (if they are open), and the (4) column
+ * tells how to interpret the row (closed/open).  The (5) column contains the index number
+ * of the corresponding original hull point. The (2,3) vertex goes to the LEFT of the 
+ * corresponding (0,1) neighbor point.
+ * (0,1) dimension is the hull point if it is closed, or 
+ */
+ printf("Parsing input pdl...\n");
+ if(pts==NULL || pts==&PL_sv_undef) {
+	fprintf(stderr,"_hull_points requires a 2xN PDL - got undef\n");
+	RETVAL = &PL_sv_undef;
+        goto _hull_exit;
+ }
+ p = PDL->SvPDLV(pts);
+ if(!p) {
+	fprintf(stderr,"_hull_points requires a 2xN PDL - but SvPDLV failed\n");
+	RETVAL = &PL_sv_undef;
+	goto _hull_exit;
+}
+if(p->ndims != 2 || p->dims[0] != 2) {
+	fprintf(stderr,"_hull_points requires a 2xN PDL but got some other dimension\n");
+	RETVAL = &PL_sv_undef;
+	goto _hull_exit;
+}
+PDL->converttype(&p,PDL_D,1);
+PDL->make_physdims(p);
+PDL->make_physical(p);
+printf("p is a %d-dim PDL (%d x %d)\n",p->ndims,p->dims[0],p->dims[1]);
+/******************************
+ * Stuff the PDL values into a collection of spankin'-new vertices
+ */
+horde = new_dumblist();
+dumblist_grow(horde,p->dims[1]);
+for(i=0;i<p->dims[1];i++) {
+	double x,y;
+	VERTEX *v = new_vertex(i,0,0,0,0);
+	v->label = i;
+	x = ((PDL_Double *)(p->data))[ i * (p->dimincs[1]) ];
+	y = ((PDL_Double *)(p->data))[ i * (p->dimincs[1]) + p->dimincs[0] ];
+	((VERTEX **)(horde->stuff))[i]  = v;
+	v->scr[0] = x;
+	v->scr[1] = y;
+	v->scr[2] = 0;
+	v->r = sqrt(x*x + y*y);
+	v->a = atan2(y,x);
+}
+horde->n = p->dims[1];
+/******************************
+ * Allocate the hull data, and call hull_2d
+ */
+hull = (HULL_VERTEX *)malloc(sizeof(HULL_VERTEX) * p->dims[1]);
+hull_2d(hull,horde,rejects=new_dumblist());
+/******************************
+ * Create an output PDL
+ */
+o = PDL->create(PDL_PERM);
+{
+ PDL_Long dims[2];
+ dims[0]=6;
+ dims[1]=horde->n;
+ PDL->setdims(o, dims, 2);
+}	
+o->datatype = PDL_D;
+PDL->resize_defaultincs(o);
+PDL->make_physical(o);
+/******************************
+ * Copy the hull values into the output PDL
+ */
+for(i=0;i<horde->n;i++) {
+  ((PDL_Double *)o->data)[ i * o->dimincs[1]                       ] = ((VERTEX *)(horde->stuff[i]))->scr[0];
+  ((PDL_Double *)o->data)[ i * o->dimincs[1] +     o->dimincs[0] ] = ((VERTEX *)(horde->stuff[i]))->scr[1];
+  ((PDL_Double *)o->data)[ i * o->dimincs[1] + 4 * o->dimincs[0] ] = hull[i].open;
+  ((PDL_Double *)o->data)[ i * o->dimincs[1] + 5 * o->dimincs[0] ] = ((VERTEX *)(horde->stuff[i]))->label;
+  if(hull[i].open){
+   ((PDL_Double *)o->data)[ i * o->dimincs[1] + 2* o->dimincs[0] ] = hull[i].a_l;
+   ((PDL_Double *)o->data)[ i * o->dimincs[1] + 3* o->dimincs[0] ] = hull[i].a_r;
+  } else {
+   ((PDL_Double *)o->data)[ i * o->dimincs[1] + 2 * o->dimincs[0] ] = hull[i].p[0];
+   ((PDL_Double *)o->data)[ i * o->dimincs[1] + 3 * o->dimincs[0] ] = hull[i].p[1];
+  }
+}
+/******************************
+ * Clean up the data structures
+ */
+ for(i=0;i<horde->n;i++) {
+	free(horde->stuff[i]);
+ }
+ free_dumblist(horde);
+ for(i=0;i<rejects->n;i++) {
+        free(rejects->stuff[i]);
+ }
+ free_dumblist(rejects);
+ free(hull);
+/******************************
+ * Encapsulate the PDL in an SV for return
+ */
+ RETVAL = NEWSV(546,0); /* 546 is arbitrary tag */
+ PDL->SetSV_PDL(RETVAL,o); 
+ _hull_exit: ;
+OUTPUT:
+ RETVAL 
 
 BOOT:
 /**********************************************************************
