@@ -33,21 +33,21 @@
 /**********************************************************************
  * norm - find the length of a vector.  2-d or 3-d.
  */
-inline NUM norm2_2d(NUM *x) {
+NUM norm2_2d(NUM *x) {
   NUM out;
   out = *x * *x; x++;;
   out += *x * *x;
   return out;
 }
 
-inline NUM norm_2d(NUM *x) {
+NUM norm_2d(NUM *x) {
   NUM out;
   out = *x * *x; x++;
   out += *x * *x;
   return sqrt(out);
 }
 
-inline NUM norm2_3d(NUM *x) {
+NUM norm2_3d(NUM *x) {
   NUM out;
   out = *x * *x; x++;
   out += *x * *x; x++;
@@ -55,7 +55,7 @@ inline NUM norm2_3d(NUM *x) {
   return out;
 }
 
-inline NUM norm_3d(NUM *x) {
+NUM norm_3d(NUM *x) {
   NUM out;
   out = *x * *x; x++;
   out += *x * *x; x++;
@@ -67,12 +67,12 @@ inline NUM norm_3d(NUM *x) {
 /**********************************************************************
  * inner - Find the inner product of two vectors.  2-d or 3-d
  */
-inline NUM inner_2d(NUM *p0, NUM *p1) {
+NUM inner_2d(NUM *p0, NUM *p1) {
   NUM out = *(p0++) * *(p1++);
   return out + ( *p0 * *p1 );
 }
 
-inline NUM inner_3d(NUM *p0, NUM *p1) {
+NUM inner_3d(NUM *p0, NUM *p1) {
   NUM out;
   out = *(p0++) * *(p1++);
   out += *(p0++) * *(p1++);
@@ -86,12 +86,12 @@ inline NUM inner_3d(NUM *p0, NUM *p1) {
  * directly.
  */
 
-inline NUM cross_2d(NUM *p0, NUM *p1) {
+NUM cross_2d(NUM *p0, NUM *p1) {
   return (p1[1]*p0[0] - p1[0]*p0[1]);
 }
 
 /* cross_3d is defined to cross in geometry.h */
-inline void *cross(NUM *out, NUM *p0, NUM *p1) {
+void *cross(NUM *out, NUM *p0, NUM *p1) {
   *(out++) = p0[1]*p1[2]-p0[2]*p1[1];
   *(out++) = p0[2]*p1[0]-p0[0]*p1[2];
   *out     = p0[0]*p1[1]-p0[1]*p1[0];
@@ -102,7 +102,7 @@ inline void *cross(NUM *out, NUM *p0, NUM *p1) {
  * result in the given destination. OK to have the destination be 
  * the source vector.
  */
-inline void scale_3d(NUM *out, NUM *a, NUM b) {
+void scale_3d(NUM *out, NUM *a, NUM b) {
   *(out++) = *(a++) * b;
   *(out++) = *(a++) * b;
   *(out) = *(a) * b;
@@ -112,7 +112,7 @@ inline void scale_3d(NUM *out, NUM *a, NUM b) {
  * sum - Add two 3-vectors and stick 'em into the destination array.
  * OK to have the destination be one of the sources.
  */
-inline void sum_3d(NUM *out, NUM *a, NUM *b) {
+void sum_3d(NUM *out, NUM *a, NUM *b) {
   *(out++) = *(a++) + *(b++);
   *(out++) = *(a++) + *(b++);
   *(out) = *(a) + *(b);
@@ -122,7 +122,7 @@ inline void sum_3d(NUM *out, NUM *a, NUM *b) {
  * diff -- Subtract two 3 vectors (a - b) and put the result in the
  * destination array. OK to have the destination be one of the sources.
  */
-inline void diff_3d(NUM *out, NUM *a, NUM *b) {
+void diff_3d(NUM *out, NUM *a, NUM *b) {
   *(out++) = *(a++) - *(b++);
   *(out++) = *(a++) - *(b++);
   *(out) = *(a) - *(b);
@@ -131,7 +131,7 @@ inline void diff_3d(NUM *out, NUM *a, NUM *b) {
 /**********************************************************************
  * cp_3d - Copy a 3-vector
  */
-inline void cp_3d(NUM *a, NUM *b) {
+void cp_3d(NUM *a, NUM *b) {
   *(a++) = *(b++);
   *(a++) = *(b++);
   *(a) = *(b);
@@ -148,12 +148,12 @@ inline void cp_3d(NUM *a, NUM *b) {
  * The matrix comes as an array of 4 elements:  top row, then bottom row.
  * It gets put in the specified place.
  */
-inline void rotmat_2d(NUM *out, NUM alpha) {
+void rotmat_2d(NUM *out, NUM alpha) {
   out[0] = out[3]  = cos(alpha);
   out[2] = - (out[1] = sin(alpha));
 }
 
-inline void rotmat_2d_fr_slope(NUM *out,NUM dy, NUM dx) {
+void rotmat_2d_fr_slope(NUM *out,NUM dy, NUM dx) {
   NUM r;
   r = sqrt(dy*dy+dx*dx);
   out[0] = out[3] = dx/r;
@@ -166,7 +166,7 @@ inline void rotmat_2d_fr_slope(NUM *out,NUM dy, NUM dx) {
  * of the sources.  Each element has its own variable to facilitate
  * registerification.
  */
-inline void mat_mult_2d(NUM *out, NUM *a, NUM *b) {
+void mat_mult_2d(NUM *out, NUM *a, NUM *b) {
   NUM lt,rt,lb,rb;
   lt = a[0]*b[0] + a[1]*b[2];
   rt = a[0]*b[1] + a[1]*b[3];
@@ -183,7 +183,7 @@ inline void mat_mult_2d(NUM *out, NUM *a, NUM *b) {
  * trivial. Yes, I know the ^= trick, but it's too much hassle with 
  * the switchable NUMs.
  */
-inline void transpose_2x2(NUM *mat) {
+void transpose_2x2(NUM *mat) {
   NUM a = mat[1];
   mat[1] = mat[2];
   mat[2] = a;
@@ -193,7 +193,7 @@ inline void transpose_2x2(NUM *mat) {
  * transpose_3x3
  * Transpose a 3x3 matrix in situ
  */
-inline void transpose_3x3(NUM *mat) {
+void transpose_3x3(NUM *mat) {
   NUM a;
   a=mat[1]; mat[1] = mat[3]; mat[3] = a;
   a=mat[2]; mat[2] = mat[6]; mat[6] = a;
@@ -205,7 +205,7 @@ inline void transpose_3x3(NUM *mat) {
  * Multiply two 3x3 matrices, returning a 3x3 matrix in the destination.
  * Not buffered.
  */
-inline void mat_mult_3d(NUM *out, NUM *a, NUM *b) {
+void mat_mult_3d(NUM *out, NUM *a, NUM *b) {
   *(out++) = a[0]*b[0] + a[1]*b[3] + a[2]*b[6];
   *(out++) = a[0]*b[1] + a[1]*b[4] + a[2]*b[7];
   *(out++) = a[0]*b[2] + a[1]*b[5] + a[2]*b[8];
@@ -226,7 +226,7 @@ inline void mat_mult_3d(NUM *out, NUM *a, NUM *b) {
  * The arguments are treated as pointers not POINTs so that they can
  * be written to!
  */
-inline void mat_vmult_2d(NUM *out, NUM *mat, NUM *v) {
+void mat_vmult_2d(NUM *out, NUM *mat, NUM *v) {
   NUM t,b;
   t = mat[0]*v[0]+mat[1]*v[1];
   b = mat[2]*v[0]+mat[3]*v[1];
@@ -237,7 +237,7 @@ inline void mat_vmult_2d(NUM *out, NUM *mat, NUM *v) {
 /**********************************************************************
  * mat_vmult_3d - Multiply a 3x3 matrix by a 3-vector on the right.
  */
-inline void mat_vmult_3d(NUM *out, NUM *mat, NUM *v) {
+void mat_vmult_3d(NUM *out, NUM *mat, NUM *v) {
   NUM a;
   *(out++) = v[0]*mat[0] + v[1]*mat[1] + v[2]*mat[2];
   *(out++) = v[0]*mat[3] + v[1]*mat[4] + v[2]*mat[5];
@@ -249,7 +249,7 @@ inline void mat_vmult_3d(NUM *out, NUM *mat, NUM *v) {
  * This is the same as transposing the matrix, which is the same as 
  * inverting it if it's a rotation matrix!
  */
-inline void vec_mmult_3d(NUM *out, NUM *mat, NUM *v) {
+void vec_mmult_3d(NUM *out, NUM *mat, NUM *v) {
   *(out++) = v[0] * mat[0] + v[1] * mat[3] + v[2] * mat[6];
   *(out++) = v[0] * mat[1] + v[1] * mat[4] + v[2] * mat[7];
   *(out)   = v[0] * mat[2] + v[1] * mat[5] + v[2] * mat[8];
@@ -258,14 +258,14 @@ inline void vec_mmult_3d(NUM *out, NUM *mat, NUM *v) {
 /**********************************************************************
  * det_2d - Deteminant of a 2x2 matrix
  */
-inline NUM det_2d(NUM *mat) {
+NUM det_2d(NUM *mat) {
   return mat[0]*mat[3] - mat[1]*mat[2];
 }
 
 /**********************************************************************
  * det_3d - Determinant of a 3x3 matrix
  */
-inline NUM det_3d(NUM *mat) {
+NUM det_3d(NUM *mat) {
   return(  mat[0]*mat[4]*mat[8] + mat[1]*mat[5]*mat[6] + mat[2]*mat[3]*mat[7]
 	  -mat[0]*mat[5]*mat[7] - mat[1]*mat[3]*mat[8] - mat[2]*mat[4]*mat[6]);
 }
@@ -281,7 +281,7 @@ inline NUM det_3d(NUM *mat) {
  * (avoids the square root if you only need a monotonically increasing
  * function!)
  */
-inline NUM cart2_2d(NUM *x1, NUM *x2) {
+NUM cart2_2d(NUM *x1, NUM *x2) {
   NUM out;
   NUM a;
   a = *(x2++) - *(x1++);
@@ -290,7 +290,7 @@ inline NUM cart2_2d(NUM *x1, NUM *x2) {
   return (out + a*a);
 }
 
-inline NUM cart2_3d(NUM *x1, NUM *x2) {
+NUM cart2_3d(NUM *x1, NUM *x2) {
   NUM out;
   NUM a;
   a = *(x2++) - *(x1++);
@@ -305,7 +305,7 @@ inline NUM cart2_3d(NUM *x1, NUM *x2) {
 /***********************************************************************
  * cart - Return the distance between two points, 'N' dimensions
  */
-inline NUM cart_2d(NUM *x1, NUM *x2) {
+NUM cart_2d(NUM *x1, NUM *x2) {
   NUM out;
   NUM a;
   a = *(x2++) - *(x1++);
@@ -314,7 +314,7 @@ inline NUM cart_2d(NUM *x1, NUM *x2) {
   return sqrt(out + a*a);
 }
 
-inline NUM cart_3d(NUM *x1, NUM *x2) {
+NUM cart_3d(NUM *x1, NUM *x2) {
   NUM out;
   NUM a;
   a = *(x2++) - *(x1++);
@@ -331,7 +331,7 @@ inline NUM cart_3d(NUM *x1, NUM *x2) {
  * Find the distance between a point (in 3-space) and a line 
  * (also in 3-space).   Relatively simple geometric construction.
  */
-inline NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1) {
+NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1) {
   NUM p[3],x[3],u[3];
 
   diff_3d(x,x1,x0);      /* x = x1 - x0 */
@@ -347,7 +347,7 @@ inline NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1) {
  * (also in 3-space).  This is a little harder because of the conditionals
  * around the endpoints.
  */
-inline NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1) {
+NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1) {
   NUM p[3],x[3],u[3];
   NUM l,a;
   
@@ -387,7 +387,7 @@ inline NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1) {
  *        D' = (C - A) x (B - A)^
  * )
  */
-inline NUM l_l_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
+NUM l_l_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
   NUM b[3],foo[3],c[3],d[3];
   NUM cdpl;
 
@@ -515,21 +515,23 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
   mat_vmult_3d(c,mat,scr);
   
   diff_3d(scr,d0,a0);
-  mat_vmult_3d(c,mat,scr);
+  mat_vmult_3d(d,mat,scr);
   
-  /*  printf("ls_closest_approach (in ab frame):\n\tb is %g,%g,%g\n\tc is %g,%g,%g\n\td is %g,%g,%g\n",b[0],b[1],b[2],c[0],c[1],c[2],d[0],d[1],d[2]); */
+  //  printf("ls_closest_approach (in ab frame):\n\tb is %g,%g,%g\n\tc is %g,%g,%g\n\td is %g,%g,%g\n",b[0],b[1],b[2],c[0],c[1],c[2],d[0],d[1],d[2]); 
   
   /**********
    * Find the closest approach of the line cd to the origin.  Works by
    * displacing c to the origin and projecting a perpendicular to the
-   * cd line until it lands on cd.  The vector is (cd) (
+   * cd line from a until it lands on cd.  The vector is (cd) (
    * (cd).(ca)/(cd.cd) ) But cd.ca is just -(cd.ac), so we can avoid
    * having to actually displace...
    */
   diff_3d(scr,d,c);
   d2 = norm2_2d(scr);
   if(d2==0) {
-    
+
+    //    printf("ls_dist: parallel case...");
+
     /* Both lines are parallel along the z axis.  b>0, a=0. */
     
     if( c[2] < 0 && d[2] < 0 ) {
@@ -582,6 +584,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
    */
   beta = ( (1.0-alpha) * c[2] + alpha * d[2] ) / b[2];
 
+  //  printf("ls_closest_approach: line-line case. alpha=%g; beta=%g\n",alpha,beta);
 
   if(alpha >= 0 && alpha <= 1 && beta >= 0 && beta <= 1) {
     /* The line-line case is valid: copy and return. */
@@ -610,10 +613,12 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     d2 = cart2_3d(c0,scr);
     cp_3d(p0,scr);
     cp_3d(p1,c0);
+    //    printf("AB-C: dist is %g\n",d2);
     
     /* Check AB - D */
     p_ls_closest_approach(scr, a0, b0, d0);
     c2 = cart2_3d(d0,scr);
+    //    printf("AB-D: dist is %g\n",c2);
     if( c2<d2 ) {
       d2 = c2;
       cp_3d(p0,scr);
@@ -623,6 +628,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     /* Check A - CD */
     p_ls_closest_approach(scr, c0, d0, a0);
     c2 = cart2_3d(a0,scr);
+    //    printf("A-CD: dist is %g\n",c2);
     if( c2<d2 ) {
       d2 = c2;
       cp_3d(p1,scr);
@@ -632,13 +638,14 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     /* Check B - CD */
     p_ls_closest_approach(scr, c0, d0, b0);
     c2 = cart2_3d(b0,scr);
+    //    printf("B-CD: dist is %g\n",c2);
     if( c2<d2 ) {
       d2=c2;
       cp_3d(p1,scr);
       cp_3d(p0,b0);
     }
   }
-   
+
   return;
 }
 
@@ -659,7 +666,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
  *
  */
 
-inline NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
+NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
   NUM foo[3],bar[3];
 
   ls_closest_approach(foo,bar,a0,b0,c0,d0);
@@ -689,7 +696,7 @@ inline NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
  * at the moment.
  */
 
-static inline int  mask_halfspace(VERTEX *v, NUM X0[3], NUM X1[3], int sign){
+static int  mask_halfspace(VERTEX *v, NUM X0[3], NUM X1[3], int sign){
   NUM A[3], B[3];
   NUM Y0[3], Y1[3];
   NUM d0, d1;
@@ -726,7 +733,7 @@ static inline int  mask_halfspace(VERTEX *v, NUM X0[3], NUM X1[3], int sign){
   return 1;
 }
 
-inline NUM fl_segment_masked_dist(VERTEX *v0, VERTEX *v1) {
+NUM fl_segment_masked_dist(VERTEX *v0, VERTEX *v1) {
   NUM P0[3],P1[3];
   return fl_segment_masked_deluxe_dist(P0, P1, v0, v1);
 }
@@ -741,7 +748,7 @@ inline NUM fl_segment_masked_dist(VERTEX *v0, VERTEX *v1) {
  * preferred.
  */
   NUM X0[3], X1[3];
-inline NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1){
+NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1){
   int i;
 
   /* Make sure that we've got a valid line segment */
@@ -810,15 +817,17 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
 
   diff_3d(seg,v0->next->x,v0->x);
   scale_3d(seg,seg,1.0/norm_3d(seg));
+
   cross(cr,P,seg);
   a = norm2_3d(cr);
   a *= a;               // sin^2 --> sin^4
 
   if(a == 0) 
-    return -1;
+    return 1e20;
 
-  return Plen / a;
+  Plen /= a;
 
+  return Plen;
 }
 				   
 /**********************************************************************
@@ -839,7 +848,7 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
  * then it's rotated about the Y axis into the Z axis.  See 
  * DeForest notebooks, vol. IV-A, p. 177.
  */
-inline void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
+void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
   NUM a[3];
   NUM r2d,r3d;
   NUM m1[9];
@@ -897,7 +906,7 @@ inline void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
  * Given a PLANE and a point, reflect the point through the PLANE.  
  * The reflected point is stuffed into the target array.
  */
-inline void reflect(NUM out[3], NUM point[3], PLANE *plane) {
+void reflect(NUM out[3], NUM point[3], PLANE *plane) {
   NUM foo[3];
   NUM l;
   diff_3d(foo,point,plane->origin);
@@ -920,7 +929,7 @@ inline void reflect(NUM out[3], NUM point[3], PLANE *plane) {
  * 
  * If you feed in NULL for P, then P is treated as the origin.
  */
-inline int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
+int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
   NUM *delta;
   NUM scratch[2];
 
@@ -955,7 +964,7 @@ inline int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
  * calculate the offset from the base point for L1.  The infinite-slope
  * cases are handled separately.
  */
-inline int intersection_2d(NUM *out, NUM *L1, NUM *L2) {
+int intersection_2d(NUM *out, NUM *L1, NUM *L2) {
   if( finite(L1[2]) && finite(L2[2]) ) {
     NUM delta_y;
     NUM delta_x;

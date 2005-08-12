@@ -1398,11 +1398,11 @@ void dumblist_crunch(DUMBLIST *dl,int((*cmp)(void *a, void *b))) {
   void **a, **b;
   int i,j;
 
-  b = dl->stuff;
+  b = &(dl->stuff[0]);
   a = &(dl->stuff[1]);
   j =0;
   for(i=1;i<dl->n;i++) {
-    if((*cmp)(b,a)) {
+    if((*cmp)(*b,*a)) {
       b++; j++;
       if(b != a) 
 	*b = *a;

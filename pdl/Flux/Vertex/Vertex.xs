@@ -209,7 +209,9 @@ CODE:
  PDL->allocdata(p);
  PDL->make_physical(p);
  d =  p->data;
+ printf("Flux::Vertex::hull: Got %d neighbors\n",v->neighbors.n);
  for(i=0;i<v->neighbors.n; i++) {
+   printf("\t#%d: label is %d\n",i,((VERTEX *)(v->neighbors.stuff[i]))->label);
    *(d++) = ((VERTEX *)(v->neighbors.stuff[i]))->scr[0];
    *(d++) = ((VERTEX *)(v->neighbors.stuff[i]))->scr[1];
    *(d++) = hull_verts[i].p[0];

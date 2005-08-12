@@ -561,7 +561,14 @@ sub render {
     if($opt->{'PRGB_CODE'}) {
 	eval $opt->{'PRGB_CODE'};
     } else {
-	@prgb = map { ones($_)*pdl(1,0,0) } @poly;
+	@prgb = map { 
+	    my $alpha = double yvals($_);
+	    $alpha /= max($alpha);
+	    my $beta = 1.0 - $alpha;
+	    my $gamma = sin($alpha*3.14159);
+	    my $prgb = $alpha * pdl(1,0,0) + $beta * pdl(0,0,1) + $gamma * pdl(0,1,0);
+	    $prgb;
+	} @poly;
     }
     
     $poly = pdl(0,0,0)->glue(1,@poly);
@@ -810,7 +817,7 @@ sub _plot_hull {
     $win->points($hull->((0)),$hull->((1)),{color=>3});
     $win->hold;
     for $i(0..$hull->dim(1)-1){
-	$win->text($i,$hull->at(0,$i),$hull->at(1,$i),{color=>3});
+	$win->text($hull->at(5,$i),$hull->at(0,$i),$hull->at(1,$i),{color=>3});
 	$win->line(pdl(0,$hull->at(0,$i)),pdl(0,$hull->at(1,$i)),{color=>3});
     }
 

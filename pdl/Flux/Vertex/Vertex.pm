@@ -181,6 +181,7 @@ sub plot_neighbors {
     $window->release;
 
     my $xyl = $me->proj_neighbors($global);
+    $Flux::xyl = $xyl;
     
     $env_opt = {} unless (defined $env_opt and ref $env_opt eq 'HASH');
     $env_opt->{title}="Projected neighbors of vertex ".$me->id 
@@ -195,6 +196,7 @@ sub plot_neighbors {
 
     if($hull) {
 	my $hul = $me->hull();
+	$Flux::hul = $hul;
 	for $i(0..$hul->dim(1)-1) {
 	    my $row = $hul->(:,($i));
 	    my $r2 = $hul->range([0,$i+1],[5,0],'p')->sever;

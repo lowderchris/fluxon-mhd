@@ -37,6 +37,26 @@ problem with projection?)
 	- Hmmm.. fl_segment_deluxe_dist is giving trouble.
 	- Actually, it's ls_closest_approach.
 
+11-August-2005
+	- Okay, ls_closest_approach is working now (I think).  Hull seems screwed up?
+	- installed hull diagnoser on perl side; hulls look OK.  Checking against
+	   simple-8 case (which looked funny the other day).
+	- Hull looks OK but placement of vertices appears quite inconsistent.  Consider e.g.
+          Vertex 13 in simple_8, projected into Vertex 14's perp. plane.  Sometimes it is located at (0,437) or
+	  thereabouts; sometimes it is located at (0.02) or thereabouts.
 
-	 
-	 
+	Close of day: found bug in ls_closest_approach; that fixed the heisenbug 
+	(vector was being loaded into 'c' rather than 'd') but induced other 
+	problems with test_hull.  Why do the two plots not agree?
+
+12-August-2005
+	- Problem is discrepancies between the output of Vertex::hull (in Vertex.xs - used by 
+	  plot_hull in Vertex.pm) and direct hulling of the projected output of proj_neighbors.
+	  Hmmm... That is a problem with vertex_update_neighbors, which is called directly from
+	  hull() in Vertex.xs.  
+		-Could it be that the buffer is getting overwritten? 
+		-No.  data from hull_verts is pulled out before any other flux calls.
+		-Something is wrong with dumblist sorting.  winnow_cmp_1 is the comparison routine and its
+	  	 output doesn't make sense.  Things are being sorted OK but not culled.
+	        -That wasn't it.  The culling was a problem in dumblist_crunch; that's fixed but the problem
+		 persists.  Time to head out -- this won't get fixed today.
