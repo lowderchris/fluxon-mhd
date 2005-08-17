@@ -199,38 +199,18 @@ sub plot_neighbors {
 	$Flux::hul = $hul;
 	for $i(0..$hul->dim(1)-1) {
 	    my $row = $hul->(:,($i));
-	    my $r2 = $hul->range([0,$i+1],[5,0],'p')->sever;
+	    my $r2 = $hul->range([0,$i+1],[7,0],'p')->sever;
 	    if($row->((4))) {
+		print "open before\n";
 		# open vertex
-		if($row->((1))){
-		    my $slope = - $row->((0))/$row->((1));
-		    my $x1 = ($row->((1))>0)?-10000:10000;
-		    my $xy0 = $r2->(2:3);
-		    
-		    my $y1 = ($x1- $xy0->((0))) * $slope  +  $xy0->((1));
-		    $window->line([$xy0->((0)),$x1],[$xy0->((1)),$y1],{color=>2});
-		} else {
-		    $window->line([$r2->((2)),$r2->((2))],
-				  [$r2->((3)),($row->((0))>0)?10000:-10000],
-				  {color=>2}
-				  );
-		}
-
+		$x0 = cos($row->at(6))*1000;
+		$y0 = sin($row->at(6))*1000;
+		$window->line([$x0,$r2->at(2)],[$y0,$r2->at(3)],{color=>2});
 	    } elsif($r2->((4))) {
-		# next vertex is open
-		if($row->((1))){
-		    my $slope = - $row->((0))/$row->((1));
-		    my $x1 = ($row->((1))>0)?-10000:10000;
-		    my $xy0 = $row->(2:3);
-		    
-		    my $y1 = ($x1- $xy0->((0))) * $slope  +  $xy0->((1));
-		    $window->line([$xy0->((0)),$x1],[$xy0->((1)),$y1],{color=>2});
-		} else {
-		    $window->line([$row->((2)),$row->((2))],
-				  [$row->((3)),($row->((0))>0)?-10000:10000],
-				  {color=>2}
-				  );
-		}
+		print "open after\n";
+		$x0 = cos($r2->at(5))*1000;
+		$y0 = sin($r2->at(5))*1000;
+		$window->line([$row->at(2),$x0],[$row->at(3),$y0],{color=>2});
 	    } else {
 		$hv = $hul->range([2,$i],[2,2],'p');
 		$window->line($hv->((0)),$hv->((1)),{color=>2});

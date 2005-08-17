@@ -1,0 +1,9 @@
+use Flux;
+$a = read_world('menagerie/simple-8.flux');
+$a->verbosity(9);
+$a->b_flag(0);
+$a->forces('f_pressure_equi','f_curvature','f_vertex');
+simple_relaxer($a,0,0,200);
+$a->fix_proximity(1);
+$a->fix_curvature(0.25);
+simple_relaxer($a,0,0,500);

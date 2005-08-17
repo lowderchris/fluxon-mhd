@@ -197,12 +197,11 @@ PREINIT:
  PDL_Double *d;
 CODE:
  v = SvVertex(svrt,"Flux::Vertex::hull");
-
  hull_verts = vertex_update_neighbors(v, global);
  
  /* Now stuff the hull vertices into the first PDL. */
  p = PDL->create(PDL_PERM);
- dims[0] = 5;
+ dims[0] = 7;
  dims[1] = v->neighbors.n;
  PDL->setdims(p,dims,2);	
  p->datatype = PDL_D;
@@ -217,6 +216,8 @@ CODE:
    *(d++) = hull_verts[i].p[0];
    *(d++) = hull_verts[i].p[1];
    *(d++) = (double)(hull_verts[i].open);
+   *(d++) = hull_verts[i].a_l;
+   *(d++) = hull_verts[i].a_r;
  }
  RETVAL = NEWSV(545,0); /* 545 is arbitrary tag */
  PDL->SetSV_PDL(RETVAL,p);

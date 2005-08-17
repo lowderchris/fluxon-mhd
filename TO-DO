@@ -60,3 +60,11 @@ problem with projection?)
 	  	 output doesn't make sense.  Things are being sorted OK but not culled.
 	        -That wasn't it.  The culling was a problem in dumblist_crunch; that's fixed but the problem
 		 persists.  Time to head out -- this won't get fixed today.
+
+
+16-Aug-2005
+	hull_test works OK now.
+	run test_freeze.pdl -- freezes.  Why?
+
+	"$a=read_world(menagerie/potential.flux); $a->update_neighbors(1)":
+	this causes a bus error. Why?

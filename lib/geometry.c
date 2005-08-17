@@ -127,6 +127,8 @@ void diff_3d(NUM *out, NUM *a, NUM *b) {
   *(out++) = *(a++) - *(b++);
   *(out) = *(a) - *(b);
 }
+#define diff_3d_macro(out,a,b) ( ( (out)[0] = (a)[0]-(b)[0] ), ( (out)[1] = (a)[1]-(b)[1]), ((out)[2]=(a)[2]-(b)[2]))
+
 
 /**********************************************************************
  * cp_3d - Copy a 3-vector
@@ -238,11 +240,13 @@ void mat_vmult_2d(NUM *out, NUM *mat, NUM *v) {
  * mat_vmult_3d - Multiply a 3x3 matrix by a 3-vector on the right.
  */
 void mat_vmult_3d(NUM *out, NUM *mat, NUM *v) {
-  NUM a;
   *(out++) = v[0]*mat[0] + v[1]*mat[1] + v[2]*mat[2];
   *(out++) = v[0]*mat[3] + v[1]*mat[4] + v[2]*mat[5];
   *(out  ) = v[0]*mat[6] + v[1]*mat[7] + v[2]*mat[8];
 }
+
+#define mat_vmult_3d_macro(out,mat,v) (((out)[0] = (mat)[0]*(v)[0] + (mat)[1]*(v)[1] + (mat)[2]*(v)[2]), ((out)[1] = (mat)[3]*(v)[0] + (mat)[4]*(v)[1] + (mat)[5]*(v)[2]), ((out)[2] = (mat)[6]*(v)[0] + (mat)[7]*(v)[1] + (mat)[8]*(v)[2]))
+
 
 /***********************************************************************
  * vec_mmult_3d - Multiply a 3x3 matrix by a 3-vector on the left.
@@ -483,6 +487,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     cd0=(c0[0]==d0[0] && c0[1]==d0[1] && c0[2]==d0[2]);
     
     if(ab0) {
+      printf("degen 0\n");
       cp_3d(p0,a0);
       if(cd0) {
 	cp_3d(p1,c0);
@@ -493,6 +498,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
       }
     } 
     if(cd0){
+      printf("degen 1\n");
       cp_3d(p1,c0);
       p_ls_closest_approach(p0,a0,b0,c0);
     }
@@ -509,13 +515,13 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
   projmatrix(mat,b0,a0);
   
   diff_3d(scr,b0,a0);
-  mat_vmult_3d(b,mat,scr);
+  mat_vmult_3d(b, mat, scr);
   
   diff_3d(scr,c0,a0);
-  mat_vmult_3d(c,mat,scr);
+  mat_vmult_3d(c, mat, scr);
   
   diff_3d(scr,d0,a0);
-  mat_vmult_3d(d,mat,scr);
+  mat_vmult_3d(d, mat, scr);
   
   //  printf("ls_closest_approach (in ab frame):\n\tb is %g,%g,%g\n\tc is %g,%g,%g\n\td is %g,%g,%g\n",b[0],b[1],b[2],c[0],c[1],c[2],d[0],d[1],d[2]); 
   
@@ -527,55 +533,13 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
    * having to actually displace...
    */
   diff_3d(scr,d,c);
-  d2 = norm2_2d(scr);
-  if(d2==0) {
-
-    //    printf("ls_dist: parallel case...");
-
-    /* Both lines are parallel along the z axis.  b>0, a=0. */
-    
-    if( c[2] < 0 && d[2] < 0 ) {
-      cp_3d(p0, a0);
-      cp_3d(p1, (c[2] >= d[2]) ? c0 : d0);
-      return;
-    } 
-
-    if( c[2] > b[2]  && d[2] > b[2] ) {
-      cp_3d(p0, b0);
-      cp_3d(p1, (c[2] <= d[2]) ? c0 : d0);
-      return;
-    }
-    
-    if( c[2] >=0 && c[2] <= b[2] ) {
-      cp_3d( p1, c0 );
-      alpha = c[2]/b[2];
-      scale_3d( scr, a0, (1.0-alpha) );
-      scale_3d(  p0, b0, alpha );
-      sum_3d( p0, p0, scr );
-      return;
-    }
-
-    if( d[2] >= 0 && d[2] <= b[2] ) {
-      cp_3d( p1, d0 );
-      alpha = d[2]/b[2];
-      scale_3d( scr, a0, (1.0-alpha) );
-      scale_3d( p0, b0, alpha );
-      sum_3d( p0, p0, scr );
-      return;
-    }
-
-    /* got here: cd must straddle ab, so a is a right answer. */
-    cp_3d(p0, a0);
-    alpha = (0 - c[2]) / (d[2]-c[2]);
-    scale_3d( scr, c0, (1.0-alpha) );
-    scale_3d( p1,  d0, alpha );
-    sum_3d(p1, p1, scr);
-    return;
-  } /* end of parallel-lines case */
-
+  d2= norm2_2d(scr);
+  if(d2==0)
+    goto parallel;
 
   /********************
    * now calculate the alpha along cd of the closest approach point (in the plane).
+   */
   alpha = - inner_2d(scr,c) / d2;
 
   /**********
@@ -584,10 +548,12 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
    */
   beta = ( (1.0-alpha) * c[2] + alpha * d[2] ) / b[2];
 
-  //  printf("ls_closest_approach: line-line case. alpha=%g; beta=%g\n",alpha,beta);
+
 
   if(alpha >= 0 && alpha <= 1 && beta >= 0 && beta <= 1) {
     /* The line-line case is valid: copy and return. */
+
+    //    printf("ls_closest_approach: line-line case. alpha=%g; beta=%g\n",alpha,beta);
 
     scale_3d(scr, c0, (1.0-alpha) );
     scale_3d(p1,  d0, alpha );
@@ -613,12 +579,12 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     d2 = cart2_3d(c0,scr);
     cp_3d(p0,scr);
     cp_3d(p1,c0);
-    //    printf("AB-C: dist is %g\n",d2);
+    //        printf("AB-C: dist is %g\n",d2);
     
     /* Check AB - D */
     p_ls_closest_approach(scr, a0, b0, d0);
     c2 = cart2_3d(d0,scr);
-    //    printf("AB-D: dist is %g\n",c2);
+    //        printf("AB-D: dist is %g\n",c2);
     if( c2<d2 ) {
       d2 = c2;
       cp_3d(p0,scr);
@@ -628,7 +594,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     /* Check A - CD */
     p_ls_closest_approach(scr, c0, d0, a0);
     c2 = cart2_3d(a0,scr);
-    //    printf("A-CD: dist is %g\n",c2);
+    //        printf("A-CD: dist is %g\n",c2);
     if( c2<d2 ) {
       d2 = c2;
       cp_3d(p1,scr);
@@ -638,7 +604,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     /* Check B - CD */
     p_ls_closest_approach(scr, c0, d0, b0);
     c2 = cart2_3d(b0,scr);
-    //    printf("B-CD: dist is %g\n",c2);
+    //        printf("B-CD: dist is %g\n",c2);
     if( c2<d2 ) {
       d2=c2;
       cp_3d(p1,scr);
@@ -647,6 +613,55 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
   }
 
   return;
+
+
+/******************************
+ * parallel -- parallel-lines case
+ */
+ parallel:
+  //  printf("ls_dist: parallel case...");
+  
+  /* Both lines are parallel along the z axis.  b>0, a=0. */
+  
+  if( c[2] < 0 && d[2] < 0 ) {
+    cp_3d(p0, a0);
+    cp_3d(p1, (c[2] >= d[2]) ? c0 : d0);
+    return;
+  } 
+  
+  if( c[2] > b[2]  && d[2] > b[2] ) {
+    cp_3d(p0, b0);
+    cp_3d(p1, (c[2] <= d[2]) ? c0 : d0);
+    return;
+  }
+  
+  if( c[2] >=0 && c[2] <= b[2] ) {
+    cp_3d( p1, c0 );
+    alpha = c[2]/b[2];
+    scale_3d( scr, a0, (1.0-alpha) );
+    scale_3d(  p0, b0, alpha );
+    sum_3d( p0, p0, scr );
+    return;
+  }
+  
+  if( d[2] >= 0 && d[2] <= b[2] ) {
+    cp_3d( p1, d0 );
+    alpha = d[2]/b[2];
+    scale_3d( scr, a0, (1.0-alpha) );
+    scale_3d( p0, b0, alpha );
+    sum_3d( p0, p0, scr );
+    return;
+  }
+  
+  /* got here: cd must straddle ab, so a is a right answer. */
+  cp_3d(p0, a0);
+  alpha = (0 - c[2]) / (d[2]-c[2]);
+  scale_3d( scr, c0, (1.0-alpha) );
+  scale_3d( p1,  d0, alpha );
+  sum_3d(p1, p1, scr);
+  return;
+  
+  
 }
 
   
@@ -797,14 +812,20 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   if(v0==v1 ||   (v0->next == v1) ||  (v1->next == v0) )
     return -1;
 
+  if(v0->line->fc0->world->verbosity >= 5) 
+    printf("fl_segment_dist: calling ls_closest_approach...\n");
+
   ls_closest_approach(P0,P1,v0->x,v0->next->x,v1->x,v1->next->x);
+
+  if(v0->line->fc0->world->verbosity >= 5) 
+    printf("fl_segment_dist: got back... P1=%d; P0=%d\n",P1,P0);
 
   diff_3d(P,P1,P0);
   Plen = norm_3d(P);
   if(Plen==0)
     return -1;
 
-  if (v1->line->fc0->world->verbosity >= 5) {
+  if (v0->line->fc0->world->verbosity >= 3) {
     printf("\nfl_segment_deluxe_dist: v0=%d,v1=%d; Plen is %g\n",v0->label,v1->label,Plen);
     printf("P0=(%g,%g,%g); P1=(%g,%g,%g)\n",P0[0],P0[1],P0[2],P1[0],P1[1],P1[2]);
   }
@@ -1023,21 +1044,38 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
   VERTEX *v1;
   char crunch = 0;
 
+  if(v->line->fc0->world->verbosity >= 5) 
+    printf("Entered project_n_fill... got a horde of %d candidates...\n",horde->n);
+    
   if(!v->next) {
     fprintf(stderr,"Hey!  Don't feed end vertices to project_n_fill....\n");
     fflush(stderr);
     return;
   }
 
+  if(v->line->fc0->world->verbosity >= 5) 
+    printf("calling projmatrix with (%g,%g,%g) and (%g,%g,%g)\n",v->x[0],v->x[1],v->x[2],v->next->x[0],v->next->x[1],v->next->x[2]);
+
   projmatrix(pm,v->x,v->next->x);
+
+  if(v->line->fc0->world->verbosity >= 5)
+    printf("back\n");
+
   v->r_cl = -1; /* Initialize closest-approach accumulator */
 
   for(i=0;i<horde->n;i++) {
+
+    if(v->line->fc0->world->verbosity >= 5) {
+      printf("i=%d ",i);
+      fflush(stdout);
+    }
+
+   
     v1 = (VERTEX *)((horde->stuff)[i]);
     
     r = fl_segment_deluxe_dist(p0, p1, v, v1);
 
-    if((v->line->fc0->world->verbosity + (r>=0))>=5)
+    if((v->line->fc0->world->verbosity + (r>=0))>=3)
       printf("\nfl_segment_deluxe_dist returned %g for vertex %d\n",r,v1->label);
 
     if(r<0) {

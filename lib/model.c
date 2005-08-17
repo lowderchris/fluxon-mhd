@@ -465,7 +465,7 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
      or something like it should be called eventually to do walkalongs.
      (comment left in as a placeholder!) */
   /*winnow_neighbor_candidates(v,dl);*/
-  
+
   hv = hull_neighbors(v, dl); /* save hv for return */
 
     if(verbosity >= 3) {
@@ -846,6 +846,9 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   static int voronoi_bufsiz = 0;
   static DUMBLIST *rejects = 0;
 
+  if(v->line->fc0->world->verbosity >= 5) 
+    printf("Entering hull_neighbors...\n");
+
   if(!v->next) {
     fprintf(stderr,"pick_neighbors: assertion failed -- vertex should have a next member!\n\tGiving up...\n");
     return 0;
@@ -854,14 +857,20 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   /* Project the horde into the plane perpendicular to v's line segment.
    * The projected vectors go into the vertices' scratch space.    
    */
+  if(v->line->fc0->world->verbosity>=5)
+    printf("hull_neighbors calling project_n_fill...\n");
 
   project_n_fill(v, horde); /* in geometry.c */
+
+  if(v->line->fc0->world->verbosity>=5)
+    printf("hull_neighbors back from project_n_fill...\n");
+
 
   /* Grow the buffer if necessary. */
   if(voronoi_bufsiz <= horde->n*2) {
     voronoi_bufsiz = horde->n*4;
 
-    //    fprintf(stderr,"   expanding voronoi_buf: horde->n is %d; new bufsiz is %d   ",horde->n,voronoi_bufsiz);
+    //fprintf(stderr,"   expanding voronoi_buf: horde->n is %d; new bufsiz is %d   ",horde->n,voronoi_bufsiz);
 
     if(voronoi_buf)
       localfree(voronoi_buf);

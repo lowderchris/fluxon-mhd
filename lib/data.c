@@ -1349,9 +1349,9 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
   void *temp;
   int n = dl->n;
 
-#ifdef testing_with_bubblesort
+
   // Bubblesort to make sure shellsort isn't scrozzling memory
-  char done
+  char done;
   do {
     done = 1;
     for(i=0;i<n-1;i++) {
@@ -1369,8 +1369,8 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
       }
     }
   } while(!done);
-#endif 
-#ifndef testing_with_bubblesort
+
+#ifdef not_testing_with_bubblesort
   increment = (dl->n / 3) || 1;
 
   while(increment>0)
