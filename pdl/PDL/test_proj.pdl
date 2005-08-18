@@ -1,0 +1,21 @@
+sub _test_proj_ {
+	$v = shift;
+	$pm = Flux::World::_projmatrix(0,0,0,$v->list); 
+	$vp=($pm x $v->(*1))->((0));
+	$dpvp = ($vp x $pm) -> (:,(0)); 
+	$vp1 = Flux::World::_mat_vmult_3d($pm->list,$v->list);
+	$dpvp1=Flux::World::_vec_mmult_3d($pm->list,$vp1->list);
+	print "v=$v; vp=$vp; dpvp=$dpvp\tvp1=$vp1; dpvp1=$dpvp1\n";
+}
+
+for $p( [0,0,0],
+	[0,0,1],
+	[0,1,0],
+	[0,1,1],
+	[1,0,0],
+	[1,1,0],
+	[1,1,1],
+	[-1,-1,-1]
+	) {
+_test_proj_(pdl($p));
+}

@@ -220,4 +220,28 @@ sub plot_neighbors {
 }
 
 
+=pod
+
+=head2 projmatrix
+
+=for ref
+
+Returns the projection matrix to convert 3-vectors into the perpendicular plane to the segment.
+
+=cut
+
+# Implemented in Vertex.xs
+
+=pod
+
+=head2 x
+
+=for ref
+
+Returns the location vector of the vertex, as a 3-pdl.
+
+=cut
+
+# implemented in Vertex.xs
+
 1;

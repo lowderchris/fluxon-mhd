@@ -43,7 +43,7 @@ sub simple_relaxer {
 	}
 
 	unless($step % 10 ) {
-	    $w->render_lines($interactive,$range);
+	    $w->render_lines($interactive,$range,{label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
 	}
 
 #	unless($step % 100) {

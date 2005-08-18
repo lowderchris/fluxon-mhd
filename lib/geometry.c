@@ -895,9 +895,16 @@ void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
   r2d = norm_2d(a);
   r3d = norm_3d(a);
   if(r2d==0) {
-    int i;
-    fprintf(stderr,"projmatrix: received trivial case.  Returning the identity matrix...\n");
-    for(i=0;i<9;i++){out[i] =((i%4)==0);}
+    m = out;
+    if(a[2]>=0) {
+      *(m++) = 1; *(m++) = 0; *(m++) = 0;
+      *(m++) = 0; *(m++) = 1; *(m++) = 0;
+      *(m++) = 0; *(m++) = 0; *(m++) = 1;
+    } else {
+      *(m++) = -1; *(m++) = 0; *(m++) =  0;
+      *(m++) =  0; *(m++) = 1; *(m++) =  0;
+      *(m++) =  0; *(m++) = 0; *(m++) = -1;
+    }
     return;
   }
     
@@ -905,21 +912,19 @@ void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
   /* Generate the rotation matrices independently and multiply them. 
      Slightly slower than direct assembly, but robust. */
 
+  /* rotate to remove the y component */
   m = m1;
   *(m++) = a[0] / r2d;  *(m++) = a[1] / r2d;   *(m++) = 0;
-  *(m++) = -a[1] / r2d; *(m++) = a[0] / r2d;   *(m++) = 0;
-  *(m++) = 0;           *(m++) = 0;            *(m)   = 1;
-
+  *(m++) = -a[1] / r2d;  *(m++) = a[0] / r2d;    *(m++) = 0;
+  *(m++) = 0;           *(m++) = 0;             *(m)   = 1;
+  
+  /* rotate the vector (now in the xz plane) to point along the z axis */
   m=m2;
-  //  *(m++) = a[2] / r3d;  *(m++) = 0;            *(m++) = -r2d / r3d;
-  //  *(m++) = 0;            *(m++) = 1;            *(m++) =  0;
-  //  *(m++) = r2d / r3d;   *(m++) = 0;            *(m)   = a[2]/r3d;
-  *(m++) = -a[2] / r3d;  *(m++) = 0;            *(m++) = r2d / r3d;
+  *(m++) = a[2] / r3d;  *(m++) = 0;            *(m++) = -r2d / r3d;
   *(m++) = 0;            *(m++) = 1;            *(m++) =  0;
-  *(m++) = -r2d / r3d;   *(m++) = 0;            *(m)   = -a[2]/r3d;
-
+  *(m++) = r2d / r3d;   *(m++) = 0;            *(m)   = a[2]/r3d;
   mat_mult_3d(out,m2,m1);
-
+  
 }
 
 /**********************************************************************
@@ -1145,7 +1150,10 @@ static int angle_cmp(void *a, void *b) {
   TRIM_ANGLE( ((VERTEX *)b)->a );
 
   if(((VERTEX *)a)->a == ((VERTEX *)b)->a )
-    return ( ((VERTEX *)a)->r < ((VERTEX *)b)->r ) ? -1 : 1;
+    if( ((VERTEX *)a)->r==((VERTEX *)b)->r )
+      return 0;
+    else 
+      return ( ((VERTEX *)a)->r < ((VERTEX *)b)->r ) ? -1 : 1;
 	    
   return ( ((VERTEX *)a)->a < ((VERTEX *)b)->a ) ? -1 : 1;
 }
@@ -1246,11 +1254,27 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
   if(verbosity >= 4) 
     printf("hull_2d: got %d candidates...\n",horde->n);
+  if(verbosity >= 5) {
+    printf("candidate order:\n");
+    for (i=0;i<horde->n;i++) {
+      VERTEX *v = ((VERTEX **)(horde->stuff))[i];
+      printf("pos %3.3d: (x,y)=(%5.2g,%5.2g); a=%5.2g; r=%5.2g; label=%d\n",
+	     i,
+	     v->scr[0],
+	     v->scr[1],
+	     v->a*180/3.14159,
+	     v->r,
+	     v->label
+	     );
+    }
+  }
+
 
 
   /* Get ready for main loop -- on entry, the first two candidates
    * need their perpendicular bisectors calculated...
    */
+  n=horde->n;
   terminus = i = been_there = 0;
   i_r = n-1;
   iv = (VERTEX *)(horde->stuff[ i ]);
@@ -1267,6 +1291,9 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   } else
     out[i_r].open = 0;
 
+  if(verbosity >= 5) {
+    printf("Entering main loop: n=%d; horde->n=%d; i_r=%d; i_l=%d\n",n,horde->n,i_r,i_l);
+  }
   /* Main loop */
   do {
     NUM a,b;
@@ -1406,11 +1433,11 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       }
 
       if(verbosity >= 5) 
-	printf(" terminus=%d\n",terminus);
+	printf(" terminus=%d; been_there=%d\n",terminus,been_there);
 
     } /* end of non-zeroed-out check */
     
-  } while(i != terminus || (i==0 && !been_there));  /* End of main loop */
+  } while(!been_there || i != terminus);  /* End of main loop */
 
   /* Finished -- now crunch the dumblist and, simultaneously, the output. */
   { 

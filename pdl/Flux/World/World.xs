@@ -509,7 +509,7 @@ CODE:
 OUTPUT:
  RETVAL
 
-AV *
+SV *
 _projmatrix(a_0,a_1,a_2,b_0,b_1,b_2)
 NV a_0
 NV a_1
@@ -520,6 +520,10 @@ NV b_2
 PREINIT:
    NUM a[3],b[3];
    NUM matrix[9];
+   PDL_Double *pd;
+   NUM *d;
+   pdl *p;
+   int dims[2];
 CODE:
 /*******************************
  * _projmatrix: interface to the geometry.c projmatrix code
@@ -527,22 +531,29 @@ CODE:
  a[0] = a_0; a[1] = a_1; a[2] = a_2;
  b[0] = b_0; b[1] = b_1; b[2] = b_2;
  projmatrix(matrix,a,b);
- RETVAL = newAV();
- av_clear(RETVAL);
- av_extend(RETVAL,9);
- av_store(RETVAL,0,newSVnv(matrix[0]));
- av_store(RETVAL,1,newSVnv(matrix[1]));
- av_store(RETVAL,2,newSVnv(matrix[2]));
- av_store(RETVAL,3,newSVnv(matrix[3]));
- av_store(RETVAL,4,newSVnv(matrix[4]));
- av_store(RETVAL,5,newSVnv(matrix[5]));
- av_store(RETVAL,6,newSVnv(matrix[6]));
- av_store(RETVAL,7,newSVnv(matrix[7]));
- av_store(RETVAL,8,newSVnv(matrix[8]));
+ p = PDL->create(PDL_PERM);
+ dims[0] = 3;
+ dims[1] = 3;
+ PDL->setdims(p,dims,2);
+ p->datatype = PDL_D;
+ PDL->make_physical(p);
+ pd = p->data;
+ d = matrix;
+ *(pd++) = *(d++);
+ *(pd++) = *(d++);
+ *(pd++) = *(d++);
+ *(pd++) = *(d++);
+ *(pd++) = *(d++);
+ *(pd++) = *(d++);
+ *(pd++) = *(d++);
+ *(pd++) = *(d++);
+ *(pd++) = *(d++);
+ RETVAL = NEWSV(551,0); /* 551 is arbitrary */
+ PDL->SetSV_PDL(RETVAL,p);
 OUTPUT:
  RETVAL
 
-AV *
+SV *
 _mat_vmult_3d(m_0,m_1,m_2,m_3,m_4,m_5,m_6,m_7,m_8,a_0,a_1,a_2);
 NV m_0
 NV m_1
@@ -558,20 +569,69 @@ NV a_1
 NV a_2
 PREINIT:
 	NUM a[3],b[3],m[9];
+	pdl *p;
+	PDL_Double *pd;
+	int dims[2];
 CODE:
  a[0] = a_0; a[1] = a_1; a[2] = a_2;
  m[0] = m_0; m[1] = m_1; m[2] = m_2;
  m[3] = m_3; m[4] = m_4; m[5] = m_5;
  m[6] = m_6; m[7] = m_7; m[8] = m_8;
  mat_vmult_3d(b,m,a);
- RETVAL = newAV();
- av_clear(RETVAL);
- av_extend(RETVAL,3);
- av_store(RETVAL,0,newSVnv(b[0]));
- av_store(RETVAL,1,newSVnv(b[1]));
- av_store(RETVAL,2,newSVnv(b[2]));
+ p = PDL->create(PDL_PERM);
+ dims[0] = 3;
+ PDL->setdims(p,dims,1);
+ p->datatype=PDL_D;
+ PDL->make_physical(p);
+ pd = (PDL_Double *)p->data;
+ *(pd++) = b[0];
+ *(pd++) = b[1];
+ *(pd++) = b[2];
+ RETVAL = NEWSV(552,0); /* 552 is arbitrary */
+ PDL->SetSV_PDL(RETVAL,p);
 OUTPUT:
  RETVAL
+
+SV *
+_vec_mmult_3d(m_0,m_1,m_2,m_3,m_4,m_5,m_6,m_7,m_8,a_0,a_1,a_2);
+NV m_0
+NV m_1
+NV m_2
+NV m_3
+NV m_4
+NV m_5
+NV m_6
+NV m_7
+NV m_8
+NV a_0
+NV a_1
+NV a_2
+PREINIT:
+	NUM a[3],b[3],m[9];
+	pdl *p;
+	PDL_Double *pd;
+	int dims[2];
+CODE:
+ a[0] = a_0; a[1] = a_1; a[2] = a_2;
+ m[0] = m_0; m[1] = m_1; m[2] = m_2;
+ m[3] = m_3; m[4] = m_4; m[5] = m_5;
+ m[6] = m_6; m[7] = m_7; m[8] = m_8;
+ vec_mmult_3d(b,m,a);
+ p = PDL->create(PDL_PERM);
+ dims[0] = 3;
+ PDL->setdims(p,dims,1);
+ p->datatype=PDL_D;
+ PDL->make_physical(p);
+ pd = (PDL_Double *)p->data;
+ *(pd++) = b[0];
+ *(pd++) = b[1];
+ *(pd++) = b[2];
+ RETVAL = NEWSV(552,0); /* 552 is arbitrary */
+ PDL->SetSV_PDL(RETVAL,p);
+OUTPUT:
+ RETVAL
+
+
 
 SV *
 _hull_points(pts)

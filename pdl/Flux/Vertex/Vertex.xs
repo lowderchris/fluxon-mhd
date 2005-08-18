@@ -208,9 +208,9 @@ CODE:
  PDL->allocdata(p);
  PDL->make_physical(p);
  d =  p->data;
- printf("Flux::Vertex::hull: Got %d neighbors\n",v->neighbors.n);
+
  for(i=0;i<v->neighbors.n; i++) {
-   printf("\t#%d: label is %d\n",i,((VERTEX *)(v->neighbors.stuff[i]))->label);
+
    *(d++) = ((VERTEX *)(v->neighbors.stuff[i]))->scr[0];
    *(d++) = ((VERTEX *)(v->neighbors.stuff[i]))->scr[1];
    *(d++) = hull_verts[i].p[0];
@@ -221,6 +221,49 @@ CODE:
  }
  RETVAL = NEWSV(545,0); /* 545 is arbitrary tag */
  PDL->SetSV_PDL(RETVAL,p);
+OUTPUT:
+ RETVAL
+
+SV *
+projmatrix(svrt)
+SV *svrt
+PREINIT:
+ VERTEX *v;
+ pdl *p;
+ int dims[2];
+ double *d,*d2;
+ NUM x0[3],x1[3];
+ NUM mat[9];
+CODE: 
+ v = SvVertex(svrt,"Flux::Vertex::projmatrix");
+ 
+ if( ! v->next ) {
+	RETVAL = &PL_sv_undef;
+ } else {
+	p = PDL->create(PDL_PERM);
+	dims[0]=3;
+	dims[1]=3;
+	PDL->setdims(p,dims,2);
+	p->datatype = PDL_D;
+	PDL->allocdata(p);
+	PDL->make_physical(p);
+	x0[0] = v->x[0]; x0[1] = v->x[1]; x0[2] = v->x[2];
+	x1[0] = v->next->x[0]; x1[1] = v->next->x[1]; x1[2] = v->next->x[2];
+	projmatrix(mat,x0,x1);
+	d2=p->data;
+	d = mat;
+	*(d2++)=*(d++);
+	*(d2++)=*(d++);
+	*(d2++)=*(d++);
+	*(d2++)=*(d++);
+	*(d2++)=*(d++);
+	*(d2++)=*(d++);
+	*(d2++)=*(d++);
+	*(d2++)=*(d++);
+	*(d2++)=*(d++);
+	RETVAL = NEWSV(549,0); /* 549 is arbitrary tag */
+	PDL->SetSV_PDL(RETVAL,p);
+ }
 OUTPUT:
  RETVAL
 
@@ -261,6 +304,28 @@ CODE:
    *(d++) = ((VERTEX *)(dl->stuff[i]))->label;
  }
  RETVAL = NEWSV(545,0); /* 545 is arbitrary tag */
+ PDL->SetSV_PDL(RETVAL,p);
+OUTPUT:
+ RETVAL
+
+SV *
+x(svrt)
+SV *svrt
+PREINIT:
+ pdl *p;
+ VERTEX *v;
+ PDL_Long dims[1];
+CODE:
+ v = SvVertex(svrt,"Flux::Vertex::x");
+ p = PDL->create(PDL_PERM);
+ dims[0] = 3;
+ PDL->setdims(p,dims,1);
+ p->datatype = PDL_D;
+ PDL->allocdata(p);
+ ((PDL_Double *)p->data)[0] = v->x[0];
+ ((PDL_Double *)p->data)[1] = v->x[1];
+ ((PDL_Double *)p->data)[2] = v->x[2];
+ RETVAL = NEWSV(550,0); /* 550 is arbitrary */
  PDL->SetSV_PDL(RETVAL,p);
 OUTPUT:
  RETVAL

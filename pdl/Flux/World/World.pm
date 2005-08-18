@@ -570,50 +570,61 @@ sub render {
 	    $prgb;
 	} @poly;
     }
-    
+
     $poly = pdl(0,0,0)->glue(1,@poly);
     $rgb = pdl(0,0,0)->glue(1,@rgb);
     $prgb = pdl(0,0,0)->glue(1,@prgb);
 
 
     nokeeptwiddling3d;
+    my ($boxmax,$boxmin);
 
-    if(defined $range) {
-	$pol2 = $poly->copy;
-	$poly->((0)) .= $poly->((0))->clip($range->((0))->minmax);
-	$poly->((1)) .= $poly->((1))->clip($range->((1))->minmax);
-	$poly->((2)) .= $poly->((2))->clip($range->((2))->minmax);
-	
-	$ok = ($pol2 == $poly)->prodover;
-	$rgb *= $ok->(*3);
-	$prgb *= $ok->(*3);
-	
-	points3d($range,zeroes($range),{PointSize=>0});
-	hold3d;
-	points3d($poly,$prgb,{PointSize=>4});
-    } else {
-	points3d($poly,$prgb,{PointSize=>4});
-	hold3d;
+    unless(defined($range)) {
+	$range = cat($poly->mv(-1,0)->minimum, $poly->mv(-1,0)->maximum);
+	my $rctr = $range->mv(-1,0)->average;
+	my $rsize = ($range->(:,(1))-$range->(:,(0)))->max;
+	$range->(:,(0)) .= $rctr - $rsize/2;
+	$range->(:,(1)) .= $rctr + $rsize/2;
     }
+	
+
+    $boxmax = $range->(:,(1));
+    $boxmin = $range->(:,(0));
+
+    my $shift =($boxmax-$boxmin)*0.05;
+    $boxmin -= $shift;
+    $boxmax += $shift;
+    my $shift =($boxmax-$boxmin)*0.05;
+    $boxmin -= $shift;
+    $boxmax += $shift;
+
+
+    $pol2 = $poly->copy;
+    $poly->((0)) .= $poly->((0))->clip($range->((0))->minmax);
+    $poly->((1)) .= $poly->((1))->clip($range->((1))->minmax);
+    $poly->((2)) .= $poly->((2))->clip($range->((2))->minmax);
     
-    ##############################
-    my $boxmax = $poly->mv(-1,0)->maximum;
-    my $boxmin = $poly->mv(-1,0)->minimum;
-    my $shift =($boxmax-$boxmin)*0.05;
-    $boxmin -= $shift;
-    $boxmax += $shift;
-    my $shift =($boxmax-$boxmin)*0.05;
-    $boxmin -= $shift;
-    $boxmax += $shift;
+    $ok = ($pol2 == $poly)->prodover;
+    $rgb *= $ok->(*3);
+    $prgb *= $ok->(*3);
+    
+    points3d($range,zeroes($range),{PointSize=>0});
+    hold3d;
+    
+    my $w3d = PDL::Graphics::TriD::get_current_window();
+
+    my $nc = ($poly - $boxmin)/($boxmax-$boxmin);
+    my $p = new PDL::Graphics::TriD::Points($nc,$prgb,{PointSize=>4});
+#	points3d($poly,$prgb,{PointSize=>4});
+    $w3d->add_object($p);
+
 
     ##############################
     # Generate line strips for each fluxon...
     my $rgbdex = 0;
     my @id = $w->fluxon_ids;
-    my $w3d = PDL::Graphics::TriD::get_current_window();
 
     for my $i(0..$#id) {
-	print "i=$i; fluxon is $id[$i]\n";
 	my $fp = $w->fluxon($id[$i])->polyline;
 	my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
 
@@ -627,7 +638,7 @@ sub render {
 	    # Label each point in the fluxon...
 	    # This is really cheesy since label seems to take normalized coordinates 
 	    # and I can't seem to figure the interface for normalizing plot coordinates.
-	    # The normalixzation is done by start_scale, add_scale, and finish_scale in
+	    # The normalization is done by start_scale, add_scale, and finish_scale in
 	    # Graphics/TriD/Graph.pm within PDL, but they are somewhat opaque to me.
 	    use PDL::Graphics::TriD::Labels;
 	    my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
@@ -642,7 +653,130 @@ sub render {
     }
 
 
-    print "ok.  Adding...\n";
+    $nscale = $opt->{'nscale'} || 0.25;
+
+    if($opt->{'neighbors'}){
+	my @neighbors;
+
+	for my $v (map { $_->vertices } $w->fluxons) {
+	    next unless($v->next);
+	    $xcen = 0.5 * ($v->x + $v->next->x);
+
+	    my $pm = $v->projmatrix;
+
+	    my $neigh = $v->proj_neighbors; 
+
+	    for my $i(0..$neigh->dim(1)-1) {
+		my $x = zeroes(3);
+		$x->(0:1) .= $neigh->(0:1,($i));
+		$x *= $nscale;
+		my $xx = Flux::World::_vec_mmult_3d($pm->list,$x->list);
+		$xx += $xcen;
+		push(@neighbors,$xx);
+	    }
+	}
+	
+	my $fp = cat(@neighbors);
+	my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
+	my $p = new PDL::Graphics::TriD::Points($normal_coords,{PointSize=>2});
+	$w3d->add_object($p);
+#	points3d(cat(@neighbors),{PointSize=>2});
+
+    }
+
+
+    if($opt->{'hull'}) {
+
+	$hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
+	$hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
+
+	for my $v(map { $_->vertices } $w->fluxons) {
+	    next unless($v->next);
+	    $xcen = 0.5 * ($v->x + $v->next->x);
+	    
+	    my $pm = $v->projmatrix;
+	    
+	    my $hull = $v->hull;
+
+	    my @hpoints = ();
+
+	    for my $i(0..$hull->dim(1)-1) {
+
+		my $rows = $hull->range([0,$i],[7,2],'p');
+		if( ! ($rows->((4),:)->any) ) {
+		    my $x = zeroes(3);
+		    $x->(0:1) .= $rows->(2:3,(0));
+		    $x *= $nscale;
+		    $xx = $x x $pm;
+		    $xx += $xcen;
+		    push(@hpoints,$xx);
+
+		    $x->(0:1) .= $rows->(2:3,(1));
+		    $x->(2) .= 0;
+		    $x *= $nscale;
+		    $xx = $x x $pm;
+		    $xx += $xcen;
+		    push(@hpoints,$xx);
+		} elsif($rows->((4),0)) {
+		    if(@hpoints) {
+			my $fp = cat(@hpoints)->(:,(0),:);
+
+			my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
+			my $l = new PDL::Graphics::TriD::LineStrip($normal_coords,$hullrgb->dummy(1,$fp->dim(1))->copy);
+
+			$w3d->add_object($l);
+
+			@hpoints = ();
+		    }
+
+
+		    my $x = zeroes(3);
+		    $x->(0) .= $rows->((2),(1)) + $hullopen * cos($rows->((6),(0)));
+		    $x->(1) .= $rows->((3),(1)) + $hullopen * sin($rows->((6),(0)));
+		    $x *= $nscale;
+		    $xx = $x x $pm;
+		    $xx += $xcen;
+		    push(@hpoints,$xx);
+		    
+		    $x->(0:1) .= $rows->(2:3,(1));
+		    $x->(2) .= 0;
+		    $x *= $nscale;
+		    $xx = $x x $pm;
+		    $xx += $xcen;
+		    push(@hpoints,$xx);
+		} elsif($rows->((4),1)) {
+
+		    my $x = zeroes(3);
+		    $x->(0:1) .= $rows->(2:3,(0));
+		    $x *= $nscale;
+		    $xx = $x x $pm;
+		    $xx += $xcen;
+		    push(@hpoints,$xx);
+
+		    $x->(0) .= $rows->((2),(0)) + $hullopen * cos($rows->((5),(1)));
+		    $x->(1) .= $rows->((3),(0)) + $hullopen * sin($rows->((5),(1)));
+		    $x *= $nscale;
+		    $xx = $x x $pm;
+		    $xx += $xcen;
+		    push(@hpoints,$xx);
+		}
+	    }
+
+	    if(@hpoints) {
+
+		hold3d;
+		my $fp = cat(@hpoints)->(:,(0),:);
+		my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
+
+
+		my $l = new PDL::Graphics::TriD::LineStrip($normal_coords,$hullrgb->dummy(1,$fp->dim(1))->copy);
+		$w3d->add_object($l);
+	    }
+	}    
+    }
+
+
+
     print "ok.  twiddling...\n";
 
     release3d;

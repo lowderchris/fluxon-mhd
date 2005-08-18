@@ -1348,14 +1348,16 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
   int i,j,increment;
   void *temp;
   int n = dl->n;
+  int iter=0;
 
-
+#ifdef testing_with_bubblesort
   // Bubblesort to make sure shellsort isn't scrozzling memory
   char done;
+  int ret;
   do {
     done = 1;
     for(i=0;i<n-1;i++) {
-      if(((*cmp)(dl->stuff[i],dl->stuff[i+1])) > 0) {
+      if(  (ret = ((*cmp)(dl->stuff[i],dl->stuff[i+1]))) > 0) {
 	void *foo = dl->stuff[i+1];
 	dl->stuff[i+1] = dl->stuff[i];
 	dl->stuff[i] = foo;
@@ -1369,8 +1371,8 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
       }
     }
   } while(!done);
+#endif
 
-#ifdef not_testing_with_bubblesort
   increment = (dl->n / 3) || 1;
 
   while(increment>0)
@@ -1387,7 +1389,6 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
       }
       increment >>= 1;
     }
-#endif
 }
 
 /******************************

@@ -1054,6 +1054,7 @@ int global_fix_proximity(WORLD *w, NUM scale_thresh) {
  ** The proximity-curvature dual check may not be optimal for relaxation; 
  ** the two could stand to be tweaked a bit and merged somehow.
  **/
+
 int fix_curvature(VERTEX *V, NUM curve_thresh) {
   int i;
   NUM d1[3];
@@ -1102,6 +1103,7 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
       /* by the above mess for most cases.  That's an assignment.      */
       (curve = atan2(sincurve,coscurve)) > curve_thresh
       ) {
+
     VERTEX *Vnew;
     NUM P[3], P0[3],P1[3];
 
@@ -1135,6 +1137,7 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
   
   return 0;
 }
+
 
 int fluxon_fix_curvature(FLUXON *f, NUM curve_thresh) {
   int ret=0;

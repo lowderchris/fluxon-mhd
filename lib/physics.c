@@ -167,6 +167,7 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
 
     deltaphi = (left->a_l - right->a_r);
     TRIM_ANGLE(deltaphi);
+    //    printf("vertex %d (%d): deltaphi=%g\t",V->label,N->label,deltaphi*180/3.14159);
 
     if(deltaphi < -EPSILON) {
       fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg); correcting to %18.12g\n",deltaphi*180/M_PI,deltaphi*180/M_PI + 360);
@@ -181,7 +182,7 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
     N->scr[2] = 0; /* Make sure we're operating in the perp. plane */
     
     vec_mmult_3d(f_i,pmatrix,N->scr);       /* Put back into 3-D */
-    /*    printf("  in plane: (%g,%g,%g); projects back to (%g,%g,%g)\n",N->scr[0],N->scr[1],N->scr[2],f_i[0],f_i[1],f_i[2]); */
+    /*    printf("  in plane: (%g,%g,%g); projects back to (%g,%g,%g)\n",N->scr[0],N->scr[1],N->scr[2],f_i[0],f_i[1],f_i[2]);*/
 
     {
       /* Scale to the proper force */
@@ -196,6 +197,9 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
     sum_3d(force,force,f_i);
     V->f_s_tot += fabs(f)+fabs(f);
   }
+
+  //  printf("\n");
+
   scale_3d(force,force,2.0);
 
   sum_3d(V->f_s,V->f_s,force);
