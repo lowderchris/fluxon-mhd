@@ -1436,7 +1436,8 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   void **dl_a;
   int i;
 
-  if( 1 || dl->n <= 500 ) {             /* always use shellsort for now... */
+  /* use shellsort all the time for now */
+  if( dl->n <= 100 ) {             /* use shellsort for the small cases */
     dumblist_shellsort(dl,cmp);
     dumblist_crunch(dl,cmp);
   } else {
