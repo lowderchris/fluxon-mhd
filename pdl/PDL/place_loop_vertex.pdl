@@ -1,0 +1,40 @@
+=head2 place_loop_vertex
+
+=for usage
+
+ $xyz = place_loop_vertex( $c, $r0, $theta0, $r1, $theta1 );
+
+=for ref
+
+Places a vertex in three dimensions, offset from the centerline of a
+loop of circular major shape and helical minor shape.
+
+On entry, C<$r0> contains the major radius
+of the loop, C<$theta0> contains the major angle, C<$r1> contains the
+minor radius, and C<$theta1> contains the minor radius.  You get back
+the (x,y,z) coordinates of the point as a PDL, in loop coordinates (where
+the X axis points toward the start of the loop, the Y axis points toward
+the top of the loop, and the Z axis is perpendicular to the loop).
+
+=cut
+
+sub place_loop_vertex {
+  my ($r0, $theta0, $r1, $theta1) = @_;
+  map { $_ = $_->at(0) if(ref $_ && $_->nelem==1) } ($r0,$theta0,$r1,$theta1);
+  
+  my $rm1 = pdl([ cos($theta0), sin($theta0),  0 ],
+		[ -sin($theta0),  cos($theta0),  0 ],
+		[ 0,             0,             1 ]);
+
+  my $rm2 = pdl([ cos($theta1), 0,              sin($theta1) ],
+		[ 0,            1,              0             ],
+		[ -sin($theta1), 0,              cos($theta1)  ] );
+
+  $offset = pdl($r1,0,0) x $rm2;
+
+
+  my $out = (( $r0 * pdl(1,0,0) + $offset ) x $rm1);
+  print "rm1=$rm1; rm2=$rm2; out=$out\n";
+
+  return $out;
+}

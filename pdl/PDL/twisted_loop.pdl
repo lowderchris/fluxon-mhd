@@ -1,0 +1,134 @@
+=head2 twisted_loop
+
+=for usage
+
+ $s = twisted_loop($from, $to, $steps, $nm, $spacing, $twist, $fclab, $flab)
+
+=for ref
+
+Generate a nonphysical twisted loop to seed a fluxon relaxation.  
+The rectangular-cross-section twisted loop is returned as a string
+suitable for loading with Flux::World::read_world or whatever.  (This
+is not ideal but better interface will have to await better glue code
+in the Flux module tree).
+
+The C<$from> and C<$to> parameters are 3-PDLs containing the
+coordinates of the footpoint centers.  C<$steps> is the number of
+vertices per fluxon. The fluxons are arranged initially in a regular
+rectangular array, NxM.  C<$nm> is a 2-PDL that contains N and M.
+C<$spacing> contains the interfluxon spacing at the footpoints.
+C<$twist> contains the total twist of the loop along its length, in
+rotations -- e.g. 0 for potential-like solutions, 0.5 for a half-twist, 
+1 for a full-twist. C<$fclab> and C<$flab> are starting label numbers for 
+the flux concentrations and fluxons/vertices.  If specified, C<$topvec>
+contains the direction of "up" in the loop (defaults to (0,0,1) - the unit
+vector in the Z direction).
+
+Last updated 2-Sep-2004
+
+=cut
+
+
+sub twisted_loop {
+  my @args = @_;
+  my($from, $to, $steps, $nm, $spacing, $twist, $fclab, $flab, $v1) =
+    map { pdl($_) } @args;
+
+  $v1 = pdl(0,0,1) unless defined($v1);
+
+  my $x0 = ($from+$to)/2;
+  my $v0  = ($from - $x0);
+  my $r0 = sqrt( ($v0*$v0)->sumover );
+  $v0 /= $r0;
+
+  # Ensure that $v1 is a unit vector perpendicular to $v0.
+  $v1_orig=$v1->copy;
+  $v1 /= sqrt( ($v1*$v1)->sumover );
+  $v1 -= $v0 * (($v1*$v0)->sumover);
+  barf "top and line are colinear - not allowed.\n"
+    if(($v1*$v1)->sumover == 0) ;
+  $v1 /= sqrt( ($v1*$v1)->sumover );
+
+  # Generate the third unit vector.
+  $v2 = crossp($v0,$v1); 
+
+  # Construct the conversion matrix.  Stick this on the right side
+  # of a row vector to convert from loop space to 3-space.
+  my $mat = pdl($v0,$v1_orig,crossp($v0,$v1));
+  
+  print "mat=$mat\n";
+
+  my @out;
+  
+  my $i,$j;
+  $nm -= 1;
+  for($i = -$nm->at(0) * 0.5; $i<=($nm->at(0) * 0.5+1e-5); $i+= 1) {
+    for($j = -$nm->at(1) * 0.5; $j<=($nm->at(1) * 0.5+1e-5); $j+= 1) {
+      my $fc0lab, $fc1lab,$fl_lab;
+
+      $xy0 = pdl($i,$j)*$spacing;
+      print "****************i=$i, j=$j, $xy0=$xy0\n";
+
+      print "xy0=$xy0\n";
+      $theta1 = atan2($xy0->at(1),$xy0->at(0));
+
+      $r1 = sqrt( ($xy0*$xy0)->sumover );
+      print "r1=$r1\n";
+
+      push(@out,"");
+
+      $xyz = $x0 + place_loop_vertex($r0,0,$r1,$theta1) x $mat;
+      $fc0lab = (++$fclab)->copy;
+      $fc1lab = (++$fclab)->copy;
+
+      push(@out, sprintf("NEW %d %9.3g %9.3g %9.3g 1",
+			 $fc0lab,
+			 ($xyz->list)
+			 )
+	   );
+
+      $xyz = $x0 +place_loop_vertex($r0,3.14159,$r1,$theta1+2*3.1415926536*$twist) x  $mat ;
+      push(@out, sprintf("NEW %d %9.3g %9.3g %9.3g -1",
+			 $fc1lab,
+			 ($xyz->list)
+			 )
+	   );
+
+      push(@out,sprintf("LINE %d %d %d 1",
+			($fl_lab=(++$flab)->copy),
+			$fc0lab,
+			$fc1lab
+			)
+	   );
+      
+      my $k;
+      for($k=1;$k<$steps;$k++) {
+	print "k=$k, r1=$r1\n";
+	$xyz = $x0 +  
+	  place_loop_vertex(
+			    $r0, (3.14159*$k)/($steps),
+			    $r1, $theta1+2*3.1415926536*$twist*$k/($steps)
+			    ) 
+	  x $mat;
+	push(@out, sprintf("VERTEX %d %d %d %9.3g %9.3g %9.3g",
+			   $fl_lab,
+			   (++$flab)->at(0),
+			   $k,
+			   ($xyz->list)
+			   )
+	     );
+      }
+    }
+  }
+
+  push(@out,"");
+
+  return join("\n",@out);
+}
+
+
+			   
+					      
+			 
+	   
+  
