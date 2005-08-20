@@ -567,6 +567,7 @@ static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n) {
  * Helper routine for expanding a workspace list out:  you feed in 
  * a workspace with a list of vertices, and it gets expanded to include
  * the next and previous item on each of those vertex lists.
+ * It also includes the neighbors of all of those items.
  */
 static inline void expand_list(DUMBLIST *workspace) {
   int i,n;
@@ -636,15 +637,16 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     if(verbosity >=3)
       printf("Found %d ...",workspace->n);
 
+    /* Grab neighbors & nearby of all *those* guys */
+    snarf_list(workspace,(VERTEX **)workspace->stuff,workspace->n);
+
     /* Grab siblings of all the neighbors & nearby */
     expand_list(workspace);
 
-    /* Grab neighbors & nearby of all *those* guys */
-    //snarf_list(workspace,(VERTEX **)workspace2->stuff,workspace2->n);
-
     /* Remove duplicates to save time in the next step */
-    //dumblist_sort(workspace,winnow_cmp_1);
-    //dumblist_crunch(workspace,winnow_cmp_1);
+    
+    dumblist_sort(workspace,winnow_cmp_1);
+    dumblist_crunch(workspace,winnow_cmp_1);
 
   }
 

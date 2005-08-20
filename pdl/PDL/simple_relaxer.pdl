@@ -3,7 +3,11 @@ sub simple_relaxer {
     $interactive = shift || 0;
     $global = shift || 0;
     $n=shift||0;
-    $auto = shift;
+    $opt = shift || {};
+    $auto = $opt->{auto};
+    $movie_n = $opt->{movie_n};
+    $movie_f = $opt->{movie_f} || "flux-movie-%4.4d.ppm";
+    $disp_n = $movie_n || $opt->{disp_n} || 10;
 
     $step=0 unless($n);
     $final_step=$n;
@@ -42,8 +46,14 @@ sub simple_relaxer {
 	   print "\t\tratio=$ratio; new dt=$dt\n";
 	}
 
-	unless($step % 10 ) {
-	    $w->render_lines($interactive,$range,{label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
+	unless($step % $disp_n ) {
+	    $w->render_lines($interactive,$range,$opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
+	    if($movie_n) {
+	      my $pic = grabpic3d();
+	      my $fname = sprintf($movie_f,$step);
+	      wpic($pic,$fname);
+	      print "wrote $fname...\n";
+	    }
 	}
 
 #	unless($step % 100) {
