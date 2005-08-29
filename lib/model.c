@@ -699,6 +699,33 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
       switch(phot->type) {
 	PLANE pl;
 	POINT3D pt;
+      case PHOT_CYL:
+	/* Special case: mirror segment is reflected through a cylinder, radius p[0],
+	 * aligned along the z axis.
+	 */
+	{
+	  PLANE p0;
+	  NUM r2d = norm_2d(v->x);
+
+	  p0.origin[0] = v->x[0] * p->origin[0] / r2d;
+	  p0.origin[1] = v->x[1] * p->origin[0] / r2d;
+	  p0.origin[2] = 0;
+	  p0.normal[0] = v->x[0];
+	  p0.normal[1] = v->x[1];
+	  p0.normal[2] = 0;
+	  reflect(v->line->fc0->world->image->x, v->x, &p0);
+
+	  p0.origin[0] = v->next->x[0] * p->origin[0] / r2d;
+	  p0.origin[1] = v->next->x[1] * p->origin[0] / r2d;
+	  p0.origin[2] = 0;
+	  p0.normal[0] = v->next->x[0];
+	  p0.normal[1] = v->next->x[1];
+	  p0.normal[2] = 0;
+	  reflect(v->line->fc0->world->image->next->x, v->next->x, &p0);
+	  
+	  dumblist_add(workspace, v->line->fc0->world->image);
+	}
+	break;
       case PHOT_SPHERE:
 	/* Construct the perpendicular plane */
 

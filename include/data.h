@@ -153,6 +153,7 @@ typedef struct PLANE {
 #define PHOT_NONE 0
 #define PHOT_PLANE 1
 #define PHOT_SPHERE 2
+#define PHOT_CYL 3
 
 typedef struct PHOTOSPHERE {
   PLANE *plane;
@@ -175,6 +176,7 @@ typedef struct WORLD {
   FLUXON *lines;
 
   PHOTOSPHERE photosphere;
+
   VERTEX *image, *image2;
   NUM locale_radius;        /* Default radius for concentrations' neighborhoods */
 
