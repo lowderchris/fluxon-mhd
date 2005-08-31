@@ -539,7 +539,7 @@ sub render {
     my $twiddle = shift;
     my $range=shift;
     my $opt=shift;
-    
+
     if(!defined $opt && ref $range eq 'HASH') {
 	$opt = $range;
 	undef $range;
@@ -554,12 +554,23 @@ sub render {
 
     my @rgb,@prgb;
     if($opt->{'RGB_CODE'}) {
-	eval $opt->{'RGB_CODE'};
+      eval $opt->{'RGB_CODE'};
+    } elsif($opt->{'rgb'}) {
+      @rgb = map { (ones($_) - (yvals($_)==0)) * $opt->{'rgb'} } @poly;
     } else {
-	@rgb = map { ones($_) - (yvals($_)==0) } @poly;
+      @rgb = map { 
+	my $alpha = double yvals($_);
+	$alpha /= max($alpha);
+	    my $beta = 1.0 - $alpha;
+	    my $gamma = sin($alpha*3.14159);
+	    my $prgb = $alpha * pdl(1,0,0) + $beta * pdl(0,0,1) + $gamma * pdl(0,1,0);
+	    $prgb;
+	} @poly;
     }
     if($opt->{'PRGB_CODE'}) {
 	eval $opt->{'PRGB_CODE'};
+    } elsif($opt->{'prgb'}) {
+      @prgb = map { (ones($_) - (yvals($_)==0)) * $opt->{'rgb'} } @poly;
     } else {
 	@prgb = map { 
 	    my $alpha = double yvals($_);
@@ -614,10 +625,11 @@ sub render {
     my $w3d = PDL::Graphics::TriD::get_current_window();
 
     my $nc = ($poly - $boxmin)/($boxmax-$boxmin);
-    my $p = new PDL::Graphics::TriD::Points($nc,$prgb,{PointSize=>4});
-#	points3d($poly,$prgb,{PointSize=>4});
-    $w3d->add_object($p);
 
+    if($opt->{points} || !defined($opt->{points})) {
+      my $p = new PDL::Graphics::TriD::Points($nc,$prgb,{PointSize=>($opt->{psize}||4)});
+      $w3d->add_object($p);
+    }
 
     ##############################
     # Generate line strips for each fluxon...
@@ -628,12 +640,12 @@ sub render {
 	my $fp = $w->fluxon($id[$i])->polyline;
 	my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
 
-	my $l = new PDL::Graphics::TriD::LineStrip($normal_coords,$rgb[$i]);
+	my $l = new PDL::Graphics::TriD::LineStrip($normal_coords,$rgb[$i],{LineWidth=>($opt->{linewidth}||1)});
 	$w3d->add_object($l);
 
 #	line3d($fp,$rgb[$i]);
 
-	unless(defined($opt->{label}) && !$opt->{label}) {
+	if($opt->{label}) {
 	    ##############################
 	    # Label each point in the fluxon...
 	    # This is really cheesy since label seems to take normalized coordinates 

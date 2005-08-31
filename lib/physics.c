@@ -41,6 +41,7 @@
 
 /* global force name table */
 struct FLUX_FORCES FLUX_FORCES[] = {
+  {"b_simple","inverse-area B field (breaks for open cells)",b_simple},
   {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
   {"f_curvature","(OLD) simple curvature force over B (DEPRECATED)",f_curvature},
   {"f_pressure_equi","(OLD) 2001 pressure law over B (DEPRECATED)",f_pressure_equi},
@@ -371,6 +372,53 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
  */
 
 /**********************************************************************
+ * b_simple
+ * 
+ * Simplest possible B calculation: just 1/area.  Fails when the Voronoi 
+ * cell is open, as the area is then infinity and the B field is zero.
+ * Useful for test cases and other constrained solutions.
+ * 
+ *
+ * (august 2005)
+ */
+void b_simple (VERTEX *V, HULL_VERTEX *verts) {
+  NUM Bmag = 0;
+  NUM vec1[3];
+  int n = V->neighbors.n;
+  int i;
+  int bad = 0;
+
+  for(i=0;i<n && !bad;i++) {
+    NUM A;
+    HULL_VERTEX *left = &(verts[i]);
+    HULL_VERTEX *right = (i==0) ? &(verts[n-1]) : &(verts[i-1]);
+
+    if(left->open || right->open){
+      bad=1;
+    } else {
+      Bmag += left->p[0] * right->p[1]  -  left->p[1] * right->p[0];
+    }
+  }
+  
+  if(bad) {
+    V->b_mag = 0;
+    V->b_vec[0] = 0;
+    V->b_vec[1] = 0;
+    V->b_vec[2] = 0;
+    return;
+  }
+
+  Bmag = 1.0/Bmag;
+  Bmag *= V->line->flux * (1/PI);
+  V->b_mag = Bmag;
+  diff_3d(vec1, V->next->x, V->x);
+  scale_3d(V->b_vec, vec1, Bmag/norm_3d(vec1));
+  return;
+}
+    
+
+
+/**********************************************************************
  * b_eqa
  *  
  * Not truly a force, but required for the others.  Calculates 
@@ -431,7 +479,7 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
 
   }
   
-  Bmag *= V->line->flux * ( 1 / ( PI * PI ) );
+  Bmag *= V->line->flux * PI * PI;
 
   V->b_mag = Bmag;
 

@@ -686,6 +686,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   if(v->next) {
     PHOTOSPHERE *phot;
     PLANE *p;
+    NUM a;
     if(v->line->fc0->world->photosphere.type) { /* assignment */
       /* Generate image and stuff it into the image point in the world
 	 space */
@@ -703,28 +704,31 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 	/* Special case: mirror segment is reflected through a cylinder, radius p[0],
 	 * aligned along the z axis.
 	 */
-	{
-	  PLANE p0;
-	  NUM r2d = norm_2d(v->x);
+	a = norm_2d(v->x);
+	
+	pl.origin[0] = v->x[0] * p->origin[0] / a;
+	pl.origin[1] = v->x[1] * p->origin[0] / a;
+	pl.origin[2] = 0;
+	pl.normal[0] = v->x[0];
+	pl.normal[1] = v->x[1];
+	pl.normal[2] = 0;
+	scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
+	reflect(v->line->fc0->world->image->x, v->x, &pl);
+	
+	a = norm_2d(v->next->x);
+	pl.origin[0] = v->next->x[0] * p->origin[0] / a;
+	pl.origin[1] = v->next->x[1] * p->origin[0] / a;
+	pl.origin[2] = 0;
+	pl.normal[0] = v->next->x[0];
+	pl.normal[1] = v->next->x[1];
+	pl.normal[2] = 0;
+	scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
+	reflect(v->line->fc0->world->image->next->x, v->next->x, &pl);
+	
+	dumblist_add(workspace, v->line->fc0->world->image);
 
-	  p0.origin[0] = v->x[0] * p->origin[0] / r2d;
-	  p0.origin[1] = v->x[1] * p->origin[0] / r2d;
-	  p0.origin[2] = 0;
-	  p0.normal[0] = v->x[0];
-	  p0.normal[1] = v->x[1];
-	  p0.normal[2] = 0;
-	  reflect(v->line->fc0->world->image->x, v->x, &p0);
+	//	printf("photosphere is %g,%g,%g-%g,%g,%g (%d)\n",phot->plane->origin[0],phot->plane->origin[1],phot->plane->origin[2],phot->plane->normal[0],phot->plane->normal[1],phot->plane->normal[2],phot->type);
 
-	  p0.origin[0] = v->next->x[0] * p->origin[0] / r2d;
-	  p0.origin[1] = v->next->x[1] * p->origin[0] / r2d;
-	  p0.origin[2] = 0;
-	  p0.normal[0] = v->next->x[0];
-	  p0.normal[1] = v->next->x[1];
-	  p0.normal[2] = 0;
-	  reflect(v->line->fc0->world->image->next->x, v->next->x, &p0);
-	  
-	  dumblist_add(workspace, v->line->fc0->world->image);
-	}
 	break;
       case PHOT_SPHERE:
 	/* Construct the perpendicular plane */

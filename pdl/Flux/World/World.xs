@@ -329,7 +329,7 @@ CODE:
 
 
 AV *
-_photosphere(wsv,plane=&PL_sv_undef,type=&PL_sv_undef)
+_photosphere(wsv,plane=0,type=0)
 SV *wsv
 SV *plane
 SV *type
@@ -345,7 +345,7 @@ PREINIT:
 CODE:
  w = SvWorld(wsv,"Flux::World::_set_plane");
  av_clear(RETVAL = newAV());
- if(plane==&PL_sv_undef) {
+ if(!plane || plane==&PL_sv_undef) {
    /* dump */
    if(w->photosphere.plane) {
      av_extend(RETVAL,6);
@@ -380,7 +380,7 @@ CODE:
   }
   w->photosphere.plane = newp;
 	
-  if(type==&PL_sv_undef) {
+  if(!type || type==&PL_sv_undef) {
 	  w->photosphere.type = (newp ? PHOT_PLANE : PHOT_NONE);
   } else {
           w->photosphere.type = SvIV(type);
