@@ -34,7 +34,7 @@ sub place_loop_vertex {
 
 
   my $out = (( $r0 * pdl(1,0,0) + $offset ) x $rm1);
-  print "rm1=$rm1; rm2=$rm2; out=$out\n";
+#  print "rm1=$rm1; rm2=$rm2; out=$out\n";
 
   return $out;
 }
