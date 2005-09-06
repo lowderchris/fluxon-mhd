@@ -518,13 +518,78 @@ and average number of neighbors per vertex.  The answer comes back in a perl has
 
 =for usage
 
- $world->render_lines
+ $world->render_lines($interactive, $range, $opt)
 
 =for ref
 
 Produces a simple 3-D plot of all the field lines in a World, using PDL::TriD.
-This bit of code has the potential to expand without limit -- it might be good to break
-it out into a separate file....
+
+The C<$interactive> argument is a flag indicating whether the eventt loop should
+be run to position and angle the output.  C<$range>, if present, is a 3x2 PDL containing
+the (minimum, maximum) corners of the 3-cube to render.  C<$opt> is an options hash.
+Currently useful options are:
+
+=over 3
+
+=item rgb
+
+If present, specifies that all lines should have this color (3-PDL)
+
+=item prgb
+
+If present, specifies that all points should have this color (3-PDL)
+
+=item RGB_CODE
+
+If present, contains a code ref that calculates the RGB values of
+individual line segments in the local context of render.  (Not for the
+faint of heart!)
+
+=item PRGB_CODE
+
+If present, contains a code ref in the same style as RGB_CODE that
+calculates the RGB values of individual points in the local context of
+render.
+
+=item points
+
+Flag indicating whether or not to draw vertices separately from field lines,
+using a Points object.  (Default is 1).  
+
+=item psize
+
+Flag indicating the size, in screen pixels, of the points as rendered.
+(Default is 4; 0 is not allowed)
+
+=item linewidth
+
+Flag indicating the width of the LineStrip objects used to render the fluxons.
+(Default is 1; 2-3 is useful for generating figures)
+
+=item label
+
+Flag indicating whether to use a Label object to indicate the numeric label of every
+vertex.  (Default is 0).
+
+=item neighbors
+
+Flag indicating whether to render the closest approach of each fluxel's neighbors 
+in the perpendicular plane to the fluxel. (default is 0)
+
+=item hull
+
+Flag indicating whether to render the hull of each fluxel in the perpendicular plane of the
+fluxel.  (Default is 0)
+
+=item nscale
+
+The scaling factor of the trace-lines and neighbor points (default is
+0.25).  1.0 produces nice intersection diagrams showing the
+approximate segmentation of space into the neighborhoods of each
+fluxon, but is quite busy.  The default is a compromise between loss
+of detail and separation of neighborhood tracings.
+
+=back
 
 =cut
 
@@ -555,7 +620,7 @@ sub render {
     my @rgb,@prgb;
     if($opt->{'RGB_CODE'}) {
       eval $opt->{'RGB_CODE'};
-    } elsif($opt->{'rgb'}) {
+    } elsif(defined $opt->{'rgb'}) {
       @rgb = map { (ones($_) - (yvals($_)==0)) * $opt->{'rgb'} } @poly;
     } else {
       @rgb = map { 
@@ -569,7 +634,7 @@ sub render {
     }
     if($opt->{'PRGB_CODE'}) {
 	eval $opt->{'PRGB_CODE'};
-    } elsif($opt->{'prgb'}) {
+    } elsif(defined $opt->{'prgb'}) {
       @prgb = map { (ones($_) - (yvals($_)==0)) * $opt->{'rgb'} } @poly;
     } else {
 	@prgb = map { 

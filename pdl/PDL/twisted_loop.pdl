@@ -47,10 +47,11 @@ sub twisted_loop {
   $v1 -= $v0 * (($v1*$v0)->sumover);
   barf "top and line are colinear - not allowed.\n"
     if(($v1*$v1)->sumover == 0) ;
-  $v1 /= sqrt( ($v1*$v1)->sumover );
+  $v1hat = $v1->copy;
+  $v1hat /= sqrt( ($v1*$v1)->sumover );
 
   # Generate the third unit vector.
-  $v2 = crossp($v0,$v1); 
+  $v2 = crossp($v0,$v1hat); 
 
   # Construct the conversion matrix.  Stick this on the right side
   # of a row vector to convert from loop space to 3-space.
