@@ -154,6 +154,7 @@ typedef struct PLANE {
 #define PHOT_PLANE 1
 #define PHOT_SPHERE 2
 #define PHOT_CYL 3
+extern char *BOUNDARY_NAMES[4];  /* in data.c */
 
 typedef struct PHOTOSPHERE {
   PLANE *plane;
