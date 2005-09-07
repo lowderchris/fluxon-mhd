@@ -64,6 +64,19 @@
 #include <string.h>
 
 
+/******************************
+ * Boundary condition names, by number
+ */
+char *BOUNDARY_NAMES[] = {
+  "NONE",
+  "PLANE",
+  "SPHERE",
+  "CYL"
+};
+
+
+
+
 /**********************************************************************
  * barf
  * 

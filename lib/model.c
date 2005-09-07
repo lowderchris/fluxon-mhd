@@ -731,25 +731,27 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 
 	break;
       case PHOT_SPHERE:
-	/* Construct the perpendicular plane */
-
-	/* midpoint of fluxel */
-	sum_3d(pt,v->x,v->next->x);
-	scale_3d(pt,pt,0.5);
+	/***********
+         * Spherical photosphere - sphere is located at the origin in the 
+         * photospheric plane structuure; radius is normal[0]. */
 	
-	/* unit vector from center of Sun toward fluxel */
-	diff_3d(pt, pt, p->origin );
-	scale_3d(pl.normal, pt, 1.0/norm_3d(pt));
+	/* Construct the sub-vertex point on the sphere */
+	diff_3d(&(pt[0]),      v->x, &(p->origin[0]));                 /* pt gets (x - origin) */
+	scale_3d(&(pt[0]), &(pt[0]), p->normal[0]/norm_3d(&(pt[0])));  /* Scale to be on the sphere */
+	sum_3d(&(pt[0]), &(pt[0]), p->origin);                    /* Put in real space */
+	scale_3d(&(pt[0]), &(pt[0]), 2.0);                             
+	diff_3d(v->line->fc0->world->image->x, &(pt[0]), v->x); /* Put reflection in image */
 
-	/* first 'normal' coordinate of plane is solar radius: */
-	/* generate 1 solar radius vector and offset to find   */
-	/* tangent-plane origin */
-	scale_3d(pl.origin, pl.normal, p->normal[0]);
-	sum_3d(pl.origin, pl.origin, p->origin);
+	/***** Do for the other point too *****/
+	diff_3d(&(pt[0]), v->next->x, p->origin);
+	scale_3d(&(pt[0]), &(pt[0]), p->normal[0]/norm_3d(&(pt[0])));
+	sum_3d(&(pt[0]),&(pt[0]),p->origin);
+	scale_3d(&(pt[0]), &(pt[0]), 2.0);
+	diff_3d(v->line->fc0->world->image->next->x, &(pt[0]), v->x); 
+	 
+	dumblist_add(workspace, v->line->fc0->world->image);
 
-
-	*p=pl;
-	/* fall through to reflect from tangent plane */
+	break;
 	  
       case PHOT_PLANE:
 	reflect(v->line->fc0->world->image->x, v->x, p);

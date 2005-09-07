@@ -422,10 +422,100 @@ int footpoint_action(WORLD *world, char *s) {
           break;
 
 	case 'B':  /* BFIELD_NORMALIZATION */
-	  { int i;
+	  if(gcmd[1] == 'O' || gcmd[1]=='o') {
+	    /* GLOBAL BOUNDARY ... */
+	    int n;
+	    int type_code;
+	    PLANE *p = (PLANE *)localmalloc(sizeof(PLANE),MALLOC_PLANE);
+	    char phscan[80];
+
+
+	    switch(s[off]) {
+
+	    case PHOT_PLANE+'0': 
+	    case 'P':
+	      /* Plane */
+	      sprintf(phscan,"%%*s %%%sf %%%sf %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+	      if(6 > sscanf(s+off,phscan,
+			    &(p->origin[0]),
+			    &(p->origin[1]),
+			    &(p->origin[2]),
+			    &(p->normal[0]),
+			    &(p->normal[1]),
+			    &(p->normal[2])
+			    )
+		 )
+		badstr = "Couldn't parse six values from GLOBAL BOUNDARY PLANE";
+	      type_code = PHOT_PLANE;
+	      
+	      break;
+	      
+	    case PHOT_SPHERE+'0':
+	    case 'S':
+	      /* Sphere */
+	      sprintf(phscan,"%%*s %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+	      if(4 > sscanf(s+off,phscan,
+			    &(p->origin[0]),
+			    &(p->origin[1]),
+			    &(p->origin[2]),
+			    &(p->normal[0])
+			    )
+		 )
+		badstr = "Couldn't parse four values from GLOBAL BOUNDARY SPHERE";
+	      p->normal[1] = 0;
+	      p->normal[2] = 0;
+	      type_code = PHOT_SPHERE;
+	      break;
+	      
+	    case PHOT_CYL+'0':
+	    case 'C':
+	      /* Cylinder */
+	      sprintf(phscan,"%%*s %%%sf",NUMCHAR);
+	      if(1 > sscanf(s+off,phscan,
+			    &(p->origin[0])
+			    )
+		 ) {
+		badstr = "Couldn't parse cylindrical radius for GLOBAL BOUNDARY CYLINDER";
+		printf("s+off: %s\nphscan: %s\n",s+off,phscan);
+	      }
+	      p->origin[1] = p->origin[2] = p->normal[0] = p->normal[1] = p->normal[2] = 0;
+	      type_code = PHOT_CYL;
+	      break;
+
+	    case '0':
+	    case 'N':
+	      /* None */
+	      free(p);
+	      p=0;
+	      type_code = 0;
+
+	    default:
+
+	      badstr = "Unknown boundary condition in GLOBAL BOUNDARY declaration\n";
+	      break;
+	    }
+
+	    if(!badstr) { /* Parse was okay */
+	      world->photosphere.type = type_code;
+	      if(world->photosphere.plane) 
+		localfree(world->photosphere.plane);
+	      world->photosphere.plane = p;
+
+	    } else { /* Clean up so we don't leak too much memory */
+	      if(p)
+		free(p);
+	    }
+
+            /* end of GLOBAL BOUNDARY case */
+
+ 	  } else {
+
+	    /** GLOBAL B_NORMALIZATION ... **/
+	    int i;
 	    sscanf(s+off,"%d",&i) || (badstr="couldn't parse F_OVER_B state");
 	    world->f_over_b_flag = i;
 	  }
+	  break;
 	case 'S': /* GLOBAL STATE */
 	  sscanf(s+off,"%d",&(world->state)) || 
 	    (badstr="couldn't parse GLOBAL STATE");
@@ -533,18 +623,19 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   }
   fprintf(file,"\n");
 
-  /* photosphere location */
   fprintf(file, "GLOBAL STATE %d  (%s)\n",world->state,world_state_name(world));
-  fprintf(file,"GLOBAL PHOTOSPHERE ");
-  if(world->photosphere.plane) {
-    static char fmt[80];
-    PLANE *p=world->photosphere.plane;
 
-    sprintf(fmt,"%%%sg %%%sg %%%sg %%%sg %%%sg %%%sg %%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
-    fprintf(file,fmt,p->origin[0],p->origin[1],p->origin[2],p->normal[0],p->normal[1],p->normal[2],world->photosphere.type);
-
-  } else {
-    fprintf(file,"<NONE>\n");
+  /* global boundary type and location */
+  {
+    PLANE *p = world->photosphere.plane;
+    char fmt[80];
+    sprintf(fmt,"%%s %%s %%%sg %%%sg %%%sg %%%sg %%%sg %%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+    fprintf(file,fmt
+	    , "GLOBAL BOUNDARY "
+	    , BOUNDARY_NAMES[ world->photosphere.type ]
+	    , p?p->origin[0]:0, p?p->origin[1]:0, p?p->origin[2]:0
+	    , p?p->normal[0]:0, p?p->normal[1]:0, p?p->normal[2]:0
+	    );
   }
 
   fprintf(file,"GLOBAL BFIELD_NORMALIZATION %d",world->f_over_b_flag);
