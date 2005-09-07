@@ -1,3 +1,5 @@
+Fix documentation directory!
+
 Problems with the newer magnetic & force calculations... (old ones work OK)
 (Think about line-pressure vs. force on vertex...)
 
