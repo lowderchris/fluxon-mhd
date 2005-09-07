@@ -16,6 +16,8 @@
  * 
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
+ * 
+ * This is geometry.h version 1.0 - part of the FLUX 1.0 release.
  */
 
 #ifndef FLEM_GEOMETRY
