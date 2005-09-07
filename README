@@ -18,9 +18,6 @@ Author: Craig DeForest
 This is the FLUX top-level directory.
 
 Subdirectories include:
-	tests -- specific applications that use the modules
-	         (rather out-of-date)
-
         lib -- the central libflux.a core simulation library
 
 	doc -- some design documents
