@@ -4,8 +4,7 @@
 # This would be much better implemented using automake but I'm too lazy
 # to figure it out -- CED 18-Aug-2004
 
-all: 
-	pushd lib; make all; popd
+all: libinstall
 	pushd pdl; perl Makefile.PL; make all; popd
 
 install: libinstall pdlinstall
