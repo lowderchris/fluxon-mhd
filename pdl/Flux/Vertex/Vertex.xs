@@ -11,6 +11,8 @@
  *  PERL INTERFACE     FLUX SUBROUTINE / FUNCTION
  *
  *  _stringify         <NA>
+ *
+ * This is Vertex.xs version 1.0 - part of the FLUX 1.0 release.
  */
 
 #include "EXTERN.h"

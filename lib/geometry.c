@@ -18,6 +18,8 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
+ * This is geometry.c 1.0 - part of the FLUX 1.0 release. 
+ *
  */
 #include <math.h>
 #include <stdio.h>

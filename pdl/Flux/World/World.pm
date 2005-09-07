@@ -24,6 +24,10 @@ Flux objects are the perl interface to FLUX MHD models.  A Flux::World
 object is the interface to a global aspects of the simulation.
 A Flux::World object is just a pointer off into hyperspace.  
 
+VERSION
+
+This is version 1.0 of World.pm - part of the 1.0 Flux release.
+
 =head1 FUNCTIONS
 
 =cut

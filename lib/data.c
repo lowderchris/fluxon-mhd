@@ -55,6 +55,7 @@
  *  dumblist_delete - Delete an item from a dumblist.
  *  dumblist_snarf  - Copy a dumblist into another one.
  *  
+ * This is data.c version 1.0 - part of thhe FLUX 1.0 release.
  */
 #include "data.h"
 #include "physics.h" /* for declaration of force subroutines */

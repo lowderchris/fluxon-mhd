@@ -60,6 +60,10 @@ to the next and previous vertices along the same fluxon.
 Each of those object types has its own perl module and its own man page (e.g. say
 C<man Flux::World> to find out about what you can do with world objects).
 
+VERSION
+
+This is Flux version 1.0 - part of the FLUX 1.0 release.
+
 =head1 GETTING STARTED
 
 If you are reading this as a man page, you are most of the way there.

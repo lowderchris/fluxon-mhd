@@ -17,6 +17,10 @@ Flux::Fluxon objects are the perl representation of fluxons within the
 MHD simulator.  They are represented as tied hashes, to keep the interface
 as flexible as possible.
 
+VERSION
+
+This is Fluxon.pm version 1.0, part of the FLUX 1.0 release.
+
 =head1 METHODS
 
 =cut

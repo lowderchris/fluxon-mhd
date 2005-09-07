@@ -16,6 +16,10 @@ the (x,y,z) coordinates of the point as a PDL, in loop coordinates (where
 the X axis points toward the start of the loop, the Y axis points toward
 the top of the loop, and the Z axis is perpendicular to the loop).
 
+VERSION
+
+This is version 1.0 of place_loop_vertex - part of the 1.0 FLUX release.
+
 =cut
 
 sub place_loop_vertex {

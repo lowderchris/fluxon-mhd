@@ -1,3 +1,97 @@
+=head2 simple_relaxer - sample relaxation code using FLUX
+
+=for usage
+
+ use Flux;
+ $a = read_world('menagerie/twisted.flux')
+ $dt = 0.3;
+ $step = 0;
+ simple_relaxer($a,0,0,300,$opt);
+
+=for ref
+
+simple_relaxer handles the top level relaxation loop -- it is written in perl for
+ease of manipulation and to illustrate relaxation code in action.
+
+It takes up to five arguments:
+
+=over 3
+
+=item $a
+
+The first argument is a Flux::World object to relax
+
+=item $int
+
+The second argument is an interactive flag -- if you set this, then
+the code will stop at every time step for you to manipulate the
+graphics viewpoint.  You probably want to feed in 0.
+
+=item $global
+
+The third argument sets the global flag for update_neighbors() and
+update_force() calls.  It's here for debugging -- if you actuallly
+want your simulation to ever complete, you want to set this to 0.
+(Global neighbor recognition runs in O(n^2) time and is MUCH slower
+than local neighbor expansion, which runs in O(n) time).
+
+=item $final
+
+The fourth argument is the step number at which to terminate.  See
+below for how steps are kept track of.
+
+=item $opt
+
+Thhe fifth argument, if present, is a hash ref containing options about
+how the relaxation is to proceed.
+
+=back
+
+In addition, three global variables are used: $dt, $auto, and $step.  $dt keeps
+track of delta-tau between steps.  $auto adjust delta-tau with a slightly more
+sophisticated algorithm than the C library -- it shouldn't be necessary in most
+cases.  $step keeps track of the current step number.  Setting it to zero causes a 
+global neighbor find to be done before the first step takes place.
+
+The following options are useful in the options hash:
+
+=over 3
+
+=item movie_n
+
+Specifies that a relaxation movie is to be made by capturing 3-D
+renders evern <n> time steps.
+
+=item movie_f
+
+This is the format string to be used to name relaxation movie frames.
+The format string acts on a single integer -- the step number -- for
+formatting.  The default value is "flux-movie-%4.4d.ppm".  The
+formatted string is fed to L<wim|wim>, so the suffix determines the
+file type of the images.
+
+=item disp_n 
+
+Sets how often the on-screen rendering should be updated.  Set this to 0 
+to disable on-screen rendering.  (Default value is 10).
+
+=item render_opt
+
+Contains a hash ref to be fed to Flux::World::render() when the field is
+rendered.
+
+=back
+
+Note that simple_relaxer is really a demonstation kludge -- it is not
+production code, really.  Caveat user.
+
+VERSION
+
+This is version 1.0 of simple_relaxer - part of the 1.0 FLUX release.
+
+=cut
+
+
 sub simple_relaxer {
     $w = shift;
     $interactive = shift || 0;
@@ -46,7 +140,7 @@ sub simple_relaxer {
 	   print "\t\tratio=$ratio; new dt=$dt\n";
 	}
 
-	unless($step % $disp_n ) {
+	unless($disp_n==0 || $step % $disp_n ) {
 	    $w->render_lines($interactive,$range,$opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
 	    if($movie_n) {
 	      my $pic = grabpic3d();

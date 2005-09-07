@@ -1,4 +1,12 @@
-GLOBAL PHOTOSPHERE 0 0 -0.01 0 0 1
+##############################
+# Sample twisted flux tube (quasi-gold-hoyle)
+# created by twisted_loop.pdl; augmented by hand-editing
+# boundary conditions &c.
+FRAME 0
+GLOBAL FORCES f_pressure_equi f_curvature f_vertex
+GLOBAL STATE 0 (NEW)
+GLOBAL BOUNDARY PLANE  0 0 -0.01 0 0 1
+GLOBAL BFIELD_FLAG 0
 
 NEW 2     -0.98     -0.02         0 1
 NEW 3      0.98     -0.02   2.6e-06 -1

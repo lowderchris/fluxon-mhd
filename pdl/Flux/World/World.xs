@@ -21,6 +21,9 @@
  *
  *   fluxons           ----  Return a perl list of fluxon IDs in the world
  *
+ *
+ * This is version 1.0 of World.xs - part of the FLUX 1.0 release.
+ *
  */
 #include "EXTERN.h"
 #include "perl.h"

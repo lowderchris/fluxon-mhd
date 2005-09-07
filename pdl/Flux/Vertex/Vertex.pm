@@ -12,6 +12,10 @@ Flux::Vertex - fluxon vertex / fluxel
   $vertex = $fluxon->vertex(4);
   $vertices = $fluxon->vertices;
 
+=head2 VERSION
+
+This is version 1.0 of Vertex.pm - part of the FLUX 1.0 release.
+
 =head1 Methods
 
 =cut

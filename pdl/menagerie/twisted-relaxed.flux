@@ -1,6 +1,5 @@
-
-
 ######################################
+# same as twisted.flux - but relaxed several hundred steps
 
 FRAME 0
 GLOBAL FORCES b_eqa f_curvature f_pressure_equi f_vertex 
