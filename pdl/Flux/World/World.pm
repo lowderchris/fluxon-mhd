@@ -170,8 +170,17 @@ sub _stringify {
     my @s = $me->string;
     my @lines = grep(m/^\s*LINE/,@s);
     my @vertices = grep(m/^\s*VERTEX/,@s);
+    my @bounds = ( sub {"None. "}
+		   ,sub {"Plane; origin: $_[0],$_[1],$_[2]; normal: $_[3],$_[4],$_[5]";}
+		   ,sub {"Sphere; origin: $_[0],$_[1],$_[2]; radius: $_[3]"}
+		   ,sub {"Cylinder (at origin, axis along Z); radius: $_[0]"}
+		   );
+    my @ph = $me->photosphere;
+    $btype = $ph[6];
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n".
-	"\tForces (".($me->_b_flag?"normal":"B-normalized")." forces): ".join(", ",$me->forces)."\n";
+	"\tForces (".($me->_b_flag?"normal":"B-normalized")." forces): ".join(", ",$me->forces)."\n".
+	"\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
+	;
 
 }
 
@@ -240,8 +249,11 @@ Update the neighbor trees between adjacent fluxels.  If $globalflag is
 nonzero, then all previous neighbor information is discarded, causing
 a global neighbor search for each fluxel.  The global algorithm is
 O(n^2).  If $globalflag is zero, then a next-nearest-neighbors
-algorithm is used, which is O(n).  The first time you call this, you 
-had better set $globalflag=1.
+algorithm is used, which is O(n).  
+
+The first time you call this, you had better set $globalflag=1, or
+horrible things will happen.  After that, you will want to set $globalflag=0
+so that you don't die of ennui before the simulation completes.
 
 =cut
 
@@ -258,7 +270,7 @@ had better set $globalflag=1.
     $world->verbosity($v);
 
 Controls the level of, well, verbosity associated with operations on $world.
-High values send insane amounts of stuff out the stderr port.
+High values send insane amounts of stuff to the console.
 
 Some approximate meanings for each verbosity level:
 
@@ -289,6 +301,7 @@ Describe activity within each vertex operation -- notably neighbor searches.
 =cut
 
 # Implemented in World.xs
+
 
 
 
@@ -381,7 +394,8 @@ sub fluxons {
 Return the names of the forces that are queued up to act on each fluxel
 in the simulation, or set them.  The forces have predefined names
 that are present at the top of physics.c.  Unknown forces are referred to
-by hex value, but that way lies madness.
+by hex value, but that way lies madness unless you are the linker (and
+I don't mean you, John).
 
 =cut
 
@@ -412,10 +426,11 @@ sub forces {
 =for ref
 
 Returns the state of the B-normalization flag in the World.
-When set, the flag causes all the forces to be treated as if the 
+When set to 0, the flag causes all the forces to be treated as if the 
 local magnetic field magnitude were divided out.  This is appropriate
 for the older forces (f_pressure_equi and f_curvature) but not
-for the newer ones.
+for the newer ones.  When set to 1, the flag causes all the forces
+to be treated as, well, ordinary physical forces.
 
 =cut
 
@@ -432,22 +447,37 @@ sub b_flag {
 
 =pod
 
-=head2 photosphere
+=head2 boundary
 
 =for usage
 
  $phot = pdl($world->photosphere);
- $world->photosphere([$phot->list]);
+ $world->boundary([$phot->list],$type);
 
 =for ref
 
-With no additional arguments, returns a six-element list containing the 
+With no additional arguments, returns a seven-element perl list.  Elements
+0-6 are the numeric values of the boundary parameters, and element 7 is
+the type code for the boundary.  If no boundary is in use, then the empty
+list is returned.
+
+If you pass in a list ref, then the contents 
+
+six-element list containing the 
 (origin, normal-vector) coordinates of the photospheric plane, or a
 zero-element list indicating that there is no photospheric plane.  If you
 pass in a list ref, it is used to set the photospheric plane parameters.
+The list ref is copied into the boundary parameter array internally.  The 
+$type code should be the numeric type code for the boundary condition you want:
+0 is none, 1 is planar, 2 is spherical, and 3 is cylindrical.  More might be
+added later.  This is something of a kludge at the moment -- string parsing should
+be in here (as in the force law parameters).
 
 =cut
 
+sub boundary { 
+  return @{_photosphere(@_)};
+}
 sub photosphere {
     return @{_photosphere(@_)};
 }
@@ -484,9 +514,12 @@ $world->relax_step($dt);
 
 =for ref
 
-Updates positions of the vertices after the forces have been calculated.
-Takes one step toward relaxation.  Warning -- if $dt is too big you'll 
-be in trouble, guv!
+Updates positions of the vertices after the forces have been
+calculated.  Takes one step toward relaxation.  Warning -- if $dt is
+too big you'll be in trouble, guv!  $dt is scaled so that 1.0 should
+carry each vertex all the way to relaxation if it were the only vertex
+in motion.  To avoid various sorts of awfulness, you want to keep it
+to 0.3-0.5 in the early stages of most relaxations.
 
 =cut
 
@@ -549,7 +582,7 @@ faint of heart!)
 
 If present, contains a code ref in the same style as RGB_CODE that
 calculates the RGB values of individual points in the local context of
-render.
+render. (Not for the faint of heart!)
 
 =item points
 

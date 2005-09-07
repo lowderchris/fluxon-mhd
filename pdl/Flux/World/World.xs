@@ -340,7 +340,8 @@ PREINIT:
  int i;
 /**********************************************************************
  * _photosphere
- * Set the location of the photospheric plane from a perl array
+ * Set the location of the photospheric plane from a perl array, or
+ * dump it into a perl array.
  */
 CODE:
  w = SvWorld(wsv,"Flux::World::_set_plane");
@@ -356,6 +357,7 @@ CODE:
      sv=newSVnv(p->normal[0]); av_store(RETVAL,3,sv) || svREFCNT_dec(sv);
      sv=newSVnv(p->normal[1]); av_store(RETVAL,4,sv) || svREFCNT_dec(sv);
      sv=newSVnv(p->normal[2]); av_store(RETVAL,5,sv) || svREFCNT_dec(sv);
+     sv=newSViv(w->photosphere.type); av_store(RETVAL,6,sv) || svREFCNT_dec(sv);
    }
  } else {
   PLANE *newp;
