@@ -1,10 +1,10 @@
 This is the project directory for FLUX, a fluxon-based MHD model.
 
-All source files are copyright (C) 2004 Southwest Research Institute,
+All source files are copyright (C) 2004-2005 Craig DeForest
 unless otherwise marked.  You may modify and/or make copies of this
 software under the terms of the Gnu Public License, version 2 (GPL
 v2).  You should have received a copy of the GPL v2 with this
-software; it is present in the file COPYING.  If you do not have a
+software; it is present in the file "COPYING".  If you do not have a
 copy you may obtain one online from "http://www.gnu.org" or by writing
 to the Free Software Foundation, 59 Temple Place, Suite 330, Boston,
 MA 0211-1307 USA.
@@ -19,8 +19,7 @@ This is the FLUX top-level directory.
 
 Subdirectories include:
 	tests -- specific applications that use the modules
-	         (a little out of date perhaps)
-
+	         (rather out-of-date)
 
         lib -- the central libflux.a core simulation library
 
@@ -29,5 +28,5 @@ Subdirectories include:
 	include -- 'c' header files 
 	           (these get installed into /usr/local/include/flux/)
 	
-        pdl -- PDL glue code and perl module
+        pdl -- PDL glue code and perl modules
 

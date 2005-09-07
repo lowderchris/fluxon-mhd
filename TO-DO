@@ -1,29 +1,8 @@
-Memory scrozzling in the perl interface.
-
 Problems with the newer magnetic & force calculations... (old ones work OK)
-
-Finish adding pressure law.
-
-Think about line-pressure vs. force on vertex...
+(Think about line-pressure vs. force on vertex...)
 
 Problems with ultralarge forces (ultrasmall distances) in the last fluxel...
 	 noticed infinite regression in fix_proximity because of this,
 	 but that was a symptom of some sort of proximity problem.
-
-
-----------------------------------------------------------------------
-25-August-2005
-
-Okay, looks like most everything was resolved last week, but I better
-put some notes in here.  Relaxation seems to at least work for all
-force laws now, though the non-normalized forces are out of whack.
-(the normalized forces seem OK)
-
-I added disco-cylinder boundary conditions -- but a more general boundary
-is going to be necessary. 
-
-
-	- general boundary conditions
-	- figure out why non-normalized forces aren't relaxing right
 
 
