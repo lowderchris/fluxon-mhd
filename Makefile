@@ -6,12 +6,15 @@
 
 all: 
 	pushd lib; make all; popd
-	pushd pdl; make all; popd
+	pushd pdl; perl Makefile.PL; make all; popd
 
-install: libinstall
+install: libinstall pdlinstall
 
 libinstall:
-	cd lib; make install
+	pushd lib; make install; popd;
+
+pdlinstall:
+	pushd pdl; perl Makefile.PL; make all; popd
 
 clean:
 	rm -f *~ \#* 
