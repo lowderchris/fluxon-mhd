@@ -93,16 +93,16 @@ This is version 1.0 of simple_relaxer - part of the 1.0 FLUX release.
 
 
 sub simple_relaxer {
-    $w = shift;
-    $interactive = shift || 0;
-    $global = shift || 0;
-    $n=shift||0;
-    $opt = shift || {};
-    $auto = $opt->{auto};
-    $movie_n = $opt->{movie_n};
-    $movie_f = $opt->{movie_f} || "flux-movie-%4.4d.ppm";
-    $disp_n = $movie_n || $opt->{disp_n} || 10;
-
+    my $w = shift;
+    my $interactive = shift || 0;
+    my $global = shift || 0;
+    my $n=shift||0;
+    my $opt = shift || {};
+    my $auto = $opt->{auto};
+    my $movie_n = $opt->{movie_n};
+    my $movie_f = $opt->{movie_f} || "flux-movie-%4.4d.ppm";
+    my $disp_n = $movie_n || $opt->{disp_n} || 10;
+    my $range = $opt->{range};
     $step=0 unless($n);
     $final_step=$n;
 

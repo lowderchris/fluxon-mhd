@@ -123,8 +123,6 @@ typedef struct FLUXON {
   struct VERTEX *start, *end; /* Endpoints of the field line (could be the
 
 		                   same point for loops!!) */
-  void (*start_b)(),(*end_b)(); /* Boundary condition routines */
-
   long v_ct;         /* Index counter -- should be the number
 			 of VERTEXes in the fluxon.  */
 
@@ -145,6 +143,8 @@ typedef struct FLUX_CONCENTRATION {
   struct LINKS links;        /* Tree for other concentrations */
   NUM x[3];                  /* Location of the concentration */
   NUM locale_radius;         /* Radius of the concentration's neighborhood */
+  
+  void (*bound)(VERTEX *v);  /* Boundary condition routine */
 } FLUX_CONCENTRATION;
 
 typedef struct PLANE {
@@ -182,6 +182,11 @@ typedef struct WORLD {
 
   VERTEX *image, *image2;
   NUM locale_radius;        /* Default radius for concentrations' neighborhoods */
+  
+  FLUX_CONCENTRATION *fc_ob; /* bogus flux concentration to store open fluxons     */
+  FLUX_CONCENTRATION *fc_oe; /* bogus flux concentration to store open fluxons     */
+  FLUX_CONCENTRATION *fc_pb; /* bogus flux concentration to store plasmoid fluxons */
+  FLUX_CONCENTRATION *fc_pe; /* bogus flux concentration to store plasmoid fluxons */
 
   int verbosity;           /* Verbose flag turns on/off debugging lines */
   

@@ -74,5 +74,13 @@ typedef struct VERTEX_STATS {
 VERTEX_STATS *world_collect_stats(WORLD *a);
 void fluxon_collect_stats(FLUXON *fl, VERTEX_STATS *st);
 
+/**********************************************************************
+ * Fluxon end-condition handlers and names
+ */
+void fl_b_start_open(VERTEX *v);
+void fl_b_end_open(VERTEX *v);
+void fl_b_start_plasmoid(VERTEX *v);
+void fl_b_end_plasmoid(VERTEX *v);
+
 #endif /* overall file include */
 

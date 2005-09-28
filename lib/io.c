@@ -244,14 +244,18 @@ int footpoint_action(WORLD *world, char *s) {
       badstr = "Couldn't parse LINE line";
     } else {
       FLUX_CONCENTRATION *fc0, *fc1;
-      fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
-      fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
-      if(!fc0 || !fc1) {
+	  fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
+	  fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
+	  printf("line %d: fc %d (%x) - fc %d (%x)\n",fl0,l0,fc0,l1,fc1);
+	if(!fc0 || !fc1) {
 	char *badbuf = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
 	sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,fc0,fc1,BUFSIZ);
+	badstr = badbuf;
+
       } else if(fc0->flux * fc1->flux >= 0) {
 	badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
 	sprintf(badstr,"This fluxon connects two flux concentrations of the same sign flux, or\none of its flux tubes has zero flux. Line %ld; concentrations %ld (%g) and %ld (%g)\n",fl0, flux0, l0, fc0->flux, l1, fc1->flux);
+	break;
       }	else {
 	/* Check if the field line exists in either of the two 
 	   concentrations' local lists */
@@ -422,14 +426,13 @@ int footpoint_action(WORLD *world, char *s) {
 	  } /* end of GLOBAL PHOTOSPHERE convenience block */
           break;
 
-	case 'B':  /* BFIELD_NORMALIZATION */
+	case 'B':  /* BFIELD_NORMALIZATION or BOUNDARY */
 	  if(gcmd[1] == 'O' || gcmd[1]=='o') {
 	    /* GLOBAL BOUNDARY ... */
 	    int n;
 	    int type_code;
 	    PLANE *p = (PLANE *)localmalloc(sizeof(PLANE),MALLOC_PLANE);
 	    char phscan[80];
-
 
 	    switch(s[off]) {
 
@@ -508,7 +511,6 @@ int footpoint_action(WORLD *world, char *s) {
 	    }
 
             /* end of GLOBAL BOUNDARY case */
-
  	  } else {
 
 	    /** GLOBAL B_NORMALIZATION ... **/
@@ -517,11 +519,31 @@ int footpoint_action(WORLD *world, char *s) {
 	    world->f_over_b_flag = i;
 	  }
 	  break;
+	case 'O': /* OPEN <x> <y> <z> <r> - where is the open sphere? */
+	  {
+	    char phscan[80];
+	    sprintf(phscan, "%%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+	    if(4 > sscanf(s+off,phscan,
+			  &(world->fc_oe->x[0]),
+			  &(world->fc_oe->x[1]),
+			  &(world->fc_oe->x[2]),
+			  &(world->fc_oe->locale_radius)
+			  )
+	       ) {
+	      badstr = "Couldn't parse four values from GLOBAL OPEN";
+	    } else {
+	      world->fc_ob->x[0] = world->fc_oe->x[0];
+	      world->fc_ob->x[1] = world->fc_oe->x[1];
+	      world->fc_ob->x[2] = world->fc_oe->x[2];
+	      world->fc_ob->locale_radius = world->fc_oe->locale_radius;
+	    }
+	  }
+	  break;
 	case 'S': /* GLOBAL STATE */
 	  sscanf(s+off,"%d",&(world->state)) || 
 	    (badstr="couldn't parse GLOBAL STATE");
 	  break;
-
+	  
 	default: /* GLOBAL <FOO> unrecognized */
 	  fprintf(stderr,"Unrecognized GLOBAL command in line '%s'\n",s);
 	  return 1;

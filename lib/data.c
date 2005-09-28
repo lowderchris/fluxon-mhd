@@ -179,10 +179,7 @@ FLUXON *new_fluxon(      NUM flux,
   nf->start           = 0;
   nf->end             = 0;
   nf->v_ct            = 0;
-
-  nf->start_b         = 0;
-  nf->end_b           = 0;
-
+  
   clear_links(&(nf->all_links));
   nf->all_links.sum = nf->flux;
   
@@ -268,6 +265,9 @@ FLUX_CONCENTRATION *new_flux_concentration(
   fc->x[1] = y;
   fc->x[2] = z;
   fc->locale_radius = 0; /* locale_radius isn't used just now */
+  
+  fc->bound = 0;
+
   clear_links(&(fc->links));
   fc->links.sum = fc->flux;
   return fc;
@@ -304,7 +304,29 @@ WORLD *new_world() {
   a->f_funcs[3] = f_vert;
   a->f_funcs[4] = 0;
 
-  a->f_over_b_flag = 1; 
+  a->f_over_b_flag = 1;  /* reverse flag - 1=straight forces */
+  
+  /* Initialize the open-field and plasmoid pseudo flux concentrations */
+  a->fc_ob = new_flux_concentration(a,0,0,0,1,-1);
+  a->fc_ob->label = -1;
+  a->fc_ob->bound = fl_b_start_open;
+  a->concentrations = tree_binsert(a->concentrations, a->fc_ob, fc_lab_of, fc_ln_of);
+  
+  a->fc_oe = new_flux_concentration(a,0,0,0,-1,-2);
+  a->fc_oe->label = -2;
+  a->fc_oe->bound = fl_b_end_open;
+  a->concentrations = tree_binsert(a->concentrations, a->fc_oe, fc_lab_of, fc_ln_of);
+  
+  
+  a->fc_pb = new_flux_concentration(a,0,0,0,1,-3);
+  a->fc_pb->label = -3;
+  a->fc_pb->bound = fl_b_start_plasmoid;
+  a->concentrations = tree_binsert(a->concentrations, a->fc_pb, fc_lab_of, fc_ln_of);
+  
+  a->fc_pe = new_flux_concentration(a,0,0,0,-1,-4);
+  a->fc_pe->label = -4;
+  a->fc_pe->bound = fl_b_end_plasmoid;
+  a->concentrations = tree_binsert(a->concentrations, a->fc_pe, fc_lab_of, fc_ln_of);
 
   return a;
 }
@@ -313,7 +335,7 @@ WORLD *new_world() {
 /**********************************************************************
  **********************************************************************
  ***** 
- ***** List routines: handle the singly linked list structures in the
+ ***** List routines: handle the doubly linked list structures in the
  ***** fluxons themselves
  *****
  */

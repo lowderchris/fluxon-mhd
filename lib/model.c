@@ -167,6 +167,15 @@ void fluxon_update_neighbors(FLUXON *fl, char global) {
 
   if(verbosity>=2) printf("fluxon_update_neighbors... (gl=%d), fluxon %d\n",global,fl->label);
 
+
+  /* First thing - make sure the end conditions are up to date... */
+  if(fl->fc0->bound) {	
+    (*(fl->fc0->bound))(fl->start);
+  }
+  if(fl->fc1->bound) {
+    (*(fl->fc1->bound))(fl->end);
+  }
+
   while(v->next) {
     if(verbosity>=3)  printf("\tfluxon_update_neighbors... vertex %d\n",v->label);
     vertex_update_neighbors(v,global);
@@ -414,8 +423,17 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
     if(verbosity >= 3)    printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
   }
 
-  /* Update of start and end positions goes here! */
-
+  /******************************
+   * Done with mid-fluxon update -- now adjust the start and end positions 
+   * depending on boundary condition.  (Currently only line-tied, open-sphere, and
+   * open-plane boundary conditions are supported).
+   */
+   if(f->fc0->bound) {	
+	(*(f->fc0->bound))(f->start);
+   }
+   if(f->fc1->bound) {
+	(*(f->fc1->bound))(f->end);
+   }
 }
     
   
@@ -548,8 +566,6 @@ static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n) {
     dumblist_add(workspace,(void *)foo[i]);
     dumblist_snarf(workspace,&(foo[i]->neighbors));
     dumblist_snarf(workspace,&(foo[i]->nearby));
-    //    dumblist_sort(workspace,winnow_cmp_1);
-    //    dumblist_crunch(workspace,winnow_cmp_1);
   }
 
   /* Purge image pseudo-vertices from the snarfed list */
@@ -597,7 +613,7 @@ static long line_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
 }
 
 DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
-  static DUMBLIST *workspace =0,*workspace2 = 0;
+  static DUMBLIST *workspace =0;
   void **foo;
   int i;
   int n;
@@ -609,11 +625,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   if(!workspace) 
     workspace = new_dumblist();
 
-  //  if(!workspace2)
-  //    workspace2 = new_dumblist();
-
   workspace->n = 0;
-  //  workspace2->n = 0;
 
   /**********************************************************************/
   /* Gather the candidates together 
@@ -728,8 +740,6 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 	reflect(v->line->fc0->world->image->next->x, v->next->x, &pl);
 	
 	dumblist_add(workspace, v->line->fc0->world->image);
-
-	//	printf("photosphere is %g,%g,%g-%g,%g,%g (%d)\n",phot->plane->origin[0],phot->plane->origin[1],phot->plane->origin[2],phot->plane->normal[0],phot->plane->normal[1],phot->plane->normal[2],phot->type);
 
 	break;
       case PHOT_SPHERE:
@@ -946,7 +956,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
     }
   }
 
-  /* Find the 2-D hull.  For now, ask for rejects in order to plot 'em. */
+  /* Find the 2-D hull.  Don't want rejects. */
   hull_2d(voronoi_buf,horde,0);
 
   if(verbosity >= 5){
@@ -1205,3 +1215,76 @@ int global_fix_curvature(WORLD *w, NUM curv_thresh) {
   tree_walker(w->lines,fl_lab_of,fl_all_ln_of,cu_tramp);
   return cu_acc;
 }
+
+
+/********************************************************************
+ * fluxon end-condition handlers - update end position of the fluxon
+ * to be consistent with the boundary condition
+ */
+
+void fl_b_start_open(VERTEX *v) {
+  POINT3D a;
+  if(!v->next) {
+    fprintf(stderr,"HEY! fl_b_start_open got an end vertex!  Doing nothing...\n");
+    return;
+  }
+  if(v->prev) {
+    fprintf(stderr,"HEY! fl_b_start_open got a middle vertex!  Doing nothing...\n");
+    return;
+  } 
+  
+  diff_3d( a,    v->next->x, v->line->fc0->x );
+  scale_3d(a,    a,          v->line->fc0->locale_radius / norm_3d(a) );
+  sum_3d(  v->x, a,          v->line->fc0->x );
+}
+
+void fl_b_end_open(VERTEX *v) {
+  POINT3D a;
+  if(!v->prev) {
+    fprintf(stderr,"HEY! fl_b_end_open got a beginning vertex! Doing nothing...\n");
+    return;
+  }
+  if(v->next) {
+    fprintf(stderr,"HEY! fl_b_end_open got a middle vertex!  Doing nothing...\n");
+    return;
+  }
+  
+  diff_3d( a,     v->prev->x,   v->line->fc1->x );
+  scale_3d(a,     a,            v->line->fc1->locale_radius / norm_3d(a) );
+  sum_3d(  v->x,  a,            v->line->fc1->x );
+} 
+
+void fl_b_start_plasmoid(VERTEX *v) {
+  if(!v->next) {
+    fprintf(stderr,"HEY! fl_b_start_plasmoid got an end vertex! Doing nothing...\n");
+    return;
+  }
+  if(v->prev) {
+    fprintf(stderr,"HEY! fl_b_start_plasmoid got a middle vertex! Doing nothing...\n");
+    return;
+  }
+  if(!v->next->next) {
+    fprintf(stderr,"HEY! plasmoid conditions require more than one middle vertex! Doing nothing...\n");
+    return;
+  }
+  
+  cp_3d( v->x, v->line->end->prev->x );
+}
+
+void fl_b_end_plasmoid(VERTEX *v) {
+  if(!v->prev) {
+    fprintf(stderr,"HEY! fl_b_end_plasmoid got a start vertex! Doing nothing...\n");
+    return;
+  }
+  if(v->next) {
+    fprintf(stderr,"HEY! fl_b_end_plasmoid got a middle vertex! Doing nothing...\n");
+    return;
+  }
+  if(!v->prev->prev) {
+    fprintf(stderr,"HEY! plasmoid conditions require real fluxons, you git!...\n");
+    return;
+  }
+  
+  cp_3d( v->x, v->line->start->next->x );
+}
+
