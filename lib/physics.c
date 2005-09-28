@@ -106,11 +106,10 @@ void f_curvature(VERTEX *V, HULL_VERTEX *verts) {
   diff_3d(b1hat,V->x,V->prev->x);
   scale_3d(b1hat,b1hat, (recip_l1 = 1.0 /norm_3d(b1hat)));
 
-  recip_len =  ( recip_l1 + recip_l2 ) / 2;
+  recip_len =  ( recip_l1 + recip_l2 ) * 0.5;
   
   diff_3d(curve,b2hat,b1hat);
-
-  scale_3d(curve,curve, recip_len);
+  scale_3d(curve,curve,recip_len); /* convert to force per unit length */
 
   sum_3d(V->f_v,V->f_v,curve);
 
@@ -140,6 +139,7 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
   static int pc_size = 0;               /* Workspace size */
   int i;
   NUM pmatrix[9];
+  NUM len;
 
   force[0] = force[1] = force[2] = 0;
 
@@ -198,12 +198,9 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
     }
 
     sum_3d(force,force,f_i);
-    V->f_s_tot += fabs(f)+fabs(f);
+    V->f_s_tot += fabs(f);
   }
 
-  //  printf("\n");
-
-  scale_3d(force,force,2.0);
 
   sum_3d(V->f_s,V->f_s,force);
 
@@ -286,7 +283,7 @@ void f_vert(VERTEX *V, HULL_VERTEX *verts) {
    */
   
   sum_3d(force,d1, d2);
-  scale_3d(force, force, 0.5 * fn * Bmag / norm_3d(force));
+  scale_3d(force, force, 0.5 * fn * Bmag / norm_3d(force) );
   
   sum_3d(V->f_v, V->f_v, force);
 
@@ -311,7 +308,7 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
   NUM force[3];
   NUM d1[3], d2[3];
   NUM d1nr,d2nr,fn,d1n,d2n;
-
+  NUM l1, l2;
   /* Exclude endpoints */
   if(!V->next || !V->prev)
     return;
@@ -321,10 +318,10 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
    *  1/r.
    */
   diff_3d(d1,V->x,V->prev->x);
-  scale_3d(d1, d1, (d1nr = 1.0 / norm_3d(d1))); /* assignment */
+  scale_3d(d1, d1, (d1nr = 1.0 / (l1=norm_3d(d1)))); /* assignment */
 
   diff_3d(d2,V->next->x, V->x);
-  scale_3d(d2, d2, (d2nr = 1.0 / norm_3d(d2)));  /* assignment */
+  scale_3d(d2, d2, (d2nr = 1.0 / (l2=norm_3d(d2))));  /* assignment */
   
   fn = (d1nr - d2nr);
   V->f_v_tot += fabs(fn);
@@ -332,15 +329,15 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
   /* Proximity-attractive force.  This attracts vertices toward places
    * where field lines are interacting. 
    */
-  if(V->prev && V->next) {
-    NUM r_clp, r_cln;
-
-    r_clp = 1.0 / V->prev->r_cl;
-    r_cln = 1.0 / V->r_cl;
-
-    V->f_v_tot += fabs(0.5 * (r_cln - r_clp));
-    fn += 0.5 * (r_cln - r_clp);
-  }
+    if(V->prev && V->next) {
+      NUM r_clp, r_cln;
+  
+      r_clp = 1.0 / V->prev->r_cl;
+      r_cln = 1.0 / V->r_cl;
+  
+      V->f_v_tot += fabs(0.5 * (r_cln - r_clp));
+      fn += 0.5 * (r_cln - r_clp);
+    }
     
 
   /* Generate a vector along the field line and scale it to the 
@@ -350,7 +347,7 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
    */
 
   sum_3d(force,d1, d2);
-  scale_3d(force, force, 0.5 * fn / norm_3d(force));
+  scale_3d(force, force, 0.5 * fn / norm_3d(force) );
 
   /*printf("f_vertex: V%4d, force=(%g,%g,%g)\n",V->label,force[0],force[1],force[2]);*/
 
