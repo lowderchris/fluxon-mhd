@@ -30,6 +30,12 @@
 #include "io.h"
 
 /**********************************************************************
+ * "Magic" end-of-line boundary conditions
+ */
+void world_update_ends(WORLD *a);
+void fluxon_update_ends(FLUXON *f);
+
+/**********************************************************************
  * Neighborhood handling routines
  */
 

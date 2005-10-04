@@ -47,6 +47,33 @@ extern FILE *gl_outf; /* for debugging -- delete */
  */
 
 /**********************************************************************
+ * world_update_ends
+ * Updates the ends of each fluxon in turn...
+ */
+static long w_u_e_springboard(FLUXON *fl, int lab, int link, int depth) {
+  fluxon_update_ends(fl);
+  return 0;
+}
+
+void world_update_ends(WORLD *a) {
+  tree_walker(a->lines,fl_lab_of, fl_all_ln_of, w_u_e_springboard,0);
+}
+
+/**********************************************************************
+ * fluxon_update_ends
+ * Checks and updates the magic boundary vertices at the end of a fluxon
+ */
+void fluxon_update_ends(FLUXON *f) {
+   if(f->fc0->bound) {	
+	(*(f->fc0->bound))(f->start);
+   }
+   if(f->fc1->bound) {
+	(*(f->fc1->bound))(f->end);
+   }
+}  
+
+
+/**********************************************************************
  * world_update_neighbors
  * 
  * Calls fluxon_update_neighbors to process the whole world!
@@ -58,6 +85,10 @@ static NUM *gl_minmax; /* Keeps track of minimum and maximum forces */
 
 static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
   if(fl->fc0->world->verbosity >= 5) dump_all_fluxon_tree(gl_a->lines);
+  if(fl->fc0->world->verbosity) {
+    printf(" %d",fl->label);
+    fflush(stdout);
+  }
   fluxon_update_neighbors(fl, gl_gl);
   return 0;
 }
@@ -428,12 +459,7 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
    * depending on boundary condition.  (Currently only line-tied, open-sphere, and
    * open-plane boundary conditions are supported).
    */
-   if(f->fc0->bound) {	
-	(*(f->fc0->bound))(f->start);
-   }
-   if(f->fc1->bound) {
-	(*(f->fc1->bound))(f->end);
-   }
+  fluxon_update_ends(f);
 }
     
   
@@ -958,6 +984,9 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
 
   /* Find the 2-D hull.  Don't want rejects. */
   hull_2d(voronoi_buf,horde,0);
+  if(horde->n==0) {
+    printf("VERTEX %d: hull_2d gave up! That's odd....\n",v->label);
+  }
 
   if(verbosity >= 5){
     printf("hull_neighbors:  hull trimming gives:\n");

@@ -293,8 +293,8 @@ int footpoint_action(WORLD *world, char *s) {
 	    /* Make sure it has at least the two end vertices */
 	    {
 	      VERTEX *v0, *v1;
-	      v0 = new_vertex(0,fc0->x[0],fc0->x[1],fc0->x[2],f0);
-	      v1 = new_vertex(0,fc1->x[0],fc1->x[1],fc1->x[2],f0);
+	      v0 = new_vertex(-(f0->label*2),  fc0->x[0],fc0->x[1],fc0->x[2],f0);
+	      v1 = new_vertex(-(f0->label*2)+1,fc1->x[0],fc1->x[1],fc1->x[2],f0);
 	      if(!v0 || !v1) {
 		badstr = "Couldn't make trivial vertices for fluxon!\n";
 	      } else {
@@ -594,6 +594,8 @@ WORLD *read_world(FILE *file, WORLD *a) {
       error = footpoint_action(a, s);
     }
   } while (s && !error);
+  
+  world_update_ends(a);
   return a;
 }    
 

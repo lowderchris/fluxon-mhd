@@ -490,20 +490,22 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     cd0=(c0[0]==d0[0] && c0[1]==d0[1] && c0[2]==d0[2]);
     
     if(ab0) {
-      printf("degen 0\n");
       cp_3d(p0,a0);
       if(cd0) {
 	cp_3d(p1,c0);
+	/* printf("ls_closest: a==b, c==d (%g,%g,%g)\n",a0[0],a0[1],a0[2]); */
 	return;
       } else {
 	p_ls_closest_approach(p1,c0,d0,a0);
+	/* printf("ls_closest: a==b (%g,%g,%g); closest on cd is (%g,%g,%g)\n",a0[0],a0[1],a0[2],p1[0],p1[1],p1[2]); */
 	return;
       }
     } 
     if(cd0){
-      printf("degen 1\n");
       cp_3d(p1,c0);
       p_ls_closest_approach(p0,a0,b0,c0);
+/*       printf("c==d (%g,%g,%g); closest on ab is (%g,%g,%g)\n",c0[0],c0[1],c0[2],p0[0],p0[1],p0[2]); */
+
     }
   }
   
@@ -686,9 +688,14 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
 
 NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
   NUM foo[3],bar[3];
-
+  NUM dist;
   ls_closest_approach(foo,bar,a0,b0,c0,d0);
-  return cart_3d(foo,bar);
+  dist = cart_3d(foo,bar);
+  if(!finite(dist))
+    printf( "dist is nan\n");
+  if(!dist)
+    printf("dist is 0\n");
+  return dist;
 }
 
 /**********************************************************************
@@ -793,7 +800,7 @@ NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1){
  * fl_segment_dist
  * fl_segment_deluxe_dist
  * Given two pointers to VERTEXes, return the closest approach of their
- * two line segments.  If either is invalid, return -1.
+ * two line segments.  If either is invalid, return 1e50.
  * The deluxe_dist accepts two points, which get filled with the 
  * points of closest approach of the two line segments.
  *
@@ -810,10 +817,10 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   /* Exclude trivial cases, adjacent-segment case, and next-nearest-segment case. */
   /* (farther segments aren't as likely to cause trouble) */
   if(!v0 || !v1 || !v0->next || !v1->next)
-    return -1;
+    return 1e50;
 
   if(v0==v1 ||   (v0->next == v1) ||  (v1->next == v0) )
-    return -1;
+    return 1e50;
 
   if(v0->line->fc0->world->verbosity >= 5) 
     printf("fl_segment_dist: calling ls_closest_approach...\n");
@@ -826,7 +833,7 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   diff_3d(P,P1,P0);
   Plen = norm_3d(P);
   if(Plen==0)
-    return -1;
+    return 1e50;
 
   if (v0->line->fc0->world->verbosity >= 3) {
     printf("\nfl_segment_deluxe_dist: v0=%d,v1=%d; Plen is %g\n",v0->label,v1->label,Plen);
@@ -847,7 +854,7 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   a *= a;               // sin^2 --> sin^4
 
   if(a == 0) 
-    return 1e20;
+    return 1e50;
 
   Plen /= a;
 
@@ -1086,7 +1093,7 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
     if((v->line->fc0->world->verbosity + (r>=0))>=3)
       printf("\nfl_segment_deluxe_dist returned %g for vertex %d\n",r,v1->label);
 
-    if(r<0) {
+    if(r<=0 || !finite(r)) {
       horde->stuff[i] = 0;
       crunch=1;
     }
@@ -1168,6 +1175,7 @@ void sort_by_angle_2d(DUMBLIST *horde) {
   for(i=0;i<horde->n;i++) {
     VERTEX *v1 = (VERTEX *)(horde->stuff[i]);
     if(!v1 || !finite(v1->a) || !finite(v1->r)) {
+      //      printf("sort_by_angle_2d: v1 is bad (label %d)\n",v1?v1->label:0);
       dumblist_rm(horde,i);
       printf("X"); fflush(stdout);
       i--;
@@ -1319,9 +1327,12 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       if(i_r == i || i_l == i) {
 	fflush(stdout);
 	fprintf(stderr,"hull_2d: eliminated all vertices! I give up.\n");
-	exit(54);
+	horde->n=0;
+	return;
       }
 
+      if(!finite(iv->r) || !finite(iv->a))
+	goto reject;
 
       if(iv->r == 0)
 	goto reject;
