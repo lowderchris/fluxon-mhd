@@ -329,15 +329,6 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
 
     fn = norm_3d(v->f_t);
 
-    if(fl->fc0->world->f_over_b_flag==0)
-      if(v->prev) 
-	fn /= 0.5 * (v->b_mag + v->prev->b_mag);
-      else 
-	fn /= 0.5 * v->b_mag; /* This 0.5 makes it easier to be consistent on the last segment (where 
-			       * open boundary conditions will require a ghost last segment after the 
-			       * final vertex).
-			       */
-
     /* Check max, min, etc. */
     if(*f_min < 0 || fn < *f_min)
       *f_min = fn;
@@ -370,9 +361,13 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
  * The physics routines stuff forces into the f_s and f_v fields;
  * update_mag does the averaging for f_s and stuffs it into f_v for you,
  * so by the time you see this you should only have to look at f_v.
+ *
+ * Variables used for scaling:
+ *     d  - harmonic mean of the various distances of neighbors and such
+ *     b  - mean of the field strengths of the two segments on the vertex
+ *     s  - stiffness coefficient from the force calculation
  */
-void fluxon_relax_step(FLUXON *f, NUM t0) {
-  NUM t = t0;
+void fluxon_relax_step(FLUXON *f, NUM dt) {
   VERTEX *v = f->start;
   NUM a[3];
   NUM total[3];
@@ -419,34 +414,34 @@ void fluxon_relax_step(FLUXON *f, NUM t0) {
       fflush(stderr);
     }
     
-    /* `forces' are 2-D projections (forces per unit length).  
-     *  Multiply times d to get the total force, and again times d 
-     *  for stiffness.
+    /* 
+     * We now have the force per unit length on the vertex, with or without B scaling
+     * depending on the force law.  Use the scaling information stored in the WORLD to 
+     * generate a step.
      */
 
-    if(f->fc0->world->f_over_b_flag==0) {
-      /* Old-style forces with B divided out */
+    {
+      NUM fac = 1;
+      NUM b_mag_mean;
+      WORLD *w = f->fc0->world;
 
-      scale_3d(a,v->f_t, t * d * d * force_factor );
-
-    } else {
-      /* More recent forces with B included.  Since we're acting
-       * at a vertex, we have to average Bmag between the previous and
-       * next segment. 
-      */
-      double b_mag_mean = v->b_mag;
-      if(v->prev) {
-	b_mag_mean += v->prev->b_mag;
-	b_mag_mean *= 0.5;
+      if(w->step_scale.b_power) {
+	b_mag_mean = v->b_mag;
+	if(v->prev) {
+	  b_mag_mean = v->prev->b_mag;
+	  b_mag_mean *= 0.5;
+	}
+	
+	fac *= fastpow(b_mag_mean,w->step_scale.b_power);
       }
 
-            scale_3d(a,v->f_t, t * d * d * force_factor / b_mag_mean);
-	    //      scale_3d(a,v->f_t, t * d * force_factor / b_mag_mean);
-	    //      scale_3d(a,v->f_t, t * force_factor / b_mag_mean);
-	    //      scale_3d(a,v->f_t, t * force_factor / sqrt(b_mag_mean));
-	    //      scale_3d(a,v->f_t, t * d * d * force_factor );
+      fac *= fastpow(d,             w->step_scale.d_power);
+      fac *= fastpow(force_factor,  w->step_scale.s_power);
+      
+      /* ds_power goes here */
 
 
+      scale_3d(a, v->f_t, dt * fac );
     }
 
     sum_3d(v->x,v->x,a);	     

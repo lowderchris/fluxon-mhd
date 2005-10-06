@@ -191,7 +191,14 @@ typedef struct WORLD {
   int verbosity;           /* Verbose flag turns on/off debugging lines */
   
   void ((*(f_funcs[N_FORCE_FUNCS]))());
-  char f_over_b_flag;      /* flag indicating whether forces are normalized by B field */
+  
+  struct { 
+    NUM b_power; 
+    NUM d_power;
+    NUM s_power;
+    NUM ds_power
+  } step_scale;
+
 } WORLD;
 
 const char *world_state_name(WORLD *a);
@@ -332,9 +339,11 @@ void flux_memcheck();
 #else
 #ifdef USE_PADDED_MALLOC
 
- #define localmalloc(x,y) flux_padded_malloc(x)
- #define localfree(x) flux_padded_free(x)
+#define localmalloc(x,y) flux_padded_malloc(x)
+#define localfree(x) flux_padded_free(x)
 
+ char *flux_padded_malloc(long size);
+ void flux_padded_free(void *ptr);
 #else
 
 /*** Default case: just use normal malloc ***/

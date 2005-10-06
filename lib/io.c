@@ -513,10 +513,25 @@ int footpoint_action(WORLD *world, char *s) {
             /* end of GLOBAL BOUNDARY case */
  	  } else {
 
+	    fprintf(stderr,"WARNING: deprecated 'GLOBAL B_FLAG' line found in file...\n");
 	    /** GLOBAL B_NORMALIZATION ... **/
 	    int i;
 	    sscanf(s+off,"%d",&i) || (badstr="couldn't parse F_OVER_B state");
-	    world->f_over_b_flag = i;
+	    
+	    if(i==0) {
+	      fprintf(stderr,"\t(setting b_power=0,d_power=2,s_power=1, ds_power=0)\n");
+	      world->step_scale.b_power = 0;
+	      world->step_scale.d_power = 2;
+	      world->step_scale.s_power = 1;
+	      world->step_scale.ds_power = 0;
+	    } else {
+	      fprintf(stderr,"\t(setting b_power=1,d_power=2,s_power=1, ds_power=0)\n");
+	      world->step_scale.b_power = 1;
+	      world->step_scale.d_power = 2;
+	      world->step_scale.s_power = 1;
+	      world->step_scale.ds_power = 0;
+	    }
+
 	  }
 	  break;
 	case 'O': /* OPEN <x> <y> <z> <r> - where is the open sphere? */
@@ -539,20 +554,62 @@ int footpoint_action(WORLD *world, char *s) {
 	    }
 	  }
 	  break;
-	case 'S': /* GLOBAL STATE */
-	  sscanf(s+off,"%d",&(world->state)) || 
-	    (badstr="couldn't parse GLOBAL STATE");
+	case 'S': /* GLOBAL STATE  or GLOBAL SCALING */
+
+	  switch(*(gcmd+1)) {
+	  case 'C': case 'c': /* GLOBAL SCALING */
+	    {
+	      int ok_to_scan = 1;
+	      void *scanvar;
+
+	      switch(*(s+off)) {
+	      case 'B': case 'b':
+		scanvar = &(world->step_scale.b_power);
+		break;
+	      case 'D': case 'd':
+		switch(*(s+off+1)) {
+		case 'S': case 's':
+		  scanvar = &(world->step_scale.ds_power);
+		  break;
+		case 0: case ' ': case '_': case '\t':
+		  scanvar = &(world->step_scale.d_power);
+		  break;
+		default:
+		  ok_to_scan = 0;
+		  break;
+		}
+		break;
+	      default:
+		ok_to_scan = 0;
+		break;
+	      }
+
+	      if(ok_to_scan) {
+		char mscan[100];
+		sprintf(mscan,"%%*s %%%sf",NUMCHAR);
+		sscanf(mscan,scanvar);
+	      } else {
+		badstr = s;
+	      }
+
+	    }
+	    break;
+	  case 'T': case 't': /* GLOBAL STATE */
+	    sscanf(s+off,"%d",&(world->state)) || 
+	      (badstr="couldn't parse GLOBAL STATE");
+	    break;
+	  }
 	  break;
-	  
+	
 	default: /* GLOBAL <FOO> unrecognized */
 	  fprintf(stderr,"Unrecognized GLOBAL command in line '%s'\n",s);
 	  return 1;
-	  global_escape: break;
+	global_escape: break;
 	} /* end of gcmd switch */
       } /* end of ok-GLOBAL-line branch */
     } /* end of GLOBAL convenience block */
     break;
-
+    
   default: /* Oops */
     fprintf(stderr,"Unrecognized command in line '%s'\n",s);
     return 1;
@@ -663,7 +720,11 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
 	    );
   }
 
-  fprintf(file,"GLOBAL BFIELD_NORMALIZATION %d",world->f_over_b_flag);
+  fprintf(file,"GLOBAL SCALING B %g\n", world->step_scale.b_power);
+  fprintf(file,"GLOBAL SCALING D %g\n", world->step_scale.d_power);
+  fprintf(file,"GLOBAL SCALING S %g\n", world->step_scale.s_power);
+  fprintf(file,"GLOBAL SCALING DS %g\n", world->step_scale.ds_power);
+
   fprintf(file,"\n"); /* leave an extra space after the globals */
     
   /* Write out all flux concentration locations */

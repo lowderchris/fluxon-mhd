@@ -304,7 +304,13 @@ WORLD *new_world() {
   a->f_funcs[3] = f_vert;
   a->f_funcs[4] = 0;
 
-  a->f_over_b_flag = 1;  /* reverse flag - 1=straight forces */
+  /***********
+   * initialize scaling law.  Default scaling is for b-normalized forces, no acceleration
+   */
+  a->step_scale.b_power = 0;
+  a->step_scale.d_power = 2;
+  a->step_scale.s_power = 1;
+  a->step_scale.ds_power = 0;
   
   /* Initialize the open-field and plasmoid pseudo flux concentrations */
   a->fc_ob = new_flux_concentration(a,0,0,0,1,-1);

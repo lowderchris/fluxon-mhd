@@ -67,7 +67,6 @@ static long fluxons_helper(void *tree, int lab_of, int ln_of, int depth) {
  ***
  *** XS definitions follow...
  ***/
-
 MODULE = Flux::World    PACKAGE = Flux::World
 
 SV *
@@ -176,6 +175,51 @@ OUTPUT:
   RETVAL
 
 
+SV *
+step_scales(wsv, href=&PL_sv_undef)
+ SV *wsv
+ SV *href
+PREINIT:
+ WORLD *w;
+ HV *hash=0;
+ SV *val, **valp;
+/**********************************************************************
+ * step_scales - import/export scaling laws
+ */
+CODE:
+ w = SvWorld(wsv,"step_scales");
+ if(items>1 && SvROK(href) && SvTYPE(SvRV(href))==SVt_PVHV) {
+   /* Copy hash ref into WORLD */
+   hash = (HV *)SvRV(href);
+
+   /* Copy the hash values into the WORLD */
+   valp = hv_fetch(hash, "b", 1, 0); 
+   if(valp && *valp && *valp != &PL_sv_undef) 
+	w->step_scale.b_power = SvNV(*valp);
+
+   valp = hv_fetch(hash, "d", 1, 0); 
+   if(valp && *valp && *valp != &PL_sv_undef) 
+	w->step_scale.d_power = SvNV(*valp);
+
+   valp = hv_fetch(hash, "s", 1, 0); 
+   if(valp && *valp && *valp != &PL_sv_undef) 
+	w->step_scale.s_power = SvNV(*valp);
+
+   valp = hv_fetch(hash, "ds", 2, 0); 
+   if(valp && *valp && *valp != &PL_sv_undef) 
+	w->step_scale.ds_power = SvNV(*valp);
+  }
+  /* Generate an output value */
+  hash=newHV();
+  hv_clear(hash);
+  hv_store(hash, "b", 1, newSVnv( w->step_scale.b_power), 0);
+  hv_store(hash, "d", 1, newSVnv( w->step_scale.d_power), 0);
+  hv_store(hash, "s", 1, newSVnv( w->step_scale.s_power), 0);
+  hv_store(hash, "ds",2, newSVnv( w->step_scale.ds_power),0);
+  RETVAL = newRV_noinc((SV *)hash);
+OUTPUT:
+  RETVAL 
+
 
 AV *
 _fluxon_ids(wsv)
@@ -261,6 +305,8 @@ CODE:
 OUTPUT:
  RETVAL
 
+
+
 void
 _set_force(wsv,where,what)
 SV *wsv
@@ -301,6 +347,7 @@ CODE:
   }
 
 
+
 IV
 _b_flag(wsv)
  SV *wsv
@@ -308,13 +355,16 @@ PREINIT:
  WORLD *w;
 /**********************************************************************
  * _b_flag
- * Retrieve the state of the B normalization flag
+ * No longer retrieve the state of the B normalization flag -- instead 
+ * throw an error (legacy from 1.0)
  */
 CODE:
  w=SvWorld(wsv,"Flux::World::forces");
- RETVAL = w->f_over_b_flag;
+ fprintf(stderr,"WARNING: the b_flag method is no longer useful; use step_scales instead\n");
+ RETVAL = -1;
 OUTPUT:
  RETVAL
+
 
 void
 _set_b_flag(wsv,flag)
@@ -324,11 +374,11 @@ PREINIT:
  WORLD *w;
 /**********************************************************************
  * _set_b_flag
- * Set the state of the B normalization flag
+ * Set the state of the B normalization flag -- no longer useful.  Throw an error.
  */
 CODE:
- w = SvWorld(wsv,"Flux::World::_set_force");
- w->f_over_b_flag = flag;
+ fprintf(stderr,"WARNING: the b_flag method is no longer useful; use step_scales instead to tweak scaling\n");
+
 
 
 AV *

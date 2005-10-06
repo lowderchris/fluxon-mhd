@@ -181,12 +181,46 @@ sub _stringify {
 		   );
     my @ph = $me->photosphere;
     $btype = $ph[6];
-    return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n".
-	"\tForces (".($me->_b_flag?"normal":"B-normalized")." forces): ".join(", ",$me->forces)."\n".
-	"\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
+
+    my $scalehash = $me->step_scales();
+
+    return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n"
+	."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
+	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash)."\n"
 	;
 
 }
+
+=pod step_scales
+
+=for usage
+
+    $href = $world->step_scales;  # pulls step scales out of the world
+    $world->step_scales($href);   # puts them in
+
+=for ref
+
+Starting with FLUX 1.1, there is fine grained control over the power laws used for
+calculating the size of the steps taken by individual vertices.  The force laws all
+calculate force per unit length along the fluxon, so length compensation is needed; 
+also, the largest steps should in general be taken where the field is weak (and the
+forces are weak) so some scaling is required.  The step law is:
+
+    dx = F * dt * d^pd * B^pb * S^ps * DS^pds
+
+where d is the harmonic mean of relevant neighbor distances, B is the
+magnetic field strength, S is the stiffness coefficient of the force
+calculation (vector sum / magnitude sum  of the component forces), and 
+DS is the difference-stiffness relating the point's force to its neighbors' forces.
+
+These global values are communicated to Perl via hash ref that is passed into and
+out of the WORLD. 
+
+=cut
+
+# Implemented in World.xs
+
+
 
 =pod
 
