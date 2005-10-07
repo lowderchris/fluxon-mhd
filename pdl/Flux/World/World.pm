@@ -186,7 +186,7 @@ sub _stringify {
 
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n"
 	."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
-	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash)."\n"
+	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash)."\n")."\n"
 	;
 
 }
@@ -387,7 +387,6 @@ Return the fluxon with the given ID, as a Flux::Fluxon object.
 
 
 
-
 =pod
 
 =head2 fluxons
@@ -398,7 +397,8 @@ Return the fluxon with the given ID, as a Flux::Fluxon object.
 
 =for ref
 
-Return the fluxon(s) with the given IDs, as a list of Flux::Fluxon objects.
+Return the fluxon(s) with the given IDs, as a list of Flux::Fluxon objects.  If you
+give no arguments, you get all of them.
 
 =cut
 
@@ -416,6 +416,73 @@ sub fluxons {
     
     return @fluxons;
 }
+
+=pod
+
+=head2 vertex
+
+=for usage
+
+    $vertex = $world->vertex($vid);
+
+=for ref
+
+Return the vertex with the given ID, as a Flux::Vertex object.
+
+=cut
+
+# vertex is implemented in World.xs    
+
+
+=head2 vertex_ids
+
+=for usage
+
+  @list = $world->vertex_ids;
+  $vertex_count = $world->vertex_ids;
+
+=for ref
+
+Return a list of all vertex labels in the simulation
+
+=cut
+
+sub vertex_ids {
+  my $ref = _vertex_ids(@_);
+  @$ref;
+}
+
+
+
+=pod
+
+=head2 vertices
+
+=for usage
+ 
+ @vertices = $world->vertices(@v_ids)
+
+=for ref
+
+Return the vertices with the given IDs, as a list of Flux::Vertex objects.  if you
+give no arguments, you get all of them (sorted in numerical order).
+
+=cut
+
+sub vertices {
+    my $world = shift;
+    my @a = @_;
+    if(!@a){
+	push(@a,@{$world->_vertex_ids});
+    }
+    my $id;
+    my @vertices;
+    while(defined ($id=shift @a)) {
+	push(@vertices, $world->vertex($id));
+    }
+    return @vertices;
+}
+
 
 
 =pod
@@ -993,30 +1060,6 @@ sub dump_vecs {
     $l1 = @l[0];
     return $l1->glue(1,@l[1..$#l]);
 }
-
-=pod
-
-=head2 vertex
-
-=for ref
-
-Retrieves a vertex by number, or returns undef if it doesn't exist.
-
-=cut
-
-sub vertex {
-    my $me = shift;
-    my $id = shift;
-
-    my @fluxons = $me->fluxons;
-    foreach my $f(@fluxons) {
-	foreach my $v($f->vertices) {
-	    return $v if($v->id==$id);
-	}
-    }
-    return undef;
-}
-
 
 =pod
 

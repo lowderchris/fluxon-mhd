@@ -367,6 +367,23 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
  *     b  - mean of the field strengths of the two segments on the vertex
  *     s  - stiffness coefficient from the force calculation
  */
+
+
+/*** fastpow is quite fast for small integer powers, slightly slower for fractional ***/
+NUM fastpow( NUM num, NUM exponent ) {
+  NUM out = 1.0;
+  NUM recip;
+  
+  if(exponent<0) {
+    recip = 1.0/num;
+    while(exponent<=-0.9999) {  exponent++; out *= recip;  }
+  } else 
+    while(exponent>=0.9999) { exponent--; out *= num; }
+
+  if(exponent>0.0001 || exponent<-0.0001) { out *= pow(num,exponent);  }
+  return out;
+}
+    
 void fluxon_relax_step(FLUXON *f, NUM dt) {
   VERTEX *v = f->start;
   NUM a[3];

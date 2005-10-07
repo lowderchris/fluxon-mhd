@@ -60,6 +60,13 @@ static long fluxons_helper(void *tree, int lab_of, int ln_of, int depth) {
  return 0;
 }
 
+static AV *vertices_av;
+/** vertices_helper: callback to stuff a vertex label into a list **/
+static long vertices_helper(void *tree, int lab_of, int ln_of, int depth) {
+ SV *sv = newSViv(((VERTEX *)tree)->label);
+ av_store(vertices_av, av_len(vertices_av)+1, sv) || svREFCNT_dec(sv);
+ return 0;
+}
 
 
 /**********************************************************************
@@ -234,12 +241,35 @@ PREINIT:
  * with the perl stack...
  */
 CODE:
- w = SvWorld(wsv,"Flux::World::fluxon_ids");
+ w = SvWorld(wsv,"Flux::World::_fluxon_ids");
  RETVAL = fluxons_av = newAV();  /* fluxons_av is static, at top */
  av_clear(RETVAL);
  if(w->lines) {
 	av_extend(RETVAL, (w->lines->all_links).n);
  	tree_walker(w->lines,fl_lab_of,fl_all_ln_of,fluxons_helper);
+ }
+OUTPUT:
+ RETVAL
+
+
+AV *
+_vertex_ids(wsv)
+ SV *wsv
+PREINIT:
+ WORLD *w;
+/**********************************************************************
+ * _vertex_ids - generate a perl list of vertex IDs associated with this world
+ *
+ * Hands back an array ref instead of a list, so I don't have to hassle
+ * with the perl stack...
+ */
+CODE:
+ w = SvWorld(wsv,"Flux::World::_vertex_ids");
+ RETVAL = vertices_av = newAV(); /* vertices_av is static, at top */
+ av_clear(RETVAL);
+ if(w->vertices) {
+	av_extend(RETVAL, (w->vertices->world_links).n);
+	tree_walker(w->vertices, v_lab_of, v_ln_of, vertices_helper);
  }
 OUTPUT:
  RETVAL
@@ -268,6 +298,33 @@ CODE:
   }
 OUTPUT:
   RETVAL
+
+
+SV *
+vertex(wsv,id)
+ SV *wsv
+ IV id
+PREINIT:
+ WORLD *w;
+ FLUXON *f;
+ SV *sv;
+/**********************************************************************
+ * vertex - generate and return a Flux::Vertex object associated 
+ * with the given id
+ */
+CODE:
+  w = SvWorld(wsv,"Flux::World::vertex");
+  f = (VERTEX *)tree_find(w->vertices,id,v_lab_of,v_ln_of);
+  if(f) {
+     sv = newSViv((IV)(f));
+     RETVAL = newRV_noinc(sv);
+     (void)sv_bless(RETVAL,gv_stashpv("Flux::Vertex",TRUE));
+  } else {
+     RETVAL = &PL_sv_undef;
+  }
+OUTPUT:
+  RETVAL
+
 
 
 AV *

@@ -63,7 +63,9 @@ void fprint_all_fluxon_tree(FILE *f, FLUXON *foo);
 void print_all_fluxon_tree(FLUXON *foo);
 
 /* Line output functions for state files */
+void fprint_v_nbors(FILE *f, void *foo, int indnt, int lab_o, int ln_o);
 void fprint_fc_line(FILE *f, void *foo, int indnt, int lab_o, int ln_o);
+void fprint_fc_line_nonneg(FILE *f, void *foo, int indnt, int lab_o, int ln_o);
 void fprint_fls_by_fc(FILE *f, void *foo, int indnt, int lab_o, int ln_o);
 void fprint_fl_vertices(FILE *f, void *foo, int indnt, int lab_o, int ln_o);
 

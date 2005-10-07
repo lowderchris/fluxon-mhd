@@ -113,6 +113,7 @@ typedef struct VERTEX {
   NUM r_cl;                     /* Stores closest-neighbor-approach radius */
 
   long label;                  
+  LINKS world_links;      /* tree access to all the vertices in the world */
 } VERTEX;
 
 typedef struct FLUXON {
@@ -177,6 +178,7 @@ typedef struct WORLD {
   int  state;               /* State of the world  */
   FLUX_CONCENTRATION *concentrations;
   FLUXON *lines;
+  VERTEX *vertices;
 
   PHOTOSPHERE photosphere;
 
@@ -196,7 +198,7 @@ typedef struct WORLD {
     NUM b_power; 
     NUM d_power;
     NUM s_power;
-    NUM ds_power
+    NUM ds_power;
   } step_scale;
 
 } WORLD;
@@ -235,7 +237,8 @@ static const tree_ln_of  = (long)&(tree__samp.links) - (long)&tree__samp;
 static const VERTEX v__samp;
 static const v_neighbor_of = (long)&(v__samp.neighbors) - (long)&(v__samp);
 static const v_nearby_of = (long)&(v__samp.nearby) - (long)&(v__samp);
-
+static const v_ln_of = (long)&(v__samp.world_links) - (long)&(v__samp);
+static const v_lab_of = (long)&(v__samp.label) - (long)&(v__samp);
 inline FLUXON *new_fluxon(NUM flux,  
 			 FLUX_CONCENTRATION *c0,
 			 FLUX_CONCENTRATION *c1,

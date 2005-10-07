@@ -116,20 +116,20 @@ void barf(int barf_on_op, char *where) {
  * allocate any default-numbered nodes (e.g. from simulation) until after
  * all the set-numbered nodes (e.g. from a file) have been allocated.
  * 
- * If you pass in -1, you get back the current maximum-label cache
- * and it is not incremented.
- *  
  * Labels seem mainly useful for I/O (storing stuff to files), but
  * they come in handy for debugging too.  It might be possible 
  * eventually to remove them from the code.
  */
+static long max_label=0;
+
 long new_label(long request){
-  static long max_label=0;
-  if(request <= -1) return max_label;
-  if(!request) return ++max_label;
+
+  if(!request) 
+    request = ++max_label;
 
   if(max_label < request)
     max_label=request;
+
   return request;
 }
 
@@ -140,12 +140,6 @@ static long max_vertex_label=0;
 long new_vertex_label(long request) {
   long out;
   switch(request) {
-  case -1: 
-    out = max_vertex_label;
-    break;
-  case -2: 
-    out = 0;
-    break;
   case 0:
     out = ++max_vertex_label;
     break;
@@ -237,6 +231,8 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
 
   tp->label = new_vertex_label(label);
 
+  clear_links(&(tp->world_links));
+
   return tp;
 }  
 
@@ -260,6 +256,7 @@ FLUX_CONCENTRATION *new_flux_concentration(
   fc->world = world;
   fc->flux = flux;
   fc->label = new_label(label);
+
   fc->lines = (FLUXON *)0;
   fc->x[0] = x;
   fc->x[1] = y;
@@ -284,6 +281,7 @@ WORLD *new_world() {
   a->frame_number = 0;
   a->state = WORLD_STATE_NEW;
   a->concentrations = NULL;
+  a->vertices = NULL;
   a->lines = NULL;
 
   a->photosphere.type = 0;
@@ -380,6 +378,8 @@ void unlink_vertex(VERTEX *v) {
   }
   dumblist_snarf(&(v->prev->nearby), &(v->nearby));
   dumblist_snarf(&(v->next->nearby), &(v->nearby));
+
+  tree_unlink(v, v_lab_of, v_ln_of);
 }
 
 void delete_vertex(VERTEX *v) {
@@ -394,6 +394,9 @@ void delete_vertex(VERTEX *v) {
     localfree(v->nearby.stuff);
     v->nearby.stuff=0;
   }
+
+  tree_unlink(v,v_lab_of, v_ln_of); // shouldn't hurt -- tree_unlink on a lone node doesn't do anything
+
   localfree(v);
 }
 
@@ -421,6 +424,7 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
     return 1;
   }
 
+
   /* Handle the empty-fluxon case */
   if(f->start == 0 || f->end == 0){
     if(f->start == 0 && f->end == 0) {
@@ -429,6 +433,7 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
       f->v_ct = 1;
       v->next = 0;
       v->prev = 0;
+      f->fc0->world->vertices = tree_binsert(f->fc0->world->vertices, v, v_lab_of, v_ln_of);
       return 0;
     } else {
       fprintf(stderr, "Encoutered a fluxon with at START but no END, or vice versa!\n");
@@ -544,6 +549,8 @@ int add_vertex_after(FLUXON *f, VERTEX *neighbor, VERTEX *v) {
       dumblist_add( &(v->nearby), v->neighbors.stuff[i]);
     }
   }
+
+  f->fc0->world->vertices = tree_binsert(f->fc0->world->vertices, v, v_lab_of, v_ln_of);
 
   return 0;
 }
@@ -700,7 +707,7 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
   }
 
   node_label = *((long *)(item+label_offset));
-  
+
   /* Check assertion that this is a simple item and not a tree in its
    * own right */
   if( (item_links->left != NULL) ||
@@ -744,7 +751,8 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
       break; /* Item is already in tree... */
     else {
       /* Item is not already in tree but label is not unique. */
-      fprintf(stderr,"Assertion failed!  label %ld is not unique! Proceeding anyway!\n(Casey Jones, you're in trouble!)\n");
+      fprintf(stderr,"tree_insert: Assertion failed!  label %ld(%ld) is not unique! Proceeding anyway!\n(Casey Jones, you're in trouble!)\n",foo_label,node_label);
+
       if(foo_links->left == NULL) {
 	foo_links->left = item;
 	break;

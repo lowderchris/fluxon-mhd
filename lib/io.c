@@ -90,6 +90,12 @@ char *next_line(FILE *file) {
  * (Comment lines have '#' as the first non-whitespace character)
  *
  */
+static char mscan[80]="";
+static char lscan[80]="";
+static char vscan[80]="";
+static char gscan[80]="";
+static char vnscan[80]="";
+
 int footpoint_action(WORLD *world, char *s) {
   char *ds = 0;
   char *badstr = 0;
@@ -98,10 +104,6 @@ int footpoint_action(WORLD *world, char *s) {
   long vertex_label;
   long l0,l1,fl0;
   NUM x0[3],x1[3],flux0,flux1;
-  static char mscan[80]="";
-  static char lscan[80]="";
-  static char vscan[80]="";
-  static char gscan[80]="";
 
   /* Skip over initial whitespace and comment characters */
   while(*s && isspace(*s))
@@ -170,16 +172,24 @@ int footpoint_action(WORLD *world, char *s) {
     } else {
       if(toupper(*s)=='N') {
 
+	if( l0<0 ) {
+	  printf("WARNING: automagic FC %ld is given in file -- ignoring this gaffe. (Probably OK)\n",l0);
+	  break;
+	}
+	
+
 	/* New stuff handler */
 
 	FLUX_CONCENTRATION *fc;
-	
-	fc = new_flux_concentration( world,x0[0],x0[1],x0[2],flux0,l0 );
+
+	fc = new_flux_concentration( world,x0[0],x0[1],x0[2],flux0, l0 );
 	world->concentrations = 
 	  tree_binsert( world->concentrations
 			,  fc 
 			, fc_lab_of, fc_ln_of );
-      } else {
+
+
+      } else if(toupper(*s)=='M') {
 	
 	/* Motion handler */
 	FLUX_CONCENTRATION *fc;
@@ -197,6 +207,8 @@ int footpoint_action(WORLD *world, char *s) {
 	  *n0++ = *n1++;
 	  *n0 = *n1;
 	}
+      } else {
+	badstr = "NEW/MOVE line is neither a NEW nor a MOVE!  This should never happen.\n";
       }
     }
     break;
@@ -309,30 +321,61 @@ int footpoint_action(WORLD *world, char *s) {
 
     break;
     
-  case 'V': /* VERTEX <fl_lab> <vert_lab> <pos> <x> <y> <z> 
-             *  Create a new vertex on field line <fl_lab> at position
-	     *  <pos> (0 means start; -1 means end) along the existing one.
-	     */
-    if(!*vscan) {
-      sprintf(vscan,"%%*s %%ld %%ld %%ld %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
-    }
-    
-    n = sscanf(s,vscan,&l0,&vertex_label,&l1,x0,x0+1,x0+2);
-    if(n != 6) {
-      badstr = "Couldn't parse VERTEX line";
-    } else {
-      VERTEX *v0;
-      FLUXON *f;
-      f = tree_find(world->lines, l0, fl_lab_of, fl_all_ln_of);
-      if(!f) {
-	badstr = "Tried to add a vertex to a nonexistent field line";
-      } else {
-	v0 = new_vertex(vertex_label, x0[0], x0[1], x0[2], f);
-	if(world->verbosity > 2) printf("vertex_label = %d; v0->label = %d\n",vertex_label, v0->label);
-	if(add_vertex_pos(f, l1, v0))
-	  badstr = "VERTEX: add_vertex_pos returned error";
+  case 'V': 
+
+    if(s[1]=='E' || s[1]=='e') {
+
+      /* VERTEX <fl_lab> <vert_lab> <pos> <x> <y> <z> 
+       *  Create a new vertex on field line <fl_lab> at position
+       *  <pos> (0 means start; -1 means end) along the existing one.
+       */
+      if(!*vscan) {
+	sprintf(vscan,"%%*s %%ld %%ld %%ld %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
       }
-    }      
+      
+      n = sscanf(s,vscan,&l0,&vertex_label,&l1,x0,x0+1,x0+2);
+      if(n != 6) {
+	badstr = "Couldn't parse VERTEX line";
+      } else {
+	VERTEX *v0;
+	FLUXON *f;
+	f = tree_find(world->lines, l0, fl_lab_of, fl_all_ln_of);
+	if(!f) {
+	  badstr = "Tried to add a vertex to a nonexistent field line";
+	} else {
+	  v0 = new_vertex(vertex_label, x0[0], x0[1], x0[2], f);
+	  if(world->verbosity > 2) printf("vertex_label = %d; v0->label = %d\n",vertex_label, v0->label);
+	  if(add_vertex_pos(f, l1, v0))
+	    badstr = "VERTEX: add_vertex_pos returned error";
+	}
+      }      
+    
+    } else if(s[1]=='_' || s[1]=='N' || s[1]=='n') {
+      VERTEX *v;
+      VERTEX *n;
+      long vlab;
+      long nlab;
+      int n_scan;
+
+      /* V_NEIGHBOR <vert_lab> <vn_lab> */
+      printf("(V_NEIGHBOR not yet supported...)\n");
+      n_scan = sscanf(s,"%*s %ld %ld",&vlab,&nlab);
+      if(n_scan!=2) {
+	badstr = "Couldn't parse V_NEIGHBOR line";
+      } else {
+	v = tree_find(world->vertices, vlab, v_lab_of, v_ln_of);
+	n = tree_find(world->vertices, nlab, v_lab_of, v_ln_of);
+	if(!v || !n) {
+	  badstr = "V_NEIGHBOR requires that both targets already be defined!";
+	} else {
+	  dumblist_add( &(v->neighbors), n );
+	  dumblist_add( &(n->nearby),    v );
+	}
+      }
+    } else {
+      badstr = "V-huh?";
+    }
+
     break;
   
   case 'G': /* GLOBAL <cmd> <arg1> <arg2> ... */
@@ -492,10 +535,14 @@ int footpoint_action(WORLD *world, char *s) {
 	      free(p);
 	      p=0;
 	      type_code = 0;
+	      break;
 
 	    default:
-
-	      badstr = "Unknown boundary condition in GLOBAL BOUNDARY declaration\n";
+	      {
+		static char badbuf[250];
+		sprintf(badbuf,"Unknown boundary condition in GLOBAL BOUNDARY - off is %d, s[off] is '%c'; line is '%s'\n",off,s[off],s);
+		badstr = badbuf;
+	      }
 	      break;
 	    }
 
@@ -728,12 +775,15 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   fprintf(file,"\n"); /* leave an extra space after the globals */
     
   /* Write out all flux concentration locations */
-  fprint_tree(file, world->concentrations, fc_lab_of, fc_ln_of, 0, fprint_fc_line);
+  fprint_tree(file, world->concentrations, fc_lab_of, fc_ln_of, 0, fprint_fc_line_nonneg);
 
   /* Output the field lines */
   fputc('\n',file);
   fprint_tree(file, world->concentrations, fc_lab_of, fc_ln_of, 0, fprint_fls_by_fc);
 
+  /* Output neighbor relations */
+  fputc('\n',file);
+  fprint_tree(file, world->vertices, v_lab_of, v_ln_of, 0, fprint_v_nbors);
 }    
     
 
@@ -911,6 +961,23 @@ void dump_all_fluxon_tree(FLUXON *foo) {
  ***** Auxiliary routines for print_world.
  */
 
+
+/******************************
+ * fprint_v_nbors 
+ * Print the neighbors of a vertex in a parsable format
+ */
+void fprint_v_nbors(FILE *f,
+		    void *foo, int indent, int label_offset, int link_offset) {
+  VERTEX *v = foo;
+  int i;
+  for(i=0;i<v->neighbors.n;i++) {
+    fprintf(f, 
+	    "VNEIGHBOR %ld %ld\n", 
+	    v->label, 
+	    (((VERTEX **)(v->neighbors.stuff))[i])->label);
+  }
+}
+ 
 /****************************************
  * fprint_fc_line 
  * Flux concentration state output
@@ -923,6 +990,13 @@ void fprint_fc_line(FILE *f,
     sprintf(fc_line_format,"NEW\t%%ld\t%%%sg\t%%%sg\t%%%sg\t%%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
   }
   fprintf(f, fc_line_format,fc->label, fc->x[0], fc->x[1], fc->x[2], fc->flux);
+}
+
+void fprint_fc_line_nonneg(FILE *f, 
+		    void *foo, int indent, int label_offset, int link_offset) {
+  FLUX_CONCENTRATION *fc=foo;
+  if( fc->label >= 0 )
+    fprint_fc_line(f,foo,indent,label_offset,link_offset);
 }
 
 
@@ -961,8 +1035,8 @@ void fprint_fl_vertices(FILE *f,
 
   fprintf(f, fl_format
 	  , fl->label
-	  , fl->fc0 ? fl->fc0->label : -1
-	  , fl->fc1 ? fl->fc1->label : -1
+	  , fl->fc0 ? fl->fc0->label : -999
+	  , fl->fc1 ? fl->fc1->label : -999
 	  , fl->flux);
   
   /* Print all the vertices (leave out the first and last) */
@@ -973,7 +1047,7 @@ void fprint_fl_vertices(FILE *f,
     for(; v && (v->next && (v->next != fl->end)); i++){
       v = v->next;
       fprintf(f, v_format
-	      , v->line ? v->line->label : -1
+	      , v->line ? v->line->label : -999
 	      , v->label
 	      , i
 	      , v->x[0]
