@@ -14,7 +14,7 @@ Flux::Vertex - fluxon vertex / fluxel
 
 =head2 VERSION
 
-This is version 1.0 of Vertex.pm - part of the FLUX 1.0 release.
+This is version 1.2 of Vertex.pm 
 
 =head1 Methods
 
@@ -25,7 +25,7 @@ package Flux::Vertex;
 
 require Exporter;
 require DynaLoader;
-@ISA = qw( Exporter DynaLoader );
+@ISA = qw( Exporter DynaLoader Flux );
 @EXPORT = qw( );
 
 bootstrap Flux::Vertex;
@@ -36,8 +36,34 @@ package Flux::Vertex;
 use overload '""' => \&stringify;
 
 =pod
+ 
+=head2 new - constructor
 
-=head2 stringify
+=for usage
+
+ $vertex = new Flux::Vertex($ptr)
+
+=for ref
+
+The main reason to call this rather than just blessing a scalar ref is that it
+ties a hash ref to the vertex for simple access to the fields.  Ptr is a scalar containing
+the pointer value in memory.  You get back a tied hash ref that is itself blessed into
+the Vertex class, and whose fields are the fields in the C struct.
+
+=cut
+
+sub new_from_ptr {
+    my $class = shift;
+    my $ptr = shift;
+
+    my %hash;
+    tie %hash,"Flux::Vertex",$ptr;
+    return bless(\%hash , $class);
+}
+
+=pod
+
+=head2 stringify - produce a string summary ("" overload)
 
 =for ref 
 
@@ -49,11 +75,9 @@ sub stringify {
     &_stringify(shift);
 }
 
-
-
 =pod
 
-=head2 id
+=head2 id - return the integer id of the vertex
 
 =for ref
 
@@ -65,7 +89,7 @@ Return the integer id of the vertex
 
 =pod
 
-=head2 fluxon
+=head2 fluxon - return the fluxon associated with the vertex
 
 =for ref
 
@@ -78,13 +102,13 @@ Return the fluxon associated with the vertex
 
 =pod
 
-=head2 prev
+=head2 prev - return the previos link
 
 =for ref
 
 Return the previous vertex on the same fluxon
 
-=head2 next
+=head2 next - return the next link
 
 =for ref
 
@@ -98,13 +122,13 @@ Return the next vertex on the same fluxon
 
 =pod
 
-=head2 neighbors
+=head2 neighbors - return the neighbors as a perl list
 
 =for ref
 
 Return the neighbors of this vertex, as a perl list of VERTEX objects.
 
-=head2 nearby
+=head2 nearby - return the nearbies as a perl list
 
 =for ref
 
@@ -114,17 +138,17 @@ Return the inverse-neighbor list of this vertex, as a perl list of VERTEX object
 
 sub neighbors {
   my $this = shift;
-  return @{_adjacent($this,0)};     # in Vertex.xs
+  return @{_adjacent(  $this , 0)};     # in Vertex.xs
 }
 
 sub nearby {
   my $this = shift; 
-  return @{_adjacent($this,1)};     # in Vertex.xs
+  return @{_adjacent( $this , 1)};     # in Vertex.xs
 }
 
 =pod
 
-=head2 hull
+=head2 hull - calculate the neighborhood and 2-D projected hull
 
 =for ref
 
@@ -142,7 +166,7 @@ nonexistent)
 
 # Implemented in Vertex.xs
 
-=head2 proj_neighbors
+=head2 proj_neighbors - project neighbors and return PDL of their locations
 
 =for usage
 
@@ -162,7 +186,7 @@ precalculated neighbors, are to be included in the calculation.
 
 # Implemented in Vertex.xs
 
-=head2 plot_neighbors
+=head2 plot_neighbors - plot neighbors in 2-D with PGPLOT
 
 =for usage
 
@@ -226,7 +250,7 @@ sub plot_neighbors {
 
 =pod
 
-=head2 projmatrix
+=head2 projmatrix - return a PDL of the projection matrix
 
 =for ref
 
@@ -238,7 +262,7 @@ Returns the projection matrix to convert 3-vectors into the perpendicular plane 
 
 =pod
 
-=head2 x
+=head2 x - return the location as a PDL
 
 =for ref
 
@@ -247,5 +271,60 @@ Returns the location vector of the vertex, as a 3-pdl.
 =cut
 
 # implemented in Vertex.xs
+
+
+######################################################################
+# TIED INTERFACE
+# Mostly relies on the general utility functions in Flux....
+
+sub TIEHASH {
+    my $class = shift;
+    my $ptr = shift;
+    my $me = \$ptr;
+    print "tiehash returning..\n";
+    return bless($me,$class);
+}
+
+sub FETCH {
+    my($me, $field)=@_;
+    my $code = $Flux::codes->{vertex}->{$field};
+ 
+    return undef unless defined($code);
+    
+    Flux::r_val( $me, $Flux::typecodes->{vertex}, @$code[0..1] );
+}
+
+sub STORE {
+    my($me, $field,$val) = @_;
+    my $code = $Flux::codes->{vertex}->{$field};
+    return undef unless defined($code);
+    Flux::w_val( $me, $Flux::typecodes->{vertex}, @$code[0..1], $val );
+}
+
+sub DELETE {
+    print STDERR "Warning: can't delete fields from a tied VERTEX hash\n";
+    return undef;
+}
+
+sub CLEAR {
+    print STDERR "Warning: can't clear a tied VERTEX hash\n";
+    return undef;
+}
+
+sub FIRSTKEY {
+    return "line";
+}
+
+sub NEXTKEY {
+    my ($class,$prev) = @_;
+    return $Flux::ordering->{vertex}->{$prev};
+    
+}
+
+sub SCALAR {
+    _stringify(@_);
+}
+
+
 
 1;

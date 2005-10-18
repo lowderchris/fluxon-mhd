@@ -1,3 +1,17 @@
+
+use Flux::World;
+use Flux::Fluxon;
+use Flux::Vertex;
+use Flux::Concentration;
+
+BEGIN {
+    package Flux;
+    require DynaLoader;
+    @ISA = qw(DynaLoader);
+    bootstrap Flux;
+}
+
+
 =head1 NAME
 
 Flux - the Field Line Universal relaXer (MHD without resistivity); v. 1.0
@@ -219,10 +233,137 @@ of them)
 
 =head1 METHODS
 
-The Flux module itself is a shell that contains no methods at all -- see the individual 
-object modules for details on available methods.
+The Flux module itself is a shell that contains no external methods at
+all -- see the individual object modules for details on available
+methods.
+
+There are several low-level internal methods that are used for
+accessing FLUX data structures; you do not want to use them unless you
+Really Know What You're Doing.
 
 =cut
+
+package Flux;
+
+{
+    our $typecodes = {
+	links =>    1,
+	vertex =>   2
+	};
+    
+    our $methods = {
+	num    => [\&_rnum,  \&_wnum  ],
+	long   => [\&_rlong, \&_wlong ],
+	vector => [\&_rvec,  \&_wvec  ]
+    };
+
+    our $codes = { 
+	vertex => {
+	    line=>        [1, 'Line'],
+	    prev=>        [2, 'Vertex'],
+	    next=>        [3, 'Vertex'],
+	    x=>           [4, 'vector'],
+	    neighbors=>   [5, undef],
+	    nearby=>      [6, undef],
+	    scr=>         [7, 'vector'],
+	    r=>           [8, 'num'],
+	    a=>           [9, 'num'],
+	    b_vec=>      [10, 'vec'],
+	    b_mag=>      [11, 'num'],
+	    f_v=>        [12, 'vec'],
+	    f_s=>        [13, 'vec'],
+	    f_t=>        [14, 'vec'],
+	    f_s_tot=>    [15, 'vec'],
+	    f_v_tot=>    [16, 'num'],
+	    r_v=>        [17, 'num'],
+	    r_s=>        [18, 'num'],
+	    r_cl=>       [19, 'num'],
+	    label=>      [20, 'long'],
+	    links.sum=>  [21, 'num'],
+	    links.n=>    [22, 'long'],
+	    links.up=>   [23, 'Vertex'],
+	    links.left=> [24, 'Vertex'],
+	    links.right=>[25, 'Vertex'],
+	    links=>      [26, undef],
+	    }
+    };
+
+
+
+    ##############################
+    # Assemble an ordering for next iteration through tied hashes -- sort the links
+    # in each tied hash and generate a hash that links by name.
+    # Kludgey but it works.
+
+    our $ordering = {};
+
+    foreach my $type(keys %$codes) {
+	$ordering->{$type} = {};
+	my $thash = $codes->{$type};
+
+	my @order = (
+		     sort
+		        { $thash->{$a}->[0] <=> $thash->{$b}->[0] } 
+		        keys %$thash
+		     );
+
+	for my $i(0..$#order) {
+	    $ordering->{$type}->{$order[$i]} = $order[$i+1];
+	}
+    }
+
+}    
+	
+
+=pod
+
+=head2 r_val - read a value from a structure
+
+=for usage
+
+   FLUX::r_val( structcode, valcode, typestr );
+
+=for ref
+
+The structcode is the numeric code associated with the structure type; it should be one of the
+values from the global hash ref $Flux::typecodes.  The valcode is a numeric type corresponding
+to structure field, and typestr is the type string in the global $Flux::codes hash.  If it is a
+string, it is used to look up the reader in the global $Flux::methods hash, or if it is an array
+ref containing two code refs then they are executed directly.
+
+=cut
+
+sub r_val {
+    my( $me, $struct, $field, $type ) = @_;
+    my $reader;
+
+    if(ref $type) {
+	die "r_val: Can't handle ref types yet\n";
+    } else {
+	$reader = $Flux::methods->{$type}->[0];
+    }
+
+    die "r_val: read method is undefined for type $type...\n"
+	unless defined($reader);
+
+    &{$reader}( $me, $struct, $field );
+}
+
+sub w_val {
+    my( $me, $struct, $field, $type, $val ) = @_;
+    my $writer;
+
+    if(ref $type) {
+	die "w_val: can't handle ref types yet\n";
+    } else {
+	$writer = $Flux::methods->{$type}->[1];
+    }
+
+    die "w_val: write method is undefined for type $type...\n"
+	unless defined($writer);
+
+    &{$writer}( $me, $struct, $field, $val );
+}
 
 
 
@@ -247,9 +388,6 @@ use Flux::World;
 use Flux::Fluxon;
 use Flux::Vertex;
 use Flux::Concentration;
-
-
-
 
 
 1;

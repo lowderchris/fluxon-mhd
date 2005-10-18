@@ -26,44 +26,49 @@
  */
 
 
-/******************************
- * SvWorld(wsv, name) 
- *
- * wsv: an SV containing a reference to a WORLD.
- * name: the name of the calling routine, in case of failure
- *
- * Returns: the WORLD * (croaks on error).
- */
-#define SvWorld(wsv,name) (   ( SvROK(wsv) && sv_derived_from((wsv),"Flux::World") )  ? (WORLD *)(SvIVx(SvRV(wsv))) : ( croak("%s requires a Flux::World.\n",(name)), (WORLD *)0 ) )
-
 
 /******************************
- * SvFluxon(wsv, name) 
+ * SvFluxPtr(wsv, name, type) 
  *
- * wsv: an SV containing a reference to a FLUXON.
- * name: the name of the calling routine, in case of failure
+ * wsv: an SV containing a reference to one of the FLUX types.  
+ *   It should be a blessed reference pointing to either a scalar
+ *   or a tied has that is tied to a scalar ref.
+ *   The underlying scalar should contain the pointer.
+ * name: a string containing caller info (in case of failure)
+ * type: a string containing the class name needed for the dereference
  *
- * Returns: the FLUXON * (croaks on error).
+ * Returns: a (void *) with the same numeric value as the IV in the scalar
  */
-#define SvFluxon(wsv,name) (   ( SvROK(wsv) && sv_derived_from((wsv),"Flux::Fluxon") )  ? (FLUXON *)(SvIVx(SvRV(wsv))) : ( croak("%s requires a Flux::Fluxon.\n",(name)), (FLUXON *)0 ) )
+static void *SvFluxPtr( SV *sv, char *name, char *tstr ) {
+  MAGIC *m;
+  
+  if(SvROK(sv) && sv_derived_from(sv,tstr)) {
+    sv = SvRV(sv);
+  } else {
+    croak("%s requires a %s.\n",(name,tstr));
+  }
 
+  /* Notice if this is a magical tied hash */
+  if(  SvTYPE(sv)==SVt_PVHV  &&  (m=mg_find(sv,'P'))){  // assignment in second term
+    /* It's a magical tied hash - dereference the underlying scalar ref instead */
+    sv=m->mg_obj;
+    if(SvROK(sv))
+      sv=SvRV(sv);
+  }
+
+  return (void *)SvIV(sv);
+}
+  
 /******************************
- * SvConc(wsv, name) 
+ * SvVertex
+ * SvConc
+ * SvFluxon
+ * SvWorld
  *
- * wsv: an SV containing a reference to a FLUX_CONCENTRATION.
- * name: the name of the calling routine, in case of failure
- *
- * Returns: the FLUX_CONCENTRATION * (croaks on error).
+ * Each macro calls SvFluxPtr to pull out the underlying pointer, and casts it correctly.
  */
-#define SvConc(wsv,name) (   ( SvROK(wsv) && sv_derived_from((wsv),"Flux::Concentration") )  ? (FLUX_CONCENTRATION *)(SvIVx(SvRV(wsv))) : ( croak("%s requires a Flux::Concentration.\n",(name)), (FLUX_CONCENTRATION *)0 ) )
 
-
-/******************************
- * SvVertex(wsv, name) 
- *
- * wsv: an SV containing a reference to a VERTEX.
- * name: the name of the calling routine, in case of failure
- *
- * Returns: the VERTEX * (croaks on error).
- */
-#define SvVertex(wsv,name) (   ( SvROK(wsv) && sv_derived_from((wsv),"Flux::Vertex") )  ? (VERTEX *)(SvIVx(SvRV(wsv))) : ( croak("%s requires a Flux::Vertex.\n",(name)), (VERTEX *)0 ) )
+#define SvVertex(sv,name) ( (VERTEX *)            (SvFluxPtr((sv),(name),"Flux::Vertex")       ) )
+#define SvConc(sv,name)   ( (FLUX_CONCENTRATION *)(SvFluxPtr((sv),(name),"Flux::Concentration")) )
+#define SvFluxon(sv,name) ( (FLUXON *)            (SvFluxPtr((sv),(name),"Flux::Fluxon")       ) )
+#define SvWorld(sv,name)  ( (WORLD *)             (SvFluxPtr((sv),(name),"Flux::World")        ) )

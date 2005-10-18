@@ -16,6 +16,6 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile( NAME => 'Flux',
 	       DIR => [qw/ World Fluxon Vertex Concentration /],
-#	       INC => join(" ",map { "-I$_"} @inc),
-#	       OBJECT => '$(BASEEXT)$(OBJ_EXT) /usr/local/lib/libflux.a'
+	       INC => join(" ",map { "-I$_"} @inc),
+	       OBJECT => '$(BASEEXT)$(OBJ_EXT) /usr/local/lib/libflux.a'
 	       );

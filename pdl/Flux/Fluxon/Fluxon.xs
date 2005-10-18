@@ -32,7 +32,6 @@
 #include "pdl.h"
 #include "pdlcore.h"
 
-
 static Core* PDL;  /* PDL core functions (run-time linking) */
 static SV* CoreSV; /* gets perl var holding the core structures */
 
@@ -45,7 +44,7 @@ PREINIT:
  FLUXON *f;
  char str[BUFSIZ];
 /**********************************************************************
- * _stringify - generate a summary string about a fluxon
+ * _stringify - generate a summary string about a fluxon. 
  */
 CODE: 
   f = SvFluxon(flx,"Flux::Fluxon::_stringify");
@@ -74,9 +73,25 @@ CODE:
     for(i=0, v=f->start; i<vno && v; i++, v=v->next)
       ;
   if(v) {
-      sv = newSViv((IV)(v));
-      RETVAL = newRV_noinc(sv);
-      (void)sv_bless(RETVAL,gv_stashpv("Flux::Vertex",TRUE));
+	/* What a mess!  Just calls the vertex constructor... */
+      I32 foo;
+      PUSHMARK(SP);
+      XPUSHs(sv_2mortal(newSVpv("Flux::Vertex",0)));
+      XPUSHs(sv_2mortal(newSViv((IV)v)));
+      PUTBACK;
+      foo = call_pv("Flux::Vertex::new_from_ptr",G_SCALAR);
+      SPAGAIN;
+
+      if(foo==1) 
+	RETVAL = POPs;
+      else 
+	croak("Big trouble - Vertex::new_from_ptr gave bad return value on stack");
+
+      SvREFCNT_inc(RETVAL);
+
+      PUTBACK;
+      FREETMPS;
+      LEAVE;
   } else {
       RETVAL = &PL_sv_undef;
   }
@@ -100,14 +115,31 @@ CODE:
  RETVAL = newAV();                 /* Initialize array */
  av_clear(RETVAL);
  av_extend(RETVAL,f->v_ct);      /* Pre-extend for efficiency */
- for(v=f->start;   v;   v=v->next) {  /* Loop over vertices */
-   sv = newSViv((IV)(v));             
-   rv = newRV_noinc(sv);
-   (void)sv_bless(rv,gv_stashpv("Flux::Vertex",TRUE));
-   if( !(  av_store(RETVAL, av_len(RETVAL)+1, rv) ) ) {
-     svREFCNT_dec(rv); 
-     v=0;
-   }
+ for(v=f->start;   v;   v=v?v->next:0) {  /* Loop over vertices */
+      SV *vert;
+	/* What a mess!  Just calls the vertex constructor... */
+      I32 foo;
+      PUSHMARK(SP);
+      XPUSHs(sv_2mortal(newSVpv("Flux::Vertex",0)));
+      XPUSHs(sv_2mortal(newSViv((IV)v)));
+      PUTBACK;
+      foo = call_pv("Flux::Vertex::new_from_ptr",G_SCALAR);
+      SPAGAIN;
+
+      if(foo==1) 
+	vert = POPs;
+      else 
+	croak("Big trouble - Vertex::new_from_ptr gave bad return value on stack");
+
+      PUTBACK;
+      FREETMPS;
+      LEAVE;
+
+      SvREFCNT_inc(vert);
+      if( !(  av_store(RETVAL, av_len(RETVAL)+1, vert) ) ) {
+        svREFCNT_dec(vert); 
+        v=0;
+      }
  }
 OUTPUT:
   RETVAL
