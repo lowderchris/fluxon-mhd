@@ -41,11 +41,13 @@
  */
 static void *SvFluxPtr( SV *sv, char *name, char *tstr ) {
   MAGIC *m;
-  
+
   if(SvROK(sv) && sv_derived_from(sv,tstr)) {
     sv = SvRV(sv);
   } else {
-    croak("%s requires a %s.\n",(name,tstr));
+    char buf[1024];
+    sprintf(buf,"%s requires a %s.\n",name,tstr);
+    croak(buf);
   }
 
   /* Notice if this is a magical tied hash */

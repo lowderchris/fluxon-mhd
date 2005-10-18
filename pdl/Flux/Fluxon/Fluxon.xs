@@ -75,6 +75,10 @@ CODE:
   if(v) {
 	/* What a mess!  Just calls the vertex constructor... */
       I32 foo;
+
+      ENTER;
+      SAVETMPS;
+
       PUSHMARK(SP);
       XPUSHs(sv_2mortal(newSVpv("Flux::Vertex",0)));
       XPUSHs(sv_2mortal(newSViv((IV)v)));
@@ -92,6 +96,7 @@ CODE:
       PUTBACK;
       FREETMPS;
       LEAVE;
+
   } else {
       RETVAL = &PL_sv_undef;
   }
@@ -119,6 +124,10 @@ CODE:
       SV *vert;
 	/* What a mess!  Just calls the vertex constructor... */
       I32 foo;
+
+      ENTER;
+      SAVETMPS;
+
       PUSHMARK(SP);
       XPUSHs(sv_2mortal(newSVpv("Flux::Vertex",0)));
       XPUSHs(sv_2mortal(newSViv((IV)v)));

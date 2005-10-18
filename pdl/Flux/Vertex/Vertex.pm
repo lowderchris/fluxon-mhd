@@ -281,7 +281,6 @@ sub TIEHASH {
     my $class = shift;
     my $ptr = shift;
     my $me = \$ptr;
-    print "tiehash returning..\n";
     return bless($me,$class);
 }
 

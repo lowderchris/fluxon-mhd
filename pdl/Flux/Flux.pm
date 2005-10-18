@@ -248,13 +248,19 @@ package Flux;
 {
     our $typecodes = {
 	links =>    1,
-	vertex =>   2
+	vertex =>   2,
+	fluxon =>   3
 	};
     
     our $methods = {
 	num    => [\&_rnum,  \&_wnum  ],
 	long   => [\&_rlong, \&_wlong ],
-	vector => [\&_rvec,  \&_wvec  ]
+	vector => [\&_rvec,  \&_wvec  ],
+	Vertex => [\&_rvertex, undef  ],
+	Fluxon => [\&_rfluxon, undef  ],
+        Neighbors => [sub{ print "Neighbors reader...\n"; _rdumblist("Flux::Vertex",@_) },
+		      undef
+		      ]
     };
 
     our $codes = { 
@@ -263,8 +269,8 @@ package Flux;
 	    prev=>        [2, 'Vertex'],
 	    next=>        [3, 'Vertex'],
 	    x=>           [4, 'vector'],
-	    neighbors=>   [5, undef],
-	    nearby=>      [6, undef],
+	    neighbors=>   [5, 'Neighbors'],
+	    nearby=>      [6, 'Nearby'],
 	    scr=>         [7, 'vector'],
 	    r=>           [8, 'num'],
 	    a=>           [9, 'num'],
@@ -279,12 +285,37 @@ package Flux;
 	    r_s=>        [18, 'num'],
 	    r_cl=>       [19, 'num'],
 	    label=>      [20, 'long'],
-	    links.sum=>  [21, 'num'],
-	    links.n=>    [22, 'long'],
-	    links.up=>   [23, 'Vertex'],
-	    links.left=> [24, 'Vertex'],
-	    links.right=>[25, 'Vertex'],
+	    'links.sum'=>  [21, 'num'],
+	    'links.n'=>    [22, 'long'],
+	    'links.up'=>   [23, 'Vertex'],
+	    'links.left'=> [24, 'Vertex'],
+	    'links.right'=>[25, 'Vertex'],
 	    links=>      [26, undef],
+	    },
+	fluxon => {
+	    flux=>	          [1,'num'],
+	    label=>               [2,'long'],
+	    start=>               [3,'Vertex'],
+	    end=>                 [4,'Vertex'],
+	    v_ct=>                [5,'long'],
+	    all_links=>           [6,undef],
+	    'all_links.sum'=>     [7,'num'],
+	    'all_links.n'=>       [8,'long'],
+	    'all_links.up'=>      [9,'Fluxon'],
+	    'all_links.left'=>   [10,'Fluxon'],
+	    'all_links.right'=>  [11,'Fluxon'],
+	    start_links=>        [12,undef],
+	    'start_links.sum'=>  [13,'num'],
+	    'start_links.n'=>    [14,'long'],
+	    'start_links.up'=>   [15,'Fluxon'],
+	    'start_links.left'=> [16,'Fluxon'],
+	    'start_links.right'=>[17,'Fluxon'],
+	    end_links=>          [18,undef],
+	    'end_links.sum'=>    [19,'num'],
+	    'end_links.n'=>      [20,'long'],
+	    'end_links.up'=>     [21,'Fluxon'],
+	    'end_links.left'=>   [22,'Fluxon'],
+	    'end_links.right'=>  [23,'Fluxon']
 	    }
     };
 
@@ -343,8 +374,11 @@ sub r_val {
 	$reader = $Flux::methods->{$type}->[0];
     }
 
-    die "r_val: read method is undefined for type $type...\n"
-	unless defined($reader);
+    unless( defined($reader)) {
+	print "r_val: no read method for type $type ($struct,$field) - returning undef\n";
+	return undef;
+    }
+
 
     &{$reader}( $me, $struct, $field );
 }
@@ -359,7 +393,7 @@ sub w_val {
 	$writer = $Flux::methods->{$type}->[1];
     }
 
-    die "w_val: write method is undefined for type $type...\n"
+    die "w_val: write method is undefined for type $type ...\n"
 	unless defined($writer);
 
     &{$writer}( $me, $struct, $field, $val );

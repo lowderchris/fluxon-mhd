@@ -30,7 +30,7 @@ package Flux::Fluxon;
 
 require Exporter;
 require DynaLoader;
-@ISA = qw( Exporter DynaLoader );
+@ISA = qw( Exporter DynaLoader Flux);
 @EXPORT = qw(  ) ;
 
 bootstrap Flux::Fluxon;
@@ -38,6 +38,21 @@ bootstrap Flux::Fluxon;
 
 package Flux::Fluxon;
 use overload '""' => \&stringify;
+
+
+=pod
+
+=head2 new_from_ptr 
+
+=cut
+
+sub new_from_ptr {
+    my $class = shift;
+    my $ptr = shift;
+    my %hash;
+    tie %hash,"Flux::Fluxon",$ptr;
+    return bless(\%hash,$class);
+}
 
 
 =pod
@@ -163,5 +178,59 @@ Returns a xN PDL containing, in each row:
 =cut
 
 # Implemented in Fluxon.xs
+
+
+
+######################################################################
+# TIED INTERFACE
+# Mostly relies on the general utility functions in Flux....
+
+sub TIEHASH {
+    my $class = shift;
+    my $ptr = shift;
+    my $me = \$ptr;
+    return bless($me,$class);
+}
+
+sub FETCH {
+    my($me, $field)=@_;
+    my $code = $Flux::codes->{fluxon}->{$field};
+ 
+    return undef unless defined($code);
+    
+    Flux::r_val( $me, $Flux::typecodes->{fluxon}, @$code[0..1] );
+}
+
+sub STORE {
+    my($me, $field,$val) = @_;
+    my $code = $Flux::codes->{fluxon}->{$field};
+    return undef unless defined($code);
+    Flux::w_val( $me, $Flux::typecodes->{fluxon}, @$code[0..1], $val );
+}
+
+sub DELETE {
+    print STDERR "Warning: can't delete fields from a tied FLUXON hash\n";
+    return undef;
+}
+
+sub CLEAR {
+    print STDERR "Warning: can't clear a tied FLUXON hash\n";
+    return undef;
+}
+
+sub FIRSTKEY {
+    return "flux";
+}
+
+sub NEXTKEY {
+    my ($class,$prev) = @_;
+    return $Flux::ordering->{fluxon}->{$prev};
+    
+}
+
+sub SCALAR {
+    _stringify(@_);
+}
+
 
 1;

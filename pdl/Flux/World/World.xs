@@ -290,9 +290,26 @@ CODE:
   w = SvWorld(wsv,"Flux::World::fluxon");
   f = (FLUXON *)tree_find(w->lines,id,fl_lab_of,fl_all_ln_of);
   if(f) {
-     sv = newSViv((IV)(f));
-     RETVAL = newRV_noinc(sv);
-     (void)sv_bless(RETVAL,gv_stashpv("Flux::Fluxon",TRUE));
+	I32 foo;
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newSVpv("Flux::Fluxon",0)));
+	XPUSHs(sv_2mortal(newSViv((IV)f)));
+	PUTBACK;
+	foo = call_pv("Flux::Fluxon::new_from_ptr",G_SCALAR);
+	SPAGAIN;
+	
+	if(foo != 1) 
+		croak("Big trouble in World::fluxon!");
+	
+	RETVAL = POPs;
+
+	SvREFCNT_inc(RETVAL); /* Increment ref count so that XS can autodecrement it */
+
+	PUTBACK;
+	FREETMPS;
+	LEAVE;
   } else {
      RETVAL = &PL_sv_undef;
   }
@@ -316,9 +333,27 @@ CODE:
   w = SvWorld(wsv,"Flux::World::vertex");
   f = (VERTEX *)tree_find(w->vertices,id,v_lab_of,v_ln_of);
   if(f) {
-     sv = newSViv((IV)(f));
-     RETVAL = newRV_noinc(sv);
-     (void)sv_bless(RETVAL,gv_stashpv("Flux::Vertex",TRUE));
+     	I32 foo;
+ 
+     	ENTER;
+	SAVETMPS;
+	
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newSVpv("Flux::Vertex",0)));
+	XPUSHs(sv_2mortal(newSViv((IV)f)));
+	PUTBACK;
+	foo = call_pv("Flux::Vertex::new_from_ptr",G_SCALAR);
+	SPAGAIN;
+
+	if(foo != 1) 
+		croak("Big trouble in Flux::World::vertex");
+	RETVAL = POPs;
+	
+	SvREFCNT_inc(RETVAL); // increment to prepare for XS autodecrement
+	
+	PUTBACK;
+	FREETMPS;
+	LEAVE;
   } else {
      RETVAL = &PL_sv_undef;
   }
