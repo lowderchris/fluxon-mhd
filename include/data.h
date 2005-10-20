@@ -175,7 +175,7 @@ typedef struct PHOTOSPHERE {
 typedef struct WORLD {
   /* Globally memorable fields go here */
   long frame_number;        /* Identifies currently-being-worked-on frame */
-  int  state;               /* State of the world  */
+  long state;               /* State of the world  */
   FLUX_CONCENTRATION *concentrations;
   FLUXON *lines;
   VERTEX *vertices;
@@ -190,7 +190,7 @@ typedef struct WORLD {
   FLUX_CONCENTRATION *fc_pb; /* bogus flux concentration to store plasmoid fluxons */
   FLUX_CONCENTRATION *fc_pe; /* bogus flux concentration to store plasmoid fluxons */
 
-  int verbosity;           /* Verbose flag turns on/off debugging lines */
+  long verbosity;           /* Verbose flag turns on/off debugging lines */
   
   void ((*(f_funcs[N_FORCE_FUNCS]))());
   

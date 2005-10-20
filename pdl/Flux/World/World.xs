@@ -91,11 +91,32 @@ CODE:
 	    croak("Couldn't open file '%s' to read a Flux::World",s);
 
 	w = read_world(f,(WORLD *)0);
-
-	sv = newSViv((IV)(w));
-	RETVAL = newRV_noinc(sv);
-	(void)sv_bless(RETVAL,gv_stashpv("Flux::World",TRUE));
 	fclose(f);
+	
+	if(w) {
+	 	I32 foo;	
+		
+		ENTER;
+		SAVETMPS;
+		
+		PUSHMARK(SP);
+		XPUSHs(sv_2mortal(newSVpv("Flux::World",0)));
+		XPUSHs(sv_2mortal(newSViv((IV)w)));
+		PUTBACK;
+		foo = call_pv("Flux::World::new_from_ptr",G_SCALAR);
+		SPAGAIN;
+		
+		if(foo==1)
+			RETVAL = POPs;
+		else
+			croak("Big trouble calling Flux::World::new_from_ptr");
+	
+		SvREFCNT_inc(RETVAL);
+		
+		PUTBACK;
+		FREETMPS;
+		LEAVE;
+	}
 OUTPUT:
 	RETVAL
 

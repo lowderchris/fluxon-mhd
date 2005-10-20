@@ -40,7 +40,7 @@ package Flux::World;
 
 require Exporter;
 require DynaLoader;
-@ISA = qw(Exporter DynaLoader);
+@ISA = qw(Exporter DynaLoader Flux);
 @EXPORT = qw( read_world write_world str2world );
 
 bootstrap Flux::World;
@@ -50,6 +50,13 @@ package Flux::World;
 use overload '""' => \&_stringify;
 
 
+sub new_from_ptr {
+    my $class = shift;
+    my $ptr = shift;
+    my %hash;
+    tie %hash,"Flux::World",$ptr;
+    return bless(\%hash,$class);
+}
 
 =pod
 
@@ -1170,6 +1177,58 @@ sub _plot_hull {
 }
 
 	    
+
+######################################################################
+# TIED INTERFACE
+# Mostly relies on the general utility functions in Flux....
+
+sub TIEHASH {
+    my $class = shift;
+    my $ptr = shift;
+    my $me = \$ptr;
+    return bless($me,$class);
+}
+
+sub FETCH {
+    my($me, $field)=@_;
+    my $code = $Flux::codes->{world}->{$field};
+ 
+    return undef unless defined($code);
+    
+    Flux::r_val( $me, $Flux::typecodes->{world}, @$code[0..1] );
+}
+
+sub STORE {
+    my($me, $field,$val) = @_;
+    my $code = $Flux::codes->{world}->{$field};
+    return undef unless defined($code);
+    Flux::w_val( $me, $Flux::typecodes->{world}, @$code[0..1], $val );
+}
+
+sub DELETE {
+    print STDERR "Warning: can't delete fields from a tied WORLD hash\n";
+    return undef;
+}
+
+sub CLEAR {
+    print STDERR "Warning: can't clear a tied WORLD hash\n";
+    return undef;
+}
+
+sub FIRSTKEY {
+    return "frame_number";
+}
+
+sub NEXTKEY {
+    my ($class,$prev) = @_;
+    return $Flux::ordering->{world}->{$prev};
+    
+}
+
+sub SCALAR {
+    _stringify(@_);
+}
+
   
 1;
 

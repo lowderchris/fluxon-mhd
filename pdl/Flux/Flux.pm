@@ -249,7 +249,8 @@ package Flux;
     our $typecodes = {
 	links =>    1,
 	vertex =>   2,
-	fluxon =>   3
+	fluxon =>   3,
+        world  =>   4
 	};
     
     our $methods = {
@@ -316,6 +317,27 @@ package Flux;
 	    'end_links.up'=>     [21,'Fluxon'],
 	    'end_links.left'=>   [22,'Fluxon'],
 	    'end_links.right'=>  [23,'Fluxon']
+	    },
+	world => {
+	    frame_number=>       [1,'long'],
+	    state =>              [2,'long'],
+	    concentrations =>    [3,undef],
+	    lines =>             [4,'Fluxon'],
+	    vertices =>          [5,'Vertex'],
+	    photosphere =>       [6,undef],
+	    image =>             [7,'Vertex'],
+	    image2 =>            [8,'Vertex'],
+	    locale_radius =>     [9,'num'],
+	    fc_ob =>            [10,undef],
+	    fc_oe =>            [11,undef],
+	    fc_pb =>            [12,undef],
+	    fc_pe =>            [13,undef],
+	    verbosity =>        [14,'long'],
+	    forces =>           [15,undef],
+	    scale_b_power=>     [16,'num'],
+	    scale_d_power=>     [17,'num'],
+	    scale_s_power=>     [18,'num'],
+	    scale_ds_power=>    [19,'num']
 	    }
     };
 
