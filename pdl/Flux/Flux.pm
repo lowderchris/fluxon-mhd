@@ -250,7 +250,8 @@ package Flux;
 	links =>    1,
 	vertex =>   2,
 	fluxon =>   3,
-        world  =>   4
+        world  =>   4,
+	concentration=>5
 	};
     
     our $methods = {
@@ -259,6 +260,7 @@ package Flux;
 	vector => [\&_rvec,  \&_wvec  ],
 	Vertex => [\&_rvertex, undef  ],
 	Fluxon => [\&_rfluxon, undef  ],
+	Concentration => [ \&_rconcentration, undef ],
         Neighbors => [sub{ print "Neighbors reader...\n"; _rdumblist("Flux::Vertex",@_) },
 		      undef
 		      ]
@@ -316,12 +318,14 @@ package Flux;
 	    'end_links.n'=>      [20,'long'],
 	    'end_links.up'=>     [21,'Fluxon'],
 	    'end_links.left'=>   [22,'Fluxon'],
-	    'end_links.right'=>  [23,'Fluxon']
+	    'end_links.right'=>  [23,'Fluxon'],
+	    fc_start =>          [24,'Concentration'],
+	    fc_end =>            [25,'Concentration'],
 	    },
 	world => {
 	    frame_number=>       [1,'long'],
 	    state =>              [2,'long'],
-	    concentrations =>    [3,undef],
+	    concentrations =>    [3,'Concentration'],
 	    lines =>             [4,'Fluxon'],
 	    vertices =>          [5,'Vertex'],
 	    photosphere =>       [6,undef],
@@ -338,7 +342,21 @@ package Flux;
 	    scale_d_power=>     [17,'num'],
 	    scale_s_power=>     [18,'num'],
 	    scale_ds_power=>    [19,'num']
-	    }
+	    },
+	concentration => {
+	    world=>		 [1,'World'],
+	    flux=>               [2,'num'],
+	    label=>              [3,'long'],
+	    lines=>              [4,'Fluxon'],
+	    links=>	 	 [5,undef],
+	    'links.sum'=>        [6,'num'],
+	    'links.n'=>          [7,'long'],
+	    'links.up'=>         [8,'Concentration'],
+	    'links.left'=>       [9,'Concentration'],
+	    'links.right'=>     [10,'Concentration'],
+	    x=>                 [11,'vector'],
+	    locale_radius=>     [12,'num'],
+	}
     };
 
 
