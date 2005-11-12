@@ -458,24 +458,23 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
       /*
        * Handle acceleration of steps when everything's moving the same way
        */
-      if(w->step_scale.ds_power && v->prev && v->next {
+      if(w->step_scale.ds_power && v->prev && v->next) {
 	NUM a[3];
 	NUM b[3];
 	NUM pfrac,nfrac;
 
-	sum_3d(a, v->f_tot, v->prev->f_tot);
-	diff_3d(b, v->f_tot, v->prev->f_tot);
+	sum_3d(a, v->f_t, v->prev->f_t);
+	diff_3d(b, v->f_t, v->prev->f_t);
 	pfrac = mag_3d(b)/mag_3d(a);
 	
-	sum_3d(a, v->f_tot, v->next->f_tot);
-	diff_3d(b, v->f_tot, v->next->f_tot);
+	sum_3d(a, v->f_t, v->next->f_t);
+	diff_3d(b, v->f_t, v->next->f_t);
 	nfrac = mag_3d(b)/mag_3d(a);
 
-        fac *= fastpow( 2.0/(pfrac + nfrac), v->v->step_scale.ds_power );
+        fac *= fastpow( 2.0/(pfrac + nfrac), w->step_scale.ds_power );
 	
       }
 	
-
       scale_3d(a, v->f_t, dt * fac );
     }
 
