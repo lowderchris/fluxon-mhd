@@ -19,7 +19,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  * 
- * This is model.h version 1.0 - part of the FLUX 1.0 release.
+ * This is model.h version 1.1 - part of the FLUX 1.1 release.
  */
 
 #ifndef FLEM_MODEL

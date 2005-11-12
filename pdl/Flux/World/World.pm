@@ -26,7 +26,7 @@ A Flux::World object is just a pointer off into hyperspace.
 
 VERSION
 
-This is version 1.0 of World.pm - part of the 1.0 Flux release.
+This is version 1.1 of World.pm - part of the 1.1 Flux release, 21-Oct-2005
 
 =head1 FUNCTIONS
 

@@ -11,8 +11,17 @@
  *  PERL INTERFACE     FLUX SUBROUTINE / FUNCTION
  *
  *  _stringify         <NA>
- *
- * This is Vertex.xs version 1.0 - part of the FLUX 1.0 release.
+ *  id                 Returns the label of the vertex - obviated by the tied hash interface
+ *  fluxon             Returns the fluxon to which this vertex belongs - obviated by tied-hash
+ *  next               Returns the next vertex on the fluxon - obviated by tied-hash
+ *  prev               Returns the prevoius vertex on the fluxon - obviated by tied-hash
+ *  _adjacent	       Returns a perl list containing either the neighbors or nearby dumblist.
+ *  hull               Returnns the projected hull of the vertex as a 7xN PDL
+ *  projmatrix         Returns the projection matrix used for hull, as a 3x3 PDL
+ *  proj_neighbors     Calls vertex_update_neighbors.
+ *  x                  Returns the coordinates of the vertex - obviated by tied-hash
+ * 
+ * This is Vertex.xs version 1.1 - part of the FLUX 1.1 release.
  */
 
 #include "EXTERN.h"

@@ -16,7 +16,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  * 
- * This is version 1.0 of data.h - part of the FLUX 1.0 release
+ * This is version 1.1 of data.h - part of the FLUX 1.1 release
  */
 
 #ifndef FLEM_DATA

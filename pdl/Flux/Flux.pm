@@ -76,7 +76,7 @@ C<man Flux::World> to find out about what you can do with world objects).
 
 VERSION
 
-This is Flux version 1.0 - part of the FLUX 1.0 release.
+This is Flux version 1.1 - part of the FLUX 1.1 release.
 
 =head1 GETTING STARTED
 

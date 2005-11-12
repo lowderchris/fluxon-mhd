@@ -19,7 +19,7 @@ as flexible as possible.
 
 VERSION
 
-This is Fluxon.pm version 1.0, part of the FLUX 1.0 release.
+This is Fluxon.pm version 1.1, part of the FLUX 1.1 release.
 
 =head1 METHODS
 
@@ -103,7 +103,9 @@ Retrieve all the vertices in a fluxon, as a perl list.
 =cut
 
 sub vertices { 
-    @{_vertices(shift)};   # meat is in Fluxon.xs; unwrap the array ref.
+  my $me = shift;
+  my $ct = $me->{v_ct};
+  return map { vertex($me,$_) } 0..$ct-1;
 }
 
 

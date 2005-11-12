@@ -14,7 +14,7 @@ Flux::Vertex - fluxon vertex / fluxel
 
 =head2 VERSION
 
-This is version 1.2 of Vertex.pm 
+This is version 1.1 of Vertex.pm, part of the 1.1 release of Flux
 
 =head1 Methods
 

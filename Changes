@@ -1,2 +1,15 @@
+21-Oct-2005: v. 1.1 updates:
+	- Changes to the way that step scaling is controlled.  You can now set the
+		power to which various parameters are raised to find the scaling factor
+		at each node.
+	- Perl interface has been updated: the principal structures all exist as tied hashes.
+	  You can read (but not write) dumblists as perl lists.  All scalar and vector	
+	  quantities are r/w.  For example,
+		$a = read_world('pdl/menagerie/potential.flux');
+		print $a->fluxon(200)->vertex(2)->{x};
+			[-0.936 0.02 0.289]
+
+	  
+
 18-Aug-2004: checked-in to CVS.
 

@@ -8,21 +8,48 @@
  * You should have received a copy of the GPL with this file.
  * If not, you may retrieve it from "http://www.gnu.org".
  *
- * Codes coverd here:
+ * This is version 1.1 of World.xs - part of the FLUX 1.1 release.
+ *
+ * Routines in here:
  *   PERL INTERFACE  FLUX SUBROUTINE / FUNCTION
  *
  *   _read_world        read_world (io.c) (leading '_' for ref in World.pm)
- *   write_world       write_world (io.c)
+ *   write_world       	write_world (io.c)
  *
- *   fix_proximity     global_fix_proximity (model.c)
- *   fix_curvature     global_fix_curvature (model.c)
+ *   fix_proximity     	global_fix_proximity (model.c)
+ *   fix_curvature     	global_fix_curvature (model.c)
  *  
- *   update_neighbors  world_update_neighbors (model.c)
+ *   update_neighbors  	world_update_neighbors (model.c)
+ *   update_force       world_update_forces    (model.c)
+ * 
+ *   verbosity         	NA (sets verbosity of the world; obviated by tied-hash interface)
+ * 
+ *   step_scales	Sets the scaling powers for step law.  Obviated by tied-hash interface.
+ * 
+ *   _fluxon_ids        Returns a perl list of all fluxon labels in the world
+ *   _vertex_ids        Returns a perl list of all vertex labels in the world
+ * 
+ *   fluxon             Returns a perl Flux::Fluxon tied hash associated with the given id/label
+ *   vertex  		Returns a perl Flux::Vertex tied hash associated with the given id/label
  *
- *   fluxons           ----  Return a perl list of fluxon IDs in the world
+ *   _forces		Returns the force list for the world as a set of identifier strings
+ *   _set_force         Tries to interpret a string as a force and set the appropriate force pointer to it.
+ * 
+ *   _b_flag            Legacy routine simply throws an error.
+ *   _set_b_flag        Legacy routine simply throws an error.
+ * 
+ *   _photosphere       Sets the photospheric plane from a perl array
  *
+ *   _stats             Collects force statistics over the whole world
  *
- * This is version 1.0 of World.xs - part of the FLUX 1.0 release.
+ *   _ls_dist_test      test harness for ls_dist in geometry.c
+ *   _p_ls_dist_test    test harness for p_ls_dist in geometry.c
+ *   _projmatrix        test harness for projmatrix in geometry.c
+ *   _mat_vmult_3d      test harness for mat_vmult_3d in geometry.c
+ *   _vec_mmult_3d      test harness for vec_mmult_3d in geometry.c
+ *   _hull_points       test harness for hull_2d in geometry.c
+ * 
+ *
  *
  */
 #include "EXTERN.h"

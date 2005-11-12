@@ -10,9 +10,13 @@
  * Codes covered here:
  *  PERL INTERFACE     FLUX SUBROUTINE / FUNCTION
  *
- *  _stringify         <NA>
+ *  _stringify          <NA>
+ *  vertex		<NA> - returns the corresponding vertex counting from start to finish.
+ *  polyline            returns the locations of all the vertices in the fluxon as a 3xN PDL
+ *  bfield              returns locations and B-field values of all vertices as a 6xN PDL
+ *  dump_vecs           dumps a 17xN PDL containing a bunch of stuff (see Fluxon.pm).
  * 
- * This is version 1.0 of Fluxon.xs - part of the FLUX 1.0 release.
+ * This is version 1.1 of Fluxon.xs - part of the FLUX 1.1 release.
  */
 #include "EXTERN.h"
 #include "perl.h"
@@ -100,56 +104,6 @@ CODE:
   } else {
       RETVAL = &PL_sv_undef;
   }
-OUTPUT:
-  RETVAL
-     
-AV *
-_vertices(flx)
- SV *flx
-PREINIT:
- FLUXON *f;
- VERTEX *v;
- SV *sv,*rv;
-/**********************************************************************
- * _vertices - return a perl list of all the vertices in a particular 
- * fluxon. Returns a list ref so I don't have to hassle with the perl 
- * stack.
- */
-CODE:
- f = SvFluxon(flx,"Flux::Fluxon::vertices");
- RETVAL = newAV();                 /* Initialize array */
- av_clear(RETVAL);
- av_extend(RETVAL,f->v_ct);      /* Pre-extend for efficiency */
- for(v=f->start;   v;   v=v?v->next:0) {  /* Loop over vertices */
-      SV *vert;
-	/* What a mess!  Just calls the vertex constructor... */
-      I32 foo;
-
-      ENTER;
-      SAVETMPS;
-
-      PUSHMARK(SP);
-      XPUSHs(sv_2mortal(newSVpv("Flux::Vertex",0)));
-      XPUSHs(sv_2mortal(newSViv((IV)v)));
-      PUTBACK;
-      foo = call_pv("Flux::Vertex::new_from_ptr",G_SCALAR);
-      SPAGAIN;
-
-      if(foo==1) 
-	vert = POPs;
-      else 
-	croak("Big trouble - Vertex::new_from_ptr gave bad return value on stack");
-
-      PUTBACK;
-      FREETMPS;
-      LEAVE;
-
-      SvREFCNT_inc(vert);
-      if( !(  av_store(RETVAL, av_len(RETVAL)+1, vert) ) ) {
-        svREFCNT_dec(vert); 
-        v=0;
-      }
- }
 OUTPUT:
   RETVAL
 

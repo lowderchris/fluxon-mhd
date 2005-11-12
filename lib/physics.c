@@ -34,7 +34,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
- * This is version 1.0 of physics.c - part of the FLUX 1.0 release.
+ * This is version 1.1 of physics.c - part of the FLUX 1.1 release.
  * 
  */
 
@@ -333,8 +333,8 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
     if(V->prev && V->next) {
       NUM r_clp, r_cln;
   
-      r_clp = 1.0 / V->prev->r_cl;
-      r_cln = 1.0 / V->r_cl;
+      r_clp = 2.0 / V->prev->r_cl;
+      r_cln = 2.0 / V->r_cl;
   
       V->f_v_tot += fabs(0.5 * (r_cln - r_clp));
       fn += 0.5 * (r_cln - r_clp);

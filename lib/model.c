@@ -21,7 +21,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
- * This is model.c version 1.0 - part of the FLUX 1.0 release.
+ * This is model.c version 1.1 - part of the FLUX 1.1 release.
  * 
  */
 #include "model.h"
@@ -454,9 +454,27 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 
       fac *= fastpow(d,             w->step_scale.d_power);
       fac *= fastpow(force_factor,  w->step_scale.s_power);
-      
-      /* ds_power goes here */
 
+      /*
+       * Handle acceleration of steps when everything's moving the same way
+       */
+      if(w->step_scale.ds_power && v->prev && v->next {
+	NUM a[3];
+	NUM b[3];
+	NUM pfrac,nfrac;
+
+	sum_3d(a, v->f_tot, v->prev->f_tot);
+	diff_3d(b, v->f_tot, v->prev->f_tot);
+	pfrac = mag_3d(b)/mag_3d(a);
+	
+	sum_3d(a, v->f_tot, v->next->f_tot);
+	diff_3d(b, v->f_tot, v->next->f_tot);
+	nfrac = mag_3d(b)/mag_3d(a);
+
+        fac *= fastpow( 2.0/(pfrac + nfrac), v->v->step_scale.ds_power );
+	
+      }
+	
 
       scale_3d(a, v->f_t, dt * fac );
     }
