@@ -258,6 +258,7 @@ package Flux;
 	num    => [\&_rnum,  \&_wnum  ],
 	long   => [\&_rlong, \&_wlong ],
 	vector => [\&_rvec,  \&_wvec  ],
+	vec    => [\&_rvec,  \&_wvec  ],
 	Vertex => [\&_rvertex, undef  ],
 	Fluxon => [\&_rfluxon, undef  ],
 	Concentration => [ \&_rconcentration, undef ],

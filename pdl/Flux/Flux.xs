@@ -314,10 +314,12 @@ CODE:
 		PDL_Double *d;
 	
 		if(SvROK(val) && sv_derived_from(val,"PDL")) {
-			p = SvPDLV(val);
+			printf("looks like a PDL...\n");
+			p = PDL->SvPDLV(val);
 		} else {
+			printf("Got a non-PDL...\n");
 			/* Hard way - got a not-PDL. Dive into perlspace to make one. */
-			I32 foo;
+			I32 foo;	
 			SV *ret;
 			ENTER;
 			SAVETMPS;
@@ -334,7 +336,7 @@ CODE:
 			PUTBACK;
 			FREETMPS;
 			LEAVE;
-			p = SvPDLV(sv_2mortal(ret));
+			p = PDL->SvPDLV(sv_2mortal(ret));
 		}
 			
 		PDL->converttype(&p,PDL_D,1); // Promote to double
@@ -352,7 +354,8 @@ CODE:
 		}
 	} else 
 		croak("Flux::_wvec: fieldptr failed");
-	RETVAL = val;
+	
+	RETVAL = newSVsv(val);
 OUTPUT:
 	RETVAL
 		

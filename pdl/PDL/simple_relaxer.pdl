@@ -101,7 +101,7 @@ sub simple_relaxer {
     my $auto = $opt->{auto};
     my $movie_n = $opt->{movie_n};
     my $movie_f = $opt->{movie_f} || "flux-movie-%4.4d.ppm";
-    my $disp_n = $movie_n || $opt->{disp_n} || 10;
+    my $disp_n = $opt->{disp_n} || $movie_n || 10;
     my $range = $opt->{range};
     $step=0 unless($n);
     $final_step=$n;
@@ -119,10 +119,15 @@ sub simple_relaxer {
     
     $dt = 0.1 unless defined($dt);
     
+    if($opt->{log}) {
+      open LOG,">$opt->{log}";
+      print LOG $opt->{loghdr};
+    }
+
     while(!$final_step || $step<$final_step) {
       print "Starting step $step...\n";
 
-	$w->update_neighbors($global);
+#	$w->update_neighbors($global);
       print "forces..\n";
 	$fmax = $w->update_force($global);
       print "Relaxing...\n";
@@ -132,8 +137,12 @@ sub simple_relaxer {
 
 	$h = $w->stats;
 	
-	printf(" time is now %10.4g (%d vertices; fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_ma},$h->{f_av},$h->{fs_av},
+	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},
 	$h->{n_av});
+
+	printf LOG " time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},
+      $h->{n_av} if($opt->{log});
+      
 	push(@f_av,$h->{f_av});
 	push(@fs_av,$h->{fs_av});
 	

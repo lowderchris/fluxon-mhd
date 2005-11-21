@@ -193,7 +193,7 @@ sub _stringify {
 
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n"
 	."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
-	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash)."\n")."\n"
+	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash))."\n\n"
 	;
 
 }

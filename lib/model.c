@@ -249,6 +249,20 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
   
   if(verbosity >= 2)  printf("fluxon_update_mag (fluxon %d): %c",fl->label,(verbosity==2?' ':'\n'));
 
+  /*
+   * Set forces on the end vertex to zero, since it has no 
+   * bend and no following segment and hence does not get 
+   * looped over.
+   */
+  {
+    VERTEX *v = fl->end;
+    v->f_v[0] = v->f_v[1] = v->f_v[2] = 0;
+    v->f_s[0] = v->f_s[1] = v->f_s[2] = 0;
+    v->f_s_tot = v->f_v_tot = 0;
+    v->r_s = v->r_v = -1;
+  }
+
+  
   for(i=0, v=fl->start; v->next; v=v->next, i++) {
     void (**f_func)();
     NUM r;
@@ -420,7 +434,7 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 
     f_denom = v->f_v_tot + 0.5 * (v->f_s_tot + v->prev->f_s_tot);
 
-    force_factor = (f_denom == 0) ? 1 : ( norm_3d(v->f_t)  / f_denom);
+    force_factor = (f_denom == 0) ? 1 : ( norm_3d(v->f_t)  / (1e-9 + f_denom));
     if(force_factor == 0) force_factor = 1e-3;
 
     if(verbosity >= 3)  printf("fluxon %d, vertex %d: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  force_factor = %g (%g / %g), f_t=(%g,%g,%g)[%g]\t",f->label,v->label, v->x[0],v->x[1],v->x[2], v->r_cl, r_cl, force_factor, norm_3d(v->f_t), f_denom, v->f_t[0],v->f_t[1],v->f_t[2],norm_3d(v->f_t));
@@ -458,29 +472,37 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
       /*
        * Handle acceleration of steps when everything's moving the same way
        */
-      if(w->step_scale.ds_power && v->prev && v->next) {
+      if(w->step_scale.ds_power && v->prev && v->prev->prev && v->next && v->next->next) {
 	NUM a[3];
 	NUM b[3];
 	NUM pfrac,nfrac;
 
 	sum_3d(a, v->f_t, v->prev->f_t);
 	diff_3d(b, v->f_t, v->prev->f_t);
-	pfrac = mag_3d(b)/mag_3d(a);
+	pfrac = norm_3d(b)/norm_3d(a);
 	
 	sum_3d(a, v->f_t, v->next->f_t);
 	diff_3d(b, v->f_t, v->next->f_t);
-	nfrac = mag_3d(b)/mag_3d(a);
-
+	nfrac = norm_3d(b)/norm_3d(a);
         fac *= fastpow( 2.0/(pfrac + nfrac), w->step_scale.ds_power );
 	
       }
 	
-      scale_3d(a, v->f_t, dt * fac );
+      if(finite(fac)) 
+	scale_3d(a, v->f_t, dt * fac );	
+      else 
+	if(verbosity >= 3) 
+	  printf("DS FAC NOT FINITE - SETTING to 1.0  ");
     }
 
-    sum_3d(v->x,v->x,a);	     
+    if(finite(a[0]) && finite(a[1]) &&finite(a[2])) 
+      sum_3d(v->x,v->x,a);	     
+    else
+      if(verbosity >= 3) 
+	printf("NON_FINITE OFFSET! f_s=(%g,%g,%g), f_v=(%g,%g,%g), f_t=(%g,%g,%g)",v->f_s[0],v->f_s[1],v->f_s[2],v->f_v[0],v->f_v[1],v->f_v[2],v->f_t[0],v->f_t[1],v->f_t[2]);
 
-    if(verbosity >= 3)    printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
+    if(verbosity >= 3)    
+      printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
   }
 
   /******************************

@@ -835,7 +835,7 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   if(Plen==0)
     return 1e50;
 
-  if (v0->line->fc0->world->verbosity >= 3) {
+  if (v0->line->fc0->world->verbosity >= 6) {
     printf("\nfl_segment_deluxe_dist: v0=%d,v1=%d; Plen is %g\n",v0->label,v1->label,Plen);
     printf("P0=(%g,%g,%g); P1=(%g,%g,%g)\n",P0[0],P0[1],P0[2],P1[0],P1[1],P1[2]);
   }
@@ -1090,7 +1090,7 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
     
     r = fl_segment_deluxe_dist(p0, p1, v, v1);
 
-    if((v->line->fc0->world->verbosity + (r>=0))>=3)
+    if((v->line->fc0->world->verbosity - (r>=0))>=6)
       printf("\nfl_segment_deluxe_dist returned %g for vertex %d\n",r,v1->label);
 
     if(r<=0 || !finite(r)) {
