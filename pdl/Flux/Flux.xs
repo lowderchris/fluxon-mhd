@@ -314,10 +314,10 @@ CODE:
 		PDL_Double *d;
 	
 		if(SvROK(val) && sv_derived_from(val,"PDL")) {
-			printf("looks like a PDL...\n");
+			/* printf("looks like a PDL...\n"); */
 			p = PDL->SvPDLV(val);
 		} else {
-			printf("Got a non-PDL...\n");
+			/* printf("Got a non-PDL...\n"); */
 			/* Hard way - got a not-PDL. Dive into perlspace to make one. */
 			I32 foo;	
 			SV *ret;
@@ -342,13 +342,13 @@ CODE:
 		PDL->converttype(&p,PDL_D,1); // Promote to double
 		PDL->make_physical(p);
 		if(p->nvals == 3) {
-	printf("3 vals\n");
+	/* printf("3 vals\n"); */
 			d = p->data;
 			np[0] = d[0];
 			np[1] = d[1];
 			np[2] = d[2];
 		} else if(p->nvals == 1) {
-	printf("1 val\n");
+	/* printf("1 val\n"); */
 			d = p->data;
 			np[0] = np[1] = np[2] = d[0];
 		}
@@ -500,7 +500,7 @@ CODE:
  strncpy(constructorbuf,classpv,80);
  strcat(constructorbuf,"::new_from_ptr");
 
- printf("rdumblist: n=%d\n",dl->n);
+ /* printf("rdumblist: n=%d\n",dl->n);*/
  for(i=0;i<dl->n;i++) {
 	SV *vert;
 	I32 foo;
@@ -524,11 +524,11 @@ CODE:
 	PUTBACK;
 	FREETMPS;
 	LEAVE;
-	printf("storing %d...",i);
+ /*	printf("storing %d...",i);*/
 	av_push( av, vert );
  }
  RETVAL = newRV_inc((SV*)av);
- printf("done\n");
+ /* printf("done\n");*/
 OUTPUT:
  RETVAL		
 			

@@ -81,7 +81,8 @@ typedef struct DUMBLIST {
 } DUMBLIST;
 
 typedef struct VERTEX {
-  struct FLUXON *line;                      /* Which line are we on? */
+  NUM energy;                            /* calculated B energy for segment */
+  struct FLUXON *line;                   /* Which line are we on? */
   struct VERTEX *prev,*next;  
 
      /* Vertex location in physical space */

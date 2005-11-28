@@ -527,6 +527,19 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
  *
  */
 
+static int ptr_cmp(void *a, void *b) { /* Helper routine for sorting by pointer */
+  if(a<b) return -1;
+  else if(a>b) return 1;
+  return 0;
+}
+
+static int label_cmp(void *a, void *b) { /* Helper routine for sorting by pointer */
+
+  if( ((VERTEX *)a)->label < ((VERTEX *)b)->label) return -1;
+  else if( ((VERTEX *)a)->label > ((VERTEX *)b)->label) return 1;
+  return 0;
+}
+
 HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
   DUMBLIST *dl;
   HULL_VERTEX *hv;
@@ -545,6 +558,7 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
   }
 
   vn = &(v->neighbors);
+
   dl = gather_neighbor_candidates(v,global);
 
 
@@ -573,33 +587,94 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
       printf("\n");
     }
 
-  /* Walk through both dumblists, updating the neighbors' 
-     "nearby" information as needed. */
-  for(i=j=0; i<dl->n || j<vn->n;) {
-    if( (j >= vn->n) || (i < dl->n && (dl->stuff[i] < vn->stuff[j]) ) ) {
-      if(verbosity >= 6) {
-	printf ("[i=%d,j=%d,nbor:%x(%d)]  ",i,j,(dl->stuff[i]),((VERTEX *)(dl->stuff[i]))->label);
-	fflush(stdout);
+
+    
+    if(verbosity >= 3) {
+      int i;
+      printf("Updating neighbor/nearby list for vertex %d:\n",v->label);
+      printf("Previous neighbors (%d of them):\n",vn->n);
+      for(i=0;i<vn->n;i++) {
+	printf("  %d",(((VERTEX **)(vn->stuff))[i])->label);
       }
-      dumblist_add( &( ((VERTEX *)(dl->stuff[i]))->nearby ), v );
-      i++;
-      cpflag=1;
-    } else if( (i >= dl->n) || (j < vn->n && dl->stuff[i] > vn->stuff[j] )) {
-      dumblist_delete( &( ((VERTEX *)(vn->stuff[j]))->nearby), v);
-      cpflag=1;
-      j++;
-    } else /* if(dl->stuff[i] == vn->stuff[j]) */ {
-      i++;
-      j++;
+      printf("\n");
+      
+      printf("Newly found neighbors (%d of them):\n",dl->n);
+      for(i=0;i<dl->n;i++) {
+	printf("  %d",(((VERTEX **)(dl->stuff))[i])->label);
+      }
+      printf("\n");
     }
-  }
-  
-  /* Copy the neighbor lists, if necessary */
-  if(cpflag) {
-    vn->n = 0;
-    dumblist_snarf(vn,dl);
-  }
-  return hv;
+
+
+    /******************************
+     * Update 'nearby' lists through brute force
+     */
+    for(i=0;i<vn->n;i++) {
+      dumblist_delete( &(((VERTEX *)(vn->stuff[i]))->nearby), v);
+    }
+    for(i=0;i<dl->n;i++) {
+      dumblist_add(    &(((VERTEX *)(dl->stuff[i]))->nearby), v);
+    }
+    cpflag = 1;
+
+#ifdef SLIGHTLY_SLOWER_METHOD
+    cpflag = 0;
+    /*******************************
+     * Walk through both dumblists, updating the neighbors' 
+     *  "nearby" information as needed. 
+     *
+     * Two passes: first walk through the old list and delete anything
+     * that's not on the new list, then walk through the new list and 
+     * add anything that's not on the old list.
+     * 
+     * This simple approach is OK because by now we've already hulled the
+     * neighbors so there are only typically < 10 of them in each list.
+     * 
+     * The approach of scanning the lists rather than explicitly deleting
+     * and re-instating is more efficient because the lists themselves 
+     * are likely to remain in cache for the operation while the neighbors
+     * may or may not be in cache.
+     */
+    /* First: walk through the old list, and delete anything not on the
+     * new list
+     */
+    for(i=0; i<vn->n; i++) {
+      void *oldguy = (vn->stuff)[i];
+      for(j=0; j<dl->n && oldguy != dl->stuff[j];  j++)
+	;
+      if( j==dl->n ) { 
+	/*** Not found - must be eradicated from NEARBY ***/
+	if(verbosity >= 3)
+	  printf("  Removing %d from NEARBY list of %d\n",
+		 v->label,((VERTEX *)oldguy)->label);
+	dumblist_delete( &( ((VERTEX *)oldguy)->nearby ), v );
+	cpflag=1;
+      }
+    }
+
+    /* Next: walk through the new list, and add anything not in the old list
+     */
+    for(j=0; j<dl->n; j++) {
+      void *newguy = (dl->stuff)[j];
+      for(i=0; i<vn->n && newguy != vn->stuff[i]; i++)
+	;
+      if( i==vn->n ) {
+	/*** Not found -- must be added to the NEARBY ***/
+	if(verbosity >= 3)
+	  printf("  Adding %d to NEARBY list of %d\n",
+		 v->label, ((VERTEX *)newguy)->label);
+	dumblist_add( &( ((VERTEX *)newguy)->nearby ), v);
+	cpflag=1;
+      }
+    }
+#endif
+
+    /* Copy the new neighbor list into the vertex. */
+    if(cpflag) {
+      vn->n = 0;
+      dumblist_snarf(vn,dl);
+    }
+    return hv;
 }
     
   
@@ -691,6 +766,7 @@ static long line_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
 
 DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   static DUMBLIST *workspace =0;
+  static DUMBLIST *ws2 = 0;
   void **foo;
   int i;
   int n;
@@ -702,7 +778,11 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   if(!workspace) 
     workspace = new_dumblist();
 
+  if(!ws2)
+    ws2 = new_dumblist();
+
   workspace->n = 0;
+  ws2->n = 0;
 
   /**********************************************************************/
   /* Gather the candidates together 
@@ -720,16 +800,16 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
       printf("Using local neighbors...");
     
     /* Grab neighbors & nearby from vertex & its siblings */
-    snarf_list(workspace,&v,1); 
+    snarf_list(ws2,&v,1); 
     
-    if(v->next)     snarf_list(workspace,&(v->next),1);
-    if(v->prev)     snarf_list(workspace,&(v->prev),1);
+    if(v->next)     snarf_list(ws2,&(v->next),1);
+    if(v->prev)     snarf_list(ws2,&(v->prev),1);
     
     if(verbosity >=3)
       printf("Found %d ...",workspace->n);
 
     /* Grab neighbors & nearby of all *those* guys */
-    snarf_list(workspace,(VERTEX **)workspace->stuff,workspace->n);
+    snarf_list(workspace,(VERTEX **)ws2->stuff,ws2->n);
 
     /* Grab siblings of all the neighbors & nearby */
     expand_list(workspace);
@@ -1164,7 +1244,8 @@ int global_fix_proximity(WORLD *w, NUM scale_thresh) {
  ** Set 0 curvature to get 0.05 radian (~3 degrees) for splitting 
  ** and 1 degree for merging).  
  **
- ** For now, no merging is done!
+ ** If a vertex has less than half the critical angle, and is sufficiently
+ ** far from other fluxons in the area, then it is unlinked and deleted.
  **
  ** fix_curvature splits single angles into triple angles, but is
  ** recursive:  a vertex with a too-acute angle is split into three
@@ -1234,24 +1315,20 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
     VERTEX *Vnew;
     NUM P[3], P0[3],P1[3];
 
-    /* Find location of new prior vertex: 1/3 along the previous vec */
-    sum_3d(P0, V->prev->x, V->prev->x);
-    sum_3d(P0, P0, V->x);
-    scale_3d(P0, P0, 1.0/3);
+    /* Find location of new prior vertex: 3/4 along the previous vec */
+    scale_3d(P0, V->x, 3);
+    cp_3d(P1,P0);
+    sum_3d(P0, P0, V->prev->x);
+    scale_3d(P0, P0, 1.0/4);
 
-    /* Find location of new next vertex: 2/3 along the current vec */
-    sum_3d(P1, V->next->x, V->next->x);
-    sum_3d(P1, P1, V->x);
-    scale_3d(P1, P1, 1.0/3);
+    /* Find location of new next vertex: 1/4 along the current vec */
+    sum_3d(P1, P1, V->next->x);
+    scale_3d(P1, P1, 1.0/4);
 
-    /* Find centroid of triangle */
-    sum_3d(P,V->prev->x, V->next->x);
+    /* Find centroid of new triangle - new current vertex. */
+    sum_3d(P,P1,P0);
     sum_3d(P, P, V->x);
-    scale_3d(P,P,1.0/3);
-
-    /* Find location of new current vertex: halfway between P and V->x */
-    sum_3d(P, P, V->x);
-    scale_3d(V->x, P, 0.5);
+    scale_3d(V->x,P,1.0/3);
 
     /* Make the new prior vertex, and link */
     add_vertex_after(V->line, V->prev,
@@ -1260,8 +1337,42 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
 		     new_vertex(0, P1[0],P1[1],P1[2], V->line));
     return 1;
 
+  } else {
+    /******************************
+     * Check for deletion
+     */
+    curve_thresh *= 0.5;
+    if( ! ( (sincurve * 1.048 > curve_thresh) ||
+	    (curve_thresh > (M_PI * 1.0/3)  && 
+	     ( (sincurve * 1.210 > curve_thresh) ||
+	       (curve_thresh > (M_PI * 2.0/3) && 
+		( (sincurve * (M_PI / 2)  > curve_thresh) ||
+		  (coscurve < 0)
+		  )
+		)
+	       )
+	     )
+	    )
+	&& 
+	/* This is the actual check but the trig operation is masked out */
+	/* by the above mess for most cases.  That's an assignment.      */
+	(curve = atan2(sincurve,coscurve)) < curve_thresh
+	) {
+      NUM offset_dist;
+      NUM pdist,ndist;
+      /* Check maximum displacement of the fluxel if straightened */
+      offset_dist = p_ls_dist(V->x,V->prev->x,V->next->x);
+      offset_dist *= 1.333;
+      if(offset_dist > 0 && 
+	 offset_dist < V->prev->r_cl && 
+	 offset_dist < V->next->r_cl) {
+	if(V->line->fc0->world->verbosity > 3){
+	  printf("fix_curvature: unlinking %d from line %d\n",V->label,V->line->label);
+	}
+	delete_vertex(V);
+      }
+    }
   }
-  
   return 0;
 }
 
@@ -1293,6 +1404,7 @@ int global_fix_curvature(WORLD *w, NUM curv_thresh) {
   cu_thr = curv_thresh;
   cu_acc = 0;
   tree_walker(w->lines,fl_lab_of,fl_all_ln_of,cu_tramp);
+  world_update_ends(w);
   return cu_acc;
 }
 

@@ -213,6 +213,8 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
 
   tp = (VERTEX *)localmalloc(sizeof(VERTEX),MALLOC_VERTEX);
 
+  tp->energy = 0;
+
   if(!tp) barf(BARF_MALLOC,"new_vertex");
   tp->line = fluxon;
   tp->prev = 0;
@@ -357,29 +359,85 @@ void unlink_vertex(VERTEX *v) {
     fprintf(stderr,"unlink_vertex ignoring an end condition...\n");
     return;
   }
+  if(!v->line) {
+    fprintf(stderr,"unlink_vertex: strangeness!\n");
+    return;
+  }
+ 
 
   v->prev->next = v->next;
   v->next->prev = v->prev;
-  
+  v->line->v_ct--;
+
+
   for(i=0;i<v->neighbors.n;i++) {
     VERTEX *a = ((VERTEX **)(v->neighbors.stuff))[i];
-    dumblist_delete( &(a->nearby), v);
-    dumblist_add(    &(a->nearby), v->next);
-    dumblist_add(    &(a->nearby), v->prev);
+    if(a) {
+      long n = a->nearby.n;
+      dumblist_delete( &(a->nearby), v);
+      if(n == a->nearby.n) {
+	printf("WHOA THERE! %d\n",n);
+      }
+
+      dumblist_add(    &(v->next->neighbors), a);
+      dumblist_add(    &(a->nearby), v->next);
+      
+      dumblist_add(    &(v->prev->neighbors), a);
+      dumblist_add(    &(a->nearby), v->prev);
+
+    }
   }
-  dumblist_snarf(&(v->prev->neighbors), &(v->neighbors));
-  dumblist_snarf(&(v->next->neighbors), &(v->neighbors));
+  v->neighbors.n=0;
+
+
 
   for(i=0;i<v->nearby.n;i++) {
     VERTEX *a = ((VERTEX **)(v->nearby.stuff))[i];
-    dumblist_delete(&(a->neighbors), v);
-    dumblist_add(   &(a->neighbors), v->next);
-    dumblist_add(   &(a->neighbors), v->prev);
+    if(a) {
+      dumblist_delete(&(a->neighbors), v);
+      
+      dumblist_add(   &(a->neighbors), v->next);
+      dumblist_add(   &(v->next->nearby), a);
+      
+      dumblist_add(   &(a->neighbors), v->prev);
+      dumblist_add(   &(v->prev->nearby), a);
+    }
+    v->nearby.stuff[i]=0;
   }
-  dumblist_snarf(&(v->prev->nearby), &(v->nearby));
-  dumblist_snarf(&(v->next->nearby), &(v->nearby));
+  v->nearby.n=0;
+  v->prev = 0;
+  v->next = 0;
 
-  tree_unlink(v, v_lab_of, v_ln_of);
+  printf("Unlinking vertex %d (up=%d)...\n",v->label,v->world_links.up?((VERTEX *)(v->world_links.up))->label:0);
+
+  {
+    void *root;
+    /* Normalize world root... */
+    for(root=v->line->fc0->world->vertices; 
+	((LINKS *)(root+v_ln_of))->up; 
+	root=((LINKS *)(root+v_ln_of))->up)
+      ;
+    v->line->fc0->world->vertices = root;
+    
+    /* Compare with actual root */
+    for(root=v; ((LINKS *)(root+v_ln_of))->up; root=((LINKS *)(root+v_ln_of))->up);
+    if(root==v->line->fc0->world->vertices) {
+      printf("calling tree_unlink...\n");
+      v->line->fc0->world->vertices = tree_unlink(v, v_lab_of, v_ln_of);
+      printf("\n");  
+    } else {
+      printf("no unlinking here... (derived root is %d; actual root is %d)\n",root?((VERTEX *)root)->label:0,v->line->fc0->world->vertices?v->line->fc0->world->vertices->label:0);
+    }
+  }
+
+  {
+    void *root;
+    for(root=v->line->fc0->world->vertices; 
+	((LINKS *)(root+v_ln_of))->up; 
+	root=((LINKS *)(root+v_ln_of))->up)
+      ;
+    v->line->fc0->world->vertices = root;
+  }
 }
 
 void delete_vertex(VERTEX *v) {
@@ -389,13 +447,20 @@ void delete_vertex(VERTEX *v) {
   if(v->neighbors.stuff) {
     localfree(v->neighbors.stuff);
     v->neighbors.stuff=0;
+    v->neighbors.size=0;
+    v->neighbors.n=0;
   }
   if(v->nearby.stuff) {
     localfree(v->nearby.stuff);
     v->nearby.stuff=0;
+    v->nearby.size=0;
+    v->nearby.n=0;
   }
 
-  tree_unlink(v,v_lab_of, v_ln_of); // shouldn't hurt -- tree_unlink on a lone node doesn't do anything
+  if(v->world_links.up || v->world_links.left || v->world_links.right) {
+    fprintf(stderr,"WARNING: NOT freeing vertex %d (still linked into the world tree!)\n",v->label);
+    return;
+  }
 
   localfree(v);
 }
@@ -681,7 +746,7 @@ void *tree_find(void *tree, long label, int label_offset, int link_offset){
  * (because it might change!)
  *
  * Because this is a single-node insertion only, the tree 
- * links from them item should both be NULL before insertion.  If that's
+ * links from the item should both be NULL before insertion.  If that's
  * not true, the item is inserted anyway (possibly breaking whatever
  * tree it came from), and a warning message is printed.
  *
@@ -825,154 +890,92 @@ char tree_balance_check(void *foo, int link_offset) {
 
 void *tree_unlink(void *data, int label_offset, int link_offset) {
   LINKS *data_links = (LINKS *)(data+link_offset);
+  LINKS *upline_links;
   void *foo, *root;
+  void *downline = (data_links->left ? 
+		    data_links->left : 
+		    data_links->right);
+  
+  /* Initial guess at new root is one of the branches of this node */
+  root = data_links->left ? data_links->left : data_links->right;
 
-  /* If the data have no branches, then it's easy. */
-  if(data_links->left == NULL && data_links->right == NULL) {
-    for(foo = data_links->up; foo; foo = ((LINKS *)(foo+link_offset))->up) {
-      if( (--(((LINKS *)(foo+link_offset))->n))  < 0) {
-	fprintf(stderr,"You hoser -- negative node count found!\n");
-      }
-      ((LINKS *)(foo+link_offset))->sum -= *((NUM *)data);
-      tree_balance_check(foo, link_offset);
-      root = foo;
-    }
-
-    /* Unlink from parent, if possible. */
-    if(data_links->up) {
-      LINKS *foolinks = (LINKS *)(((void *)data_links->up)+link_offset);
-      if(foolinks->left == data) {
-	foolinks->left = NULL;
-      } else if(foolinks->right == data) {
-	foolinks->right = NULL;
-      } else {
-	fprintf(stderr,"tree_unlink:  parent doesn't point to this node!\n");
-      }
-    }
-
-    clear_links(data+link_offset);
-    ((LINKS *)(data + link_offset))->sum = *(NUM *)data;
-    return root;
+  /* Walk up to the top, decrementing link counts as we go and    */
+  /* finding the new root                                         */
+  for(foo=data_links->up; 
+      foo; 
+      foo = ((LINKS *)(foo+link_offset))->up) {
+    
+    ((LINKS *)(foo+link_offset))->sum -= *((NUM *)data);
+    if( (--(((LINKS *)(foo+link_offset))->n))  < 0)
+      fprintf(stderr,"You hoser -- negative node count found!\n");
+    
+    root = foo; /* Gets last nonzero link */
   }
 
+  upline_links = ( data_links->up ? 
+		    (LINKS *)(((void *)data_links->up)+link_offset) :
+		    0
+		    );
 
-  /* If the data have only one branch, then it's almost as easy. 
-   * In this case, we remove the node and bump up the next node down.
+
+  /******************************
+   * If neither branch is null, then the right-hand branch gets
+   * grafted onto the rightmost leaf of the left-hand branch.
    */
-  if(data_links->left == NULL || data_links->right == NULL) {
-   
-    if(data_links->up) {
-      LINKS *foolinks = (LINKS *)(((void *)data_links->up)+link_offset);
-      if(foolinks->left == data) {
-	foolinks->left = 
-	  data_links->left ? 
-	  data_links->left : 
-	  data_links->right;
-      } else if(foolinks->right == data) {
-	foolinks->right =
-	  data_links->left ? 
-	  data_links->left :
-	  data_links->right;
-      } else {
-	fprintf(stderr,"tree_delete: HEY!  The tree seems to have come unglued...\n");
-      }
-    }
-    else {
-      if(data_links->left == NULL) 
-	root = data_links->right;
-      else
-	root = data_links->left;
-    }
+  if(data_links->left && data_links->right) {
+      void *leaf;
+      LINKS *leaf_links;
+      long n;
+      NUM sum;
 
-    /* Link its branches back up to its parent */
-    if(data_links->left != NULL)
-      ((LINKS *)(data_links->left + link_offset))->up = data_links->up;
-    else 
-      ((LINKS *)(data_links->right + link_offset))->up = data_links->up;
-
-
-    for(foo = data_links->up; foo; foo = ((LINKS *)(foo+link_offset))->up) {
-      (((LINKS *)(foo+link_offset))->n)--;
-      ((LINKS *)(foo+link_offset))->sum -= *((NUM *)data);
-      tree_balance_check(foo,link_offset);
-      root = foo;
-    }
-    
-    clear_links(data+link_offset);
-    ((LINKS *)(data + link_offset))->sum = *(NUM *)data;
-    return root;
-  }
-      
-  /* If the data have two branches, then we promote the leftmost node
-   * of the right hand branch to the top dog position.  That doesn't
-   * necessarily preserve nice balance, but we can always fix that later
-   * if necessary.
-   */
-  if( (data_links->left != NULL) && (data_links->right != NULL) ) {
-    void *foo;
-
-    for( foo = data_links->right; 
-	 ((LINKS *)(foo + link_offset))->left; 
-	 foo = ((LINKS *)(foo + link_offset))->left
-	 )
-      ;
-    tree_unlink(foo,label_offset, link_offset);
-    
-    if(data_links->up == NULL) {
-      root = foo;
-    } else {
-      LINKS *uplink = (LINKS *)(data_links->up + link_offset);
-
-      /* Find root and also adjust the running sum to reflect the proper
-       *  flux (the 'n' values are OK because all entries count for '1'.) 
+      /* Grab the n and sum from the right-hand tree; prepare to 
+       * accumulate them into the left-hand side.
        */
-      for( root = data_links->up; 
-	   ((LINKS *)(root + link_offset))->up;
-	   (root= ((LINKS *)(root + link_offset))->up,
-	    ((LINKS *)(root + link_offset))->sum += (*(NUM *)foo - *(NUM *)data))
-	   )
-	tree_balance_check(root,link_offset)
-	  ;
+      n =   ((LINKS *)(data_links->right+link_offset))->n;
+      sum = ((LINKS *)(data_links->right+link_offset))->sum;
 
+      /* Walk down to the leaf, adding sum and n at each level */
+      for(leaf = downline;
+	  (leaf_links = (LINKS *)((leaf+link_offset)))->right;
+	  leaf = leaf_links->right
+	  ) {
+	leaf_links->n   += n;
+	leaf_links->sum += sum;
+      }
 
-      if (uplink->left == data)
-	uplink->left = foo;
-      else if(uplink->right == data)
-	uplink->right = foo;
-      else 
-	fprintf(stderr,"tree_delete:  Wow!  The tree seems to have come unglued.\n");
-      
-      /* Link old neighbors to new place */
-      ((LINKS *)(foo+link_offset))->left  = data_links->left;
-      ((LINKS *)(foo+link_offset))->right = data_links->right;
+      /* Fix up the leaf: sum, n, links */
+      leaf_links->n   += n;
+      leaf_links->sum += sum;
+      leaf_links->right = data_links->right;
+      ((LINKS *)((data_links->right)+link_offset))->up = leaf;
 
-      /* Backlink this place to the neighbors */
-      if( data_links->left )
-	((LINKS *)((LINKS *)(foo+link_offset))->left  + link_offset)->up = foo;
-      if( data_links->right )
-	((LINKS *)((LINKS *)(foo+link_offset))->right + link_offset)->up = foo;
-
-	
-      ((LINKS *)(foo+link_offset))->n 
-	= ( (data_links->left ? ((LINKS *)(data_links->left + link_offset))->n : 0) + 
-	    (data_links->right ? ((LINKS *)(data_links->right + link_offset))->n : 0) +
-	    1 );
-
-      ((LINKS *)(foo+link_offset))->sum
-	= ( (data_links->left ? ((LINKS *)(data_links->left + link_offset))->sum : 0) +
-	    (data_links->right? ((LINKS *)(data_links->right + link_offset))->sum : 0) +
-	    *((NUM *)(foo)) );
-
-
-      tree_balance_check(foo,link_offset);
-      tree_balance_check(root,link_offset);
-
-      clear_links(data+link_offset);
-      ((LINKS *)(data + link_offset))->sum = *(NUM *)data;
-      
-      return root;
-    }
+      /* Mark the right-hand branch as fully grafted to the left */
+      data_links->right = 0;
   }
+
+
+  /******************************
+   * Now there are either 0 or 1 branches below this one, and 
+   * downline is set appropriately (if there were initially two
+   * then downline is pointing to the left-hand one).
+   * Link them in to the parent.
+   */
+
+   if(upline_links) {
+     if(upline_links->left == data) 
+       upline_links->left = downline;
+     else if(upline_links->right == data)
+       upline_links->right = downline;
+     else
+       fprintf(stderr,"tree_delete: HEY!  The tree is unglued...\n");
+   } else 
+     root = downline;
+   
+   if(downline) 
+     ((LINKS *)(downline+link_offset))->up = data_links->up;
+   
+   clear_links(data_links);
+   return root;
 }
 
 /**********************************************************************
@@ -1486,6 +1489,10 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   void **dl_a;
   int i;
 
+  if(dl->n <= 1) 
+    return;
+
+
   if( dl->n <= 150 ) {             /* use shellsort for the small cases */
     dumblist_shellsort(dl,cmp);
     dumblist_crunch(dl,cmp);
@@ -1546,7 +1553,7 @@ int ptr_cmp(void *a, void *b) { /* Helper routine for sorting by pointer */
  * doesn't eat as much memory as not sorting each time.
  */
 void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
-  int i;
+  long i;
   void **b;
   void **b1;
   void **c;
@@ -1556,8 +1563,9 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
     fflush(stderr);
     return;
   }
-  if(dest->size <= dest->n + source->n) 
+  if(dest->size <= dest->n + source->n) {
     dumblist_grow(dest,dest->n + source->n);
+  }
   
   for(b=source->stuff, c=&(dest->stuff[dest->n]), i=0; i<source->n; i++) {
     *(c++) = *(b++);

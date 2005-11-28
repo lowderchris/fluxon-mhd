@@ -264,6 +264,9 @@ package Flux;
 	Concentration => [ \&_rconcentration, undef ],
         Neighbors => [sub{ print "Neighbors reader...\n"; _rdumblist("Flux::Vertex",@_) },
 		      undef
+		      ],
+        Nearby => [sub{ print "Nearby reader...\n"; _rdumblist("Flux::Vertex",@_) },
+		      undef
 		      ]
     };
 
