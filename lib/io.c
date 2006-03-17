@@ -409,7 +409,7 @@ int footpoint_action(WORLD *world, char *s) {
 	      } else {
 		long foo;
 		if( sscanf(fname,"0x%x",&foo) )
-		  (void *)(f_funcs[i]) = (void *)foo;
+		  f_funcs[i] = (void *)foo;
 		else {
 		  static char bstr[160];
 		  sprintf(bstr,"Couldn't parse GLOBAL FORCE LINE (bad force at '%s')",s+off);
@@ -422,7 +422,7 @@ int footpoint_action(WORLD *world, char *s) {
 	    } /* end of force specifier loop */
 
 	    for(;i<N_FORCE_FUNCS;i++) /* pad with zeroes */
-	      (void *)(f_funcs[i]) = (void *)0;
+	      (f_funcs[i]) = (void *)0;
 
 	    /* We didn't barf by now -- all forces must be OK.  Copy 'em in. */
 	    for(j=0;j<N_FORCE_FUNCS;j++) 
