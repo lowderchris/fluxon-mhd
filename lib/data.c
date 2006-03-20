@@ -1,4 +1,4 @@
-/* data.c 
+ /* data.c 
  *
  * Basic data manipulation routines and definitions for FLUX -- how to 
  * handle VERTEXs and FLUXONs etc.
@@ -8,7 +8,7 @@
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Southwest Research Institute, 2004
  * 
- * You may modify and/or distribute this software under the temrs of
+ * You may modify and/or distribute this software under the terms of
  * the Gnu Public License, version 2.  You should have received a copy
  * of the license with this software, in the file COPYING to be found
  * in the top level directory of the distribution.  You may obtain
@@ -24,8 +24,54 @@
  *
  *
  * Functions:
- *   new_fluxon - Generate a new field line structure (empty)
- *   new_vertex  - Generate a vertex from X,Y,Z, and fluxon references.
+ *  barf - debugging function to find possible problem function(s)
+ *  new_label - generates long-int label for a fluxon
+ *  new_vertex_label - generates long-int label for a vertex
+ *  new_fluxon - Generates a new, empty field line structure
+ *  new_vertex - Generates a vertex from X,Y,Z, and fluxon references.
+ *  new_flux_concentration - generates a new flux concentration at a location
+ *  new_world - creates a new world
+ *  unlink_vertex - unlinks and vertex and links prev and next to eachother
+ *  delete_vertex  - Unlink and delete a vertex. (unlinks neighbors too)
+ *  add_vertex_pos - adds a vertex at a given position in a fluxon
+ *  add_vertex_after - adds vertex after a given vertex in a fluxon
+ *  clear_links - Initialize a tree-link data structure.
+ *  tree_top - Returns a pointer to the top node of a tree.
+ *  tree_walk - calls tree_walker
+ *  tree_walker - performs a task to each node in a tree
+ *  tree_find - Find a node in a tree (there are several kinds!).
+ *  tree_binsert - (the call of choice) - Insert a node into a tree, 
+ *                   and rebalance the tree if necessary.
+ *  tree_insert - insert a node into a tree.
+ *  tree_balance_check - checks if a tree is balanced
+ *  tree_unlink - Remove a node from a tree and returns the tree root.
+ *  tree_balance - Balances a tree and returns the new root.
+ *  world_state_name - returns a string of the local world state name
+ *  new_dumblist - initializes and empty, size zero dumblist
+ *  free_dumblist - locally frees a dumblist
+ *  dumblist_quickadd - adds an item to the end of a dumblist
+ *  dumblist_add - Add an item to a dumblist (no duplicates allowed)
+ *  dumblist_delete - Delete an item from a dumblist.
+ *  dumblist_rm - removes the ith item and replaces it with the last item
+ *  dumblist_grow - grows dumblist to (3/2) the requested size
+ *  dumblist_qsort - qsort routine for a dumblist, used in dumblist_sort
+ *  dumblist_shellsort - bubble sorts or shell sorts a dumblist, used in dumblist_sort
+ *  dumblist_crunch - removes duplicates and nulls from a sorted dumblist 
+ *  dumblist_sort - sorts a dumblist with qsort or shellsort
+ *  ptr_cmp - compares two pointers
+ *  dumblist_snarf - Copy a dumblist into another one.
+ *  dumblist_clear - zeros out a dumblist
+ *  dd_vertex_printer - prints out the label of a given vertex
+ *  dumblist_dump - prints out the labels or the pointers of a dumblist
+ *  fl_eq - tests whether two numbers are reasonably close
+ *  flux_malloc - 
+ *  flux_perl_malloc - 
+ *  flux_padded_malloc - 
+ *  (NOT YET) kill_fluxon - Unlink and delete all of a fluxons vertexs.
+ *  
+ * This is data.c version 1.1 - part of the FLUX 1.1 release.
+ *
+ *   fuctions not found/no longer here:
  *   add_vertex - Given a vertex and an X,Y, and Z location, create
  *             a new vertex and link it into the list at that location.
  *   find_neighbor_candidates - Find the neighbor-candidates of a vertex.
@@ -37,26 +83,11 @@
  *             the neighbors its Delauney neighbors.  (These are currently
  *             found by exhaustive Voronoi cell construction; this is slow
  *             but should work for now.)
- *   delete_vertex  - Unlink and delete a vertex. (unlinks neighbors too)
- *   (NOT YET) kill_fluxon - Unlink and delete all of a fluxons vertexs.
- *
- *  clear_links - Initialize a tree-link data structure.
- *  tree_find   - Find a node in a tree (there are several kinds!).
- *  tree_insert - insert a node into a tree.
- *  tree_binsert - (the call of choice) - Insert a node into a tree, 
- *                   and rebalance the tree if necessary.
- *  tree_unlink - Remove a node from a tree.
  *  tree_bunlink - (the call of choice) - Remove a node from a tree,
  *                   and rebalance the tree if necessary.
- *  tree_balance - Balance a tree.
- *  tree_top    - Return a pointer to the top of a tree.
- *
- *  dumblist_add    - Add an item to a dumblist (no duplicates allowed)
- *  dumblist_delete - Delete an item from a dumblist.
- *  dumblist_snarf  - Copy a dumblist into another one.
- *  
- * This is data.c version 1.1 - part of thhe FLUX 1.1 release.
- */
+ *  sorted_dumblist_delete - deletes a given item from a sorted dumblist
+
+*/
 #include "data.h"
 #include "physics.h" /* for declaration of force subroutines */
 #include <math.h>
@@ -68,6 +99,7 @@
 /******************************
  * Boundary condition names, by number
  */
+
 char *BOUNDARY_NAMES[] = {
   "NONE",
   "PLANE",
@@ -75,12 +107,8 @@ char *BOUNDARY_NAMES[] = {
   "CYL"
 };
 
-
-
-
 /**********************************************************************
  * barf
- * 
  * Calls perror and exits, with some indication of where you started from.
  */
 static char program_name[80];
@@ -106,45 +134,47 @@ void barf(int barf_on_op, char *where) {
 
 /**********************************************************************
  * new_label
- * Generates a new long-int label for a fluxon.  With 2^64 labels
+ * Generates and returns a new long-int label for a fluxon.  With 2^64 labels
  * available, we don't bother trying to conserve -- just plough through
- * them in sequence.  Fieldlines and vertexs share a label numbering
- * system.   If you pass in 0, you get the next sequentially available
- * label.  If you pass in a positive label number, you get that number back but
- * also the last_label cache is set to at least that number.  There are 
+ * them in sequence. Fieldlines and vertexs share a label numbering
+ * system.  If you pass in 0, you get the next sequentially available
+ * label. If you pass in a positive label number, you get that number back but
+ * also the last_label cache is set to at least that number. There are 
  * potential collision problems here, but the solution is not to 
  * allocate any default-numbered nodes (e.g. from simulation) until after
  * all the set-numbered nodes (e.g. from a file) have been allocated.
  * 
  * Labels seem mainly useful for I/O (storing stuff to files), but
- * they come in handy for debugging too.  It might be possible 
+ * they come in handy for debugging too. It might be possible 
  * eventually to remove them from the code.
  */
 static long max_label=0;
 
 long new_label(long request){
 
-  if(!request) 
-    request = ++max_label;
+  if(!request) 			/* request=0 */
+    request = ++max_label;	/* take next available label */
 
-  if(max_label < request)
+  if(max_label < request)	/* else give 'em what they wanted */
     max_label=request;
 
   return request;
 }
 
 /**********************************************************************
- * new_vertex_label -- same as new_label, except for VERTEXes.
+ * new_vertex_label -- 
+ * same as new_label, except for VERTEXes. Returns a long-int.
  */
+
 static long max_vertex_label=0;
 long new_vertex_label(long request) {
   long out;
   switch(request) {
-  case 0:
-    out = ++max_vertex_label;
+  case 0:			/* request=0 */
+    out = ++max_vertex_label;	/* take next available label */
     break;
   default:
-    out = request;
+    out = request;		/* else give 'em what they wanted */
     if(max_vertex_label < request)
       max_vertex_label = request;
     break;
@@ -154,7 +184,11 @@ long new_vertex_label(long request) {
 
 /***********************************************************************
  * new_fluxon 
+ * Creates a new FLUXON data structure given the flux, begin and end
+ * concentrations, and a label. Plasmoid isn't really used. The new fluxon
+ * has no linked fluxons. 
  */
+
 FLUXON *new_fluxon(      NUM flux, 
 			 FLUX_CONCENTRATION *c1, 
 			 FLUX_CONCENTRATION *c2, 
@@ -162,7 +196,7 @@ FLUXON *new_fluxon(      NUM flux,
 			 char plasmoid)
 {
   int f_no = 0;
-  struct FLUXON *nf;
+  struct FLUXON *nf;			/* new fluxon, nf, allocate memory */
   
   nf = (struct FLUXON *)localmalloc(sizeof(struct FLUXON),MALLOC_FLUXON);
 
@@ -170,11 +204,11 @@ FLUXON *new_fluxon(      NUM flux,
   
   nf->flux            = flux;
   nf->label           = new_label(label);
-  nf->start           = 0;
-  nf->end             = 0;
-  nf->v_ct            = 0;
+  nf->start           = 0;		/* begin vertex */
+  nf->end             = 0;		/* end vertex */
+  nf->v_ct            = 0;		/* vertex count */
   
-  clear_links(&(nf->all_links));
+  clear_links(&(nf->all_links));	/* new fluxon not connected to others */
   nf->all_links.sum = nf->flux;
   
   if(c1 == NULL) {
@@ -183,7 +217,7 @@ FLUXON *new_fluxon(      NUM flux,
   } 
   clear_links(&(nf->start_links));
   nf->start_links.sum = nf->flux;
-  nf->fc0 = c1;
+  nf->fc0 = c1;				/* start concentration */
 
 
   if(c2 == NULL) {
@@ -192,7 +226,7 @@ FLUXON *new_fluxon(      NUM flux,
 
   clear_links(&(nf->end_links));
   nf->end_links.sum = nf->flux;
-  nf->fc1 = c2;
+  nf->fc1 = c2;				/* end concentration */
 
   nf->plasmoid = 0;
 
@@ -208,7 +242,7 @@ FLUXON *new_fluxon(      NUM flux,
  */
 
 inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) { 
-  VERTEX *tp;
+  VERTEX *tp;				/* new vertex name */
   int i;
 
   tp = (VERTEX *)localmalloc(sizeof(VERTEX),MALLOC_VERTEX);
@@ -217,10 +251,10 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
 
   if(!tp) barf(BARF_MALLOC,"new_vertex");
   tp->line = fluxon;
-  tp->prev = 0;
+  tp->prev = 0;				/* not linked to other vertices */
   tp->next = 0;
 
-  tp->x[0] = x;
+  tp->x[0] = x;				/* tp position */
   tp->x[1] = y;
   tp->x[2] = z;
 
@@ -241,7 +275,7 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
 /**********************************************************************
  * new_flux_concentration
  * 
- * Returns a flux concentration at the given location
+ * Returns a flux concentration at the given location within the world
  *
  */
 
@@ -259,11 +293,11 @@ FLUX_CONCENTRATION *new_flux_concentration(
   fc->flux = flux;
   fc->label = new_label(label);
 
-  fc->lines = (FLUXON *)0;
-  fc->x[0] = x;
+  fc->lines = (FLUXON *)0;	/* no fluxons in this fc */
+  fc->x[0] = x;	 	 	/* position */
   fc->x[1] = y;
   fc->x[2] = z;
-  fc->locale_radius = 0; /* locale_radius isn't used just now */
+  fc->locale_radius = 0; 	/* locale_radius isn't used just now */
   
   fc->bound = 0;
 
@@ -274,7 +308,7 @@ FLUX_CONCENTRATION *new_flux_concentration(
 
 /**********************************************************************
  * new_world
- *
+ * Creates a new world with sensible beginning parameters, forces etc.
  */
 WORLD *new_world() {
   WORLD *a = (WORLD *)localmalloc(sizeof(WORLD),MALLOC_WORLD);
@@ -282,7 +316,7 @@ WORLD *new_world() {
   
   a->frame_number = 0;
   a->state = WORLD_STATE_NEW;
-  a->concentrations = NULL;
+  a->concentrations = NULL;	/* nothing in the world yet */
   a->vertices = NULL;
   a->lines = NULL;
 
@@ -297,15 +331,15 @@ WORLD *new_world() {
 
   a->verbosity = 0;  /* No verbose printouts by default */
 
-  /* Put in a sensible default force list */
+  /* Put in a sensible default force list (physics.c) */
   a->f_funcs[0] = b_eqa;
   a->f_funcs[1] = f_curv_m;
   a->f_funcs[2] = f_p_eqa_radial; 
   a->f_funcs[3] = f_vert;
   a->f_funcs[4] = 0;
 
-  /***********
-   * initialize scaling law.  Default scaling is for b-normalized forces, no acceleration
+  /* initialize scaling law.  Default scaling is for b-normalized
+   * forces, no acceleration
    */
   a->step_scale.b_power = 0;
   a->step_scale.d_power = 2;
@@ -323,7 +357,6 @@ WORLD *new_world() {
   a->fc_oe->bound = fl_b_end_open;
   a->concentrations = tree_binsert(a->concentrations, a->fc_oe, fc_lab_of, fc_ln_of);
   
-  
   a->fc_pb = new_flux_concentration(a,0,0,0,1,-3);
   a->fc_pb->label = -3;
   a->fc_pb->bound = fl_b_start_plasmoid;
@@ -337,7 +370,6 @@ WORLD *new_world() {
   return a;
 }
 
-
 /**********************************************************************
  **********************************************************************
  ***** 
@@ -347,19 +379,21 @@ WORLD *new_world() {
  */
 
 /**********************************************************************
- * unlink_vertex: Remove the given vertex from its list and its
- * neighborhood.  Neighborhood information gets sloshed around.
+ * unlink_vertex
+ * Remove the given vertex from its list and its neighborhood.  
+ * Neighborhood information gets sloshed around.
  */
+
 void unlink_vertex(VERTEX *v) {
   int i;
 
-  if(!v)
+  if(!v)			/* do nothing if not given a v */
     return;
-  if(!v->prev || !v->next) {
+  if(!v->prev || !v->next) {	/* if one of the links is missing */
     fprintf(stderr,"unlink_vertex ignoring an end condition...\n");
     return;
   }
-  if(!v->line) {
+  if(!v->line) {		/* if it doesn't belong to a fluxon */
     fprintf(stderr,"unlink_vertex: strangeness!\n");
     return;
   }
@@ -367,9 +401,12 @@ void unlink_vertex(VERTEX *v) {
 
   v->prev->next = v->next;
   v->next->prev = v->prev;
-  v->line->v_ct--;
+  v->line->v_ct--;		/* decrease vertex count in the fluxon */
 
 
+  /* Shuffle around the neighbor and nearby vertex lists to remove v
+   * and put in v's next and previous vertices. 
+   */
   for(i=0;i<v->neighbors.n;i++) {
     VERTEX *a = ((VERTEX **)(v->neighbors.stuff))[i];
     if(a) {
@@ -440,17 +477,22 @@ void unlink_vertex(VERTEX *v) {
   }
 }
 
+/**********************************************************************
+ * delete_vertex
+ * Unlinks and then zero's out a given vertex.
+ */
+
 void delete_vertex(VERTEX *v) {
   if(!v) 
     return;
   unlink_vertex(v);
-  if(v->neighbors.stuff) {
+  if(v->neighbors.stuff) {		/* zero out the neighbor links */
     localfree(v->neighbors.stuff);
     v->neighbors.stuff=0;
     v->neighbors.size=0;
     v->neighbors.n=0;
   }
-  if(v->nearby.stuff) {
+  if(v->nearby.stuff) {			/* zero out the nearby links */
     localfree(v->nearby.stuff);
     v->nearby.stuff=0;
     v->nearby.size=0;
@@ -466,22 +508,25 @@ void delete_vertex(VERTEX *v) {
 }
 
 /**********************************************************************
- * add_vertex_pos: stick vertex <v> into fluxon <f> at position <pos>.
- * Return status 0=success, 1=error.  
+ * add_vertex_pos 
+ * Stick vertex <v> into fluxon <f> at position <pos> within the fluxon.
+ * Return int status 0=success, 1=error.  
  *
- * Input:  Node counting starts at 0 (which is a trivial node); 
- * -1 implies the last node (which is the other trivial node). 
- * -2 adds to the end of the list of middle nodes.  1 adds to the
- * beginning of the list of middle nodes.  Numbers are truncated such
- * that it's impossible to scrozzle the final node by feeding in a 
- * positive number -- you have to use -1 to get that.
+ * Pos Input:  
+ * 	0	trivial initial node 
+ * 	-1 	trivial last node
+ * 	-2 	adds to end of the middle nodes (just before the last node).  
+ *	1 	adds to the beginning of the list of middle nodes.  
+ * Numbers are truncated such that it's impossible to scrozzle the final
+ * node by feeding in a positive number -- you have to use -1 to get that.
  *
- * High numbers 
+ * Calls add_vertex_after in most cases
+ *
  */
 
 int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
   
-  if(!f || !v) 
+  if(!f || !v) 			/* error if either of them is not given */
     return 1;
 
   if(v->next != 0 || v->prev != 0) {
@@ -490,7 +535,7 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
   }
 
 
-  /* Handle the empty-fluxon case */
+  /* Handle the empty-fluxon case: start and end vertices of f become v */
   if(f->start == 0 || f->end == 0){
     if(f->start == 0 && f->end == 0) {
       f->start = v;
@@ -498,7 +543,7 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
       f->v_ct = 1;
       v->next = 0;
       v->prev = 0;
-      f->fc0->world->vertices = tree_binsert(f->fc0->world->vertices, v, v_lab_of, v_ln_of);
+      f->fc0->world->vertices = tree_binsert(f->fc0->world->vertices, v, v_lab_of, v_ln_of);	/* insert v into world vertice tree and balance */
       return 0;
     } else {
       fprintf(stderr, "Encoutered a fluxon with at START but no END, or vice versa!\n");
@@ -506,11 +551,21 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
     }
   }
 
-  /* Handle counting-forwards */
-  if(pos >= 0) {
+ 
+  if(pos >= 0) {		/* pos is positive */
     int i;
     VERTEX *v0;
 
+    /* count backwards if pos is near the end */
+    if(pos > f->v_ct/2) {
+      for(i=f->v_ct-1, v0 = f->end; i>pos; i--)
+	v0=v0->prev;
+    } else {
+      for(i = 0, v0 = f->start; v0->next && i<pos; i++)
+	v0 = v0->next;
+    }
+
+    /* else count forwards */    
     if( f->v_ct <= pos ) {
       if(!f->end->prev) {
 	fprintf(stderr,"add_vertex_pos got a 1-node fl with a large pos. position.  Not kosher!\n");
@@ -518,20 +573,10 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
       }
       return add_vertex_after(f, f->end->prev, v);
     }
-
-    /* If it's faster to count backwards, count backwards */
-    if(pos > f->v_ct/2) {
-      for(i=f->v_ct-1, v0 = f->end; i>pos; i++)
-	v0=v0->prev;
-    } else {
-      for(i = 0, v0 = f->start; v0->next && i<pos; i++)
-	v0 = v0->next;
-    }
     return add_vertex_after(f, v0->prev, v);
   }
 
-  /* handle counting-backwards (no check because everything else returns!) */
-  /* if(pos<0) */
+  /* if pos is negative */
   {
     int i;
     VERTEX *v0;
@@ -541,7 +586,6 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
     }
     
     /* Add optional counting-forwards here for minor speed improvement */
-
     for(i = -1, v0 = f->end; v0->prev && i>pos; i--) 
       v0 = v0->prev;
     
@@ -550,58 +594,60 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
 }
 
 /**********************************************************************
- * add_vertex_after: Stick vertex <v> into fluxon <f>, just
- * AFTER <neighbor>.  If <neighbor> is 0, then <v> goes at the beginning
- * of the list.  Return an error flag.  The newly inserted vertex
- * gets the prior and next vertices' neighbor lists, too.
+ * add_vertex_after: 
+ * Stick vertex <v> into fluxon <f>, just AFTER <lucy>.  If <lucy> 
+ * is 0, then <v> goes at the beginning of the list.  Return an error flag
+ * (0=success, 1=error). The newly inserted vertex gets the prior and next
+ * vertices' neighbor lists, too.
  */
-int add_vertex_after(FLUXON *f, VERTEX *neighbor, VERTEX *v) {
 
-  /* Insert at beginning of list */
-  if(!neighbor) {
+int add_vertex_after(FLUXON *f, VERTEX *lucy, VERTEX *v) {
+
+  /* Insert at beginning of list if <lucy> is not given 
+   * (<v> inserted after <lucy>) */
+  if(!lucy) {
     v->prev = 0;
     v->next = f->start;
-    if(f->start) {
-      f->start->prev = v;  /* There was at least one other vertex */
+    if(f->start) {	   /* There was at least one other vertex */
+      f->start->prev = v;  
       f->v_ct++;
     }
-    else {
-      f->end = v;          /* This is the first vertex */
+    else {		   /* This is the first vertex */
+      f->end = v;
       f->v_ct=1;           /* Enforce the v_ct to be correct */
     }
     f->start = v;
   }
 
-  else {
-    if(neighbor->line != f) {
+  else {		   /* if there is a <lucy> */
+    if(lucy->line != f) {  /* if <lucy> isn't on same fluxon */
       fprintf(stderr,"add_vertex_after: neighbor is not on its fluxon!\n");
       return 1;
     }
     
     /* Insert at end of list */
-    if(!neighbor->next) {
-      if(f->end != neighbor) { /* Print an error and abort if inconsistent */
+    if(!lucy->next) {	   /* if <lucy> is the last vertice in the fluxon */
+      if(f->end != lucy) { /* Print an error and abort if inconsistent */
 	fprintf(stderr,"Strange vertex list found by add_vertex_after\n");
 	exit(1021);
       }
-      v->prev = neighbor;
+      v->prev = lucy;      	/* link <lucy> in */
       v->next = 0;
-      neighbor->next = v;
+      lucy->next = v;
       f->end = v;
       f->v_ct++;
     }
     
-    else {
-      /* Insert in middle of list */
-      v->next = neighbor->next;
-      v->prev = neighbor;
-      neighbor->next->prev = v;
-      neighbor->next = v;
+    else {			/* Insert in middle of list */
+      v->next = lucy->next;	/* link <lucy> in */
+      v->prev = lucy;
+      lucy->next->prev = v;
+      lucy->next = v;
       f->v_ct++;
     }  
   }
 
-  /* Fix up neighbor lists */
+  /* Fix up neighbor and nearby lists lists */
   if(v->prev) 
     dumblist_snarf(&(v->neighbors),&(v->prev->neighbors));
   if(v->next)
@@ -615,6 +661,7 @@ int add_vertex_after(FLUXON *f, VERTEX *neighbor, VERTEX *v) {
     }
   }
 
+  /* insert v into world, balance world vertices */
   f->fc0->world->vertices = tree_binsert(f->fc0->world->vertices, v, v_lab_of, v_ln_of);
 
   return 0;
@@ -648,7 +695,7 @@ void clear_links(LINKS *links) {
 
 /**********************************************************************
  * tree_top
- * Return the top node of a tree
+ * Returns the top node of a tree
  */
 void *tree_top(void *tree, int link_offset) {
   long i;
@@ -663,12 +710,9 @@ void *tree_top(void *tree, int link_offset) {
 
 /**********************************************************************
  * tree_walk
- * Walk a tree, calling a function once per node in label order.
- * The function must return an int with 0=ok, nonzero=error.
- * It gets the node pointer and a depth meter.  It should know the
- * offsets!
- * Strong typing is for people with weak minds!
- * Returns 0 on normal completion, the failure value on error.
+ * Recursive function to walk along a tree, calling a function once per node in 
+ * label order. It gets the node pointer and a depth meter.
+ * Returns int 0 on normal completion, int 1 on error.
  *
  * tree_walk is a convenience function for tree_walker, which does the
  * work and also carts along a depth meter.
@@ -682,16 +726,16 @@ long tree_walker(void *tree
 
   LINKS *l = (LINKS *)(tree+link_offset);
 
-  if(!tree)
+  if(!tree)			/* not given a tree */
     return 1;
 
-  if(l->left) 
+  if(l->left) 			/* go left and call tree_walker */
     err = tree_walker(l->left,label_offset, link_offset, func, depth+1);
   
-  if(!err)
+  if(!err)			/* perform func on node (if err=0) */
     err = (*func)(tree, label_offset, link_offset,depth);
 
-  if(!err && l->right)
+  if(!err && l->right)		/* go right and call tree_walker (if err=0) */
     err = tree_walker(l->right, label_offset, link_offset, func, depth+1);
 
   return err;
@@ -707,20 +751,21 @@ long tree_walk(void *tree
  * tree_find
  * Given a data type that includes tree links and an offset to the label
  * field and the tree link array, find the lebelled item in the tree,
- * or NULL.  
+ * or NULL. Recursive function.
  *
- * Returns a pointer to the labelled field.
+ * Returns a pointer to the desired node with that label.
  */
 void *tree_find(void *tree, long label, int label_offset, int link_offset){
   long node_label;
   LINKS *links;   
 
-  if(tree==NULL) return NULL;
+  if(tree==NULL) return NULL;	/* if no tree */
   node_label = *((long *)(tree+label_offset));
   if(node_label == label) return tree;
 
   links = (LINKS *)((void *)tree + link_offset);
 
+  /* go left if desired label is bigger than current one, call tree_find */
   if( node_label > label) {
     if( links->left == NULL ) return NULL;
     return tree_find( links->left,
@@ -730,7 +775,9 @@ void *tree_find(void *tree, long label, int label_offset, int link_offset){
 		      );
   } 
 
-  if( links->right == NULL ) return NULL;
+  if( links->right == NULL ) return NULL; /* if it isn't on the tree */
+
+  /* go right if desired label is smaller than current one, call tree_find */
   return tree_find( links->right,
 		    label,
 		    label_offset,
@@ -738,23 +785,23 @@ void *tree_find(void *tree, long label, int label_offset, int link_offset){
 		    );
 }
 
-
 /**********************************************************************
  * tree_insert
  * Given a tree and a datum, insert the datum into the tree.  
- * Balancing is given proper thought.  The root of the tree is returned
- * (because it might change!)
+ * Balancing is given proper thought, but not done.  The root of the tree
+ * is returned (because it might change!)
  *
  * Because this is a single-node insertion only, the tree 
- * links from the item should both be NULL before insertion.  If that's
- * not true, the item is inserted anyway (possibly breaking whatever
- * tree it came from), and a warning message is printed.
+ * links from the item should both be NULL before insertion. It will not
+ * insert an item that is already in the tree, but it will intert and item
+ * that has the same label as an item already in the tree (with a warning). 
  *
  * As an efficiency measure (in part because tree_balance uses tree_insert
  * to shuffle things around), tree_insert does not call tree_balance on 
- * branches that may become imbalanced.  It's best to call tree_b_insert
- * if that's what you want.
+ * branches that may become imbalanced.  It's best to call tree_binsert
+ * if that's what you want, which calls tree_intert followed by tree_balace.
  */
+
 void *tree_binsert(void *root, void *item, int label_offset, int link_offset) {
   return tree_balance(tree_insert(root, item, label_offset, link_offset),
 		      label_offset, link_offset);
@@ -773,13 +820,12 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
 
   node_label = *((long *)(item+label_offset));
 
-  /* Check assertion that this is a simple item and not a tree in its
-   * own right */
+  /* Check assertion that this is a simple item and not a tree */
   if( (item_links->left != NULL) ||
       (item_links->right != NULL) ||
       (item_links->up != NULL) ||
       (item_links->n > 1)) {
-    fprintf(stderr,"HEY!  tree_insert got item #%ld, which isn't clean! I refuse to insert this.\n");
+    fprintf(stderr,"HEY!  tree_insert got item #%ld, which is a tree! I refuse to insert this.\n");
     return root;
   }
   
@@ -794,7 +840,7 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
     long foo_label = *( (long *)(foo+label_offset) );
     LINKS *foo_links = (LINKS *)(foo+link_offset);
 
-    if( foo_label < node_label ) {
+    if( foo_label < node_label ) {	/* move to right */
       if(foo_links->right == NULL) {
 	foo_links->right = item;
 	break;
@@ -803,7 +849,7 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
       }
     }
 
-    else if( foo_label > node_label) {
+    else if( foo_label > node_label) {	/* move to left */
       if(foo_links->left == NULL) {
 	foo_links->left = item;
 	break;
@@ -827,7 +873,7 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
     }
   }
 
-  if(foo == NULL) {
+  if(foo == NULL) {		/* full exit */
     fprintf(stderr,"tree_insert should never get here.  You lose.\n");
     exit(2);
   }
@@ -853,14 +899,17 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
  * tree_balance_check
  * Given a node in a tree, check whether it is balanced (non-recursively)
  * using its node counts and its descendents' balanced flags.  Return
- * the balanced flag, but also put it into the node.  Allows 30% slop
- * in the size of the two branches before it complains.
+ * the balanced flag (0=unbalanced, 1=balanced), but also put it into the node.
+ * Allows 30% slop in the size of the two branches before it complains.
  */
+
 char tree_balance_check(void *foo, int link_offset) {
   LINKS *l;
   long ln, rn;
   char lb, rb;
-  if(!foo) return 1;
+
+  if(!foo) return 1;		/* no tree is a balanced tree */
+
   l = (LINKS *)(foo+link_offset);
 
   ln = l->left  ? ((LINKS *)(l->left  + link_offset))->n : 0;
@@ -871,21 +920,23 @@ char tree_balance_check(void *foo, int link_offset) {
 
   return 
     l->balanced = 
-    (lb && rb) 
+    (lb && rb)
     ? ( ( ((ln - rn) <= 1) && ((rn - ln) <= 1) )
-	|| ( fabs((float)ln - (float)rn)/((float)ln+(float)rn) < 0.3) )
-    : 0;
+	|| ( fabs((float)ln - (float)rn)/((float)ln+(float)rn) < 0.3) ) 
+    : 0;	/* are both nonzero? yes, do branches have similar n,
+		 * then tree is balanced. no, tree not balanced */
+
 }
   
 /**********************************************************************
  * tree_unlink
  * Given an item in a tree, unlink the item from that tree.  The item
- * is not freed -- only unlinked from the tree!
+ * is not freed -- only unlinked from the tree and cleared!
  *
  * As always, you have to supply the offsets to the label and 
  * link fields of the tree data structure.
  * 
- * Returns the new root, which might chagne.
+ * Returns the new root, which might change.
  */
 
 void *tree_unlink(void *data, int label_offset, int link_offset) {
@@ -894,13 +945,12 @@ void *tree_unlink(void *data, int label_offset, int link_offset) {
   void *foo, *root;
   void *downline = (data_links->left ? 
 		    data_links->left : 
-		    data_links->right);
+		    data_links->right); /* downline is left if possible, else right */
   
   /* Initial guess at new root is one of the branches of this node */
   root = data_links->left ? data_links->left : data_links->right;
 
-  /* Walk up to the top, decrementing link counts as we go and    */
-  /* finding the new root                                         */
+  /* Walk up to the top, decrementing link counts as we go and finding the new root */
   for(foo=data_links->up; 
       foo; 
       foo = ((LINKS *)(foo+link_offset))->up) {
@@ -914,23 +964,19 @@ void *tree_unlink(void *data, int label_offset, int link_offset) {
 
   upline_links = ( data_links->up ? 
 		    (LINKS *)(((void *)data_links->up)+link_offset) :
-		    0
-		    );
+		    0 ); 	/* upline_links, up or null */
 
 
-  /******************************
-   * If neither branch is null, then the right-hand branch gets
-   * grafted onto the rightmost leaf of the left-hand branch.
-   */
+  /* If neither branch is null, then the right-hand branch gets 
+   * grafted onto the rightmost leaf of the left-hand branch. */
   if(data_links->left && data_links->right) {
       void *leaf;
       LINKS *leaf_links;
       long n;
       NUM sum;
 
-      /* Grab the n and sum from the right-hand tree; prepare to 
-       * accumulate them into the left-hand side.
-       */
+      /* Grab the n and sum from the right-hand tree; prepare to
+       * accumulate them into the left-hand side. */
       n =   ((LINKS *)(data_links->right+link_offset))->n;
       sum = ((LINKS *)(data_links->right+link_offset))->sum;
 
@@ -954,12 +1000,10 @@ void *tree_unlink(void *data, int label_offset, int link_offset) {
   }
 
 
-  /******************************
-   * Now there are either 0 or 1 branches below this one, and 
+  /* Now there are either 0 or 1 branches below this one, and 
    * downline is set appropriately (if there were initially two
    * then downline is pointing to the left-hand one).
-   * Link them in to the parent.
-   */
+   * Link them in to the parent. */
 
    if(upline_links) {
      if(upline_links->left == data) 
@@ -984,7 +1028,7 @@ void *tree_unlink(void *data, int label_offset, int link_offset) {
  * If there's an imbalance between left and right sides, 
  * unlink the rightmost <n> leaves from the left side or the leftmost
  * <n> leaves from the right side, and stick 'em on the opposite side.
- * Then rebalance both subtrees.  Return the new tree.
+ * Then recursively rebalance both subtrees.  Return the new tree root.
  *
  * This could be made more efficient by optimizing the tree_unlink
  * call a bit (and keeping it local):  rather than finding the rightmost
@@ -995,6 +1039,7 @@ void *tree_unlink(void *data, int label_offset, int link_offset) {
  * in the geometry section.)  2-oct-2000
  *
  */
+
 void *tree_balance(void *tree, int label_offset, int link_offset) {
   int i;
   void *l_tree, *r_tree;
@@ -1002,9 +1047,8 @@ void *tree_balance(void *tree, int label_offset, int link_offset) {
   long l_n, r_n;
   LINKS *l_link, *r_link, *t_link;
   
-  if(tree == NULL) 
+  if(tree == NULL) 			/* a null tree is balanced */
     return tree;
-
 
   t_link = (LINKS *)(tree+link_offset);
   l_tree = t_link->left;
@@ -1016,7 +1060,8 @@ void *tree_balance(void *tree, int label_offset, int link_offset) {
   l_n = l_tree ? l_link->n : 0;
   r_n = r_tree ? r_link->n : 0;
 
-  /** Some shuffling has to be done:  sever the head of the tree from the branches. **/
+  /* Some shuffling has to be done:  sever the head of the tree
+   * from the branches if it isn't balanced. */
   if( ! t_link->balanced ) {
     char l_tweak=0;
     char r_tweak=0;
@@ -1032,7 +1077,7 @@ void *tree_balance(void *tree, int label_offset, int link_offset) {
     upnode = t_link->up;
 
     
-    /** Shuffle from left to right as necessary **/
+    /* Shuffle from left to right as necessary */
     for(i=0; i < (l_n - r_n)/2 ; i++) {
       void *foo, *f;
       l_tweak=1;
@@ -1046,7 +1091,7 @@ void *tree_balance(void *tree, int label_offset, int link_offset) {
       tree = foo;
     }
 
-    /** Shuffle from right to left as necessary **/
+    /* Shuffle from right to left as necessary */
     for(i=0; i< (r_n - l_n)/2 ; i++) {
       void *foo, *f;
       r_tweak = 1;
@@ -1070,13 +1115,13 @@ void *tree_balance(void *tree, int label_offset, int link_offset) {
   l_link = (LINKS *)(l_tree+link_offset);
   r_link = (LINKS *)(r_tree + link_offset);
 
-  if(l_tree && (!l_link->balanced)) 
+  if(l_tree && (!l_link->balanced)) 	/* balance left subtree */
     l_tree = tree_balance(l_tree, label_offset, link_offset);
 
-  if(r_tree && (!r_link->balanced))
+  if(r_tree && (!r_link->balanced))	/* balance right subtree */
     r_tree = tree_balance(r_tree, label_offset, link_offset);
   
-  /** Mend the links **/
+  /* Mend the links and reconnect left and right trees */
   t_link = (LINKS *)(tree+link_offset);
   t_link->up = NULL;
   t_link->left = l_tree;
@@ -1084,7 +1129,7 @@ void *tree_balance(void *tree, int label_offset, int link_offset) {
   t_link->n = 1;
   t_link->sum = *((NUM *)tree);
   t_link->balanced = 1;
-  
+    
   if(l_tree) {
     l_link = (LINKS *)(l_tree + link_offset);
     l_link->up = tree;
@@ -1109,6 +1154,7 @@ void *tree_balance(void *tree, int label_offset, int link_offset) {
  * dumb -- just produces a string with the name of the state the world
  * (the given one, not the big one) is in.  
  */
+
 const char *world_state_name(WORLD *a){
   if(a==NULL) {
     return "NULL WORLD";
@@ -1140,45 +1186,71 @@ const char *world_state_name(WORLD *a){
  ***** For sanity reasons, these things crash if you try to make a dumblist
  ***** with more than 2^15 things in it.
  *****/
+
+
+/**********************************************************************
+ * new_dumblist
+ * initializes a new, emptry dumblist with size zero 
+ */
+
 DUMBLIST *new_dumblist() {
   DUMBLIST *foo = (DUMBLIST *)localmalloc(sizeof(DUMBLIST),MALLOC_DL);
   foo->n = 0;
   foo->size = 0;
   foo->stuff = 0;
 }
- 
+
+/**********************************************************************
+ * free_dumblist
+ * locally frees the pointers in a dumblist and then the dumblist itself
+ */ 
+
 void free_dumblist(DUMBLIST *foo) {
   if(foo->stuff) 
     localfree (foo->stuff);
   localfree (foo);
 }
 
+/**********************************************************************
+ * dumblist_quickadd
+ * adds an element after the last used element in a dumblist. sometimes
+ * increases the size of the dumblist if needed
+ */ 
+
 void dumblist_quickadd(DUMBLIST *dl, void *a) {
   int i;
   void **foo;
   if(!dl || !a) return;
-  if(!(dl->stuff)) {
+  if(!(dl->stuff)) {	/* if its a new dumblist, give it 16 elements */
     dl->stuff = (void **)localmalloc( 16*sizeof(void *),MALLOC_DL_L);
     dl->size = 16;
     dl->n = 1;
     dl->stuff[0] = a;
     return;
   }
-  if(dl->n >= dl->size) 
-    dumblist_grow(dl, dl->size +1);
+
+  if(dl->n >= dl->size)		/* note that if n>size, you have bigger problems 
+				   should probably put a real error message here */
+    dumblist_grow(dl, dl->size +1);	/* grows to (3/2)*size */
   
   dl->stuff[dl->n] = a;
   dl->n++;
 }
+
+/**********************************************************************
+ * dumblist_add
+ * adds an element after the last used element in a dumblist. sometimes
+ * increases the size of the dumblist if needed. checks to make sure that
+ * the element isn't already in the dumblist
+ */ 
     
 void dumblist_add(DUMBLIST *dl, void *a) {
   int i;
   void **foo;
   if(!dl || !a) return;
 
-  /* If it's a null list, allocate some space (this could 
-     actually fit in the extend-list conditions, but what the heck)
-   */
+  /* If it's a null list, allocate some space for a 16 element list (this could 
+     actually fit in the extend-list conditions, but what the heck) */
   if(!(dl->stuff)) {
     dl->stuff = (void **)localmalloc( 16 * sizeof(void *),MALLOC_DL_L);
     dl->size = 16;
@@ -1187,14 +1259,13 @@ void dumblist_add(DUMBLIST *dl, void *a) {
     return;
   }
 
-  /* Traverse the list to see if a is already in it! */
-  /* (this is what makes it dumb...) */
+  /* Traverse the list to see if a is already in it! (this is what makes it dumb...) */
   for(foo=dl->stuff,i=0;i<dl->n && *foo != a;foo++,i++)
     ;
-  if(i<dl->n) 
+  if(i<dl->n) 	/* don't add it if it is already there */
     return;
   
-  /* OK, a isn't in the list -- add it on the end. */
+  /* OK, a isn't in the list -- add it on the end, increase n by 1. */
   if(dl->n >= dl->size)
     dumblist_grow(dl,dl->size+1);
 
@@ -1203,12 +1274,15 @@ void dumblist_add(DUMBLIST *dl, void *a) {
 }
 
 /**********************************************************************
- * dumblist_delete -- attempt to remove an item from a dumb list.
- * Finds each occurence of the item and blasts 'em.  If no such 
- * item is found, then nothing happens.  The variant,
- * sorted_dumblist_delete, knocks off as soon as a larger number than 
- * the requested one is found.  It could be reworked to run in 
- * log time rather than linear time, but who has the time?
+ * dumblist_delete
+ * attempt to remove an item from a dumb list. Finds each occurence 
+ * of the item and blasts 'em.  If no such item is found, then
+ * nothing happens.  
+ * 
+ * The variant, sorted_dumblist_delete, knocks off as soon as a 
+ * larger number than the requested one is found.  It could be 
+ * reworked to run in log time rather than linear time, but who
+ * has the time? ** can't find sorted_dumblist_delete **
  */
 
 inline void dumblist_delete(DUMBLIST *dl, void *a) {
@@ -1225,14 +1299,15 @@ inline void dumblist_delete(DUMBLIST *dl, void *a) {
 }
     
 /**********************************************************************
- * dumblist_rm -- remove the ith item from a dumblist.  Move the last
+ * dumblist_rm
+ * Removes the ith item from a dumblist.  Move the last
  * item in the dumblist to the vanished position.
  */
 
 inline void dumblist_rm(DUMBLIST *dl, int i) {
   if(i < dl->n) {
     dl->n--;
-    if( i < dl->n )
+    if( i < dl->n )	/* with the new n */
       dl->stuff[i] = dl->stuff[dl->n];
   }
 }
@@ -1240,7 +1315,7 @@ inline void dumblist_rm(DUMBLIST *dl, int i) {
 
 /**********************************************************************
  * dumblist_grow
- * Grow a dumblist to the required size.  Leave some margin.
+ * Grows a dumblist to (3/2) the requested size or 16, whichever is bigger.
  */
 void dumblist_grow(DUMBLIST *dl, int size) {
   void **foo;
@@ -1264,7 +1339,7 @@ void dumblist_grow(DUMBLIST *dl, int size) {
     else {
       int a,b=0;
       fprintf(stderr,"dumblist_grow: Warning -- size is %d!\n",newsize);
-      //j      a /= b; // throw an arithmetic exception
+      /* j      a /= b;  throw an arithmetic exception */
     }
   }
   
@@ -1273,6 +1348,7 @@ void dumblist_grow(DUMBLIST *dl, int size) {
    *
    * dl->stuff = (void **)realloc(dl->stuff,newsize * sizeof(void *));
    */
+
   {
     void **oldstuff, **ost, **newstuff;
     int i;
@@ -1288,13 +1364,18 @@ void dumblist_grow(DUMBLIST *dl, int size) {
     dl->size = newsize;
 }
     
+/**********************************************************************
+ * static variables */
 
 static void **dls_wk = 0;
 static long dls_size = 0;         /* Size of dumblist we can currently qsort */
 static long dls_sz = 0;           /* Size of allocated space for qsorting */
 static int ((*dls_cmp)(void *a, void *b));
 
-/* Sort the given dumblist -- just the n elements starting at l --
+/**********************************************************************
+ * dumblist_qsort
+ * helper function for dumblist_sort 
+ * Sort the given dumblist -- just the n elements starting at l --
  * using the workspace starting at element wk_start.  Return the 
  * start of the sorted list in the workspace.  Eat up workspace linearly --
  * there should be plenty (never call this routine from outside; call the 
@@ -1312,6 +1393,7 @@ static int ((*dls_cmp)(void *a, void *b));
  * list to use floating point size indices?)
  * 
  */
+
 void **dumblist_qsort(void **l, int n, void **wk_start) {
   if(n<=1) {
     if(!n)        /* Paranoia */
@@ -1326,8 +1408,8 @@ void **dumblist_qsort(void **l, int n, void **wk_start) {
     int nr=n-nl;
     int n_copied; 
     void **out,**out1;
-    void **left, **left0;
-    void **right, **right0;
+    void **left, **left0;	/* left0 is start of left branch, left is current */
+    void **right, **right0;	/* right0 is start of right branch, right is current */
     
     /* Divide the list in half (nl and nr), and sort each half. */
     if(n>2) {
@@ -1335,18 +1417,21 @@ void **dumblist_qsort(void **l, int n, void **wk_start) {
       right0 = right = dumblist_qsort(l+nl , nr, left + nl + 1 );
     } else {  /* n==2 */
       /* No need to iterate to the hairy end for 2 trivial lists. */
-      left0 = left = wk_start;
-      right0 = right = left+1;
+      left0 = left = wk_start;	/* start out with left,left0 same place */
+      right0 = right = left+1;	/* start out with right,right0 same place */
       *left = *l;
       *right = l[1];
     }
-    
+ 
+    /* out1 is beginning of out sorted list, the 1 is a buffer space */    
     out1 = out = right + nr + 1;
     
     /* Merge the lists, skipping duplicates and copying back into place. */
     for(n_copied = 0; 
 	n_copied < n;
 	n_copied++) {
+      /* compare the positions of left, left0 and right, right0. they have 
+       * been sorted if they are not at the same place  */
       int l_done = (left  - left0 >= nl)   || (*left == NULL)  ;
       int r_done = (right - right0 >= nr)  || (*right == NULL) ;
       int foo;
@@ -1355,15 +1440,15 @@ void **dumblist_qsort(void **l, int n, void **wk_start) {
 	if(!r_done) {
 	  switch (foo=((*dls_cmp)(*left,*right))) {
 	    
-	  case -1:
+	  case -1:			/* *left < *right */
 	    *(out++) = *(left++);
 	    break;
 	    
-	  case 1:
+	  case 1:			/* *left > *right */
 	    *(out++) = *(right++);
 	    break;
 	    
-	  case 0:
+	  case 0:			/* *left == *right */
 	    *(out++) = *(right++);
 	    left++;
 	    break;
@@ -1385,7 +1470,7 @@ void **dumblist_qsort(void **l, int n, void **wk_start) {
       }
     }
 
-    *out = 0; /* Lay down a fence */
+    *out = 0; /* Lay down a fence, buffer space */
 
     return out1;
   } /* end of convenience block */
@@ -1393,10 +1478,12 @@ void **dumblist_qsort(void **l, int n, void **wk_start) {
 
 
 /******************************
- * dumblist_shellsort is a basic comb/shell sorter.
+ * dumblist_shellsort
+ * is a basic comb/shell sorter.
  * It's useful for lists too small to need quicksort (up to, say, 50 elements).
  * @@@ DIRTY - FIXME
  */
+
 void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
   int i,j,increment;
   void *temp;
@@ -1404,20 +1491,22 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
   int iter=0;
 
 #ifdef testing_with_bubblesort
-  // Bubblesort to make sure shellsort isn't scrozzling memory
+  /*  Bubblesort to make sure shellsort isn't scrozzling memory, if option is set */
   char done;
   int ret;
+
+  /* come at it from both ends at once, going all the way through to the opp end */
   do {
     done = 1;
     for(i=0;i<n-1;i++) {
       if(  (ret = ((*cmp)(dl->stuff[i],dl->stuff[i+1]))) > 0) {
-	void *foo = dl->stuff[i+1];
+	void *foo = dl->stuff[i+1]; /* switch places if i > i+1 */
 	dl->stuff[i+1] = dl->stuff[i];
 	dl->stuff[i] = foo;
 	done = 0;
       }
       if(((*cmp)(dl->stuff[n-2-i],dl->stuff[n-1-i]))>0) {
-	void *foo = dl->stuff[n-2-i];
+	void *foo = dl->stuff[n-2-i]; /* switch places if n-2-i > n-1-i */
 	dl->stuff[n-2-i] = dl->stuff[n-1-i];
 	dl->stuff[n-1-i] = foo;
 	done = 0;
@@ -1440,38 +1529,57 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
 	}
 	dl->stuff[j] = temp;
       }
-      increment >>= 1;
+      increment >>= 1; /* binary /2, drop remainder, basically shorten the increment*/
     }
 }
 
 /******************************
- * dumblist_crunch crunches a sorted dumblist, 
- * removing duplicate elements.
+ * dumblist_crunch 
+ * crunches a SORTED dumblist, removing duplicate elements and nulls. duplicate
+ * elements must be pointing to same thing to be considered duplicate
  */
+
 void dumblist_crunch(DUMBLIST *dl,int((*cmp)(void *a, void *b))) {
   void **a, **b;
   int i,j;
 
-  b = &(dl->stuff[0]);
+  b = &(dl->stuff[0]);      /* start at the beginning of the dumblist, b,a */
   a = &(dl->stuff[1]);
   j =0;
-  for(i=1;i<dl->n;i++) {
-    if((*cmp)(*b,*a)) {
-      b++; j++;
-      if(b != a) 
-	*b = *a;
-    }
-    a++;
+
+  for (i=1; i<dl->n; i++){  /* loop for the used spaces int the dumblist */
+    if (*a){
+      if (*b){
+        if ((*cmp)(*b,*a)){ /* if a and b pointers exist and values are diff*/
+          b++;          /* advance b */
+          j++;          /* advance j */
+          if (b != a)   /* if they don't point to same positon, and *a, *b exist */
+  	   *b = *a;     /* copy pointer a into pointer b */
+        }
+      } 
+      else {            /* if a, not b */
+        *b = *a;        /* copy pointer a into pointer b */
+      }
+    }  /* if not b, not a || b, not a || a, b but they point to same thing: do
+        * nothing but advance a like they do in all of the possibilities */
+    a++;                /* advance a at the end no matter what */
   }
-  dl->n = j+1;
+  dl->n = j+1;          /* set the crunched n */
 }
+
+
 
 /**********************************************************************
  * dumblist_sort
+ * calls dumblist_qsort, dumblist_shellsort and dumblist_crunch
  * Sort a dumblist by some external criterion.  You feed in 
- * a function that returns -1, 0, or 1 depending on whether the
+ * a function (*cmp) that returns -1, 0, or 1 depending on whether the
  * first argument is less than, equal to, or greater than the 
  * second, and the list is sorted for you. 
+ * 		cmp (a,b)
+ *		-1	a<b
+ *		0	a=b
+ *		1	a>b
  *
  * The sorting takes place in a workspace that is static, so that
  * it isn't always being remalloc'ed. 
@@ -1488,6 +1596,7 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   void ** sorted;
   void **dl_a;
   int i;
+  /* **dls_wk, dls_size, dls_sz and *dls_cmp are static variables */
 
   if(dl->n <= 1) 
     return;
@@ -1537,6 +1646,10 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   }
 }
   
+/**********************************************************************
+ * ptr_cmp
+ * compares two pointers, returns -1,0,1
+ */
 
 int ptr_cmp(void *a, void *b) { /* Helper routine for sorting by pointer */
   if(a<b) return -1;
@@ -1547,11 +1660,9 @@ int ptr_cmp(void *a, void *b) { /* Helper routine for sorting by pointer */
 /**********************************************************************
  * dumblist_snarf 
  * Copy every item from the source dumblist into the destination.
- * They're quicksorted to avoid duplication.  This is a bit slow,
- * because in the normal course of things the model snarfs up vertices
- * and *then* sorts 'em by angle.  But in pathological cases this 
- * doesn't eat as much memory as not sorting each time.
+ * Dumblists are not sorted.
  */
+
 void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
   long i;
   void **b;
@@ -1563,15 +1674,15 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
     fflush(stderr);
     return;
   }
-  if(dest->size <= dest->n + source->n) {
+  if(dest->size <= dest->n + source->n) { /* make dest bigger if need be */
     dumblist_grow(dest,dest->n + source->n);
   }
   
   for(b=source->stuff, c=&(dest->stuff[dest->n]), i=0; i<source->n; i++) {
-    *(c++) = *(b++);
+    *(c++) = *(b++);			/* do the copying */
   }
   
-  dest->n += source->n;
+  dest->n += source->n;			/* increase dest n */
 
 }
 
@@ -1580,15 +1691,26 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
  * Zeroes out a dumblist.  Especially useful for the dumblists in VERTEXes,
  * because they're included in the base struct instead of being pointers out.
  */
+
 inline void dumblist_clear(DUMBLIST *foo) {
   foo->n = 0;
   foo->size = 0;
   foo->stuff= 0;
 }
 
+/**********************************************************************
+ * dd_vertex_printer
+ * prints out the vertex label of the given vertex
+ */
+
 void dd_vertex_printer(void *a) {
   printf("vertex #%d",((VERTEX *)a)->label);
 }
+
+/**********************************************************************
+ * dumblist_dump
+ * prints out the labels or the pointers of a dumblist
+ */
 
 inline void dumblist_dump(DUMBLIST *foo, void ((*printer)(void *a))) {
   int i;
@@ -1615,6 +1737,7 @@ inline void dumblist_dump(DUMBLIST *foo, void ((*printer)(void *a))) {
  * Test whether two NUMs are reasonably close.  
  * Currently, 100ppm is the slop.
  */
+
 inline char fl_eq(NUM a, NUM b) {
   return ( (a==0 && b==0) ||
 	   ( !(a==0 || b==0) &&
@@ -1679,7 +1802,7 @@ char *flux_malloc(long size, int what_for) {
 
   if(!valid_malloc_type(what_for)) {
     fprintf(stderr,"Invalid type received by flux_malloc\n");
-    // Throw an exception
+    /*  Throw an exception */
     {
     int i = 0;
     int j = 2;
@@ -1688,7 +1811,7 @@ char *flux_malloc(long size, int what_for) {
     return (void *)0; 
   }
   
-  // call malloc and pad for the fence.
+  /* call malloc and pad for the fence.*/
   p = (char *)malloc(size + 2*fencesize);
   p2 = (long *)p;
   { int i;
@@ -1722,7 +1845,7 @@ void flux_free(void *p) {
     return;
   } else {
     fprintf(stderr,"%%%%%%flux_free: got an unknown block to free");
-    // Throw an exception
+    /* Throw an exception */
     {
       int i=0,j=2;
       j/=i;
@@ -1773,7 +1896,7 @@ void flux_memcheck() {
       int ii;
       char buf[fencecount*2+10];
       char *s=buf;
-      // Announce the problem
+      /* Announce the problem */
       fprintf(stderr,"%%%%%%flux_memcheck: slot %d, 0x%x (%s) has a bad fence! (%d bad longs)\n",i,p,type_bad?"UNKNOWN_TYPE":flux_malloc_types[flux_malloc_alloc[i].type],fence_bad);
       for(ii=0;ii<fencecount;ii++) {
 	*(s++) = ( ((long *)(flux_malloc_alloc[i].where - fencesize))[ii]==0xDEADBEEF ) ? 'X' : '.';
@@ -1783,7 +1906,7 @@ void flux_memcheck() {
 	*(s++) = ( ((long *)(flux_malloc_alloc[i].where + flux_malloc_alloc[i].size))[ii]==0xDEADBEEF ) ? 'X' : '.';
       }
       fprintf(stderr,"  MAP: %s\n",buf);
-      // Should mend the fence here...
+      /* Should mend the fence here... */
     }
     
     if(fence_bad || type_bad)
@@ -1826,7 +1949,7 @@ char *flux_perl_malloc(long size) {
 }
 
 void flux_perl_free(void *foo) {
-  //  Safefree(foo);   /* do nothing for now */
+  /*  Safefree(foo);    do nothing for now */
 }
 
 #else

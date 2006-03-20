@@ -422,7 +422,11 @@ int footpoint_action(WORLD *world, char *s) {
 	    } /* end of force specifier loop */
 
 	    for(;i<N_FORCE_FUNCS;i++) /* pad with zeroes */
+
+	      /* f_funcs[i] = (void *)0; */
+
 	      (f_funcs[i]) = (void *)0;
+
 
 	    /* We didn't barf by now -- all forces must be OK.  Copy 'em in. */
 	    for(j=0;j<N_FORCE_FUNCS;j++) 

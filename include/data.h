@@ -1,4 +1,4 @@
-/* Data structures for FLUX -- field line and tie point structures 
+/* Includes for FLUX -- field line and tie point structures 
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Southwest Research Institute, 2004
