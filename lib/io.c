@@ -358,15 +358,15 @@ int footpoint_action(WORLD *world, char *s) {
       int n_scan;
 
       /* V_NEIGHBOR <vert_lab> <vn_lab> */
-      printf("(V_NEIGHBOR not yet supported...)\n");
+      //      printf("(V_NEIGHBOR not yet supported...)\n");
       n_scan = sscanf(s,"%*s %ld %ld",&vlab,&nlab);
       if(n_scan!=2) {
 	badstr = "Couldn't parse V_NEIGHBOR line";
-      } else {
+      } else if( nlab != 1 && nlab != 2 ) {
 	v = tree_find(world->vertices, vlab, v_lab_of, v_ln_of);
 	n = tree_find(world->vertices, nlab, v_lab_of, v_ln_of);
 	if(!v || !n) {
-	  badstr = "V_NEIGHBOR requires that both targets already be defined!";
+	  (stderr,"Warning: V_NEIGHBOR line asked for targets %d and %d; at least one of 'em isn't defined...\n",vlab,nlab);
 	} else {
 	  dumblist_add( &(v->neighbors), n );
 	  dumblist_add( &(n->nearby),    v );
@@ -629,6 +629,9 @@ int footpoint_action(WORLD *world, char *s) {
 		  ok_to_scan = 0;
 		  break;
 		}
+		break;
+	      case 'S': case 's':
+		scanvar = &(world->step_scale.s_power);
 		break;
 	      default:
 		ok_to_scan = 0;
