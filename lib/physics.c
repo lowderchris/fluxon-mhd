@@ -46,8 +46,9 @@
 struct FLUX_FORCES FLUX_FORCES[] = {
   {"b_simple","inverse-area B field (breaks for open cells)",b_simple},
   {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
-  {"f_curvature","(OLD) simple curvature force over B (DEPRECATED)",f_curvature},
-  {"f_pressure_equi","(OLD) 2001 pressure law over B (DEPRECATED)",f_pressure_equi},
+  {"f_curvature","(OLD) simple curvature force (B-normalized)",f_curvature},
+  {"f_pressure_equi","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi},
+  {"f_pressure_equi2","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi2},
   {"f_curv_hm","Curvature force law (harmonic mean curvature)",f_curv_hm},
   {"f_curv_m","Curvature force law (mean curvature)",f_curv_m},
   {"f_p_eqa_radial","Angular equipartition pressure, radial forces",f_p_eqa_radial},
@@ -182,6 +183,113 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
 
 
     f = deltaphi / M_PI / N->r;
+
+    N->scr[2] = 0; /* Make sure we're operating in the perp. plane */
+    
+    vec_mmult_3d(f_i,pmatrix,N->scr);       /* Put back into 3-D */
+    /*    printf("  in plane: (%g,%g,%g); projects back to (%g,%g,%g)\n",N->scr[0],N->scr[1],N->scr[2],f_i[0],f_i[1],f_i[2]);*/
+
+    {
+      /* Scale to the proper force */
+      NUM a = norm_3d(f_i);
+      if(a==0) {
+	fprintf(stderr,"Assertion failed in physics.c!  f_i has 0 norm!\n");
+	exit(99);
+      }
+      scale_3d(f_i,f_i, - f / a);  /* Scale to the calc. force */
+    }
+
+    sum_3d(force,force,f_i);
+    V->f_s_tot += fabs(f);
+  }
+
+
+  sum_3d(V->f_s,V->f_s,force);
+
+  /*printf("f_pressure_equi -- force is (%8g,%8g,%8g), total is (%8g,%8g,%8g)\n\n",force[0],force[1],force[2],V->f_s[0],V->f_s[1],V->f_s[2]);*/
+
+  {
+    NUM r;
+    int ii;
+    /* Accumulate closest neighbor */
+    /* This code will need updating if fluxons get variable flux! */
+    r = -1;
+    for(ii=0;ii<V->neighbors.n;ii++) {
+      NUM a;
+      a = ((VERTEX *)(V->neighbors.stuff[ii]))->r;
+      if(r<0 || a<r)
+	r = a;
+    }
+    V->r =  r / 2;  /* If all fluxons have the same amount of flux, then the min.
+		       radius is always half of the closest neighbor's distance. */
+  }
+  
+  return;
+}
+/**********************************************************************
+ * f_pressure_equi2
+ * Magnetic pressure `force' : - \del_perp(|B|) / |B|
+ * Corrects for the factor-of-two error in f_pressure_equi
+ *
+ * Magnetic pressure force, using the equipartition method 
+ * which distributes a given fluxon's flux equally by delta-phi.
+ * This method distributes current throughout each fluxon's cross-section.
+ * 
+ * This uses the Kankelborg/DeForest discretization:
+ * del_perp(|B|) / |B| ~ \sum_i ( n^_i delta\phi_i / (pi r_i) )
+ * where n^_i is the vector from the current point to the ith neighbor,
+ * delta\phi is the angular extent of the ith line segment in the 
+ * Voronoi hull, and r_i is the radius to the closest approach of the
+ * ith line segment (see DeForest notebook V, pp. 69-70)
+ */
+void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts) {
+  NUM force[3]; /* force accumulator */
+  static HULL_VERTEX *point_cache = 0;  /* Workspace grows and sticks */
+  static int pc_size = 0;               /* Workspace size */
+  int i;
+  NUM pmatrix[9];
+  NUM len;
+
+  force[0] = force[1] = force[2] = 0;
+
+  if(!V->next) 
+    return;
+
+  /* Get the perpendicular-plane projection matrix */
+  /* (This is wasteful -- it's already generated in geometry.c.  Is
+     there an easy way to send it back?) */
+  projmatrix(pmatrix, V->x, V->next->x);
+
+  /*printf("f_pressure_equi:  V%4d,  n=%d\n",V->label, V->neighbors.n);*/
+
+  for(i=0;i<V->neighbors.n;i++) {
+    NUM f_i[3];
+    NUM phi_l, phi_r, deltaphi, f;
+    HULL_VERTEX *left, *right;
+    VERTEX *N = (VERTEX *)V->neighbors.stuff[i];
+
+    left = &verts[i];
+    right = (i==0) ? &verts[V->neighbors.n - 1] : &verts[i-1];
+    
+    /* Calculate delta-phi by calculating the maximal phis and subtracting. 
+     * In the open case, the endpoint phi is the angle at which the 
+     * perpendicular bisector to r_i goes away.  In the closed case, 
+     * it's the angle to the vertex.
+     */
+
+    deltaphi = (left->a_l - right->a_r);
+    TRIM_ANGLE(deltaphi);
+    //    printf("vertex %d (%d): deltaphi=%g\t",V->label,N->label,deltaphi*180/3.14159);
+
+    if(deltaphi < -EPSILON) {
+      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg); correcting to %18.12g\n",deltaphi*180/M_PI,deltaphi*180/M_PI + 360);
+      deltaphi += M_PI+M_PI;
+    }
+    
+    /*    fprintf(stderr," VERTEX #%d, i=%d: deltaphi=%g\tr=%g\n",N->label,i,deltaphi,N->r);*/
+
+
+    f = 2 * deltaphi / M_PI / N->r;
 
     N->scr[2] = 0; /* Make sure we're operating in the perp. plane */
     

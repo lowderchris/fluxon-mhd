@@ -92,6 +92,7 @@ char *next_line(FILE *file) {
  */
 static char mscan[80]="";
 static char lscan[80]="";
+static char lscan2[80]="";
 static char vscan[80]="";
 static char gscan[80]="";
 static char vnscan[80]="";
@@ -101,6 +102,7 @@ int footpoint_action(WORLD *world, char *s) {
   char *badstr = 0;
   char c;
   int i,n;
+  long vl0, vl1; // scratch vertex labels
   long vertex_label;
   long l0,l1,fl0;
   NUM x0[3],x1[3],flux0,flux1;
@@ -245,16 +247,29 @@ int footpoint_action(WORLD *world, char *s) {
   case 'L': /* LINE <fl_lab> <lab1> <lab2> <flux> 
 	     *  Create a field line from 1 to 2 with label and flux given 
 	     */
-    
     if(!*lscan) {
-      sprintf(lscan,"%%*s %%ld %%ld %%ld %%%sf",NUMCHAR,NUMCHAR,NUMCHAR);
+      sprintf(lscan,"%%*s %%ld %%ld %%ld %%ld %%ld %%%sf",NUMCHAR,NUMCHAR,NUMCHAR);
     }
 
-    n = sscanf(s,lscan, &fl0, &l0, &l1, &flux0);
-    
-    if(n != 4) {
-      badstr = "Couldn't parse LINE line";
-    } else {
+    n = sscanf(s,lscan, &fl0, &vl0, &vl1, &l0, &l1, &flux0);
+    if(n != 6) {
+      // Fall back to older form 
+
+      if(!*lscan2) {
+	sprintf(lscan2,"%%*s %%ld %%ld %%ld %%%sf",NUMCHAR,NUMCHAR,NUMCHAR);
+      }
+      
+      n = sscanf(s,lscan, &fl0, &l0, &l1, &flux0);
+      
+      if(n != 4) {
+	badstr = "Couldn't parse LINE line";
+	n=0;
+      } else {
+	vl0 = vl1 = 0;
+      }
+    }
+
+    if(n != 0) {
       FLUX_CONCENTRATION *fc0, *fc1;
 	  fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
 	  fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
@@ -294,7 +309,7 @@ int footpoint_action(WORLD *world, char *s) {
 	    
 	    /* Manufacture the new fluxon */
 	    f0 = new_fluxon(fabs(flux0),fc0,fc1,fl0,0);
-	    
+
 	    /* Link it in (three ways!) */
 	    /* This works because each flux concentration can only be the */
 	    /* beginning of all its lines, or the end of all its lines! */
@@ -305,8 +320,13 @@ int footpoint_action(WORLD *world, char *s) {
 	    /* Make sure it has at least the two end vertices */
 	    {
 	      VERTEX *v0, *v1;
-	      v0 = new_vertex(-(f0->label*2),  fc0->x[0],fc0->x[1],fc0->x[2],f0);
-	      v1 = new_vertex(-(f0->label*2)+1,fc1->x[0],fc1->x[1],fc1->x[2],f0);
+	      if(vl0==0) 
+		vl0 = -(f0->label*2);
+	      if(vl1==0) 
+		vl1 = -(f0->label*2)+1;
+
+	      v0 = new_vertex( vl0, fc0->x[0],fc0->x[1],fc0->x[2],f0);
+	      v1 = new_vertex( vl1, fc1->x[0],fc1->x[1],fc1->x[2],f0);
 	      if(!v0 || !v1) {
 		badstr = "Couldn't make trivial vertices for fluxon!\n";
 	      } else {
@@ -1034,7 +1054,7 @@ void fprint_fl_vertices(FILE *f,
   static char fl_format[80]="";
   static char v_format[80]="";
   if(!*fl_format) {
-    sprintf(fl_format,"LINE\t%%ld\t%%ld\t%%ld\t%%%sg\n",NUMCHAR);
+    sprintf(fl_format,"LINE\t%%ld\t%%ld\t%%ld\t%%ld\t%%ld\t%%%sg\n",NUMCHAR);
     sprintf( v_format,"\tVERTEX\t%%ld\t%%ld\t%%ld\t%%%sg\t%%%sg\t%%%sg\n",
 	     NUMCHAR,NUMCHAR,NUMCHAR);
   }
@@ -1042,6 +1062,8 @@ void fprint_fl_vertices(FILE *f,
 
   fprintf(f, fl_format
 	  , fl->label
+	  , fl->start ? fl->start->label : 0
+	  , fl->end ? fl->end->label : 0
 	  , fl->fc0 ? fl->fc0->label : -999
 	  , fl->fc1 ? fl->fc1->label : -999
 	  , fl->flux);

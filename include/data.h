@@ -276,6 +276,7 @@ inline void *tree_balance(void *tree, int label_offset, int link_offset);
 inline char tree_balance_check(void *tree, int link_offset);
 
 inline long tree_walk(void *tree, int label_ofset, int link_offset, long ((*func)()));
+long tree_walker(void *tree, int label_ofset, int link_offset, long ((*func)()),int depth);
 
 DUMBLIST *new_dumblist();
 void free_dumblist(DUMBLIST *dl);

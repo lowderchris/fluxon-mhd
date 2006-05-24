@@ -39,7 +39,7 @@ static SV* CoreSV;/* gets perl var holding the core structures */
 /******************************
  * helper routines...
  *
- * fieldptr is a kludge -- it is the opposite of the numeric structure 
+ * fieldptr is a kludge -- it is the counterpart of the numeric structure 
  * at the top of Flux.pm.  Given a void * and a type and field code,
  * it returns an appropriate void * pointer.
  *
@@ -404,17 +404,17 @@ _rfluxon(sv, typeno, fieldno)
  long fieldno
 PREINIT:
  void *ptr;
- VERTEX **vp;
+ FLUXON **fp;
 CODE:
 	ptr = (void *)SvFluxPtr(sv,"_rfluxon","Flux");
-	vp = (VERTEX **)fieldptr(ptr,typeno,fieldno);
-	if(vp && *vp) {
+	fp = (FLUXON **)fieldptr(ptr,typeno,fieldno);
+	if(fp && *fp) {
 		I32 foo;
 		ENTER;
 		SAVETMPS;
 		PUSHMARK(SP);
 		XPUSHs(sv_2mortal(newSVpv("Flux::Fluxon",0)));
-		XPUSHs(sv_2mortal(newSViv((IV)(*vp))));
+		XPUSHs(sv_2mortal(newSViv((IV)(*fp))));
 		PUTBACK;
 		foo = call_pv("Flux::Fluxon::new_from_ptr",G_SCALAR);
 		SPAGAIN;
@@ -433,6 +433,19 @@ CODE:
 	}
 OUTPUT:
   	RETVAL
+
+SV *
+_rfluxonlist(sv, typeno, fieldno)
+ SV *sv
+ long typeno
+ long fieldno
+PREINIT:
+ void *ptr;
+ FLUXON **fp;
+CODE:
+	ptr = (void *)SvFluxPtr(sv,"_rfluxonlist","Flux");
+	fp = (FLUXON **)fieldptr(ptr,typeno,fieldno);
+	
 
 SV *
 _rconcentration(sv, typeno, fieldno)

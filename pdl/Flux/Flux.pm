@@ -261,11 +261,12 @@ package Flux;
 	vec    => [\&_rvec,  \&_wvec  ],
 	Vertex => [\&_rvertex, undef  ],
 	Fluxon => [\&_rfluxon, undef  ],
+	FluxonList => [\&_rfluxonlist, undef],
 	Concentration => [ \&_rconcentration, undef ],
-        Neighbors => [sub{ print "Neighbors reader...\n"; _rdumblist("Flux::Vertex",@_) },
+        Neighbors => [sub{ _rdumblist("Flux::Vertex",@_) },
 		      undef
 		      ],
-        Nearby => [sub{ print "Nearby reader...\n"; _rdumblist("Flux::Vertex",@_) },
+        Nearby => [sub{ _rdumblist("Flux::Vertex",@_) },
 		      undef
 		      ]
     };
@@ -292,11 +293,11 @@ package Flux;
 	    r_s=>        [18, 'num'],
 	    r_cl=>       [19, 'num'],
 	    label=>      [20, 'long'],
-	    'links.sum'=>  [21, 'num'],
-	    'links.n'=>    [22, 'long'],
-	    'links.up'=>   [23, 'Vertex'],
-	    'links.left'=> [24, 'Vertex'],
-	    'links.right'=>[25, 'Vertex'],
+	    links_sum=>  [21, 'num'],
+	    links_n=>    [22, 'long'],
+	    links_up=>   [23, 'Vertex'],
+	    links_left=> [24, 'Vertex'],
+	    links_right=>[25, 'Vertex'],
 	    links=>      [26, undef],
 	    },
 	fluxon => {
@@ -306,25 +307,25 @@ package Flux;
 	    end=>                 [4,'Vertex'],
 	    v_ct=>                [5,'long'],
 	    all_links=>           [6,undef],
-	    'all_links.sum'=>     [7,'num'],
-	    'all_links.n'=>       [8,'long'],
-	    'all_links.up'=>      [9,'Fluxon'],
-	    'all_links.left'=>   [10,'Fluxon'],
-	    'all_links.right'=>  [11,'Fluxon'],
-	    start_links=>        [12,undef],
-	    'start_links.sum'=>  [13,'num'],
-	    'start_links.n'=>    [14,'long'],
-	    'start_links.up'=>   [15,'Fluxon'],
-	    'start_links.left'=> [16,'Fluxon'],
-	    'start_links.right'=>[17,'Fluxon'],
-	    end_links=>          [18,undef],
-	    'end_links.sum'=>    [19,'num'],
-	    'end_links.n'=>      [20,'long'],
-	    'end_links.up'=>     [21,'Fluxon'],
-	    'end_links.left'=>   [22,'Fluxon'],
-	    'end_links.right'=>  [23,'Fluxon'],
-	    fc_start =>          [24,'Concentration'],
-	    fc_end =>            [25,'Concentration'],
+	    all_links_sum=>       [7,'num'],
+	    all_links_n=>         [8,'long'],
+	    all_links_up=>        [9,'Fluxon'],
+	    all_links_left=>      [10,'Fluxon'],
+	    all_links_right=>     [11,'Fluxon'],
+	    start_links=>         [12,undef],
+	    start_links_sum=>     [13,'num'],
+	    start_links_n=>       [14,'long'],
+	    start_links_up=>      [15,'Fluxon'],
+	    start_links_left=>    [16,'Fluxon'],
+	    start_links_right=>   [17,'Fluxon'],
+	    end_links=>           [18,undef],
+	    end_links_sum=>       [19,'num'],
+	    end_links_n=>         [20,'long'],
+	    end_links_up=>        [21,'Fluxon'],
+	    end_links_left=>      [22,'Fluxon'],
+	    end_links_right=>     [23,'Fluxon'],
+	    fc_start =>           [24,'Concentration'],
+	    fc_end =>             [25,'Concentration'],
 	    },
 	world => {
 	    frame_number=>       [1,'long'],
@@ -353,13 +354,13 @@ package Flux;
 	    label=>              [3,'long'],
 	    lines=>              [4,'Fluxon'],
 	    links=>	 	 [5,undef],
-	    'links.sum'=>        [6,'num'],
-	    'links.n'=>          [7,'long'],
-	    'links.up'=>         [8,'Concentration'],
-	    'links.left'=>       [9,'Concentration'],
-	    'links.right'=>     [10,'Concentration'],
-	    x=>                 [11,'vector'],
-	    locale_radius=>     [12,'num'],
+	    links_sum=>          [6,'num'],
+	    links_n=>            [7,'long'],
+	    links_up=>           [8,'Concentration'],
+	    links_left=>         [9,'Concentration'],
+	    links_right=>        [10,'Concentration'],
+	    x=>                  [11,'vector'],
+	    locale_radius=>      [12,'num'],
 	}
     };
 
@@ -423,9 +424,27 @@ sub r_val {
 	return undef;
     }
 
-
     &{$reader}( $me, $struct, $field );
 }
+
+=pod
+
+=head2 w_val - write a value to a structure
+
+=for usage
+
+    FLUX::w_val( $structcode, $valcode, $typestr, $value );
+
+=for ref
+
+The structcode is the numeric code associated with the structure type; is should be one of the
+values from the global hash ref $Flux::typecodes.  The valcode is a numeric type corresponding
+to the structure field, and typestr is the type string in the global $Flux::codes hash.  If it is a 
+string, it is used to look up the reader in the global $Flux::methods hash, or if it is an array
+ref containing two code refs then they are executed directly.  The value is the value to put in the 
+structure field.
+
+=cut
 
 sub w_val {
     my( $me, $struct, $field, $type, $val ) = @_;
@@ -443,7 +462,43 @@ sub w_val {
     &{$writer}( $me, $struct, $field, $val );
 }
 
+=pod
 
+=head2 tree - traverse a tree structure and return all its leaves in a list ref
+
+=for usage
+
+    @list = FLUX::tree($root, $lname);
+
+=for ref
+
+    The lname is the prefix for the link fields in the structure (e.g. "all_links" for the fluxon
+tree).  The routine could/should be subclassed as appropriate to pass in individual links fields.
+
+=cut
+
+sub tree {
+    my $me = shift;
+    my $lname = shift;
+    my $whole_tree = shift;
+
+    while($whole_tree && defined($me->{$lname."_up"})) {
+	$me = $me->{$lname."_up"};
+    }
+    
+    unless($me->{$lname."_n"}>1) {
+	return $me;
+    }
+
+    my @out = ();
+    my $l = $me->{$lname."_left"};
+    my $r = $me->{$lname."_right"};
+    
+    push(@out, tree($l,$lname)) if(defined $l);
+    push(@out, $me);
+    push(@out, tree($r,$lname)) if(defined $r);
+    @out;
+}
 
 =pod
 

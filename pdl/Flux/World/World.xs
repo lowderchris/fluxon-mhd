@@ -294,7 +294,7 @@ CODE:
  av_clear(RETVAL);
  if(w->lines) {
 	av_extend(RETVAL, (w->lines->all_links).n);
- 	tree_walker(w->lines,fl_lab_of,fl_all_ln_of,fluxons_helper);
+ 	tree_walker(w->lines,fl_lab_of,fl_all_ln_of,fluxons_helper,0);
  }
 OUTPUT:
  RETVAL
@@ -317,7 +317,7 @@ CODE:
  av_clear(RETVAL);
  if(w->vertices) {
 	av_extend(RETVAL, (w->vertices->world_links).n);
-	tree_walker(w->vertices, v_lab_of, v_ln_of, vertices_helper);
+	tree_walker(w->vertices, v_lab_of, v_ln_of, vertices_helper,0);
  }
 OUTPUT:
  RETVAL

@@ -1,4 +1,4 @@
- /* data.c 
+/* data.c 
  *
  * Basic data manipulation routines and definitions for FLUX -- how to 
  * handle VERTEXs and FLUXONs etc.
@@ -384,6 +384,48 @@ WORLD *new_world() {
  * Neighborhood information gets sloshed around.
  */
 
+#ifdef DEBUGGING_DEREF
+    /**********
+     * helper for debugging -- check a fluxon over for references to a particular vertex.
+     * This is a static helper routine for tree_walker, used below. 
+     */
+     static VERTEX *srch_vtx;
+     static long srch_vtx_lab;
+     static char nflag;
+     static long dbg_vsearch( FLUXON *f, int lb, int ln, int dp) {
+       VERTEX *v;
+       int i;
+       for(v=f->start; v; v=v->next) {
+	 if(nflag==0) {
+	   for(i=0;i<v->neighbors.n;i++) {
+	     char lbmatch = (((VERTEX *)(v->neighbors.stuff[i]))->label == srch_vtx_lab );
+	     char vtmatch = (((VERTEX *)(v->neighbors.stuff[i])) == srch_vtx );
+	     if(lbmatch && vtmatch) {
+	       printf("Vertex %d <-- neighbor %d\n",srch_vtx_lab,v->label);
+	     } else if(lbmatch) {
+	       printf("Vertex %d (but not the one we want) <-- neighbor %d\n",srch_vtx_lab,v->label);
+	     } else if(vtmatch) {
+	       printf("Vertex %d <-- neighbor %d but some sort of corruption has damaged the link\n",srch_vtx_lab,v->label);
+	     }
+	   }
+	 } else {
+	   for(i=0;i<v->nearby.n;i++) {
+	     char lbmatch = (((VERTEX *)(v->nearby.stuff[i]))->label == srch_vtx_lab );
+	     char vtmatch = (((VERTEX *)(v->nearby.stuff[i])) == srch_vtx );
+	     if(lbmatch && vtmatch) {
+	       printf("Vertex %d <-- nearby %d\n",srch_vtx_lab,v->label);
+	     } else if(lbmatch) {
+	       printf("Vertex %d (but not the one we want) <-- neighbor %d\n",srch_vtx_lab,v->label);
+	     } else if(vtmatch) {
+	       printf("Vertex %d <-- nearby %d but some sort of corruption has damaged the link\n",srch_vtx_lab,v->label);
+	     }
+	   }
+	 }
+       }
+       return 0;
+     }
+#endif
+
 void unlink_vertex(VERTEX *v) {
   int i;
 
@@ -397,8 +439,26 @@ void unlink_vertex(VERTEX *v) {
     fprintf(stderr,"unlink_vertex: strangeness!\n");
     return;
   }
- 
 
+
+  /******************************
+   * debugging -- scan the whole data structure to figure out who points here
+   */
+#ifdef DEBUGGING_DEREF
+  {
+    FLUXON *f = v->line->fc0->world->lines;
+    
+    printf("\n\n==== Unlinking vertex %d. pre-unlink locations it's found:\n",v->label);
+    srch_vtx_lab = v->label;
+    srch_vtx = v;
+    nflag = 0;
+    tree_walker((void *)f,(int)fl_lab_of,(int)fl_all_ln_of,dbg_vsearch,0);
+    nflag = 1;
+    tree_walker((void *)f,(int)fl_lab_of,(int)fl_all_ln_of,dbg_vsearch,0);
+    fflush(stdout);
+  }
+#endif
+  
   v->prev->next = v->next;
   v->next->prev = v->prev;
   v->line->v_ct--;		/* decrease vertex count in the fluxon */
@@ -413,7 +473,7 @@ void unlink_vertex(VERTEX *v) {
       long n = a->nearby.n;
       dumblist_delete( &(a->nearby), v);
       if(n == a->nearby.n) {
-	printf("WHOA THERE! %d\n",n);
+	printf("WHOA THERE! doomed vertex %d's neighbor %d had no nearby link back!\n",v->label,a->label);
       }
 
       dumblist_add(    &(v->next->neighbors), a);
@@ -444,6 +504,22 @@ void unlink_vertex(VERTEX *v) {
   v->nearby.n=0;
   v->prev = 0;
   v->next = 0;
+
+#ifdef DEBUGGING_DEREF
+  {
+    FLUXON *f = v->line->fc0->world->lines;
+    
+    printf("==== Unlinked vertex %d. post-unlink locations it's found:\n",v->label);
+    srch_vtx_lab = v->label;
+    srch_vtx = v;
+    nflag = 0;
+    tree_walker(f,fl_lab_of,fl_all_ln_of,dbg_vsearch,0);
+    nflag = 1;
+    tree_walker(f,fl_lab_of,fl_all_ln_of,dbg_vsearch,0);
+    printf("\n\n");
+    fflush(stdout);
+  }
+#endif
 
   printf("Unlinking vertex %d (up=%d)...\n",v->label,v->world_links.up?((VERTEX *)(v->world_links.up))->label:0);
 
@@ -721,7 +797,7 @@ long tree_walker(void *tree
 		, int label_offset
 		, int link_offset
 		, long((*func)())
-		, long depth){
+		, int depth){
   long err=0;
 
   LINKS *l = (LINKS *)(tree+link_offset);
@@ -1295,6 +1371,7 @@ inline void dumblist_delete(DUMBLIST *dl, void *a) {
     if(*foo == a) {
       dumblist_rm(dl,i);
       i--;
+      foo--;
     }
 }
     

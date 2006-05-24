@@ -166,18 +166,16 @@ sub string {
 
 =for ref
 
-Produce a short summary string describing a fluxon model
+Produce a short summary string describing a fluxon model.  This routine is used to convert
+a World to an ASCII string whenever it is used in string context.
 
-This is the overloaded stringification routine for Flux::Worlds, so
-using a World in string context gives you the short summary.  It is
-implemented VERY cheesily and slowly (dumps the whole world to ASCII,
-then checks how many LINE lines and VERTEX lines there are), so, er,
-fix that.
 
 =cut
     
 sub _stringify {
     my $me = shift;
+    my $s="";
+
     my @s = $me->string;
     my @lines = grep(m/^\s*LINE/,@s);
     my @vertices = grep(m/^\s*VERTEX/,@s);
@@ -196,6 +194,26 @@ sub _stringify {
 	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash))."\n\n"
 	;
 
+}
+
+=pod
+
+=head2 summary
+
+=for ref
+
+Produce a longer summary string describing a fluxon model.  This works by dumping the 
+value of each hash element on the tied-hash side.
+
+=cut
+
+sub summary {
+    my $me = shift;
+    my $s = "";
+    for my $k(keys %$me) {
+	$s .= sprintf( "%15s %s\n", $k.":", $me->{$k} );
+    }
+    $s;
 }
 
 =pod step_scales
@@ -763,6 +781,7 @@ sub render {
     my @poly = map { $w->fluxon($_)->polyline } $w->fluxon_ids;
 
     my @rgb,@prgb;
+    print "Defining RGB..." if($Flux::debug);
     if($opt->{'RGB_CODE'}) {
       eval $opt->{'RGB_CODE'};
     } elsif(defined $opt->{'rgb'}) {
@@ -777,6 +796,8 @@ sub render {
 	    $prgb;
 	} @poly;
     }
+
+    print "Defining PRGB..." if($Flux::debug);
     if($opt->{'PRGB_CODE'}) {
 	eval $opt->{'PRGB_CODE'};
     } elsif(defined $opt->{'prgb'}) {
@@ -792,11 +813,13 @@ sub render {
 	} @poly;
     }
 
+    print "Defining polygons...\n" if($Flux::debug);
     $poly = pdl(0,0,0)->glue(1,@poly);
     $rgb = pdl(0,0,0)->glue(1,@rgb);
     $prgb = pdl(0,0,0)->glue(1,@prgb);
 
 
+    print "nokeeptwiddling3d...\n" if($Flux::debug);
     nokeeptwiddling3d;
     my ($boxmax,$boxmin);
 
@@ -808,7 +831,7 @@ sub render {
 	$range->(:,(1)) .= $rctr + $rsize/2;
     }
 	
-
+    print "box definitions...\n" if($Flux::debug);
     $boxmax = $range->(:,(1));
     $boxmin = $range->(:,(0));
 
@@ -819,7 +842,7 @@ sub render {
     $boxmin -= $shift;
     $boxmax += $shift;
 
-
+    print "Clipping polys...\n" if($Flux::debug);
     $pol2 = $poly->copy;
     $poly->((0)) .= $poly->((0))->clip($range->((0))->minmax);
     $poly->((1)) .= $poly->((1))->clip($range->((1))->minmax);
@@ -829,6 +852,7 @@ sub render {
     $rgb *= $ok->(*3);
     $prgb *= $ok->(*3);
     
+    print "Calling points3d...\n" if($Flux::debug);
     points3d($range,zeroes($range),{PointSize=>0});
     hold3d;
     
@@ -845,7 +869,7 @@ sub render {
     # Generate line strips for each fluxon...
     my $rgbdex = 0;
     my @id = $w->fluxon_ids;
-
+    print "Defining line strips...\n" if($Flux::debug);
     for my $i(0..$#id) {
 	my $fp = $w->fluxon($id[$i])->polyline;
 	my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
@@ -874,7 +898,7 @@ sub render {
 	}
     }
 
-
+    print "Neighbors?\n" if($Flux::debug);
     $nscale = $opt->{'nscale'} || 0.25;
 
     if($opt->{'neighbors'}){

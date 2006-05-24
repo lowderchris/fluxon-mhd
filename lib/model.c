@@ -459,7 +459,7 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
       if(w->step_scale.b_power) {
 	b_mag_mean = v->b_mag;
 	if(v->prev) {
-	  b_mag_mean = v->prev->b_mag;
+	  b_mag_mean += v->prev->b_mag;
 	  b_mag_mean *= 0.5;
 	}
 	
@@ -1221,7 +1221,7 @@ static long gfp_tramp(FLUXON *fl, int lab, int link, int depth) {
 int global_fix_proximity(WORLD *w, NUM scale_thresh) {
   sc_thr = scale_thresh;
   sc_acc = 0;
-  tree_walker(w->lines,fl_lab_of,fl_all_ln_of,gfp_tramp);
+  tree_walker(w->lines,fl_lab_of,fl_all_ln_of,gfp_tramp,0);
   return sc_acc;
 }
   
@@ -1403,7 +1403,7 @@ static long cu_tramp(FLUXON *fl, int lab, int link, int depth) {
 int global_fix_curvature(WORLD *w, NUM curv_thresh) {
   cu_thr = curv_thresh;
   cu_acc = 0;
-  tree_walker(w->lines,fl_lab_of,fl_all_ln_of,cu_tramp);
+  tree_walker(w->lines,fl_lab_of,fl_all_ln_of,cu_tramp,0);
   world_update_ends(w);
   return cu_acc;
 }

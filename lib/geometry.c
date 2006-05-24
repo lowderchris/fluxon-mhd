@@ -1238,6 +1238,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   char been_there;
   VERTEX *iv, *rv, *lv;
   NUM a;
+  char abort = 0;
 
   /* Do nothing if we get a trivial list */
   if(horde->n < 1) 
@@ -1325,10 +1326,11 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
       /*** Check for pathologies ***/
       if(i_r == i || i_l == i) {
-	fflush(stdout);
-	fprintf(stderr,"hull_2d: eliminated all vertices! I give up.\n");
-	horde->n=0;
-	return;
+	abort = 1;
+	//	fflush(stdout);
+	//	fprintf(stderr,"hull_2d: eliminated all vertices! I give up.\n");
+	//	horde->n=0;
+	//	return;
       }
 
       if(!finite(iv->r) || !finite(iv->a))
@@ -1451,7 +1453,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
     } /* end of non-zeroed-out check */
     
-  } while(!been_there || i != terminus);  /* End of main loop */
+  } while(!abort && (!been_there || i != terminus));  /* End of main loop */
 
   /* Finished -- now crunch the dumblist and, simultaneously, the output. */
   { 
