@@ -103,6 +103,7 @@ sub simple_relaxer {
     my $movie_f = $opt->{movie_f} || "flux-movie-%4.4d.ppm";
     my $disp_n = $opt->{disp_n} || $movie_n || 10;
     my $range = $opt->{range};
+    $range=$range->copy if (defined $range);
     $step=0 unless($n);
     $final_step=$n;
 
@@ -154,6 +155,7 @@ sub simple_relaxer {
 	}
 
 	my $range = $opt->{range};
+        $range=$range->copy if (defined $range);
 
 	unless($disp_n==0 || $step % $disp_n ) {
 	    $w->render_lines($interactive,defined($range)?$range->copy:undef,$opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
