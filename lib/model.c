@@ -35,6 +35,7 @@ extern FILE *gl_outf; /* for debugging -- delete */
 #include "geometry.h"
 #include "io.h"
 
+char *code_info_model="%%%FILE%%%";
 
 /**********************************************************************
  **********************************************************************

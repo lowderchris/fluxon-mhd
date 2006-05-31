@@ -363,3 +363,14 @@ void flux_memcheck();
 
 #endif /* overall file include */
 
+
+/******************************
+ *
+ * version-tracking: informational strings about each file in use
+ */
+extern char *code_info_model;
+extern char *code_info_physics;
+extern char *code_info_io;
+extern char *code_info_geometry;
+extern char *code_info_data;
+

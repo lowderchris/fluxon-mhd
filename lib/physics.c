@@ -42,6 +42,9 @@
 #include "physics.h"
 #include "geometry.h"
 
+char *code_info_physics="%%%FILE%%%";
+
+
 /* global force name table */
 struct FLUX_FORCES FLUX_FORCES[] = {
   {"b_simple","inverse-area B field (breaks for open cells)",b_simple},

@@ -95,6 +95,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+char *code_info_data="%%%FILE%%%";
 
 /******************************
  * Boundary condition names, by number

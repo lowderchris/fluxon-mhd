@@ -522,5 +522,6 @@ use Flux::Fluxon;
 use Flux::Vertex;
 use Flux::Concentration;
 
+$Flux::file_versions = Flux::file_versions();
 
 1;

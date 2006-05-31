@@ -40,6 +40,8 @@
 #include "io.h"
 #include "physics.h" /* for FORCES translation */
 
+char *code_info_io="%%%FILE%%%";
+
 /**********************************************************************
  * 
  * next_line -- read a line from an open footpoint action file

@@ -544,6 +544,30 @@ CODE:
  /* printf("done\n");*/
 OUTPUT:
  RETVAL		
+
+
+SV *
+file_versions()
+PREINIT:
+ char buf[1024];
+ char *newline="\n";
+ SV *sv;
+CODE:
+ buf[0] = '\0';
+ strcpy(buf,code_info_data);
+ strcat(buf,newline);
+ strcat(buf,code_info_io);
+ strcat(buf,newline);
+ strcat(buf,code_info_geometry);
+ strcat(buf,newline);
+ strcat(buf,code_info_model);
+ strcat(buf,newline);
+ strcat(buf,code_info_physics);
+ strcat(buf,newline);
+ RETVAL = newSVpv(buf,0);
+OUTPUT:
+	RETVAL
+
 			
 	
 BOOT:

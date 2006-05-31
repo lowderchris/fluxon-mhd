@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+$from = shift @ARGV;
+$to = shift @ARGV;
+
+open(FILE,"<$from");
+open(TOFILE,">$to");
+
+unless($from =~ m/^\// ) {
+	chomp($pwd = `pwd`);
+	$from = "$pwd/$from";
+}
+
+chomp($info = `ls -l $from`);
+
+@lines = <FILE>;
+map { s/%%%FILE%%%/$info/o; print TOFILE $_; } @lines;
+
+

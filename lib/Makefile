@@ -46,10 +46,12 @@ all: 	lib
 	echo made all
 
 clean: 
-	rm -f *~ *.a *.o \#* core a.out $(OBJECTS) *.OOGL sample_output.txt
+	rm -f *~ *.a *.o \#* core a.out $(OBJECTS) *.OOGL sample_output.txt *.c.f.c
 
 %.o:	%.c $(HEADERS) Makefile
-	cc $(CFLAGS) -c $(DFLAGS) $<
+	./subst_filename $< $<.f.c
+	cc $(CFLAGS) -o $@ -c $(DFLAGS) $<.f.c 
+
 
 
 
