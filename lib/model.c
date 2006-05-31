@@ -485,14 +485,54 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	diff_3d(b, v->f_t, v->next->f_t);
 	nfrac = norm_3d(b)/norm_3d(a);
         fac *= fastpow( 2.0/(pfrac + nfrac), w->step_scale.ds_power );
-	
       }
-	
+
       if(finite(fac)) 
 	scale_3d(a, v->f_t, dt * fac );	
       else 
 	if(verbosity >= 3) 
 	  printf("DS FAC NOT FINITE - SETTING to 1.0  ");
+
+    }
+
+    {
+      /* Check step length -- absolute maximum is 
+       * 0.49 of the distance to the nearest
+       * boundary-condition neighbor, or all the distance to the nearest
+       * non-boundary-condition neighbor.
+       */
+      if(v->next && v->prev) {
+	NUM diff[3];
+	NUM l1,l2,steplen;
+
+	//	/*** Check distance to buddies on the same fluxon ***/
+	//	diff_3d(diff,v->x,v->prev->x);
+	//	l1 = norm_3d(diff);
+	//	diff_3d(diff,v->next->x,v->x);
+	//	l2 = norm_3d(diff);
+	//	if(l2<l1)
+	//	  l1=l2;
+	l1 = -1;
+
+	/*** Check distance to image vertex ***/
+	{
+	  int i;
+	  char flag = 0;
+	  for (i=0; i<v->neighbors.n && !flag; i++) {
+	    VERTEX *vn = ((VERTEX *)(v->neighbors.stuff[i]));
+	    diff_3d(diff,v->x,vn->x);
+	    l2 = norm_3d(diff);
+	    if( vn == v->line->fc0->world->image )
+	      l2 *= 0.49;
+	    if(l1<0 || l2 < l1)
+	      l1 = l2;
+	  }
+	}
+
+	steplen = norm_3d(a);
+	if(l1>0 && steplen > l1)
+	  scale_3d(a,a,l1/steplen);
+      }
     }
 
     if(finite(a[0]) && finite(a[1]) &&finite(a[2])) 
