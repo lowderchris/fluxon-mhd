@@ -523,7 +523,7 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	    VERTEX *vn = ((VERTEX *)(v->neighbors.stuff[i]));
 	    diff_3d(diff,v->x,vn->x);
 	    l2 = norm_3d(diff);
-	    if( vn == v->line->fc0->world->image )
+	    //if( vn == v->line->fc0->world->image )
 	      l2 *= 0.49;
 	    if(l1<0 || l2 < l1)
 	      l1 = l2;
