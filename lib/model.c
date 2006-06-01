@@ -506,14 +506,13 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	NUM diff[3];
 	NUM l1,l2,steplen;
 
-	//	/*** Check distance to buddies on the same fluxon ***/
-	//	diff_3d(diff,v->x,v->prev->x);
-	//	l1 = norm_3d(diff);
-	//	diff_3d(diff,v->next->x,v->x);
-	//	l2 = norm_3d(diff);
-	//	if(l2<l1)
-	//	  l1=l2;
-	l1 = -1;
+	/*** Check distance to buddies on the same fluxon ***/
+	diff_3d(diff,v->x,v->prev->x);
+	l1 = norm_3d(diff);
+	diff_3d(diff,v->next->x,v->x);
+	l2 = norm_3d(diff);
+	if(l2<l1)
+	  l1=l2;
 
 	/*** Check distance to image vertex ***/
 	{
