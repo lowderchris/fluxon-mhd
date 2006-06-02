@@ -62,9 +62,9 @@ int fix_proximity(VERTEX *V, NUM scale_thresh);
 int fluxon_fix_proximity(FLUXON *F, NUM scale_thresh);
 int global_fix_proximity(WORLD *w, NUM scale_thresh);
 
-int fix_curvature(VERTEX *V, NUM curve_thresh);
-int fluxon_fix_curvature(FLUXON *F, NUM curve_thresh);
-int global_fix_curvature(WORLD *w, NUM curve_thresh);
+int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low);
+int fluxon_fix_curvature(FLUXON *F, NUM curve_thresh_high, NUM curve_thresh_low);
+int global_fix_curvature(WORLD *w, NUM curve_thresh_high, NUM curve_thresh_low);
 
 
 typedef struct VERTEX_STATS {

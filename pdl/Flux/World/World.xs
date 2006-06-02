@@ -183,9 +183,10 @@ OUTPUT:
   RETVAL
 
 int
-fix_curvature(wsv,alpha)
+_fix_curvature(wsv,alpha,beta)
  SV *wsv
  NV alpha
+ NV beta
 PREINIT:
  WORLD *w;
 /**********************************************************************/
@@ -193,7 +194,7 @@ PREINIT:
 /**/
 CODE:
   w = SvWorld(wsv,"fix_curvature");
-  RETVAL = global_fix_curvature(w,alpha);
+  RETVAL = global_fix_curvature(w,alpha,beta);
 OUTPUT:
   RETVAL
 

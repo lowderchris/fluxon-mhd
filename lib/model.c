@@ -1271,20 +1271,22 @@ int global_fix_proximity(WORLD *w, NUM scale_thresh) {
  ** fluxon_fix_curvature
  ** global_fix_curvature
  ** 
- ** You feed in a VERTEX, and the curvature of the field line
- ** is compared with the curvature threshold that you
- ** pass in (in radians).  When fix_curvature returns, the 
- ** VERTEX you passed in may have been split, so that the 
- ** new internal angle is less than your specified threshold
- ** everywhere.  If you are stepping along a fluxon fixing 
- ** curvatures, you should store V->next BEFORE calling fix_curvature, 
- ** or you'll have to step through exactly half of any daughter VERTEXes 
- ** that are created.
+ ** You feed in a VERTEX, and the curvature of the field line is
+ ** compared with the upper and lower curvature threshold that you
+ ** pass in (in radians). The vertex is split into 3 vertexes if the
+ ** curvature is too high, and the vertexs is deleted if the curvature
+ ** is too low. When fix_curvature returns, the VERTEX you passed in
+ ** may have been split, so that the new internal angle is less than
+ ** your specified threshold everywhere.  If you are stepping along a
+ ** fluxon fixing curvatures, you should store V->next BEFORE calling
+ ** fix_curvature, or you'll have to step through exactly half of any
+ ** daughter VERTEXes that are created, or even crash if the vertex
+ ** gets deleted.
  ** 
  ** Set 0 curvature to get 0.05 radian (~3 degrees) for splitting 
  ** and 1 degree for merging).  
  **
- ** If a vertex has less than half the critical angle, and is sufficiently
+ ** If a vertex has less than the low threshold, and is sufficiently
  ** far from other fluxons in the area, then it is unlinked and deleted.
  **
  ** fix_curvature splits single angles into triple angles, but is
@@ -1303,7 +1305,7 @@ int global_fix_proximity(WORLD *w, NUM scale_thresh) {
  ** the two could stand to be tweaked a bit and merged somehow.
  **/
 
-int fix_curvature(VERTEX *V, NUM curve_thresh) {
+int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
   int i;
   NUM d1[3];
   NUM d2[3];
@@ -1312,8 +1314,8 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
   NUM scale;
   int ret=0;
 
-  if(curve_thresh==0)
-    curve_thresh = 0.05;
+  if(curve_thresh_high==0)
+    curve_thresh_high = 0.05;
 
   if(!V || !V->next || !V->prev || !V->line) 
     return 0;
@@ -1335,11 +1337,11 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
   /* adds no overhead for small curvature thresholds.  theta/sin(theta) is */
   /* 1.047 for 30 degrees, 1.209 for 60 degrees, and pi/2 for 90 degrees -- */
   /* hence the magic numbers.  */
-  if( ( (sincurve * 1.048 > curve_thresh) ||
-	(curve_thresh > (M_PI * 1.0/3)  && 
-	 ( (sincurve * 1.210 > curve_thresh) ||
-	   (curve_thresh > (M_PI * 2.0/3) && 
-	    ( (sincurve * (M_PI / 2)  > curve_thresh) ||
+  if( ( (sincurve * 1.048 > curve_thresh_high) ||
+	(curve_thresh_high > (M_PI * 1.0/3)  && 
+	 ( (sincurve * 1.210 > curve_thresh_high) ||
+	   (curve_thresh_high > (M_PI * 2.0/3) && 
+	    ( (sincurve * (M_PI / 2)  > curve_thresh_high) ||
 	      (coscurve < 0)
 	      )
 	    )
@@ -1349,7 +1351,7 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
 	&& 
       /* This is the actual check but the trig operation is masked out */
       /* by the above mess for most cases.  That's an assignment.      */
-      (curve = atan2(sincurve,coscurve)) > curve_thresh
+      (curve = atan2(sincurve,coscurve)) > curve_thresh_high
       ) {
 
     VERTEX *Vnew;
@@ -1375,18 +1377,19 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
 		     new_vertex(0, P0[0],P0[1],P0[2], V->line));
     add_vertex_after(V->line, V,
 		     new_vertex(0, P1[0],P1[1],P1[2], V->line));
-    return 1;
+    return 2;
 
   } else {
     /******************************
      * Check for deletion
      */
-    curve_thresh *= 0.5;
-    if( ! ( (sincurve * 1.048 > curve_thresh) ||
-	    (curve_thresh > (M_PI * 1.0/3)  && 
-	     ( (sincurve * 1.210 > curve_thresh) ||
-	       (curve_thresh > (M_PI * 2.0/3) && 
-		( (sincurve * (M_PI / 2)  > curve_thresh) ||
+    
+    if( curve_thresh_low != 0 && 
+	! ( (sincurve * 1.048 > curve_thresh_low) ||
+	    (curve_thresh_low > (M_PI * 1.0/3)  && 
+	     ( (sincurve * 1.210 > curve_thresh_low) ||
+	       (curve_thresh_low > (M_PI * 2.0/3) && 
+		( (sincurve * (M_PI / 2)  > curve_thresh_low) ||
 		  (coscurve < 0)
 		  )
 		)
@@ -1396,20 +1399,21 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
 	&& 
 	/* This is the actual check but the trig operation is masked out */
 	/* by the above mess for most cases.  That's an assignment.      */
-	(curve = atan2(sincurve,coscurve)) < curve_thresh
+	(curve = atan2(sincurve,coscurve)) < curve_thresh_low
 	) {
       NUM offset_dist;
       NUM pdist,ndist;
       /* Check maximum displacement of the fluxel if straightened */
       offset_dist = p_ls_dist(V->x,V->prev->x,V->next->x);
       offset_dist *= 1.333;
-      if(offset_dist > 0 && 
+      if(offset_dist >= 0 && 
 	 offset_dist < V->prev->r_cl && 
 	 offset_dist < V->next->r_cl) {
 	if(V->line->fc0->world->verbosity > 3){
 	  printf("fix_curvature: unlinking %d from line %d\n",V->label,V->line->label);
 	}
 	delete_vertex(V);
+	return -1;
       }
     }
   }
@@ -1417,8 +1421,8 @@ int fix_curvature(VERTEX *V, NUM curve_thresh) {
 }
 
 
-int fluxon_fix_curvature(FLUXON *f, NUM curve_thresh) {
-  int ret=0;
+int fluxon_fix_curvature(FLUXON *f, NUM curve_thresh_high, NUM curve_thresh_low) {
+  int ret=0; //number of v's different from original
   VERTEX *V = f->start;
   int verbosity = f->fc0->world->verbosity;
 
@@ -1427,21 +1431,23 @@ int fluxon_fix_curvature(FLUXON *f, NUM curve_thresh) {
   while(V && V != f->end) {
     VERTEX *Vnext = V->next;
     if(verbosity >= 3) printf("  vertex %d\n",V->label);
-    ret += fix_curvature(V,curve_thresh);
+    ret += fix_curvature(V,curve_thresh_high, curve_thresh_low);
     V=Vnext;
   }
   return ret;
 }
 
 /* tree walker hooks for global_fix_curvature... */
-static NUM cu_thr;
+static NUM cu_thrh;
+static NUM cu_thrl;
 static int cu_acc;
 static long cu_tramp(FLUXON *fl, int lab, int link, int depth) {
-  cu_acc += fluxon_fix_curvature(fl, cu_thr);
+  cu_acc += fluxon_fix_curvature(fl, cu_thrh, cu_thrl);
   return 0;
 }
-int global_fix_curvature(WORLD *w, NUM curv_thresh) {
-  cu_thr = curv_thresh;
+int global_fix_curvature(WORLD *w, NUM curv_thresh_high, NUM curv_thresh_low) {
+  cu_thrh = curv_thresh_high;
+  cu_thrl = curv_thresh_low;
   cu_acc = 0;
   tree_walker(w->lines,fl_lab_of,fl_all_ln_of,cu_tramp,0);
   world_update_ends(w);

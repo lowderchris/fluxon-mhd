@@ -279,14 +279,16 @@ happen.
 
 =for usage
 
-    $baddies = $world->fix_curvature($thresh);
-
+    $num_changed = $world->fix_curvature($thresh_high, $thresh_low);
+    $num_changed = $world->fix_curvature($thresh_high);
+    
 =for ref
 
-Adds additional vertices as needed to ensure that no vertices have too 
-much curvature.  The $thresh is the maximum bend angle, in radians, that
-is allowed at each vertex.  You get back a count of the number of fluxels that
-required subdivision.
+Adds additional vertices as needed to ensure that no vertices have too
+much curvature.  The $thresh_high is the maximum bend angle, in
+radians, that is allowed at each vertex.  $thresh_low is the minimum
+bend angle in radians. You get back a count of the number of fluxels
+different from the previous number.
 
 You have to have primed the world with at least one timestep or
 update_neighbors call before you do this -- otherwise horrible things might
@@ -294,7 +296,12 @@ happen.
 
 =cut
 
-# Implemented in World.xs
+sub fix_curvature { 
+    my $me = shift ;
+    my $thresh_high = shift ;
+    my $thresh_low = shift ;
+    _fix_curvature ($me, $thresh_high || 0, $thresh_low || 0 );
+}
 
 
 

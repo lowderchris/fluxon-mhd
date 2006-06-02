@@ -1,3 +1,6 @@
+2-June-2006: [LR]
+	-added a lower threshold to fix_curvature. changed num returned to the difference between new and prev vertex total
+
 31-May-2006:
 	- Added rudimentary version information -- in $FLUX::file_versions.  It tells you the location, mod date, and size of each source file in the FLUX library.
 	- clamped output step to minimum neighbor distance.
