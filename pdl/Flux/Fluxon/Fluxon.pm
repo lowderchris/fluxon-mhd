@@ -51,7 +51,9 @@ sub new_from_ptr {
     my $ptr = shift;
     my %hash;
     tie %hash,"Flux::Fluxon",$ptr;
-    return bless(\%hash,$class);
+    my $me= bless(\%hash,$class);
+    _inc_world_refct($me);
+    $me;
 }
 
 
@@ -181,7 +183,9 @@ Returns a xN PDL containing, in each row:
 
 # Implemented in Fluxon.xs
 
-
+sub DESTROY {
+  _dec_refct_destroy_world($_[0]);
+}
 
 ######################################################################
 # TIED INTERFACE

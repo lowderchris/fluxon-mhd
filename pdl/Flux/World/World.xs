@@ -118,6 +118,7 @@ CODE:
 	    croak("Couldn't open file '%s' to read a Flux::World",s);
 
 	w = read_world(f,(WORLD *)0);
+	printf("read_world: world refct is %d\n",w->refct);
 	fclose(f);
 	
 	if(w) {
@@ -410,6 +411,19 @@ OUTPUT:
   RETVAL
 
 
+void
+_dec_refct_destroy(svw)
+SV *svw
+PREINIT:
+ WORLD *w;
+CODE:
+ w = SvWorld(svw, "Flux::World::_dec_refct_destroy");
+ w->refct--;
+ if(w->verbosity)
+	printf("Flux::World::_dec_refct_destroy - world refcount is now %d\n",w->refct);
+ if(w->refct <= 0)
+	free_world(w);
+	
 
 AV *
 _forces(wsv)

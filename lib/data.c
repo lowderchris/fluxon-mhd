@@ -28,6 +28,7 @@
  *  new_label - generates long-int label for a fluxon
  *  new_vertex_label - generates long-int label for a vertex
  *  new_fluxon - Generates a new, empty field line structure
+ *  delete_fluxon - Removes a fluxon from the world, and frees it.
  *  new_vertex - Generates a vertex from X,Y,Z, and fluxon references.
  *  new_flux_concentration - generates a new flux concentration at a location
  *  new_world - creates a new world
@@ -317,6 +318,9 @@ WORLD *new_world() {
   
   a->frame_number = 0;
   a->state = WORLD_STATE_NEW;
+  a->refct = 0;
+  printf("new_world - set refct to %d\n",a->refct);
+
   a->concentrations = NULL;	/* nothing in the world yet */
   a->vertices = NULL;
   a->lines = NULL;
@@ -370,6 +374,117 @@ WORLD *new_world() {
 
   return a;
 }
+
+/**********************************************************************
+ * delete_fluxon - deletes a fluxon by unlinking it and its vertices from the 
+ * surrounding structures, and then frees it.
+ */
+void delete_fluxon ( FLUXON *f ) {
+  VERTEX *v;
+
+  if(f->fc0->world->verbosity) 
+    printf("deleting fluxon %d (%d under it)...\n",f->label,f->all_links.n);
+
+  for(v=f->start->next; v && v != f->end; ) {
+    delete_vertex(v);
+    v=f->start->next;
+  }
+  delete_vertex(f->start); f->start = 0;
+  delete_vertex(f->end);   f->end = 0;
+  f->fc0->world->lines = tree_unlink(f, fl_lab_of, fl_all_ln_of);
+  f->fc0->lines = tree_unlink(f, fl_lab_of, fl_start_ln_of);
+  f->fc1->lines = tree_unlink(f, fl_lab_of, fl_end_ln_of);
+  {
+    int v = f->fc0->world->verbosity;
+    if(v)
+      printf("freeing the fluxon (%d)...\n",f->label);
+    localfree(f);
+    if(v)
+      printf("ok\n");
+  }
+}
+
+/**********************************************************************
+ * delete_flux_concentration
+ */
+void delete_flux_concentration ( FLUX_CONCENTRATION *fc ) {
+  WORLD *w = fc->world;
+
+  while(fc->lines) {
+    delete_fluxon(fc->lines);
+  }
+
+  if(w->verbosity)
+    printf("delete_flux_concentration: deleting myself (%d)...\n",fc->label);
+  
+  fc->world->concentrations = tree_unlink( fc, fc_lab_of, fc_ln_of );
+
+  if(w->verbosity)
+    printf("...\n");
+
+  localfree(fc);
+
+  if(w->verbosity)
+    printf("delete_flux_concentration: done...\n");
+}
+    
+  
+
+/**********************************************************************
+ * free_world
+ * Deallocates a world and everything in it
+ */
+void free_world( WORLD *w ) {
+  VERTEX *v;
+  FLUX_CONCENTRATION *fc;
+
+
+  /////// Delete everything in the main fc tree...
+  while(w->concentrations) {
+    delete_flux_concentration(w->concentrations);
+  }
+
+  /////// This is not necessary because the pseudos are in the main fc tree...
+  //  delete_flux_concentration(w->fc_ob);
+  //  delete_flux_concentration(w->fc_oe);
+  //  delete_flux_concentration(w->fc_pb);
+  //  delete_flux_concentration(w->fc_pe);
+
+
+  /////// Clean up the image vertices
+
+  if(w->image) {
+    if(w->image->neighbors.stuff)
+      localfree(w->image->neighbors.stuff);
+    w->image->neighbors.stuff=0;
+
+    if(w->image->nearby.stuff) 
+      localfree(w->image->nearby.stuff);
+    w->image->nearby.stuff=0;
+
+    localfree(w->image);
+    w->image=0;
+
+  }
+
+  if(w->image2) {
+    if(w->image2->neighbors.stuff)
+      localfree(w->image2->neighbors.stuff);
+    w->image2->neighbors.stuff = 0;
+
+    if(w->image2->nearby.stuff)
+      localfree(w->image2->nearby.stuff);
+    w->image2->nearby.stuff = 0;
+
+    localfree(w->image2);
+    w->image2 = 0;
+
+  }
+
+  ///////// Free the world...
+  localfree(w);
+}
+
 
 /**********************************************************************
  **********************************************************************
@@ -432,10 +547,10 @@ void unlink_vertex(VERTEX *v) {
 
   if(!v)			/* do nothing if not given a v */
     return;
-  if(!v->prev || !v->next) {	/* if one of the links is missing */
-    fprintf(stderr,"unlink_vertex ignoring an end condition...\n");
-    return;
+  if((!v->prev || !v->next) && v->line->fc0->world->verbosity) {	/* if one of the links is missing */
+    fprintf(stderr,"unlink_vertex: this is an end condition. Proceeding...\n");
   }
+
   if(!v->line) {		/* if it doesn't belong to a fluxon */
     fprintf(stderr,"unlink_vertex: strangeness!\n");
     return;
@@ -460,8 +575,16 @@ void unlink_vertex(VERTEX *v) {
   }
 #endif
   
-  v->prev->next = v->next;
-  v->next->prev = v->prev;
+  if(v->prev) 
+    v->prev->next = v->next;
+  else 
+    v->line->start = 0;
+
+  if(v->next)
+    v->next->prev = v->prev;
+  else
+    v->line->end = 0;
+      
   v->line->v_ct--;		/* decrease vertex count in the fluxon */
 
 
@@ -477,28 +600,33 @@ void unlink_vertex(VERTEX *v) {
 	printf("WHOA THERE! doomed vertex %d's neighbor %d had no nearby link back!\n",v->label,a->label);
       }
 
-      dumblist_add(    &(v->next->neighbors), a);
-      dumblist_add(    &(a->nearby), v->next);
-      
-      dumblist_add(    &(v->prev->neighbors), a);
-      dumblist_add(    &(a->nearby), v->prev);
+      if(v->next) {
+	dumblist_add(    &(v->next->neighbors), a);
+	dumblist_add(    &(a->nearby), v->next);
+      }
 
+      if(v->prev) {     
+	dumblist_add(    &(v->prev->neighbors), a);
+	dumblist_add(    &(a->nearby), v->prev);
+      }
     }
   }
   v->neighbors.n=0;
-
-
 
   for(i=0;i<v->nearby.n;i++) {
     VERTEX *a = ((VERTEX **)(v->nearby.stuff))[i];
     if(a) {
       dumblist_delete(&(a->neighbors), v);
       
-      dumblist_add(   &(a->neighbors), v->next);
-      dumblist_add(   &(v->next->nearby), a);
+      if(v->next) {
+	dumblist_add(   &(a->neighbors), v->next);
+	dumblist_add(   &(v->next->nearby), a);
+      }
       
-      dumblist_add(   &(a->neighbors), v->prev);
-      dumblist_add(   &(v->prev->nearby), a);
+      if(v->prev) {
+	dumblist_add(   &(a->neighbors), v->prev);
+	dumblist_add(   &(v->prev->nearby), a);
+      }
     }
     v->nearby.stuff[i]=0;
   }
@@ -522,12 +650,16 @@ void unlink_vertex(VERTEX *v) {
   }
 #endif
 
-  printf("Unlinking vertex %d (up=%d)...\n",v->label,v->world_links.up?((VERTEX *)(v->world_links.up))->label:0);
+  if(v->line->fc0->world->verbosity) {
+    printf("Unlinking vertex %d (up=%d)...\n",v->label,v->world_links.up?((VERTEX *)(v->world_links.up))->label:0);
+  }
 
   {
     void *root;
+    WORLD *w = v->line->fc0->world;
+
     /* Normalize world root... */
-    for(root=v->line->fc0->world->vertices; 
+    for(root=w->vertices;
 	((LINKS *)(root+v_ln_of))->up; 
 	root=((LINKS *)(root+v_ln_of))->up)
       ;
@@ -535,28 +667,30 @@ void unlink_vertex(VERTEX *v) {
     
     /* Compare with actual root */
     for(root=v; ((LINKS *)(root+v_ln_of))->up; root=((LINKS *)(root+v_ln_of))->up);
-    if(root==v->line->fc0->world->vertices) {
-      printf("calling tree_unlink...\n");
-      v->line->fc0->world->vertices = tree_unlink(v, v_lab_of, v_ln_of);
-      printf("\n");  
+    if(root==w->vertices) {
+      if(w->verbosity)
+	printf("calling tree_unlink...\n");
+      w->vertices = tree_unlink(v, v_lab_of, v_ln_of);
+      if(w->verbosity)
+	printf("\n");  
     } else {
       printf("no unlinking here... (derived root is %d; actual root is %d)\n",root?((VERTEX *)root)->label:0,v->line->fc0->world->vertices?v->line->fc0->world->vertices->label:0);
     }
-  }
 
-  {
-    void *root;
-    for(root=v->line->fc0->world->vertices; 
-	((LINKS *)(root+v_ln_of))->up; 
+    for(root=w->vertices;
+	root && ((LINKS *)(root+v_ln_of))->up; 
 	root=((LINKS *)(root+v_ln_of))->up)
       ;
-    v->line->fc0->world->vertices = root;
+    w->vertices = root;
+    if(w->verbosity){
+      printf("Finished unlinking vertex\n");
+    }
   }
 }
 
 /**********************************************************************
  * delete_vertex
- * Unlinks and then zero's out a given vertex.
+ * Unlinks and then zero's out a given vertex. 
  */
 
 void delete_vertex(VERTEX *v) {
@@ -1905,27 +2039,48 @@ char *flux_malloc(long size, int what_for) {
   flux_malloc_next++;
   return (void *)p;
 }
-  
+
+void flux_dump_memblocks() {
+  int i;
+  printf("\n\n---snapshot of allocated blocks:\n");
+  for(i=0;i<flux_malloc_next;i++) {
+    if(flux_malloc_alloc[i].type) {
+      printf("\t%.4d: type=%d, size=%d, loc=%d\n",i,flux_malloc_alloc[i].type,flux_malloc_alloc[i].size,flux_malloc_alloc[i].where);
+    }
+  }
+  printf("\n");
+}
+
 void flux_free(void *p) {
   int i;
-  int ok = 0;
+  int ok = -1;
   flux_memcheck();
 
-  for(i=0;!ok && i<flux_malloc_next;i++) 
+
+  //  flux_dump_memblocks();
+
+
+  for(i=0;ok<0 && i<flux_malloc_next;i++) 
     if (p==flux_malloc_alloc[i].where) 
-      ok = i ;
+      ok = i;
   
-  if(ok) {
+  if(ok>=0) {
     flux_malloc_alloc[ok].where = 0;
     flux_malloc_alloc[ok].size = 0;
     flux_malloc_alloc[ok].type = 0;
     free((char *)p-fencesize);
     return;
   } else {
-    fprintf(stderr,"%%%%%%flux_free: got an unknown block to free");
+    fprintf(stderr,"%%%%%%flux_free: got an unknown block to free\n");
+    fprintf(stderr,"block was %d\n",p);
+    fprintf(stderr,"Dump of blocks:\n");
+    for(i=0;i<flux_malloc_next;i++) {
+      fprintf(stderr,"\t%d (type=%d, size=%d)\n",flux_malloc_alloc[i].where,flux_malloc_alloc[i].type,flux_malloc_alloc[i].size);
+    }
     /* Throw an exception */
     {
       int i=0,j=2;
+      fprintf(stderr,"flux_free: Throwing a floating point exception...\n");
       j/=i;
     }
     free((char *)p-fencesize);

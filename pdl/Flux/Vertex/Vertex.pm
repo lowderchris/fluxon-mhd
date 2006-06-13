@@ -58,7 +58,9 @@ sub new_from_ptr {
 
     my %hash;
     tie %hash,"Flux::Vertex",$ptr;
-    return bless(\%hash , $class);
+    my $me = bless(\%hash , $class);
+    _inc_world_refct($me);
+    $me;
 }
 
 =pod
@@ -272,6 +274,9 @@ Returns the location vector of the vertex, as a 3-pdl.
 
 # implemented in Vertex.xs
 
+sub DESTROY {
+  _dec_refct_destroy_world( $_[0] );
+}
 
 ######################################################################
 # TIED INTERFACE

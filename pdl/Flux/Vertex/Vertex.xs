@@ -20,6 +20,7 @@
  *  projmatrix         Returns the projection matrix used for hull, as a 3x3 PDL
  *  proj_neighbors     Calls vertex_update_neighbors.
  *  x                  Returns the coordinates of the vertex - obviated by tied-hash
+ *  _dec_refct_destroy_world  Decrements the owning world's refct and, if zero, destroys the world.
  * 
  * This is Vertex.xs version 1.1 - part of the FLUX 1.1 release.
  */
@@ -340,6 +341,32 @@ CODE:
  PDL->SetSV_PDL(RETVAL,p);
 OUTPUT:
  RETVAL
+
+void
+_inc_world_refct(svv)
+SV *svv
+PREINIT:
+ VERTEX *v;
+CODE:
+ v=SvVertex(svv, "Flux::Vertex::_inc_world_refct");
+ v->line->fc0->world->refct += 2;
+ if(v->line->fc0->world->verbosity) 
+	printf("Vertex:  world refct += 2 (now %d)\n",v->line->fc0->world->refct);
+
+
+void
+_dec_refct_destroy_world(svrt)
+SV *svrt
+PREINIT:
+ VERTEX *v;
+CODE:
+ v = SvVertex(svrt, "Flux::Vertex::_dec_refct_destroy_world");
+ v->line->fc0->world->refct--;
+ if(v->line->fc0->world->verbosity)
+	printf("Flux::Vertex::_dec_refct_destroy_world - world refcount is now %d\n",v->line->fc0->world->refct);
+ if(v->line->fc0->world->refct <= 0)
+	free_world(v->line->fc0->world);
+	
 
 BOOT:
 /**********************************************************************

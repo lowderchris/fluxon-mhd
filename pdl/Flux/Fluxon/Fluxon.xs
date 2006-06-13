@@ -248,6 +248,30 @@ CODE:
 OUTPUT:
  RETVAL
 
+void 
+_inc_world_refct(svfl)
+SV *svfl
+PREINIT:
+ FLUXON *f;
+CODE:
+ f = SvFluxon(svfl, "Flux::Fluxon::_inc_world_refct");
+ f->fc0->world->refct+=2;  /* two incs per object */
+ if(f->fc0->world->verbosity) 
+	printf("Fluxon: world refct += 2 (now %d)\n",f->fc0->world->refct);
+
+
+void
+_dec_refct_destroy_world(svfl)
+SV *svfl
+PREINIT:
+ FLUXON *f;
+CODE:
+ f = SvFluxon(svfl, "Flux::Fluxon::_dec_refct_destroy_world");
+ f->fc0->world->refct--;
+ if(f->fc0->world->verbosity)
+	printf("Flux::Fluxon::_dec_refct_destroy_world - world refcount is now %d\n",f->fc0->world->refct);
+ if(f->fc0->world->refct <= 0) 
+	free_world(f->fc0->world);
 
 BOOT:
 /**********************************************************************

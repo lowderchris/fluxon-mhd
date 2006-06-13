@@ -55,6 +55,7 @@ sub new_from_ptr {
     my $ptr = shift;
     my %hash;
     tie %hash,"Flux::World",$ptr;
+    $hash{refct}=2;      # perl references come in pairs
     return bless(\%hash,$class);
 }
 
@@ -79,7 +80,6 @@ sub read_world {
   shift if(substr($_[0],0,length(__PACKAGE__)) eq __PACKAGE__);
   _read_world(@_);
 }
-
 
 
 =pod
@@ -781,11 +781,12 @@ sub render {
     }
     $opt= {} unless defined($opt);
 
-
+    print "Releasing...\n" if($Flux::debug);
     release3d;
+    print "foo...\n" if($Flux::debug);
 
     my $fid;
-    my @poly = map { $w->fluxon($_)->polyline } $w->fluxon_ids;
+    my @poly = map { print "$_..." if($Flux::debug); $w->fluxon($_)->polyline } $w->fluxon_ids;
 
     my @rgb,@prgb;
     print "Defining RGB..." if($Flux::debug);
@@ -822,7 +823,9 @@ sub render {
 
     print "Defining polygons...\n" if($Flux::debug);
     $poly = pdl(0,0,0)->glue(1,@poly);
+    print "a...\n" if($Flux::debug);
     $rgb = pdl(0,0,0)->glue(1,@rgb);
+    print "b...\n" if($Flux::debug);
     $prgb = pdl(0,0,0)->glue(1,@prgb);
 
 
@@ -1207,7 +1210,10 @@ sub _plot_hull {
     $win->release;
 }
 
-	    
+
+sub DESTROY {
+  _dec_refct_destroy( $_[0] );
+}
 
 ######################################################################
 # TIED INTERFACE
@@ -1259,6 +1265,7 @@ sub NEXTKEY {
 sub SCALAR {
     _stringify(@_);
 }
+
 
   
 1;

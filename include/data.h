@@ -177,6 +177,7 @@ typedef struct WORLD {
   /* Globally memorable fields go here */
   long frame_number;        /* Identifies currently-being-worked-on frame */
   long state;               /* State of the world  */
+  long refct;               /* Used for perl interface (deallocate world when this reaches zero) */
   FLUX_CONCENTRATION *concentrations;
   FLUXON *lines;
   VERTEX *vertices;
@@ -263,6 +264,11 @@ inline FLUX_CONCENTRATION *new_flux_concentration(WORLD *, NUM x, NUM y, NUM z,
 						  );
 
 WORLD *new_world();
+
+void free_world();
+void delete_flux_concentration();
+void delete_fluxon();
+void delete_vertex();
 
 #define MAX_TREE_DEPTH 1000000
 void clear_links(LINKS *links);

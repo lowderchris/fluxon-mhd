@@ -721,6 +721,7 @@ WORLD *read_world(FILE *file, WORLD *a) {
   do{
     if( a == NULL ) {
       a = new_world();
+      printf("read_world: new_world refct is %d\n",a->refct);
     }
 
     if(s = next_line(file)) {

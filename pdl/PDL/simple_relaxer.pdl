@@ -154,9 +154,6 @@ sub simple_relaxer {
 	   print "\t\tratio=$ratio; new dt=$dt\n";
 	}
 
-	my $range = $opt->{range};
-        $range=$range->copy if (defined $range);
-
 	unless($disp_n==0 || $step % $disp_n ) {
 	    $w->render_lines($interactive,defined($range)?$range->copy:undef,$opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
 	    if($movie_n) {

@@ -1,3 +1,12 @@
+13-June-2006: [CD]
+	- De-allocation is now in place.  Routine "free_world" seems to clean
+up the whole data structure OK.  World freedom is linked into the perl side 
+too, with a perl-like ref count mechanism -- when you deallocate all remaining 
+references to a Flux object, it gets cleaned up.  There are still some problems
+with global cleanup -- tends to dump core rather than exiting perl gracefully.
+But everything seems to work OK in normal use.  No memory leaks observed 
+when loading and displaying thousands of worlds.
+
 2-June-2006: [LR]
 	-added a lower threshold to fix_curvature. changed num returned to the difference between new and prev vertex total
 
