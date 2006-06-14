@@ -47,6 +47,7 @@ static Core* PDL; /* PDL core functions (run-time linking)     */
 static SV* CoreSV;/* gets perl var holding the core structures */
 
 
+
 MODULE = Flux::Vertex      PACKAGE = Flux::Vertex
 
 char *
@@ -102,16 +103,38 @@ fluxon(vrt)
 PREINIT:
  FLUXON *f;
  VERTEX *v;
- SV *sv;
 /**********************************************************************
  * fluxon - return the containing fluxon, as a Flux::Fluxon object
  */
 CODE:
   v = SvVertex(vrt,"Flux::Vertex::fluxon");
   f = v->line;
-  sv = newSViv((IV)(f));
-  RETVAL = newRV_noinc(sv);
-  (void)sv_bless(RETVAL,gv_stashpv("Flux::Fluxon",TRUE));
+
+  {
+   	I32 foo;
+
+   	ENTER;
+  	SAVETMPS;
+
+  	PUSHMARK(SP);
+  	XPUSHs( sv_2mortal(newSVpv( "Flux::Fluxon", 0)) );
+  	XPUSHs( sv_2mortal(newSViv((IV)f)) );
+  	PUTBACK;
+  	foo = call_pv( "Flux::Fluxon::new_from_ptr", G_SCALAR );
+	SPAGAIN;
+
+  	if(foo==1)
+	    RETVAL = POPs;
+	else {
+	    croak("Big trouble in Flux::Fluxon::new_from_ptr call from Vertex->fluxon()...");
+	}
+  
+  	SvREFCNT_inc(RETVAL);
+  
+  	PUTBACK;
+  	FREETMPS;
+  	LEAVE; 
+  }
 OUTPUT:
  RETVAL
 
@@ -120,16 +143,35 @@ next(vrt)
  SV *vrt
 PREINIT:
  VERTEX *v;
- SV *sv;
 /**********************************************************************
  * next - hop to the next vertex on the fluxon
  */
 CODE:
  v = SvVertex(vrt,"Flux::Vertex::next");
  if(v->next) {	
-   sv = newSViv((IV)(v->next));
-   RETVAL = newRV_noinc(sv);
-   (void)sv_bless(RETVAL,gv_stashpv("Flux::Vertex",TRUE));
+   	I32 foo;
+
+   	ENTER;
+  	SAVETMPS;
+
+  	PUSHMARK(SP);
+  	XPUSHs( sv_2mortal(newSVpv( "Flux::Vertex", 0)) );
+  	XPUSHs( sv_2mortal(newSViv((IV)v->next)) );
+  	PUTBACK;
+  	foo = call_pv( "Flux::Vertex::new_from_ptr", G_SCALAR );
+	SPAGAIN;
+
+  	if(foo==1)
+	    RETVAL = POPs;
+	else {
+	    croak("Big trouble in Flux::Vertex::new_from_ptr call from Vertex->next()...");
+	}
+  
+  	SvREFCNT_inc(RETVAL);
+  
+  	PUTBACK;
+  	FREETMPS;
+  	LEAVE; 
  } else {
   RETVAL = &PL_sv_undef;
  }
@@ -141,16 +183,35 @@ prev(vrt)
  SV *vrt
 PREINIT:
  VERTEX *v;
- SV *sv;
 /**********************************************************************
  * prev - hop to the previous vertex on the fluxon
  */
 CODE:
  v = SvVertex(vrt,"Flux::Vertex::prev");
  if(v->prev) {
-   sv = newSViv((IV)(v->prev));
-   RETVAL = newRV_noinc(sv);
-   (void)sv_bless(RETVAL,gv_stashpv("Flux::Vertex",TRUE));
+   	I32 foo;
+
+   	ENTER;
+  	SAVETMPS;
+
+  	PUSHMARK(SP);
+  	XPUSHs( sv_2mortal(newSVpv( "Flux::Vertex", 0)) );
+  	XPUSHs( sv_2mortal(newSViv((IV)v->prev)) );
+  	PUTBACK;
+  	foo = call_pv( "Flux::Vertex::new_from_ptr", G_SCALAR );
+	SPAGAIN;
+
+  	if(foo==1)
+	    RETVAL = POPs;
+	else {
+	    croak("Big trouble in Flux::Vertex::new_from_ptr call from Vertex->prev()...");
+	}
+  
+  	SvREFCNT_inc(RETVAL);
+  
+  	PUTBACK;
+  	FREETMPS;
+  	LEAVE; 
  } else {
   RETVAL = &PL_sv_undef;
  }
@@ -165,7 +226,7 @@ PREINIT:
  VERTEX *v;
  DUMBLIST *dl;
  int i;
- SV *sv, *rv;
+ SV *sv;
 /**********************************************************************
  * _adjacent - return a perl list of the neighbors or nearby list for a
  * vertex. 
@@ -184,11 +245,33 @@ CODE:
  av_extend(RETVAL,dl->n);
  for(i=0; i<dl->n; i++) {
    VERTEX *v = (VERTEX *)(dl->stuff[i]);
-   sv = newSViv((IV)v);
-   rv = newRV_noinc(sv);
-   (void)sv_bless(rv,gv_stashpv("Flux::Vertex",TRUE));
-   if( !( av_store(RETVAL,i,rv) ) ) {
-	svREFCNT_dec(rv);
+   {
+   	I32 foo;
+
+   	ENTER;
+  	SAVETMPS;
+
+  	PUSHMARK(SP);
+  	XPUSHs( sv_2mortal(newSVpv( "Flux::Vertex", 0)) );
+  	XPUSHs( sv_2mortal(newSViv((IV)v->prev)) );
+  	PUTBACK;
+  	foo = call_pv( "Flux::Vertex::new_from_ptr", G_SCALAR );
+	SPAGAIN;
+
+  	if(foo==1)
+	    sv = POPs;
+	else {
+	    croak("Big trouble in Flux::Vertex::new_from_ptr call from Vertex->prev()...");
+	}
+  
+  	SvREFCNT_inc(sv);
+  
+  	PUTBACK;
+  	FREETMPS;
+  	LEAVE; 
+   }
+   if( ! ( av_store(RETVAL,i,sv) ) ) {
+	svREFCNT_dec(sv);
 	fprintf(stderr,"Warning: problems with array in _adjacent...\n");
    }
  }
@@ -349,9 +432,9 @@ PREINIT:
  VERTEX *v;
 CODE:
  v=SvVertex(svv, "Flux::Vertex::_inc_world_refct");
- v->line->fc0->world->refct += 2;
+ v->line->fc0->world->refct ++;
  if(v->line->fc0->world->verbosity) 
-	printf("Vertex:  world refct += 2 (now %d)\n",v->line->fc0->world->refct);
+	printf("Vertex:  world refct++ (now %d) (pointer is 0x%x)\n",v->line->fc0->world->refct,v);
 
 
 void
@@ -363,7 +446,7 @@ CODE:
  v = SvVertex(svrt, "Flux::Vertex::_dec_refct_destroy_world");
  v->line->fc0->world->refct--;
  if(v->line->fc0->world->verbosity)
-	printf("Flux::Vertex::_dec_refct_destroy_world - world refcount is now %d\n",v->line->fc0->world->refct);
+	printf("Flux::Vertex::_dec_refct_destroy_world - world refcount is now %d (pointer is 0x%x)\n",v->line->fc0->world->refct,v);
  if(v->line->fc0->world->refct <= 0)
 	free_world(v->line->fc0->world);
 	

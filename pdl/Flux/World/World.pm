@@ -55,7 +55,7 @@ sub new_from_ptr {
     my $ptr = shift;
     my %hash;
     tie %hash,"Flux::World",$ptr;
-    $hash{refct}=2;      # perl references come in pairs
+    $hash{refct}=1;      # one reference (that we're returning)
     return bless(\%hash,$class);
 }
 
@@ -940,14 +940,17 @@ sub render {
 
     }
 
-
     if($opt->{'hull'}) {
 
+      print "hullrgb...\n";
 	$hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
+
+      print "hullopen...\n";
 	$hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
 
-	for my $v(map { $_->vertices } $w->fluxons) {
+	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
 	    next unless($v->next);
+
 	    $xcen = 0.5 * ($v->x + $v->next->x);
 	    
 	    my $pm = $v->projmatrix;
@@ -1033,7 +1036,7 @@ sub render {
 
 
 
-    print "ok.  twiddling...\n";
+    print "ok.  twiddling...\n" if($twiddle);
 
     release3d;
     keeptwiddling3d  if($twiddle);
@@ -1212,6 +1215,13 @@ sub _plot_hull {
 
 
 sub DESTROY {
+  # DESTROY gets called twice -- once for the tied hash and once for the underlying object
+  # (which is a scalar ref, not a hash ref). Ignore the destruction for the tied hash.
+
+  eval '$_[0]->{foo}';
+  return unless($@);
+  undef $@;
+
   _dec_refct_destroy( $_[0] );
 }
 

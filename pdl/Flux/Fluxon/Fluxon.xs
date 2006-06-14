@@ -255,9 +255,9 @@ PREINIT:
  FLUXON *f;
 CODE:
  f = SvFluxon(svfl, "Flux::Fluxon::_inc_world_refct");
- f->fc0->world->refct+=2;  /* two incs per object */
+ f->fc0->world->refct++;  
  if(f->fc0->world->verbosity) 
-	printf("Fluxon: world refct += 2 (now %d)\n",f->fc0->world->refct);
+	printf("Fluxon: world refct++ (now %d)\n",f->fc0->world->refct);
 
 
 void

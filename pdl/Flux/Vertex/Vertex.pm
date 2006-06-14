@@ -275,6 +275,13 @@ Returns the location vector of the vertex, as a 3-pdl.
 # implemented in Vertex.xs
 
 sub DESTROY {
+
+  # DESTROY gets called twice -- once for the tied hash and once for the underlying object
+  # (which is a scalar ref, not a hash ref). Ignore the destruction for the tied hash.
+  eval '$_[0]->{foo}';
+
+  return unless($@);
+  undef $@;
   _dec_refct_destroy_world( $_[0] );
 }
 
@@ -285,6 +292,7 @@ sub DESTROY {
 sub TIEHASH {
     my $class = shift;
     my $ptr = shift;
+    die "Vertex::TIEHASH -- pointer is not a scalar!" if(ref $ptr);
     my $me = \$ptr;
     return bless($me,$class);
 }

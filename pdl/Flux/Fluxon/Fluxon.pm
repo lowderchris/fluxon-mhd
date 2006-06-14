@@ -184,6 +184,13 @@ Returns a xN PDL containing, in each row:
 # Implemented in Fluxon.xs
 
 sub DESTROY {
+
+  # DESTROY gets called twice -- once for the tied hash and once for the underlying object
+  # (which is a scalar ref, not a hash ref). Ignore the destruction for the tied hash.
+  eval '$_[0]->{foo}';
+  return unless($@);
+  undef $@;
+
   _dec_refct_destroy_world($_[0]);
 }
 
