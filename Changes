@@ -1,3 +1,11 @@
+19-June-2006: [cd] 
+	- fixed order-of-deref bug between tied hash and underlying
+	blessed scalar.  No longer dumps core on exit.  (Bonus!)
+14-June-2006: [cd]
+	- Replaced explicit form-and-bless calls in many of the Vertex.xs 
+	routines, with correct perl calls to the perl-side constructor. This
+	eliminates a reference leak that was causing crashes.  Still get a
+	segmentation fault on exit...
 13-June-2006: [CD]
 	- De-allocation is now in place.  Routine "free_world" seems to clean
 up the whole data structure OK.  World freedom is linked into the perl side 
