@@ -519,7 +519,7 @@ sub vertices {
 
 =pod
 
-=head2 forces
+=head2 forces - read or set the force laws used for a world
 
 =for usage
  
@@ -549,6 +549,41 @@ sub forces {
 	_set_force($me,$i,'');
     }
 }
+
+=pod
+
+=head2 reconnection - read or set the reconnection criteria
+
+=for usage
+
+  print $world->reconnection;
+  $world->reconnection('rc_a_ad2',[3.14159/4, 10 * 3.14159/4], ...);
+
+=for ref
+
+The reconnection criteria accept numeric parameters in an array ref.
+Check the documentation array or the source code to find out what they
+mean.  Setting the reconnection parameters doesn't make reconnection
+happen -- for that, you must call "reconnect".  If you add more than one
+criterion, just string 'em together.
+
+=cut
+
+sub reconnection {
+  my $me = shift;
+  if(@_==0) {
+    return @{_rcfuncs($me)};
+  } else {
+    my $i=0;
+    while(@_) {
+      my $name = shift;
+      my $params = shift;
+      die "error in _set_rc\n" unless(_set_rc($me, $i++, $name, $params));
+    }
+    _set_rc($me,$i++,"",[]);
+  }
+}
+
 
 
 =pod
@@ -1216,11 +1251,14 @@ sub _plot_hull {
 
 sub DESTROY {
   # DESTROY gets called twice -- once for the tied hash and once for the underlying object
-  # (which is a scalar ref, not a hash ref). Ignore the destruction for the tied hash.
+  # (which is a scalar ref, not a hash ref). Only destroy the world if this is the scalar ref 
+  # layer (not the hash ref layer).
 
-  eval '$_[0]->{foo}';
-  return unless($@);
-  undef $@;
+  eval 'my $a = ${$_[0]}; $a;';
+  if($@) {
+    undef $@;
+    return;
+  }
 
   _dec_refct_destroy( $_[0] );
 }

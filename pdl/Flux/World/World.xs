@@ -373,7 +373,7 @@ vertex(wsv,id)
  IV id
 PREINIT:
  WORLD *w;
- FLUXON *f;
+ VERTEX *v;
  SV *sv;
 /**********************************************************************
  * vertex - generate and return a Flux::Vertex object associated 
@@ -381,8 +381,8 @@ PREINIT:
  */
 CODE:
   w = SvWorld(wsv,"Flux::World::vertex");
-  f = (VERTEX *)tree_find(w->vertices,id,v_lab_of,v_ln_of);
-  if(f) {
+  v = (VERTEX *)tree_find((void *)(w->vertices),id,v_lab_of,v_ln_of);
+  if(v) {
      	I32 foo;
  
      	ENTER;
@@ -390,7 +390,7 @@ CODE:
 	
 	PUSHMARK(SP);
 	XPUSHs(sv_2mortal(newSVpv("Flux::Vertex",0)));
-	XPUSHs(sv_2mortal(newSViv((IV)f)));
+	XPUSHs(sv_2mortal(newSViv((IV)v)));
 	PUTBACK;
 	foo = call_pv("Flux::Vertex::new_from_ptr",G_SCALAR);
 	SPAGAIN;
@@ -462,7 +462,7 @@ OUTPUT:
 
 
 
-void
+IV
 _set_force(wsv,where,what)
 SV *wsv
 IV where
@@ -474,16 +474,17 @@ PREINIT:
 /**********************************************************************
  * _set_force
  * Try to interpret a string as a force name and set the 
- * force pointer to it.
+ * force pointer to it.  Returns true on success, or false on failure
  */
 CODE:
  w = SvWorld(wsv,"Flux::World::_set_force");
  if(where >= N_FORCE_FUNCS-1)
    croak("force index %d not allowed 0<i<%d\n",where,N_FORCE_FUNCS-1);
 
- if(*what==0)
+ if(*what==0) {
    w->f_funcs[where]=0;
- else {
+   RETVAL=1;
+ } else {
   for(j=0;
      FLUX_FORCES[j].func && strcmp(FLUX_FORCES[j].name,what);
      j++)
@@ -493,16 +494,138 @@ CODE:
 	 unsigned long ul;
 	 sscanf(what+2,"%x",&ul);
 	 ((void **)(w->f_funcs))[where] = (void *)ul;
+	 RETVAL = 3;
        } else {
          croak("Unknown force function '%s'\n",what);
        }
      } else {
         w->f_funcs[where] = FLUX_FORCES[j].func;
+	RETVAL = 2;
      }
   }
+OUTPUT:
+ RETVAL
 
 
+AV *
+_rcfuncs(wsv)
+ SV *wsv
+PREINIT:
+ WORLD *w;
+ SV *sv;
+ SV *sv2;
+ int i;
+/**********************************************************************
+ * _rcfuncs
+ * Retrieve the reconnection criteria for the World, and return them in an
+ * array ref.  Elements alternate between names of functions and lists of parameters.
+ */
+CODE:
 
+  w=SvWorld(wsv,"Flux::World::_rcfuncs");
+	
+  if(w->verbosity) {
+	printf("_rcfuncs...\n");
+  }
+  av_clear(RETVAL = newAV());
+  for(i=0;i<N_RECON_FUNCS && w->rc_funcs[i]; i++) {
+	int j;
+	for( j=0;	
+ 	     FLUX_RECON[j].func && FLUX_RECON[j].func != w->rc_funcs[i];
+	     j++
+	);
+	if(FLUX_RECON[j].func) {
+		sv = newSVpv(FLUX_RECON[j].name,strlen(FLUX_RECON[j].name));
+	} else {
+		char s[80];
+		sprintf(s,"0x%x",(unsigned long)(w->rc_funcs[i]));
+		sv=newSVpv(s,strlen(s));
+	}
+	if(w->verbosity)
+		printf("x...");
+	
+	av_store(RETVAL, av_len(RETVAL)+1, sv) || svREFCNT_dec(sv);
+	av_clear(sv2 = newAV());
+	for( j=0; j<N_RECON_PARAMS; j++ )  {
+		sv = newSVnv(w->rc_params[i][j]);
+		av_store(sv2, av_len(sv2)+1, sv) || svREFCNT_dec(sv);
+	}
+	sv2 = newRV_noinc(sv2);
+	av_store(RETVAL, av_len(RETVAL)+1, sv2) || svREFCNTT_dec(sv2);
+  }
+OUTPUT:
+ RETVAL
+
+
+IV
+_set_rc(wsv,where,what,params)
+SV *wsv
+IV where
+char *what
+SV *params
+PREINIT:
+	WORLD *w;
+	SV *sv;
+	AV *av;
+	int i,j;
+CODE:
+	w = SvWorld(wsv, "Flux::World::_set_rc");
+	/******************************
+	* _set_rc 
+	* Try to interpret a string as a reconnection criterion name 
+	* and set the pointer appropriately.
+	*/
+	if(where >= N_RECON_FUNCS-1)
+	  croak("reconnection criterion %d not allowed 0<i<%d\n",where,N_RECON_FUNCS-1);
+
+	if(!what || !*what){
+		w->rc_funcs[where]=0;
+		RETVAL = 1;
+	} else {
+		for(j=0;
+		FLUX_RECON[j].func && strcmp(FLUX_RECON[j].name,what);
+		j++)
+		;
+
+		if(FLUX_RECON[j].func) {
+			w->rc_funcs[where] = FLUX_RECON[j].func;
+	
+			if( params && 
+			    params != &PL_sv_undef && 
+			    (   !SvROK(params) || SvTYPE(SvRV(params)) != SVt_PVAV   )
+		          )
+				croak("_set_rc: requires an array ref params argument");
+
+			else if( !params || params==&PL_sv_undef ) {
+				for(i=0;i<N_RECON_PARAMS;i++) 
+					w->rc_params[where][i] = 0;
+			} else {
+				av = (AV *)SvRV(params);
+				for(i=0; i<N_RECON_PARAMS; i++) {
+					SV **s1 = av_fetch( av, i, 0 );
+					w->rc_params[where][i]= SvNV(s1?*s1:&PL_sv_undef);
+				}
+			}
+			RETVAL = 2;
+		} else {
+			croak("Unknown reconnection criterion '%s'\n",what);
+		}
+	}
+OUTPUT:
+ RETVAL
+
+IV 
+reconnect(wsv)
+SV *wsv
+PREINIT:
+	WORLD *w;
+CODE:
+	w = SvWorld(wsv, "Flux::World::reconnect");
+	RETVAL = global_recon_check(w);
+OUTPUT:
+ RETVAL
+	
+	
 IV
 _b_flag(wsv)
  SV *wsv

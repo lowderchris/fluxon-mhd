@@ -74,3 +74,5 @@ static void *SvFluxPtr( SV *sv, char *name, char *tstr ) {
 #define SvConc(sv,name)   ( (FLUX_CONCENTRATION *)(SvFluxPtr((sv),(name),"Flux::Concentration")) )
 #define SvFluxon(sv,name) ( (FLUXON *)            (SvFluxPtr((sv),(name),"Flux::Fluxon")       ) )
 #define SvWorld(sv,name)  ( (WORLD *)             (SvFluxPtr((sv),(name),"Flux::World")        ) )
+
+

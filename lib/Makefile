@@ -49,8 +49,9 @@ clean:
 	rm -f *~ *.a *.o \#* core a.out $(OBJECTS) *.OOGL sample_output.txt *.c.f.c
 
 %.o:	%.c $(HEADERS) Makefile
-	./subst_filename $< $<.f.c
-	cc $(CFLAGS) -o $@ -c $(DFLAGS) $<.f.c 
+	rm -f $<f.c
+	./subst_filename $< $<f.c
+	cc $(CFLAGS) -o $@ -c $(DFLAGS) $<f.c 
 
 
 

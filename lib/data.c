@@ -329,6 +329,7 @@ WORLD *new_world() {
   a->photosphere.plane = NULL;
 
   /* Initialize the two dummy vertices for the mirroring */
+  /* if you need to check if a vertex is a dummy, use the macro V_ISDUMMY... */
   a->image = new_vertex(1,0,0,0,NULL);
   a->image2 = new_vertex(2,0,0,0,NULL);
   a->image->next = a->image2;
@@ -342,6 +343,9 @@ WORLD *new_world() {
   a->f_funcs[2] = f_p_eqa_radial; 
   a->f_funcs[3] = f_vert;
   a->f_funcs[4] = 0;
+
+  /* Put in a blank reconnection list (physics.c) */
+  a->rc_funcs[0] = 0;
 
   /* initialize scaling law.  Default scaling is for b-normalized
    * forces, no acceleration
@@ -382,7 +386,7 @@ WORLD *new_world() {
 void delete_fluxon ( FLUXON *f ) {
   VERTEX *v;
 
-  if(f->fc0->world->verbosity) 
+  if(f->fc0->world->verbosity>=2) 
     printf("deleting fluxon %d (%d under it)...\n",f->label,f->all_links.n);
 
   for(v=f->start->next; v && v != f->end; ) {
@@ -396,10 +400,10 @@ void delete_fluxon ( FLUXON *f ) {
   f->fc1->lines = tree_unlink(f, fl_lab_of, fl_end_ln_of);
   {
     int v = f->fc0->world->verbosity;
-    if(v)
+    if(v>=3)
       printf("freeing the fluxon (%d)...\n",f->label);
     localfree(f);
-    if(v)
+    if(v>=3)
       printf("ok\n");
   }
 }
@@ -414,12 +418,12 @@ void delete_flux_concentration ( FLUX_CONCENTRATION *fc ) {
     delete_fluxon(fc->lines);
   }
 
-  if(w->verbosity)
+  if(w->verbosity>=2)
     printf("delete_flux_concentration: deleting myself (%d)...\n",fc->label);
   
   fc->world->concentrations = tree_unlink( fc, fc_lab_of, fc_ln_of );
 
-  if(w->verbosity)
+  if(w->verbosity>=2)
     printf("...\n");
 
   localfree(fc);
@@ -650,7 +654,7 @@ void unlink_vertex(VERTEX *v) {
   }
 #endif
 
-  if(v->line->fc0->world->verbosity) {
+  if(v->line->fc0->world->verbosity>=3) {
     printf("Unlinking vertex %d (up=%d)...\n",v->label,v->world_links.up?((VERTEX *)(v->world_links.up))->label:0);
   }
 
@@ -668,13 +672,14 @@ void unlink_vertex(VERTEX *v) {
     /* Compare with actual root */
     for(root=v; ((LINKS *)(root+v_ln_of))->up; root=((LINKS *)(root+v_ln_of))->up);
     if(root==w->vertices) {
-      if(w->verbosity)
+      if(w->verbosity>=4)
 	printf("calling tree_unlink...\n");
       w->vertices = tree_unlink(v, v_lab_of, v_ln_of);
-      if(w->verbosity)
+      if(w->verbosity>=4)
 	printf("\n");  
     } else {
-      printf("no unlinking here... (derived root is %d; actual root is %d)\n",root?((VERTEX *)root)->label:0,v->line->fc0->world->vertices?v->line->fc0->world->vertices->label:0);
+      if(w->verbosity >= 3)
+	printf("no unlinking here... (derived root is %d; actual root is %d)\n",root?((VERTEX *)root)->label:0,v->line->fc0->world->vertices?v->line->fc0->world->vertices->label:0);
     }
 
     for(root=w->vertices;
@@ -682,7 +687,7 @@ void unlink_vertex(VERTEX *v) {
 	root=((LINKS *)(root+v_ln_of))->up)
       ;
     w->vertices = root;
-    if(w->verbosity){
+    if(w->verbosity>=4){
       printf("Finished unlinking vertex\n");
     }
   }
@@ -757,7 +762,7 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
       f->fc0->world->vertices = tree_binsert(f->fc0->world->vertices, v, v_lab_of, v_ln_of);	/* insert v into world vertice tree and balance */
       return 0;
     } else {
-      fprintf(stderr, "Encoutered a fluxon with at START but no END, or vice versa!\n");
+      fprintf(stderr, "Encountered a fluxon with at START but no END, or vice versa!\n");
       return 1;
     }
   }

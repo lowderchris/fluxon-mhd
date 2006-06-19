@@ -56,4 +56,18 @@ extern struct FLUX_FORCES {
   void ((*(func))());
 } FLUX_FORCES[];
 
+/* R_COND_TABLE is an array that associates function names with jumptable 
+ * entries for reconnection conditions.  The actual array is defined in 
+ * physics.c.
+ */
+
+extern struct FLUX_RECON {
+  char name[80];
+  char summary[80];
+  RC_FUNC *func;
+  char pnames[80];
+} FLUX_RECON[];
+
+RC_FUNC rc_a_ad2;
+
 #endif

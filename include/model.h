@@ -66,6 +66,10 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low);
 int fluxon_fix_curvature(FLUXON *F, NUM curve_thresh_high, NUM curve_thresh_low);
 int global_fix_curvature(WORLD *w, NUM curve_thresh_high, NUM curve_thresh_low);
 
+void reconnect_vertices( VERTEX *v1, VERTEX *v2 );
+int vertex_recon_check( VERTEX *v1 );
+long fluxon_recon_check( FLUXON *f );
+long global_recon_check( WORLD *w );
 
 typedef struct VERTEX_STATS {
   long n;         /* Number of vertices included in stats */

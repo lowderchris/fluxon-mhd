@@ -25,9 +25,11 @@
 
 #include "data.h"
 
+
 inline NUM norm_2d(NUM *x);
 inline NUM norm_3d(NUM *x);
 
+inline NUM norm2_2d(NUM *x);
 inline NUM norm2_3d(NUM *x);
 
 inline NUM inner_2d(NUM *p0, NUM *p1);

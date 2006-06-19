@@ -117,6 +117,8 @@ typedef struct VERTEX {
   LINKS world_links;      /* tree access to all the vertices in the world */
 } VERTEX;
 
+#define V_ISDUMMY(v) ( (v)->label == 1 || (v)->label == 2 )
+
 typedef struct FLUXON {
   NUM flux;                  /* Flux in Maxwells */
   long label;                /* Unique ID assigned at creation */
@@ -173,6 +175,11 @@ typedef struct PHOTOSPHERE {
 #define WORLD_STATE_READY   5
 
 #define N_FORCE_FUNCS 30    /* Number of functions allowed in the force list */
+#define N_RECON_FUNCS 5     /* Number of reconnection condition functions in the recon list */
+#define N_RECON_PARAMS 3    /* Number of world-global parameters to be stored for each reconnection function */
+
+typedef VERTEX *((RC_FUNC)(VERTEX *v, NUM *params));
+
 typedef struct WORLD {
   /* Globally memorable fields go here */
   long frame_number;        /* Identifies currently-being-worked-on frame */
@@ -195,6 +202,8 @@ typedef struct WORLD {
   long verbosity;           /* Verbose flag turns on/off debugging lines */
   
   void ((*(f_funcs[N_FORCE_FUNCS]))());
+  RC_FUNC *rc_funcs[N_RECON_FUNCS];
+  NUM rc_params[N_RECON_FUNCS][N_RECON_PARAMS];
   
   struct { 
     NUM b_power; 

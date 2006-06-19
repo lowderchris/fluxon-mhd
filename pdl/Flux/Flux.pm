@@ -348,6 +348,7 @@ package Flux;
 	    scale_s_power=>     [18,'num'],
 	    scale_ds_power=>    [19,'num'],
 	    refct=>             [20,'long'],
+	    rc_funcs=>          [21,undef]
 	    },
 	concentration => {
 	    world=>		 [1,'World'],

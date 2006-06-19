@@ -1454,7 +1454,138 @@ int global_fix_curvature(WORLD *w, NUM curv_thresh_high, NUM curv_thresh_low) {
   return cu_acc;
 }
 
+/*********************************************************************
+ * Reconnection code - check for a threshold rotation/distance and
+ * reconnect if it is exceeded.
+ */
 
+/******************************
+ * reconnect_vertices: given two vertices on different fluxons, 
+ * swap their ->next connections.  No need to slosh vertices -- that is handled
+ * adequately in gather_neighbor_candidates, on the next force iteration.
+ */
+void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
+  VERTEX *vv;
+  FLUXON *f1, *f2;
+  FLUX_CONCENTRATION *fc;
+  int i,j;
+
+  if(!v1 || !v2 || !v1->next || !v2->next) {
+    fprintf(stderr,"reconnect_vertices: error -- got a null or end vertex!\n");
+    return;
+  }
+
+  f1 = v1->line;
+  f2 = v2->line;
+  
+  if(f1==f2) {
+    fprintf(stderr,"reconnect_vertices:  reconnection from %d to %d would create a plasmoid; not yet supported.  ignoring!\n",v1->label,v2->label);
+    return;
+  }
+  
+  /* Do the reconnection */
+  vv = v1->next;
+  v1->next = v2->next;
+  v1->next->prev = v1;
+
+  v2->next = vv;
+  v2->next->prev = v2;
+
+  /* Now clean up the fluxons and the back-to-fluxon links in the individual vertices. */
+  
+  /* f1 */
+  i=1;
+  for( vv = f1->start; vv->next; vv=vv->next ) {
+    i++;
+    vv->line = f1;
+  }
+  f1->end = vv;
+  
+  /* f2 */
+  j=1;
+  for( vv = f2->start; vv->next; vv=vv->next ) {
+    i++;
+    vv->line = f2;
+  }
+  f2->end = vv;
+  
+  if(i+j != f1->v_ct + f2->v_ct) {
+    fprintf(stderr,"Hmmm -- something's funny with the vertex count.  Reconnected %d(fl %d) to %d (fl %d), final total vertex count is %d, previously %d\n",v1->label,f1->label,v2->label,f2->label,i+j,f1->v_ct+f2->v_ct);
+  }
+  f1->v_ct = i;
+  f2->v_ct = j;
+  
+  /* Switch the end flux concentrations... */
+  f1->fc1->lines = tree_unlink(f1, fl_lab_of, fl_end_ln_of);
+  f2->fc1->lines = tree_unlink(f2, fl_lab_of, fl_end_ln_of);
+
+  fc = f1->fc1;
+  f1->fc1 = f2->fc1;
+  f2->fc1 = fc;
+  
+  f1->fc1->lines = tree_binsert(f1->fc1->lines, f1, fl_lab_of, fl_end_ln_of);
+  f2->fc1->lines = tree_binsert(f2->fc1->lines, f2, fl_lab_of, fl_end_ln_of);
+  
+}
+
+/******************************
+ * v_recon_check: checks the current reconnection condition between a 
+ * vertex and each of its neighbors.  Reconnection with an image charge
+ * is not allowed!  The reconnection conditions are found via the rc_funcs table
+ * in the world. 
+ */
+int vertex_recon_check( VERTEX *v1 ) {
+  WORLD *w = v1->line->fc0->world;
+  RC_FUNC **rcfuncp;
+  VERTEX *rv = 0;
+  int i;
+
+  for( i=0, rcfuncp = w->rc_funcs; 
+       !rv && i<N_RECON_FUNCS && *rcfuncp ; 
+       i++, rcfuncp++ ) 
+    rv = (**rcfuncp)(v1,w->rc_params[i]);
+
+  if(rv) {
+    if( w->verbosity) {
+      printf("Reconnecting vertices %d (on %d at [%.3g,%.3g,%.3g]) and %d (on %d at [%.3g,%.3g,%.3g]): satisfied condition %d\n",
+	     v1->label,  v1->line->label,    v1->x[0], v1->x[1], v1->x[2],
+	     rv->label,  rv->line->label,    rv->x[0], rv->x[1], rv->x[2],
+	     i-1
+	     );
+    }
+    reconnect_vertices(v1,rv);
+    return 1;
+  }
+  return 0;
+}
+
+/******************************
+ * fluxon_recon_check
+ * Iterates over all the vertices in a fluxon
+ */
+long fluxon_recon_check( FLUXON *f ) {
+  VERTEX *v;
+  int retval = 0;
+  if( !(f->start) || !(f->start->next) || !(f->start->next->next) ) 
+    return retval;
+
+  for(v=f->start->next; v->next && v->next->next; v=v->next) {
+    retval += vertex_recon_check(v);
+  }
+  return retval;
+}
+
+static long grc_acc;
+static long grc_tramp(FLUXON *fl, int lab, int link, int depth) {
+  grc_acc += fluxon_recon_check(fl);
+}
+
+long global_recon_check(WORLD *w) {
+  grc_acc = 0;
+  tree_walker( w->lines, fl_lab_of, fl_all_ln_of, grc_tramp, 0);
+  return grc_acc;
+}
+    
 /********************************************************************
  * fluxon end-condition handlers - update end position of the fluxon
  * to be consistent with the boundary condition
