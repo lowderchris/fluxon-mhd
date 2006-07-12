@@ -49,6 +49,7 @@ char *code_info_physics="%%%FILE%%%";
 struct FLUX_FORCES FLUX_FORCES[] = {
   {"b_simple","inverse-area B field (breaks for open cells)",b_simple},
   {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
+  {"e_simple", "B energy per vertex using simple inverse-area (breaks for open cells)",e_simple},
   {"f_curvature","(OLD) simple curvature force (B-normalized)",f_curvature},
   {"f_pressure_equi","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi},
   {"f_pressure_equi2","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi2},
@@ -531,7 +532,61 @@ void b_simple (VERTEX *V, HULL_VERTEX *verts) {
   return;
 }
     
+/**********************************************************************
+ * e_simple
+ * 
+ * Very simple magnetic-energy calculation per vertex.  Follows the b_simple
+ * method -- if the cell is open then the energy associated with it is zero, 
+ * as the area is then infinity and the B field is zero.
+ * 
+ */
+void e_simple (VERTEX *V, HULL_VERTEX *verts) {
+  int flux = 1;
+  NUM ds = 0;
+  NUM Area = 0;
+  NUM Energy = 0;
+  int n = V->neighbors.n;
+  int i;
+  int bad = 0;
 
+  if (!V->next) { // ds=0
+    V->energy = 0;
+    return;
+  } else {
+    ds = cart_3d(V->x, V->next->x); //length to next vertex
+  }
+
+  for(i=0;i<n && !bad;i++) {
+    NUM A;
+    HULL_VERTEX *left = &(verts[i]);
+    HULL_VERTEX *right = (i==(n-1)) ? &(verts[0]) : &(verts[i+1]); 
+    /* right is the next hull vertex which is the first if 
+       the current is the last */
+
+    if(left->open || right->open){
+      bad=1;
+    } else {
+      A = 0.5*cross_2d(left->p,right->p);
+      Area =+ A;
+    }
+  }
+
+  if(Area < 0) {
+    fprintf(stderr,"Hey!  Area is less than zero in e_simple (vertex %d!)\n",V->label);
+    fflush(stderr);
+    Area = fabs (Area);
+  }
+
+  if(bad) {
+    V->energy = 0;
+    return;
+  }
+
+  Energy= ds * flux * flux / (2 * PI * Area);
+  V->energy = Energy;
+
+  return;
+}
 
 /**********************************************************************
  * b_eqa

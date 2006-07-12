@@ -32,6 +32,8 @@
 void b_eqa(VERTEX *V, HULL_VERTEX *verts); /* calculate B field at vertex */
 void b_simple(VERTEX *V, HULL_VERTEX *verts); /* calculate B field at vertex */
 
+void e_simple(VERTEX *V, HULL_VERTEX *verts); /* calculate energy assoc. with vertex */
+
 void f_curvature(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
 void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
