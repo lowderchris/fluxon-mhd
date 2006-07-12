@@ -1121,6 +1121,35 @@ sub bfield {
     return $l1->glue(1,@l[1..$#l]);
 }
 
+=pod
+
+=head2 energy
+
+=for usage 
+
+$w->energy
+
+=for ref
+
+Prints the global magnetic field energy (requires that you ran update_force
+with one of the e_ forces enabled)
+
+=cut
+
+sub energy {
+
+    my $w = shift;
+
+    my $E = 0;
+    
+    for ($w->vertices) {
+	$E += $_->{energy};
+    }
+
+    return $E;
+
+}
+	    
 
 =pod
 
