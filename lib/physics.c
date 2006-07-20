@@ -50,6 +50,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"b_simple","inverse-area B field (breaks for open cells)",b_simple},
   {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
   {"e_simple", "B energy per vertex using simple inverse-area (breaks for open cells)",e_simple},
+  {"e_simple2", "B energy per vertex using simple inverse-area ( doesnt break for open cells)",e_simple},
   {"f_curvature","(OLD) simple curvature force (B-normalized)",f_curvature},
   {"f_pressure_equi","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi},
   {"f_pressure_equi2","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi2},
@@ -566,7 +567,7 @@ void e_simple (VERTEX *V, HULL_VERTEX *verts) {
   int i;
   int bad = 0;
 
-  if (!V->next) { // ds=0
+  if (!V->next) { // if ds=0, then energy=0
     V->energy = 0;
     return;
   } else {
@@ -577,8 +578,8 @@ void e_simple (VERTEX *V, HULL_VERTEX *verts) {
     NUM A;
     HULL_VERTEX *left = &(verts[i]);
     HULL_VERTEX *right = (i==(n-1)) ? &(verts[0]) : &(verts[i+1]); 
-    /* right is the next hull vertex which is the first if 
-       the current is the last */
+    /* right is the next hull vertex or the first one if 
+       the ith is the last */
 
     if(left->open || right->open){
       bad=1;
@@ -604,6 +605,64 @@ void e_simple (VERTEX *V, HULL_VERTEX *verts) {
 
   return;
 }
+
+/**********************************************************************
+ * e_simple2
+ * 
+ * Simple magnetic-energy calculation per vertex. Only calculates
+ * magnetic energy. Accounts for open hulls by calculating fluxes
+ * of hull segments relative to angle and sets the open segment 
+ * energy to zero.
+ * 
+ */
+
+void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
+  int flux = 1;
+  NUM iflux = 0;
+  NUM ds = 0;
+  NUM angle = 0;
+  NUM Area = 0;
+  NUM psudo_energy =0;
+  NUM Energy = 0;
+  int n = V->neighbors.n;
+  int i;
+  int bad = 0;
+
+  if (!V->next) { // if ds=0, then energy=0
+    V->energy = 0;
+    return;
+  } else {
+    ds = cart_3d(V->x, V->next->x); //length to next vertex
+  }
+
+  for(i=0;i<n && !bad;i++) { //i from 0 to n-1
+    NUM A;
+    HULL_VERTEX *left = &(verts[i]);
+    HULL_VERTEX *right = (i==(n-1)) ? &(verts[0]) : &(verts[i+1]); 
+    /* right is the next hull vertex or the first one if 
+       the ith is the last */
+
+    if(!left->open && !right->open) {
+      A = 0.5*cross_2d(left->p,right->p);
+      angle = left->a_l; //radians?
+      iflux = flux * ( angle / 2.*PI );
+      psudo_energy =+ (iflux * iflux / Area);
+    }
+  }
+
+  if(psudo_energy < 0) {
+    fprintf(stderr,"Hey!  energy is less than zero in e_simple2 (vertex %d!)\n",V->label);
+    fflush(stderr);
+    psudo_energy = fabs (psudo_energy);
+  }
+
+
+  Energy= psudo_energy * (ds / (2 * PI) );
+  V->energy = Energy;
+
+  return;
+}
+
 
 /**********************************************************************
  * b_eqa

@@ -1,3 +1,5 @@
+20-July-2006 [lr]
+	-added e_simple2 which hasn't been verified yet
 20-July-2006: [cd]
 	- minor tweaks to gather_neighbor_candidates for optimal speed and 
 	completeness...
