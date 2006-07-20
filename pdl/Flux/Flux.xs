@@ -571,6 +571,30 @@ CODE:
 OUTPUT:
 	RETVAL
 
+NV
+atan2_oct(y,x)
+ NV y
+ NV x
+CODE:
+	RETVAL = atan2_oct((NUM)y,(NUM)x);
+OUTPUT:
+	RETVAL
+
+NV
+cross_2d(x1,y1,x2,y2)
+ NV x1
+ NV y1
+ NV x2
+ NV y2
+PREINIT:
+	NUM p1[2];
+	NUM p2[2];
+CODE:
+	p1[0]=x1; p1[1] = y1;
+	p2[0]=x2; p2[1] = y2;
+	RETVAL = cross_2d(p1,p2);
+OUTPUT:
+	RETVAL
 			
 	
 BOOT:

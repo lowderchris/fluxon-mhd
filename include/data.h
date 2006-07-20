@@ -94,7 +94,8 @@ typedef struct VERTEX {
 
      /* Scratch space used when this vertex is considered as a neighbor of
       * someone else; part of force calculation. */
-  POINT3D scr; 		
+  POINT3D scr; 
+  long passno;  /* see geometry.h, geometry.c (anti-repeat gate) */
   NUM r,a;      
 
      /* Magnetic field info is calculated by b_vec in physics.c.   */
@@ -148,6 +149,7 @@ typedef struct FLUX_CONCENTRATION {
   NUM x[3];                  /* Location of the concentration */
   NUM locale_radius;         /* Radius of the concentration's neighborhood */
   
+  long passno;                /* Multiple-pass detection for hull calculation */
   void (*bound)(VERTEX *v);  /* Boundary condition routine */
 } FLUX_CONCENTRATION;
 
@@ -211,6 +213,9 @@ typedef struct WORLD {
     NUM s_power;
     NUM ds_power;
   } step_scale;
+
+
+  int passno;
 
 } WORLD;
 
@@ -388,4 +393,3 @@ extern char *code_info_physics;
 extern char *code_info_io;
 extern char *code_info_geometry;
 extern char *code_info_data;
-

@@ -128,8 +128,12 @@ typedef struct HULL_VERTEX {
 } HULL_VERTEX;
 
 void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects);
-#endif /* overall file include */
+void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v);
 
+
+
+NUM atan2_oct(NUM x, NUM y);
+#define ATAN2 atan2_oct
 
 
 #define PI 3.141592653589793238462643383279502
@@ -137,8 +141,10 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects);
 #define RAD2DEG (180./PI)
 #define EPSILON 1e-12
 
+
 /* regularize an angle that is between -3PI and 3PI, to the range
  * -PI to PI.
  */
 #define TRIM_ANGLE(a) do { if((a)<=-PI) { (a)+=2*PI; } else if((a)>PI) { (a) -= 2*PI; } } while(0)
 
+#endif /* overall file include */

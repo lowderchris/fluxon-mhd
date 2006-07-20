@@ -55,7 +55,7 @@ sub new_from_ptr {
     my $ptr = shift;
     my %hash;
     tie %hash,"Flux::World",$ptr;
-    $hash{refct}=1;      # one reference (that we're returning)
+    $hash{refct}=2;      # one reference (that we're returning) plus the tie
     return bless(\%hash,$class);
 }
 

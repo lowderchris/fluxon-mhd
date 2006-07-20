@@ -180,13 +180,30 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
 
     deltaphi = (left->a_l - right->a_r);
     TRIM_ANGLE(deltaphi);
-    //    printf("vertex %d (%d): deltaphi=%g\t",V->label,N->label,deltaphi*180/3.14159);
+    // printf("vertex %d (%d): deltaphi=%g\t",V->label,N->label,deltaphi*180/3.14159);
 
     if(deltaphi < -EPSILON) {
-      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg); correcting to %18.12g\n",deltaphi*180/M_PI,deltaphi*180/M_PI + 360);
+      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi, vertex %d, neighbor %d (%18.12g deg); correcting to %18.12g\n",V->label, i, deltaphi*180/M_PI,deltaphi*180/M_PI + 360);
       deltaphi += M_PI+M_PI;
+
+      printf("(Vertex %d --  neighbors are:\n",V->label);
+      {
+	int ii;
+	for(ii=0;ii<V->neighbors.n;ii++) {
+	  VERTEX *vv= (VERTEX *)(V->neighbors.stuff[ii]);
+	  printf("\t%d -\tx=(%g,%g,%g),\tprojx = (%g,%g), a=%g,\tr=%g, lefthull a_l=%g, righthull a_r=%g, open: l=%d, r=%d\n",
+		 vv->label,
+		 vv->x[0],vv->x[1],vv->x[2],
+		 vv->scr[0],vv->scr[1],
+		 vv->a * 180/3.1415926, vv->r,
+		 verts[ii].a_l * 180/3.1415926, verts[ ii==0 ? V->neighbors.n-1 : ii-1 ].a_r * 180/3.1415926,
+		 verts[ii].open, verts[ ii==0 ? V->neighbors.n-1 : ii-1 ].open
+		 );
+	  printf("\t\thull[%d]: p=(%g,%g)\n",ii,verts[ii].p[0],verts[ii].p[1]);
+	}
+	printf(")\n");
+      }
     }
-    
     /*    fprintf(stderr," VERTEX #%d, i=%d: deltaphi=%g\tr=%g\n",N->label,i,deltaphi,N->r);*/
 
 
@@ -512,7 +529,7 @@ void b_simple (VERTEX *V, HULL_VERTEX *verts) {
     if(left->open || right->open){
       bad=1;
     } else {
-      Bmag += left->p[0] * right->p[1]  -  left->p[1] * right->p[0];
+      Bmag += cross_2d( left->p, right->p );
     }
   }
   

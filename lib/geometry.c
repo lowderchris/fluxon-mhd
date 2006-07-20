@@ -1,3 +1,4 @@
+#define DEBUG_HULL 0
 /**********************************************************************
  * Geometry.c -- routines that embody geometrical operations
  * used for the fieldine model.
@@ -25,9 +26,14 @@
 #include <stdio.h>
 #include "data.h"
 #include "geometry.h"
-#define NAN (nan("NAN"))
 
-char *code_info_geometry="%%%FILE%%%";
+
+#ifndef NAN
+#define NAN (nan("NAN"))
+#endif
+
+
+char *code_info_geometry="%%%FILE%%% (new unsorted hull routine)";
 
 /**********************************************************************
  **********************************************************************
@@ -989,6 +995,7 @@ int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
   return !finite(out[2]);
 }
 
+
 /**********************************************************************
  * intersection_2d
  * Given L1 and L2 as 2-D lines (3-vectors including a 2-vector
@@ -1003,7 +1010,7 @@ int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
  * cases are handled separately.
  */
 int intersection_2d(NUM *out, NUM *L1, NUM *L2) {
-  if( finite(L1[2]) && finite(L2[2]) ) {
+  if( L1[2]<1e100 && L1[2]>-1e100 && L2[2]<1e100 && L2[2]>-1e100 ) {
     NUM delta_y;
     NUM delta_x;
     NUM delta_s;
@@ -1124,7 +1131,7 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
       else {
 	scale_3d(v1->scr,v1->scr,r/len);
 	
-	v1->a = atan2(v1->scr[1],v1->scr[0]);
+	v1->a = ATAN2(v1->scr[1],v1->scr[0]);
 	v1->r = r;
       }
     }
@@ -1178,8 +1185,10 @@ void sort_by_angle_2d(DUMBLIST *horde) {
     VERTEX *v1 = (VERTEX *)(horde->stuff[i]);
     if(!v1 || !finite(v1->a) || !finite(v1->r)) {
       //      printf("sort_by_angle_2d: v1 is bad (label %d)\n",v1?v1->label:0);
+      /*** Break the symmetry ***/
+      v1->r=1e50; v1->a=0;
       dumblist_rm(horde,i);
-      printf("X"); fflush(stdout);
+      //      printf("X: v=%d\tx=(%g,%g,%g)\tr=%g\ta=%g\n",v1->label,v1->x[0],v1->x[1],v1->x[2],v1->r,v1->a); fflush(stdout);
       i--;
     }
   }
@@ -1188,6 +1197,21 @@ void sort_by_angle_2d(DUMBLIST *horde) {
   dumblist_sort(horde,angle_cmp);
   dumblist_crunch(horde,angle_cmp);
 }  
+
+
+/**********************************************************************
+ * hv_cp - copy a HULL_VERTEX 
+ */
+inline void hv_cp(HULL_VERTEX *to, HULL_VERTEX *from) {
+  to->p[0] = from->p[0];
+  to->p[1] = from->p[1];
+  to->a_l = from->a_l;
+  to->a_r = from->a_r;
+  to->bisector[0] = from->bisector[0];
+  to->bisector[1] = from->bisector[1];
+  to->bisector[2] = from->bisector[2];
+  to->open = from->open;
+}
 
 
 /**********************************************************************
@@ -1232,7 +1256,6 @@ void sort_by_angle_2d(DUMBLIST *horde) {
 #define MOD_PREV(a,n) ( ((a)>0) ? ((a)-1) : ((n)-1) )
 
 void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
-  NUM epsilon=1e-19; // double-precision roundoff
   int n = horde->n;
   int i, i_r, i_l; /* Current, right, and left indices */
   int terminus; /* When we get here, we are done (moving target) */
@@ -1481,7 +1504,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     HULL_VERTEX *hv = out;
     for(i=0;i<horde->n;i++,hv++) {
       if(!hv->open)
-	hv->a_r = hv->a_l = atan2(hv->p[1], hv->p[0]);
+	hv->a_r = hv->a_l = ATAN2(hv->p[1], hv->p[0]);
       else {
 	hv->a_l =(((VERTEX *)(horde->stuff[i]))->a ) + PI/2;
 	hv->a_r =(((VERTEX *)(horde->stuff[MOD_NEXT(i,horde->n)]))->a) - PI/2;
@@ -1494,304 +1517,628 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   }
 }
 
-#ifdef never 
 /**********************************************************************
- * hull_2d_older
- * 
- * Given an angle-sorted DUMBLIST of VERTICES containing 2-D points in their 
- * scratch spaces, find the convex hull of the origin.  
- * The original DUMBLIST winds up containing the points that were used 
- * for the hull; you can also pass in a DUMBLIST
- * that gets the rejects.  On exit, the output array (which you
- * have to supply, pre-allocated) contains N HULL_VERTEXes
- * (N is the number of vertices in the final hull).
- * Each voronoi vertex is the one to the left of the corresponding 
- * neighbor point.
- * 
- * Typical usage:
- *    <collect dumblist>
- *    vertices = malloc(sizeof(NUM)*2*horde->n);
- *    hull_2d(vertices,horde,rejects=dumblist_new());
+ * atan2_oct - sleazy-but-fast atan2
+ * (not quite a drop-in replacement for atan2 -- be careful when using it.
+ * Should only be used via the ATAN2 macro!)
+ * Faster than atan2.  Most of what we use atan2 for is sorting by angle, but
+ * for that we only need a monotonically increasing function.  atan2_slz uses
+ * the octagonal approximation -- the unit circle is approximated as an octagon
+ * with vertices on the axes and on the 45-degree lines.
  *
- * If you don't want a list of rejects, pass in NULL for the 
- * third parameter.
+ * The range is -pi/2 to pi/2.
  * 
- * Note:  (To avoid the hassle of frequently removing fields from the 
- * horde DUMBLIST, the code nulls individual rejected elements, then 
- * crunches 'em all at the end.)
- *
- * This is probably the hot spot for the code as a whole, so some
- * perhaps misguided trades have been made against readability and 
- * for (hopefully) speed.
- * 
- * The sort-by-angle step requires that the projected radius and 
- * angle fields in the VERTEX be filled; this is performed by 
- * project_n_fill, which should be called before hull_2d.
- *
- * hull_2d_older is an older version of hull_2d that is kept around for 
- * reference.
- * *
  */
 
-
-void hull_2d_older(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
-  NUM epsilon=1e-19; // double-precision roundoff
-  NUM left[2], right[2], b1[3], *b0;
-  NUM a,b;
-  int outdex = 0;
-  char cache_ok = 0;
-  char reject_collinear;
-  char redo = 0;
-  int j = -1;         /* j gets -1 or the next rightward VERTEX */
-  int k = -1;         /* k gets -1 or the next leftward VERTEX */
-  int i;
-
-  int verbosity;
+NUM atan2_oct( NUM y, NUM x) {
+  NUM ay = fabs(y);
+  NUM ax = fabs(x);
+  NUM out;
   
-  if(horde->n < 1)
+  if(ax==0)
+    return(y>0?PI/2: (y<0)?-PI/2 : nan("1"));
+  
+  /* fast atan2 in one quadrant using octagonal approx */
+  out = 0.25 * PI * ((ax >= ay) ? (ay/ax) : (2 - ax/ay));
+  
+  if(x>0) {
+    if(y<0) 
+      out *= -1;
+  } else {
+    if(y>=0) {
+      out = PI - out;
+    } else {
+      out -= PI;
+    }
+  }
+  return out;
+}
+
+
+/******************************
+ * check_hullpoint - helper routine for hull_2d_us
+ * Given a VERTEX and HULL_VERTEX pointer for next and prev, and 
+ * a VERTEX to test, returns true if it should be kept and false if not.
+ * The return value is negative if the vertex is closed, 1 if it is open 
+ * on the next side, 2 if it is open on the prev side.
+ * If the hullpoint is to be kept, then the previous hull_vertex has its
+ * open and/or p fields updated as appropriate.
+ */
+#if DEBUG_HULL
+static int verbosity = 0;
+#endif
+
+int check_hullpoint(VERTEX *v,
+		    VERTEX *pv,
+		    HULL_VERTEX *phv,
+		    VERTEX *nv,
+		    HULL_VERTEX *nhv,
+		    HULL_VERTEX *scr
+		    ) {
+  NUM point[2];
+  NUM a;
+  char open = 0;
+
+  /* Check for colinearity -- easy fix if we're colinear */
+  /* The colinear_keep flag gets return value that will be given if
+   * the vertex turns out to be open - this is sort of the opposite sense 
+   * of the return value.
+   */
+
+
+  { 
+    int colinear_keep = 0;
+    NUM eps = EPSILON * v->r;
+    if( fabs( cross_2d(v->scr, pv->scr) ) < eps && (inner_2d(v->scr, pv->scr) > 0) ) {
+      if(  v->r >= pv->r  ) {
+#if DEBUG_HULL
+	if(verbosity >= 5) 
+	  printf("\tColinear & more distant than prior -- reject\n");
+#endif
+	return 0;
+      }
+      else
+	colinear_keep = 1;
+    }
+
+    if( fabs( cross_2d( v->scr, nv->scr) ) < eps && (inner_2d(v->scr, nv->scr) > 0) )  {
+      if(  v->r >= nv->r  ) {
+#if DEBUG_HULL
+	if(verbosity >= 5) 
+	  printf("\tColinear & more distant than next -- reject\n");
+#endif
+	return 0;
+      }
+      else
+	colinear_keep = 2;
+    }
+
+    if(colinear_keep) {
+      perp_bisector_2d(scr->bisector, 0, v->scr);
+      intersection_2d(point, scr->bisector, phv->bisector);
+      intersection_2d(scr->p, scr->bisector, nhv->bisector);
+      phv->p[0] = point[0];
+      phv->p[1] = point[1];
+      /* Don't touch phv->open: it should already have the correct value */
+#if DEBUG_HULL
+      if(verbosity >= 5) 
+	printf("\tColinear & closer than next or prior - keep\n");
+#endif
+      return ( phv->open ? colinear_keep : -1 );
+    }
+  } /* end of colinear check convenience block */
+
+  /* Not colinear -- find perpendicular bisector and start crunching... */
+  
+  perp_bisector_2d(scr->bisector, 0, v->scr);
+
+  /* scr->p gets the hull intersection point with the next guy; */
+  /* point gets the hull intersection point with the previous guy */
+  
+  intersection_2d( scr->p, scr->bisector, nhv->bisector );
+  intersection_2d( point, scr->bisector, phv->bisector );
+
+
+#if DEBUG_HULL
+  if(verbosity >= 5) {
+    printf("   perp_bisector_2d: v->scr is (%g,%g), scr->bisector is (%g,%g,%g)\n",v->scr[0],v->scr[1],scr->bisector[0],scr->bisector[1],scr->bisector[2]);
+    printf("   intersections: prev bisector is (%g,%g,%g), intersection is (%g,%g); next bisector is (%g,%g,%g); intersection is (%g,%g)\n",
+	   phv->bisector[0],phv->bisector[1],phv->bisector[2],
+	   point[0],point[1],
+	   nhv->bisector[0],nhv->bisector[1],nhv->bisector[2],
+	   scr->p[0],scr->p[1]
+	   );
+  }
+#endif
+  
+
+  /**** Open on next side ? ****/
+  if(          cross_2d(  v->scr, nv->scr) <= 0) {
+    if(        cross_2d(  pv->scr, v->scr) <= 0) {
+#if DEBUG_HULL
+      if(verbosity >= 5) 
+	printf("\tAntiparallel case (open both sides) -- keep\n");
+#endif
+      open = 3;
+    } else {
+#if DEBUG_HULL
+      if(verbosity >= 5) 
+	printf("\tNoncolinear and open on next side -- keep\n");
+#endif
+      open = 1;
+    }
+  } 
+
+  /**** Open on previous side ? ****/
+  else if(     cross_2d( pv->scr,  v->scr) <= 0) {
+#if DEBUG_HULL
+    if(verbosity >= 5) 
+      printf("\tNoncolinear and open on prev side -- keep\n");
+#endif
+    open = 2;
+  }
+  
+  /**** Closed and OK? ****/
+  else if(  cross_2d( point, scr->p ) >= 0  ) {
+#if DEBUG_HULL
+    if(verbosity >= 5) 
+      printf("\tNoncolinear and closed -- keep (ok)\n");
+#endif
+    open = -1;
+  } 
+
+  /**** Closed and not OK? ****/
+  else { 
+    /* closed both sides, but intersections in wrong order -- reject */
+#if DEBUG_HULL
+    if(verbosity >= 5) {
+      printf("\tNoncolinear and wrong vertex order -- reject\n");
+      printf("\t ( prev intersection = (%g,%g), next intersection = (%g,%g) ) \n",point[0],point[1],scr->p[0],scr->p[1]);
+      printf("scr->p is (%g,%g); nhv->p is (%g,%g)\n",scr->p[0], scr->p[1],nhv->p[0],nhv->p[1]);
+      printf("scr->bisector is (%g,%g,%g); nhv->bisector is (%g,%g,%g)",scr->bisector[0],scr->bisector[1],scr->bisector[2], nhv->bisector[0],nhv->bisector[1],nhv->bisector[2]);
+    }
+#endif
+      return 0;
+  }
+  
+  
+  /*** If we get here we're keeping, so we have to copy the ***/
+  /*** intersection point into the previous hull_vertex.    ***/
+  phv->p[0] = point[0];
+  phv->p[1] = point[1];
+  phv->open = (open==2)?1:0;
+  
+  return open;
+  
+}
+
+  
+
+/**********************************************************************
+ * hull_2d_us - hull routine for unsorted points
+ * (see if we can avoid the sorting step)
+ *
+ * Keep a current-hull dumblist and add points to it by brute-force
+ * copying and binary searching.  Brute force should be OK since the 
+ * typical hull size is only 6.
+ * 
+ * We keep our own workspace, and build the hull in it, then copy the 
+ * elements by brute force into the horde (thereby truncating it considerably!)
+ *
+ */
+static DUMBLIST *ws = 0;
+
+void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
+  int n = horde->n;
+  int horde_i;
+  long passno;
+  WORLD *w = 0;
+  int i,j;
+
+  if(ws==0) {
+    ws = new_dumblist();
+    dumblist_grow(ws,16);
+  }
+
+
+  for(i=0;!w && i<horde->n; i++) 
+    if( (((VERTEX **)(horde->stuff))[i])->line )
+      w = (((VERTEX **)(horde->stuff))[i])->line->fc0->world;
+  if(!w) {
+    fprintf(stderr,"You're in trouble, guv! exiting...\n");
+    exit(99);
+  }
+
+#if DEBUG_HULL
+  verbosity = w->verbosity;
+  if(!verbosity && central_v->label==32)
+    verbosity = 5;
+#endif
+
+  passno = ++w->passno;
+
+#if DEBUG_HULL
+  if(verbosity >= 5) {
+    printf("\n\n********************************* hull_2d_us: vertex %d (0x%x)\n",central_v->label, central_v);
+  }
+#endif
+
+  /* Set our output list to zero length */
+  ws->n = 0;
+
+  /* Nothing in the horde?  We're done! */
+  if(horde->n == 0)
     return;
 
-  sort_by_angle_2d(horde);
-
-  verbosity = (((VERTEX **)(horde->stuff))[0])->line ? 
-    (((VERTEX **)(horde->stuff))[0])->line->fc0->world->verbosity :
-    (horde->n>1) ? 
-       (((VERTEX **)(horde->stuff))[1])->line->fc0->world->verbosity : 
-    0;
-  verbosity = 5;
-
-  if( verbosity >= 4 ) {
-    int i;
-    printf("\nhull_2d: after sort, the horde has %d elements:\n\t\t",horde->n);
-    for(i=0;i<horde->n;i++) {
-      printf("%5.2g(V%4d)   ",180/PI*( ((VERTEX **)(horde->stuff))[i] )->a, ( ((VERTEX **)(horde->stuff))[i])->label);
-    }
-    printf("\n");
+  /* always add the first eligible VERTEX in the list... */
+  for(i=0;i<horde->n && 
+	( horde->stuff[i] == central_v ||             // skip the main vertex if present
+	  !( ((VERTEX *)(horde->stuff[i]))->next ) || // skip endpoint vertices if present
+	  !( ((VERTEX *)(horde->stuff[i]))->line)     // skip image vertices
+	  );
+      i++) 
+    ;
+  if(i<horde->n) {
+    ((VERTEX **)(horde->stuff))[i]->passno = passno;
+    ws->stuff[0] = horde->stuff[i];
+    ws->n = 1;
+    hull[0].open = 1;
+    perp_bisector_2d(hull[0].bisector, 0, ((VERTEX *)(horde->stuff[i]))->scr);
+  } else {
+    horde->n = 0;
+    return;
   }
 
-  /* Assemble the intersection points with neighbors, rejecting as necessary
-   * on the way.  Algorithm:
-   *   - Calculate left vertex.
-   *   - Check if you have a cached right vertex and if not, calculate one.
-   *   - Compare cached right vertex and newly calculated left vertex
-   *   - Reject if necessary, voiding the cache.
-   *   - Repeat until you get to an old, accepted vertex.
-   */
-  
-  i=0;
-  
-  if(verbosity >= 5) 
-    printf("hull_2d: processing...\n");
-  
-  do {
-    NUM *ivec,*jvec,*kvec;
-    int missing;
-    
-    for(missing=i=0;i<horde->n;i++) {
-      if(!horde->stuff[i]){   /* On redos, skip missing elements */
-	if(missing >= horde->n){
-	  fprintf(stderr,"hull bug:  eliminated all vertices!\n");
-	  exit(53);
-	}
-      } else if(!finite( ((VERTEX *)horde->stuff[i])->a)) {
-	/* Skip degenerate points too -- this should't be necessary
-	   if they've been pre-winnowed; but it's here as a safety check.
-	*/ 
-	printf("degen or nan trigger in hull_2d\n"); 
-	horde->stuff[i] = 0;
-      } else {
-	
-                     if(verbosity>=5)  printf("\t i=%3d, cache %s ",i,(cache_ok?"ok ":"bad"));
-	
-	/* Neither infinite nor zero -- handle normally */
-	
-	ivec = ((VERTEX *)(horde->stuff[i]))->scr;
-	
-	/* Grab perpendicular bisector for this guy */
-	b0 = &(out[outdex].bisector[0]);
-	perp_bisector_2d(b0, 0, ((VERTEX *)((horde->stuff[i])))->scr);
-	
-	/* Check cache and if necessary calculate the right side */
-	if(cache_ok) { 
-	  /* Last item was kept -- copy its vertex info into the LHS. */
-	  right[0] = left[0];
-	  right[1] = left[1];
-	  jvec = ((VERTEX *)(horde->stuff[j]))->scr;
-	} else {
-	  /* Last item wasn't kept -- find the previous vertex and 
-	     calculate the intersection for the LHS. */
-	  if(j < 0) {
-	    for(j = ( (i>0) ? (i-1) : (horde->n - 1) );
-		(!horde->stuff[j]) && j!=i;
-		j = ( (j>0) ? (j-1) : (horde->n - 1) )
-		)
-	      ;
-	  }
-	  jvec = ((VERTEX *)(horde->stuff[j]))->scr;
-	  if(j==i) 
-	    right[1] = right[0] = NAN;
-	  else {
-	    perp_bisector_2d(b1, 0, jvec);
-	    intersection_2d(right, b0, b1);
-	  }
-	}
-	
-	if(verbosity>=5) printf("j=%3d ",j);
-      
-      /* Find next VERTEX */
-      for( k= (i+1)%(horde->n);
-	   (!horde->stuff[k]) && k != j;
-	     k = ( (k+1) % horde->n )
-	   )
-	;
-      
-      kvec = ((VERTEX *)(horde->stuff[k]))->scr;
 
-      if(verbosity >=5) printf("k=%3d ",k);
-      
-      if(i==j)
-	reject_collinear=0;
-      else {
-	NUM inorm = norm_2d(ivec); 
-	NUM knorm = norm_2d(kvec);
-	NUM jnorm = norm_2d(jvec);
-	perp_bisector_2d(b1, 0, kvec);
-	intersection_2d(left,b0,b1);
-	
-	/* Check for collinearity with neighbors, either the 
-	 *  left or right side. 
-	 * It would shave a few usec to stash knorm somewhere and
-	 * reuse for inorm -- but I can't be bothered. */
-	
-	reject_collinear = 
-	  (inorm < 1e-6) 
-	  ||
-	  ((jnorm <= inorm) && jnorm != 0 && 
-	   fl_eq(inner_2d( ivec,jvec )
-		 , jnorm * inorm
-		 )
-	   )
-	  ||
-	  ((knorm <= inorm) && knorm != 0 &&
-	   fl_eq(inner_2d( ivec,kvec )
-		 , knorm * inorm
-		 ) 
-	   );
-	if(verbosity >= 5) printf("%s collinear ",reject_collinear?"***":"not");
-      }
-      
-      /* Only reject if the neighbors are less than 180 deg from each 
-       * other and the right and left neighboring vertices are in the wrong
-       * order (the neighbor bisectors crossed before hitting this one). 
-       * 
-       * Alternatively, reject if either neighbor is collinear and shorter
-       * than the current one.
-       */
-      
-      a = cross_2d(jvec,kvec);
-      b = cross_2d(right,left);
-      //	if( ( (!(j==k)) && (a * b < 0) )
-      if( ( (!(j==k)) &&
-	    finite(a) && finite(b) && (a > 0 && b < 0))
-	  ||
-	  reject_collinear
-	  ) {
+  /** Loop over the horde and check vertices as we go... **/
+  for(horde_i=1; horde_i<horde->n; horde_i++) {
+    VERTEX *v =  ((VERTEX **)(horde->stuff))[horde_i];
+    VERTEX *nv, *pv;
+    static HULL_VERTEX scrhv;
+    HULL_VERTEX *nh, *ph, *scr;
+    int next_idx;
+    char keep;
+    int  flag;
 
-	if(verbosity >= 5) printf(" REJECT ");
-
-	/* reject */
-	if(rejects) 
-	  dumblist_add(rejects,horde->stuff[i]);
-	
-	horde->stuff[i] = 0;
-	cache_ok = 0;
-	
-	if(i == (horde->n - 1)) {
-	  horde->n--;
-	  redo = 1;
-	}
-	
-	/* Back up to the previous accepted vertex, if there is one. */
-	if(j<i) {
-	  i=j-1; /* the one gets added back in by the for loop */
-	  outdex--;
-	}
-	j=-1;
-      } else {  /* End of rejection code; start of acceptance code */
-	
-	if(verbosity >= 5) printf(" ACCEPT ");
-
-	/* accept */
-	out[outdex].p[0] = left[0];
-	out[outdex].p[1] = left[1];
-	
-	/* assignment below */
-	if ( out[outdex].open = !(finite(left[0]) && finite(left[1]) 
-				  && fabs(cross_2d(ivec,kvec)>epsilon)) ) {
-	  out[outdex].a_l = ((VERTEX *)(horde->stuff[i]))->a + PI/2;
-	  {
-	    int k;
-	    for(k=MOD_NEXT(i,horde->n);k!=i && !horde->stuff[k]; MOD_INC(k,horde->n))
-	      ;
-	    out[outdex].a_r = ((VERTEX *)(horde->stuff[k]))->a - PI/2;
-	  }
-	  if(out[outdex].a_l > PI) 
-	    out[outdex].a_l -= 2*PI;
-	  if(out[outdex].a_r < -PI)
-	    out[outdex].a_r += 2*PI;
-
-	} else 
-	  out[outdex].a_l = out[outdex].a_r = atan2(out[outdex].p[1],out[outdex].p[0]);
-	
-	outdex++;
-	cache_ok = 1;
-	j=i;
-	
-	if(redo) {
-	  /* To get here, we have to be redoing the first part because
-	   * the last item in the list was rejected.  We only have to 
-	   * redo stuff until the first acceptance, whereupon we are done.
-	   */
-	  redo = 0;
-	  break;
-	}
-      }          /* End of acceptance case*/
-      
-      if(verbosity >= 5) printf("\n");
-      }            /* End of evaluation case (non-skip) */
-    }              /* End of for loop */
-    
-    
-    
-    /* Fix up the horde -- crunch it down to size. */
-    for(j=i=0;i<horde->n;i++) {
-      if(horde->stuff[i]) {
-	if(j<i)
-	  horde->stuff[j] = horde->stuff[i];
-	j++;
-      }
-    }
-    horde->n = j;
-  } while(redo && (horde->n > 0));
-  
-  if(horde->n ==0) {
-    fprintf(stderr,"Eliminated all vertices!\n");
-    exit(57);
-  }
-  
-  /* Assertion test -- this should never happen. */
-  if(horde->n != outdex) {
-    fprintf(stderr,"Assertion failed!  outdex != horde->n (%d != %d)!\n",outdex,horde->n);
-  }
-  
-  /* Clean up doubly-open 0-element case */
-  if(horde->n == 1 || ( out[0].open && out[horde->n-1].open ) ) {
-    out[0].p[0] = ((VERTEX *)(horde->stuff[0]))->scr[0] / 2;
-    out[0].p[1] = ((VERTEX *)(horde->stuff[0]))->scr[1] / 2;
-  }
-  
-  
-  return;
-}
+    if(v->passno == passno || v == central_v || !v->next ) {
+ #if DEBUG_HULL
+      if(verbosity >= 5)
+	printf("vertex %d has already been inspected (or is the same as %d), or has no next field (0x%x) - skipping...\n",v->label, central_v->label, v->next);
 #endif
+    } else {
+      v->passno = passno; // Mark it processed (avoid duplicated effort)
+      
+      keep = 0;
+
+#if DEBUG_HULL
+      if(verbosity >= 5) {
+	int i;
+	printf("Considering vertex %d; a is %g degrees, r is %g...",v->label,v->a * 180/3.1415926, v->r);
+	printf("\t(current list: ");
+	for(i=0;i<ws->n;i++) {
+	  VERTEX *v = (VERTEX *)(ws->stuff[i]);
+	  printf(" %d:L%d(A%g,R%g) ",i,v->label,180/PI*v->a,v->r);
+	}
+	printf(")\n");
+      }
+#endif
+
+      /* FIXME: Binary search later -- linear search now */
+      for(next_idx = 0; 
+	  next_idx < ws->n && 
+	    (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
+	  next_idx++ 
+	  )
+	;
+
+#if DEBUG_HULL      
+      if(verbosity >= 5) 
+	printf("position %d in current hull (out of %d)\n",next_idx,ws->n);
+#endif
+
+      /******************************
+       * Now set nv to the next vertex after this one and pv to the previous one.
+       * next_idx is the true insertion point if this element is kept.
+       */
+
+      if( nv->a < v->a ) {
+	/* We went off the end... */
+#if DEBUG_HULL	
+	if(verbosity >= 5) 
+	  printf("   off the end...\n");
+#endif
+	next_idx = ws->n;
+	nv = ((VERTEX **)(ws->stuff))[0];
+	nh = hull;
+	pv = ((VERTEX **)(ws->stuff))[ws->n-1];
+	ph = hull + ws->n-1;
+      } else {
+	/* We didn't... */
+	if(next_idx==0) {
+#if DEBUG_HULL
+	  if(verbosity >= 5)
+	    printf("   idx=0...\n");
+#endif
+	  pv = ((VERTEX **)(ws->stuff))[ws->n-1];
+	  ph = hull + ws->n-1;
+	  nh = hull;
+	} else {
+#if DEBUG_HULL
+	  if(verbosity >= 5)
+	    printf("   idx>0...\n");
+#endif
+	  pv = ((VERTEX **)(ws->stuff))[next_idx - 1];
+	  ph = hull + next_idx-1;
+	  nh = hull + next_idx;
+	}
+      }
+      
+      flag = check_hullpoint(v, pv,ph, nv,nh, &scrhv);
+
+#if DEBUG_HULL
+      if(verbosity>=5) 
+	printf("   %s\n",(flag ? "KEEP" : "REJECT"));
+#endif
+      
+      if(flag) {
+
+	/* Make sure we have room in the workspace */
+	if(ws->size <= ws->n)
+	  dumblist_grow(ws, ws->size * 1.5 + 10);
+
+	/* Make room in the workspace dumb list and the hull list */
+	for( j = ws->n; j>next_idx; j--){
+	  ws->stuff[j] = ws->stuff[j-1];
+	  hv_cp(hull+j, hull+j-1);
+	}
+
+	ws->n++;
+	
+	/* Set the insertion-point values */
+#if DEBUG_HULL
+	if(verbosity >= 5) 
+	  printf("Inserting into position %d\n",next_idx);
+#endif
+
+	ws->stuff[next_idx] = v;
+	hv_cp(hull+next_idx, &(scrhv));
+
+	hull[next_idx].open = ( flag>0 && (flag & 1) ); /* logical && and bitwise & */
+	hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open = 
+	  ( flag>0 && (flag & 2) ); /* logical && and bitwise & */
+	
+	/**************************
+	 * Now that we've put the new guy in, make sure he doesn't invalidate
+         * his neighbors on the prev side...
+         */
+	{
+	  int n, p, pp, nn, nnn, check_flag;
+
+	  n = next_idx;
+	  p = n; MOD_DEC(p, ws->n);
+	  pp= p; MOD_DEC(pp, ws->n);
+	  nn = n; MOD_INC(nn, ws->n);
+	  nnn=nn; MOD_INC(nnn,ws->n);
+
+#if DEBUG_HULL	  
+	  if(verbosity >= 5) 
+	    printf("Walking backward; n=%d... ",n);
+#endif
+	  /* Walk backward until we find a still-keep-worthy vertex */
+	  while( p != n && 
+		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]), 
+						  (VERTEX *)(ws->stuff[pp]), hull + pp, 
+						  (VERTEX *)(ws->stuff[n]),  hull + n,
+						  hull + p))
+		 ) {
+#if DEBUG_HULL
+	    if(verbosity >= 5) 
+	      printf("p=%d ");
+#endif
+
+	    p=pp;
+	    MOD_DEC(pp, ws->n);
+	  }
+
+	  hull[p].open = (check_flag > 0) && (check_flag & 1);
+	  hull[pp].open = (check_flag > 0) && (check_flag & 2);
+
+#if DEBUG_HULL
+	  if(verbosity >= 5) 
+	    printf("final p =%d  prev_intersection=(%g,%g) \nWalking forward; n=%d... ",p,hull[p].p[0],hull[p].p[1],n);
+#endif
+	  
+	  /* walk forward until we find a still-keep-worthy vertex */
+	  while( n != p &&
+		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[nn]),
+						  (VERTEX *)(ws->stuff[n]),  hull + n,
+						  (VERTEX *)(ws->stuff[nnn]), hull + nnn,
+						  hull+nn
+						  ) )
+		 ) {
+
+#if DEBUG_HULL
+ 	    if(verbosity >= 5)
+	      printf("nn=%d ",nn);
+#endif
+
+	    nn=nnn;
+	    MOD_INC(nnn, ws->n);
+	  }
+
+	  hull[nn].open = (check_flag > 0) && (check_flag & 1);
+	  hull[n].open = (check_flag > 0) && (check_flag & 2);
+
+#if DEBUG_HULL
+	  if(verbosity >= 5) {
+	    printf("final nn=%d;  next_intersection=(%g,%g)   \n",nn,hull[n].p[0],hull[n].p[1]);
+	    {
+	      NUM pp[2];
+	      NUM bis1[3];
+	      NUM bis2[3];
+	      perp_bisector_2d(bis1,0, ((VERTEX *)(ws->stuff[n]))->scr);
+	      perp_bisector_2d(bis2,0, ((VERTEX *)(ws->stuff[nn]))->scr);
+	      intersection_2d(pp, bis1, bis2);
+	      printf("\tdirect intersection: bisector[n]=(%g,%g,%g); bisector[nn]=(%g,%g,%g); point is: (%g,%g)\n",
+		     bis1[0],bis1[1],bis1[2],
+		     bis2[0],bis2[1],bis2[2],
+		     pp[0],pp[1]);
+	    }
+	  }
+#endif
+
+	  /* Now p is the first keepworthy vertex, walking backward from n, and */
+	  /* nn is the first keepworthy vertex, walking forward from n.         */
+	  /* Crunch down the list... */
+
+#if DEBUG_HULL
+	  if(verbosity >= 5) {
+	    int ii;
+	    printf("Kept & trimmed.  List is: ");
+	    for(ii=0;ii<ws->n;ii++) {
+	      printf(" %d ",((VERTEX *)(ws->stuff[ii]))->label);
+	    }
+	    printf("\n\tp=%d, n=%d, nn=%d\n",p,n,nn);
+	  }
+#endif
+
+	  {
+
+	    int ii,jj, diff;
+	    
+	    if( p <= n-1 ) {
+	      if( nn <=
+ n-1 ) {
+
+#if DEBUG_HULL
+		if(verbosity >= 5) printf("...*****...|.....    case\n");
+#endif
+
+		for(ii=0, jj=nn; jj<=p; jj++,ii++) {
+		  hv_cp( hull+ii, hull+jj );
+		  ws->stuff[ii] = ws->stuff[jj];
+		}
+		hv_cp( hull+ii, hull +n );
+		ws->stuff[ii] = ws->stuff[n];
+		ii++;
+
+	      } else {
+
+#if DEBUG_HULL
+		if(verbosity >= 5) printf("*****...|...**** case\n");
+#endif
+		ii=p+1;
+		if(ii == n) {
+		  ii++;
+		} else {
+		  hv_cp( hull + ii, hull + n );
+		  ws->stuff[ii] = ws->stuff[n];
+		  ii++;
+		}
+		if(ii<nn) {
+		  for( jj=nn; jj < ws->n; ii++,jj++) {
+		    hv_cp(hull + ii, hull + jj);
+		    ws->stuff[ii] = ws->stuff[jj];
+		  }
+		} else if(ii==nn) {
+		  ii = ws->n;
+		}
+#if DEBUG_HULL
+		if(verbosity >= 5) printf("\tii=%d\n",ii);
+#endif
+	      }
+	    } else {
+	      
+#if DEBUG_HULL
+	      if(verbosity >= 5) printf("....|...****.. case\n");
+#endif
+
+	      if(n>0) {
+		hv_cp(hull, hull+n);
+		ws->stuff[0] = ws->stuff[n];
+	      }
+	      ii=1;
+	      
+	      if( nn>1 ) {
+		for( jj=nn; jj<=p; ii++, jj++) {
+		  hv_cp( hull + ii, hull + jj );
+		  ws->stuff[ii] = ws->stuff[jj];
+		}
+	      } else {
+		ii= p + 1;
+	      }
+	      
+	    }/* end of case testing */
+	    ws->n = ii;
+
+#if DEBUG_HULL
+	    if(verbosity >= 5) {
+	      int ii;
+	      printf("After post-keep trimming, we have: ");
+	      for(ii=0;ii<ws->n;ii++) {
+		printf(" %d %",((VERTEX *)(ws->stuff[ii]))->label);
+	      }
+	      printf("\n");
+	    }
+#endif
+	  } /* end of crunching convenience block */
+	} /* end of neighbor-testing convenience block */
+      } else {
+	/* no keeping -- just ignore this point and start the next loop */
+      }
+    } /* end of non-duplication test block */
+
+#if DEBUG_HULL
+    if(w->verbosity >= 3) {
+      printf("horde-loop: finished %d; %d neighbors in list...\n",v->label,ws->n);
+    }
+#endif
+    
+  } /* end of horde loop */
+
+
+
+  /* Calculate the (more expensive) true-atan angles for the hull points and for the 
+   * actual neighbors, since there are so few of them.
+   */
+
+  for(  i=0; i<ws->n; i++ ) {
+    VERTEX *vv = ((VERTEX **)(ws->stuff))[i];
+
+    if(hull[i].open) {
+      VERTEX *vn = ((VERTEX **)(ws->stuff))[MOD_NEXT(i,ws->n)];
+      hull[i].a_r = atan2(vn->scr[1],vn->scr[0]) - PI/2;
+      hull[i].a_l = atan2(vv->scr[1],vv->scr[0]) + PI/2;
+    } else {
+      hull[i].a_r = hull[i].a_l = atan2(hull[i].p[1],hull[i].p[0]);
+    }
+
+    vv->a = atan2(vv->scr[1],vv->scr[0]);
+    horde->stuff[i] = vv;
+  }
+  horde->n = i;
+
+#if DEBUG_HULL
+  if(w->verbosity >= 5)  {
+    int i;
+    
+    for(i=0;i<ws->n;i++) {
+      VERTEX *vx = ((VERTEX *)(ws->stuff[i]));
+      printf("\t%d: a=%g, r=%g, point=(%g,%g), hullpt=(%g,%g), open=%d, a_l = %g, a_r = %g\n",
+	     vx->label,
+	     vx->a,
+	     vx->r, 
+	     vx->scr[0],
+	     vx->scr[1],
+	     hull[i].p[0],
+	     hull[i].p[1],
+	     hull[i].open,
+	     hull[i].a_r,
+	     hull[i].a_l
+	     );
+    }
+  }
+#endif
+}
+
 

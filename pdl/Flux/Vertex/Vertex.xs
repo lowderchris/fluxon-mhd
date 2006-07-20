@@ -253,7 +253,7 @@ CODE:
 
   	PUSHMARK(SP);
   	XPUSHs( sv_2mortal(newSVpv( "Flux::Vertex", 0)) );
-  	XPUSHs( sv_2mortal(newSViv((IV)v->prev)) );
+  	XPUSHs( sv_2mortal(newSViv((IV)((VERTEX *)(dl->stuff[i])))) );
   	PUTBACK;
   	foo = call_pv( "Flux::Vertex::new_from_ptr", G_SCALAR );
 	SPAGAIN;
@@ -271,9 +271,10 @@ CODE:
   	LEAVE; 
    }
    if( ! ( av_store(RETVAL,i,sv) ) ) {
-	svREFCNT_dec(sv);
+	SvREFCNT_dec(sv);
 	fprintf(stderr,"Warning: problems with array in _adjacent...\n");
    }
+	sv_2mortal(sv);
  }
 OUTPUT:
  RETVAL

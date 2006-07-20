@@ -1,3 +1,4 @@
+#define SORT_WARN 1
 /* data.c 
  *
  * Basic data manipulation routines and definitions for FLUX -- how to 
@@ -260,8 +261,8 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   tp->x[1] = y;
   tp->x[2] = z;
 
-  dumblist_clear( &(tp->neighbors) );
-  dumblist_clear( &(tp->nearby) );
+  dumblist_init( &(tp->neighbors) );
+  dumblist_init( &(tp->nearby) );
 
 
   tp->b_mag = 0;
@@ -375,6 +376,8 @@ WORLD *new_world() {
   a->fc_pe->label = -4;
   a->fc_pe->bound = fl_b_end_plasmoid;
   a->concentrations = tree_binsert(a->concentrations, a->fc_pe, fc_lab_of, fc_ln_of);
+
+  a->passno = 0;
 
   return a;
 }
@@ -1445,9 +1448,8 @@ void dumblist_quickadd(DUMBLIST *dl, void *a) {
     return;
   }
 
-  if(dl->n >= dl->size)		/* note that if n>size, you have bigger problems 
-				   should probably put a real error message here */
-    dumblist_grow(dl, dl->size +1);	/* grows to (3/2)*size */
+  if(dl->n >= dl->size)		                /* note that if n>size, you have bigger problems */
+    dumblist_grow(dl, dl->size * 1.5 + 10);	/* grows to more or less (3/2)*size */
   
   dl->stuff[dl->n] = a;
   dl->n++;
@@ -1481,9 +1483,9 @@ void dumblist_add(DUMBLIST *dl, void *a) {
   if(i<dl->n) 	/* don't add it if it is already there */
     return;
   
-  /* OK, a isn't in the list -- add it on the end, increase n by 1. */
+  /* OK, a isn't in the list -- add it on the end, increase size by a few. */
   if(dl->n >= dl->size)
-    dumblist_grow(dl,dl->size+1);
+    dumblist_grow(dl,1.5 * dl->size  + 10);
 
   dl->stuff[(dl->n)++] = a;
   return;
@@ -1526,6 +1528,12 @@ inline void dumblist_rm(DUMBLIST *dl, int i) {
     dl->n--;
     if( i < dl->n )	/* with the new n */
       dl->stuff[i] = dl->stuff[dl->n];
+  } else {
+    fprintf(stderr,"Uh oh!  dumblist_rm tried to remove off the end of the list...\n");
+    {
+      float a = 5;
+      a /= 0.; // throw arithmetic exception
+    }
   }
 }
 
@@ -1612,6 +1620,9 @@ static int ((*dls_cmp)(void *a, void *b));
  */
 
 void **dumblist_qsort(void **l, int n, void **wk_start) {
+#if SORT_WARN
+  printf("Dumblist_qsort...\n");
+#endif
   if(n<=1) {
     if(!n)        /* Paranoia */
       return l;
@@ -1698,7 +1709,6 @@ void **dumblist_qsort(void **l, int n, void **wk_start) {
  * dumblist_shellsort
  * is a basic comb/shell sorter.
  * It's useful for lists too small to need quicksort (up to, say, 50 elements).
- * @@@ DIRTY - FIXME
  */
 
 void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
@@ -1706,6 +1716,10 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
   void *temp;
   int n = dl->n;
   int iter=0;
+
+#if SORT_WARN
+  printf("dumblist_shellsort\n");
+#endif
 
 #ifdef testing_with_bubblesort
   /*  Bubblesort to make sure shellsort isn't scrozzling memory, if option is set */
@@ -1730,6 +1744,8 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
       }
     }
   } while(!done);
+  return;
+
 #endif
 
   increment = (dl->n / 3) || 1;
@@ -1814,16 +1830,21 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   void **dl_a;
   int i;
   /* **dls_wk, dls_size, dls_sz and *dls_cmp are static variables */
+#if SORT_WARN
+  printf("dumblist_sort...\n");
+#endif
 
   if(dl->n <= 1) 
     return;
 
 
   if( dl->n <= 150 ) {             /* use shellsort for the small cases */
+    //    printf("s");fflush(stdout);
     dumblist_shellsort(dl,cmp);
     dumblist_crunch(dl,cmp);
   } else {
     int odls_size;
+    //    printf("q");fflush(stdout);
     /* Make sure that there's enough scratch space */
     if(dls_size < dl->size) {
       long levels = 2;
@@ -1911,8 +1932,10 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
 
 inline void dumblist_clear(DUMBLIST *foo) {
   foo->n = 0;
-  foo->size = 0;
-  foo->stuff= 0;
+}
+inline void dumblist_init(DUMBLIST *foo) {
+  foo->n = foo->size = 0;
+  foo->stuff = 0;
 }
 
 /**********************************************************************
@@ -1946,8 +1969,6 @@ inline void dumblist_dump(DUMBLIST *foo, void ((*printer)(void *a))) {
       }
   }
 }
-      
-      
 
 /**********************************************************************
  * fl_eq
@@ -1963,7 +1984,6 @@ inline char fl_eq(NUM a, NUM b) {
 	     )
 	   );
 }
-  
 
 /**********************************************************************
  *

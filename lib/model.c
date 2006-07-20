@@ -610,114 +610,37 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
     printf("\n");
   }
 
-
-  /* This winnow_neighbor_candidates call isn't strictly necessary --
-     hull_neighbors should do the job.  But winnow_neighbor_candidates 
-     or something like it should be called eventually to do walkalongs.
-     (comment left in as a placeholder!) */
-  /*winnow_neighbor_candidates(v,dl);*/
-
   hv = hull_neighbors(v, dl); /* save hv for return */
-
-    if(verbosity >= 3) {
-      printf("Hull_neighbors returned %d neighbors: ",dl->n);
-      if(verbosity >= 4)
-	for(i=0;i<dl->n;i++) 
-	  printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
-      printf("\n");
-    }
-
-
-    
-    if(verbosity >= 3) {
-      int i;
-      printf("Updating neighbor/nearby list for vertex %d:\n",v->label);
-      printf("Previous neighbors (%d of them):\n",vn->n);
-      for(i=0;i<vn->n;i++) {
-	printf("  %d",(((VERTEX **)(vn->stuff))[i])->label);
-      }
-      printf("\n");
-      
-      printf("Newly found neighbors (%d of them):\n",dl->n);
-      for(i=0;i<dl->n;i++) {
-	printf("  %d",(((VERTEX **)(dl->stuff))[i])->label);
-      }
-      printf("\n");
-    }
-
-
-    /******************************
-     * Update 'nearby' lists through brute force
-     */
-    for(i=0;i<vn->n;i++) {
-      dumblist_delete( &(((VERTEX *)(vn->stuff[i]))->nearby), v);
-    }
-    for(i=0;i<dl->n;i++) {
-      dumblist_add(    &(((VERTEX *)(dl->stuff[i]))->nearby), v);
-    }
-    cpflag = 1;
-
-#ifdef SLIGHTLY_SLOWER_METHOD
-    cpflag = 0;
-    /*******************************
-     * Walk through both dumblists, updating the neighbors' 
-     *  "nearby" information as needed. 
-     *
-     * Two passes: first walk through the old list and delete anything
-     * that's not on the new list, then walk through the new list and 
-     * add anything that's not on the old list.
-     * 
-     * This simple approach is OK because by now we've already hulled the
-     * neighbors so there are only typically < 10 of them in each list.
-     * 
-     * The approach of scanning the lists rather than explicitly deleting
-     * and re-instating is more efficient because the lists themselves 
-     * are likely to remain in cache for the operation while the neighbors
-     * may or may not be in cache.
-     */
-    /* First: walk through the old list, and delete anything not on the
-     * new list
-     */
-    for(i=0; i<vn->n; i++) {
-      void *oldguy = (vn->stuff)[i];
-      for(j=0; j<dl->n && oldguy != dl->stuff[j];  j++)
-	;
-      if( j==dl->n ) { 
-	/*** Not found - must be eradicated from NEARBY ***/
-	if(verbosity >= 3)
-	  printf("  Removing %d from NEARBY list of %d\n",
-		 v->label,((VERTEX *)oldguy)->label);
-	dumblist_delete( &( ((VERTEX *)oldguy)->nearby ), v );
-	cpflag=1;
-      }
-    }
-
-    /* Next: walk through the new list, and add anything not in the old list
-     */
-    for(j=0; j<dl->n; j++) {
-      void *newguy = (dl->stuff)[j];
-      for(i=0; i<vn->n && newguy != vn->stuff[i]; i++)
-	;
-      if( i==vn->n ) {
-	/*** Not found -- must be added to the NEARBY ***/
-	if(verbosity >= 3)
-	  printf("  Adding %d to NEARBY list of %d\n",
-		 v->label, ((VERTEX *)newguy)->label);
-	dumblist_add( &( ((VERTEX *)newguy)->nearby ), v);
-	cpflag=1;
-      }
-    }
-#endif
-
-    /* Copy the new neighbor list into the vertex. */
-    if(cpflag) {
-      vn->n = 0;
-      dumblist_snarf(vn,dl);
-    }
-    return hv;
-}
-    
   
+  if(verbosity >= 3) {
+    printf("Hull_neighbors returned %d neighbors: ",dl->n);
+    if(verbosity >= 4)
+      for(i=0;i<dl->n;i++) 
+	printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
+    printf("\n");
+  }
+  
+  /******************************
+   * Update 'nearby' lists through brute force
+   * Not too expensive since these lists are typically under 10 elements long
+   */
+  for(i=0;i<vn->n;i++) {
+    dumblist_delete( &(((VERTEX *)(vn->stuff[i]))->nearby), v);
+  }
+  for(i=0;i<dl->n;i++) {
+    dumblist_add(    &(((VERTEX *)(dl->stuff[i]))->nearby), v);
+  }
+  cpflag = 1;
+  
+  /* Copy the new neighbor list into the vertex. */
+  if(cpflag) {
+    vn->n = 0;
+    dumblist_snarf(vn,dl);
+  }
+  return hv;
+}
+
+
 
 /**********************************************************************
  * gather_neighbor_candidates
@@ -743,6 +666,23 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
  * good for initial conditions or if a pathology is detected.
  */
 
+
+/*
+ * snarf_filtered
+ * Helper routine snarfs up a dumblist but skips over already-grabbed vertices and
+ * image vertices.
+ */
+static inline void snarf_filtered(DUMBLIST *ws, DUMBLIST *dl, long passno) {
+  int i;
+  for(i=0;i<dl->n;i++) {
+    VERTEX *V = (VERTEX *)(dl->stuff[i]);
+    if( V->passno != passno && V->line ) {        
+      V->passno = passno;
+      dumblist_quickadd(ws, dl->stuff[i]);
+    }
+  }
+}
+
 /* snarf_list
  * Helper routine for snarfing up a set of vertices and its next and prev
  * elements.  You feed in a list of vertices (e.g. the "neighbors" list
@@ -752,26 +692,20 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
  *
  */
 
-static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n) {
-  int i,j;
-  for(i=0;i<n;i++) {
-    dumblist_add(workspace,(void *)foo[i]);
-    dumblist_snarf(workspace,&(foo[i]->neighbors));
-    dumblist_snarf(workspace,&(foo[i]->nearby));
-  }
+static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n, long passno) {
+  int i;
 
-  /* Purge image pseudo-vertices from the snarfed list */
-  for(i=j=0;i<workspace->n;i++) {
-    if( (((VERTEX **)(workspace->stuff))[i])->line ) {
-      if(j!=i)
-	workspace->stuff[j] = workspace->stuff[i];
-      j++;
+  for(i=0;i<n;i++) {
+    VERTEX *V = ((VERTEX *)(foo[i]));
+    if(V->passno != passno && V->line) {
+      V->passno = passno;
+      dumblist_quickadd(workspace,(void *)foo[i]);
+      snarf_filtered(workspace,&(foo[i]->neighbors), passno);
+      snarf_filtered(workspace,&(foo[i]->nearby), passno);
     }
   }
-  workspace->n = j;
-
 }
-
+  
 
 /* expand_list
  * Helper routine for expanding a workspace list out:  you feed in 
@@ -779,15 +713,17 @@ static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n) {
  * the next and previous item on each of those vertex lists.
  * It also includes the neighbors of all of those items.
  */
-static inline void expand_list(DUMBLIST *workspace) {
+static inline void expand_list(DUMBLIST *workspace, long passno) {
   int i,n;
   n = workspace->n;
   for(i=0;i<n;i++) {
     VERTEX *v = ((VERTEX **)(workspace->stuff))[i];
     if(v) {
-      if( v->next )
+      if( v->next && v->next->passno != passno )
+	v->next->passno = passno;
 	dumblist_quickadd(workspace, v->next);
-      if( v->prev ) 
+      if( v->prev && v->prev->passno != passno ) 
+	v->prev->passno = passno;
 	dumblist_quickadd(workspace, v->prev);
     }
   }
@@ -806,11 +742,15 @@ static long line_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
 
 DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   static DUMBLIST *workspace =0;
-  static DUMBLIST *ws2 = 0;
   void **foo;
   int i;
   int n;
   int verbosity = v->line->fc0->world->verbosity;
+  long passno = ++(v->line->fc0->world->passno);
+  
+  if(verbosity >= 2) {
+    printf("passno=%d...  ",passno);
+  }
 
   if(!v)        /* Paranoia */
     return;
@@ -818,11 +758,9 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   if(!workspace) 
     workspace = new_dumblist();
 
-  if(!ws2)
-    ws2 = new_dumblist();
-
   workspace->n = 0;
-  ws2->n = 0;
+
+  
 
   /**********************************************************************/
   /* Gather the candidates together 
@@ -840,27 +778,30 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
       printf("Using local neighbors...");
     
     /* Grab neighbors & nearby from vertex & its siblings */
-    snarf_list(ws2,&v,1); 
+    snarf_list(workspace,&v,1,passno); 
+    if(verbosity >= 3) 
+      printf("%d direct ... ",workspace->n);
+
+    if(v->next)     snarf_list(workspace,&(v->next),1,passno);
+    if(v->prev)     snarf_list(workspace,&(v->prev),1,passno);
     
-    if(v->next)     snarf_list(ws2,&(v->next),1);
-    if(v->prev)     snarf_list(ws2,&(v->prev),1);
+    if(verbosity >= 3)
+      printf("%d w/adjacent ... ",workspace->n);
     
+    expand_list(workspace,passno);
+    if(verbosity >= 3) 
+      printf("%d w/expanded ... ",workspace->n);
+    
+    /* Grab neighbors & nearby of all *those* guys */
+    snarf_list(workspace,(VERTEX **)workspace->stuff,workspace->n, passno);
+
+    /* Grab siblings of all the neighbors & nearby */
+    expand_list(workspace,passno);
+
     if(verbosity >=3)
       printf("Found %d ...",workspace->n);
 
-    /* Grab neighbors & nearby of all *those* guys */
-    snarf_list(workspace,(VERTEX **)ws2->stuff,ws2->n);
-
-    /* Grab siblings of all the neighbors & nearby */
-    expand_list(workspace);
-
-    /* Remove duplicates to save time in the next step */
-    
-    dumblist_sort(workspace,winnow_cmp_1);
-    dumblist_crunch(workspace,winnow_cmp_1);
-
   }
-
 
   /* Incremental neighbor searching didn't work -- do a global 
      grab (ouch!).
@@ -936,7 +877,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 	scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
 	reflect(v->line->fc0->world->image->next->x, v->next->x, &pl);
 	
-	dumblist_add(workspace, v->line->fc0->world->image);
+	dumblist_quickadd(workspace, v->line->fc0->world->image);
 
 	break;
       case PHOT_SPHERE:
@@ -958,14 +899,14 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 	scale_3d(&(pt[0]), &(pt[0]), 2.0);
 	diff_3d(v->line->fc0->world->image->next->x, &(pt[0]), v->x); 
 	 
-	dumblist_add(workspace, v->line->fc0->world->image);
+	dumblist_quickadd(workspace, v->line->fc0->world->image);
 
 	break;
 	  
       case PHOT_PLANE:
 	reflect(v->line->fc0->world->image->x, v->x, p);
 	reflect(v->line->fc0->world->image->next->x, v->next->x, p);
-	dumblist_add(workspace, v->line->fc0->world->image);
+	dumblist_quickadd(workspace, v->line->fc0->world->image);
 	break;
       default:
 	fprintf(stderr,"Illegal photosphere type %d!\n",phot->type);
@@ -975,9 +916,10 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   }
 
   /* Sort by vertex number, to avoid simple duplication */
-  dumblist_sort(workspace, winnow_cmp_1);
+  //  dumblist_sort(workspace, winnow_cmp_1);
+  //if(verbosity >= 3) printf("gather_neighbor_candidates: sorting yielded %d elements\n",workspace->n);
+  if(verbosity >= 3) printf("gather_neighbor_candidates: returning %d elements (may include dupes)\n",workspace->n);
 
-  if(verbosity >= 3) printf("gather_neighbor_candidates: sorting yielded %d elements\n",workspace->n);
   return workspace;
 }
 
@@ -1088,7 +1030,6 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
 
   static HULL_VERTEX *voronoi_buf = 0;
   static int voronoi_bufsiz = 0;
-  static DUMBLIST *rejects = 0;
 
   if(v->line->fc0->world->verbosity >= 5) 
     printf("Entering hull_neighbors...\n");
@@ -1130,31 +1071,14 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   if(verbosity >= 1) {
     printf(".");
     
-    if(verbosity >= 5) {
+    if(verbosity >= 5)
       printf("V%4d: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
-      for(i=0;i<horde->n;i++) {
-	NUM p0[3], p1[3];
-	fl_segment_deluxe_dist(p0, p1, v, ((VERTEX *)(horde->stuff[i])));
-	
-	printf("\tV%4d:  3d=%g\tproj dist=%7.3g (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g).  Closest approach: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n"
-	       ,((VERTEX *)(horde->stuff[i]))->label
-	       ,((VERTEX *)(horde->stuff[i]))->r_cl
-	       ,((VERTEX *)(horde->stuff[i]))->r
-	       ,((VERTEX *)(horde->stuff[i]))->x[0]
-	       ,((VERTEX *)(horde->stuff[i]))->x[1]
-	       ,((VERTEX *)(horde->stuff[i]))->x[2]
-	       ,((VERTEX *)(horde->stuff[i]))->next->x[0]
-	       ,((VERTEX *)(horde->stuff[i]))->next->x[1]
-	       ,((VERTEX *)(horde->stuff[i]))->next->x[2]
-	       ,p0[0],p0[1],p0[2]
-	       ,p1[0],p1[1],p1[2]
-	       );
-      }
-    }
   }
 
   /* Find the 2-D hull.  Don't want rejects. */
-  hull_2d(voronoi_buf,horde,0);
+  /*  hull_2d(voronoi_buf,horde,0); */
+  hull_2d_us(voronoi_buf, horde, v);
+  
   if(horde->n==0) {
     printf("VERTEX %d: hull_2d gave up! That's odd....\n",v->label);
   }
@@ -1351,7 +1275,7 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
 	&& 
       /* This is the actual check but the trig operation is masked out */
       /* by the above mess for most cases.  That's an assignment.      */
-      (curve = atan2(sincurve,coscurve)) > curve_thresh_high
+      (curve = ATAN2(sincurve,coscurve)) > curve_thresh_high
       ) {
 
     VERTEX *Vnew;
@@ -1399,7 +1323,7 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
 	&& 
 	/* This is the actual check but the trig operation is masked out */
 	/* by the above mess for most cases.  That's an assignment.      */
-	(curve = atan2(sincurve,coscurve)) < curve_thresh_low
+	(curve = ATAN2(sincurve,coscurve)) < curve_thresh_low
 	) {
       NUM offset_dist;
       NUM pdist,ndist;

@@ -189,10 +189,8 @@ sub DESTROY {
   # (which is a scalar ref, not a hash ref). Ignore the destruction for the tied hash.
 
   eval ' my $a = ${$_[0]}; $a; ';
-  if($@) {
-    undef $@;
-    return;
-  }
+  return if($@);
+  
   _dec_refct_destroy_world( $_[0] );
 
 }
@@ -205,7 +203,9 @@ sub TIEHASH {
     my $class = shift;
     my $ptr = shift;
     my $me = \$ptr;
-    return bless($me,$class);
+    bless($me,$class);
+#    _inc_world_refct($me);  
+    return $me;
 }
 
 sub FETCH {
@@ -213,7 +213,6 @@ sub FETCH {
     my $code = $Flux::codes->{fluxon}->{$field};
 
     return undef unless defined($code);
-    
     Flux::r_val( $me, $Flux::typecodes->{fluxon}, @$code[0..1] );
 }
 
