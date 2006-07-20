@@ -1,4 +1,7 @@
 20-July-2006: [cd]
+	- minor tweaks to gather_neighbor_candidates for optimal speed and 
+	completeness...
+20-July-2006: [cd]
 	- added dup-avoiding unfiltered dumblist addition in model.c.  Now it
 	  does seem to both be correct and run much faster. (about 2x)
 19-July-2006: [cd]

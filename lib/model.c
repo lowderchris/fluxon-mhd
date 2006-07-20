@@ -700,9 +700,9 @@ static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n, long pas
     if(V->passno != passno && V->line) {
       V->passno = passno;
       dumblist_quickadd(workspace,(void *)foo[i]);
-      snarf_filtered(workspace,&(foo[i]->neighbors), passno);
-      snarf_filtered(workspace,&(foo[i]->nearby), passno);
     }
+    snarf_filtered(workspace,&(foo[i]->neighbors), passno);
+    snarf_filtered(workspace,&(foo[i]->nearby), passno);
   }
 }
   
@@ -796,7 +796,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     snarf_list(workspace,(VERTEX **)workspace->stuff,workspace->n, passno);
 
     /* Grab siblings of all the neighbors & nearby */
-    expand_list(workspace,passno);
+    //    expand_list(workspace,passno);
 
     if(verbosity >=3)
       printf("Found %d ...",workspace->n);
