@@ -740,6 +740,55 @@ static long line_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
   return 0;
 }
 
+
+/******/
+void expand_lengthwise(DUMBLIST *workspace, int start_idx, long passno) {
+  int i;
+  long n = workspace->n;
+  for(i=start_idx;i<n;i++) {
+    VERTEX *v = ((VERTEX *)(workspace->stuff[i]));
+    if(v->prev && v->prev->passno != passno) {
+      v->prev->passno = passno;
+      dumblist_quickadd(workspace, v->prev);
+    }
+    if(v->next && v->next->passno != passno) {
+      v->next->passno = passno;
+      dumblist_quickadd(workspace,v->next);
+    }
+  }
+}
+
+void expand_via_neighbors(DUMBLIST *workspace, int start_idx, long passno) {
+  int i;
+  int j;
+  long n = workspace->n;
+  for(i=start_idx;i<n;i++) {
+    VERTEX *v = ((VERTEX *)(workspace->stuff[i]));
+    DUMBLIST *nlist;
+
+    nlist = &(v->neighbors);
+    for(j=0; j<nlist->n; j++) {
+      VERTEX *vv;
+      vv = ((VERTEX *)(nlist->stuff[j]));
+      if(vv->line && vv->passno != passno) {
+	vv->passno = passno;
+	dumblist_quickadd(workspace, vv);
+      }
+    }
+
+    nlist = &(v->nearby);
+    for(j=0;j<nlist->n;j++) {
+      VERTEX *vv;
+      vv = ((VERTEX *)(nlist->stuff[j]));
+      if(vv->line && vv->passno != passno) {
+	vv->passno = passno;
+	dumblist_quickadd(workspace, vv);
+      }
+    }
+  }
+}
+      
+
 DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   static DUMBLIST *workspace =0;
   void **foo;
@@ -773,37 +822,49 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   /* Snarf neighbors */
   if(!global) {
     VERTEX *v1;
-    
-    if(verbosity >= 3) 
-      printf("Using local neighbors...");
-    
-    /* Grab neighbors & nearby from vertex & its siblings */
-    snarf_list(workspace,&v,1,passno); 
-    if(verbosity >= 3) 
-      printf("%d direct ... ",workspace->n);
+    int ilen,iwid;
 
-    if(v->next)     snarf_list(workspace,&(v->next),1,passno);
-    if(v->prev)     snarf_list(workspace,&(v->prev),1,passno);
-    
-    if(verbosity >= 3)
-      printf("%d w/adjacent ... ",workspace->n);
-    
-    expand_list(workspace,passno);
-    if(verbosity >= 3) 
-      printf("%d w/expanded ... ",workspace->n);
-    
-    /* Grab neighbors & nearby of all *those* guys */
-    snarf_list(workspace,(VERTEX **)workspace->stuff,workspace->n, passno);
+    dumblist_quickadd(workspace, v);
 
-    /* Grab siblings of all the neighbors & nearby */
-    //    expand_list(workspace,passno);
+    if(verbosity>=3) {
+      printf("initial seed - %d; ",workspace->n);
+    }
 
-    if(verbosity >=3)
-      printf("Found %d ...",workspace->n);
+    expand_lengthwise(workspace, 0, passno);
+    ilen = workspace->n;
 
+    if(verbosity >= 3) {
+      printf("len - %d; ", workspace->n);
+    }
+
+    expand_via_neighbors(workspace, 0, passno);
+    iwid = workspace->n;
+
+    if(verbosity >= 3) {
+      printf("wid - %d; ", workspace->n);
+    }
+    
+    expand_lengthwise(workspace, ilen, passno);
+
+    if(verbosity >= 3) {
+      printf("len - %d; ", workspace->n);
+    }
+
+    expand_via_neighbors(workspace, iwid, passno);
+    
+    if(verbosity >= 3) {
+      printf ("wid - %d; ", workspace->n);
+    }
+
+    expand_lengthwise(workspace, 0, passno);
+    
+    if(verbosity >= 3) {
+      printf("final - %d\n",workspace->n);
+    }
+    
   }
-
-  /* Incremental neighbor searching didn't work -- do a global 
+    
+   /* Incremental neighbor searching didn't work -- do a global 
      grab (ouch!).
   */
   if(global || (workspace->n == 0)) {
