@@ -399,7 +399,45 @@ sub fluxon_ids {
 }
 
 
+=pod
 
+=head2 concentrations
+
+=for usage
+
+    @concentrations = $world->concentrations;
+
+=for ref
+
+Returns a list of all flux concentrations in the world.
+
+=cut
+
+sub _conc_helper {
+    my $me = shift;
+    my $depth = shift||0;
+    my @a;
+#    print " "x(2*$depth)."l ($me->{label})\n";
+    if(exists($me->{links_left})) {
+	push(@a, _conc_helper($me->{links_left},$depth+1));
+    }
+    print " "x(2*$depth)."* ($me->{label})\n";
+    push(@a, $me);
+#    print " "x(2*$depth)."r:($me->{label})\n";
+    if(exists($me->{links_right})) {
+	push(@a, _conc_helper($me->{links_right},$depth+1));
+    }
+    print " "x(2*$depth)."...\n";
+    return @a;
+}
+
+   
+sub concentrations {
+    my $me = shift;
+    my @list =_conc_helper($me->{concentrations}); 
+    print "_conc_helper returned ".(0+@list)." elements....\n";
+    return @list;
+}
 
 =pod
 

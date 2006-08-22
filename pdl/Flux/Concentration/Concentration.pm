@@ -45,8 +45,36 @@ our @EXPORT = ();
 # No bootstrap required just yet -- no .xs yet.
 #  bootstrap Flux::Concentration;  
 
+use overload '""' => \&_stringify;
 
+sub _stringify {
+    my $me = shift;
+    my $st;
+    my $lct;
 
+    if($me->{lines}) {
+	if($me->{lines}->{fc_start}->{label} == $me->{label}) {
+	    $st = "exiting ";
+	    $lct = $me->{lines}->{start_links_n};
+	} elsif($me->{lines}->{fc_end}->{label} == $me->{label}) {
+	    $st = "entering";
+	    $lct = $me->{lines}->{end_links_n};
+	}
+    } else {
+	$lct = 0;
+	$st = "NONE";
+    }
+
+    my $ess = ($lct==1 || $lct==-1) ? "" : "s";
+
+    my $s = sprintf("Flux concentration %d: flux=%5g in %d (%s) line%s; location %s\n",
+		    $me->{label},
+		    $me->{flux},
+		    $lct, $st, $ess,
+		    $me->{x}
+		    );
+    return $s;
+}
 
 =pod
 
@@ -92,6 +120,12 @@ sub FETCH {
     Flux::r_val( $me, $Flux::typecodes->{concentration}, @$code[0..1] );
 }
 
+sub EXISTS {
+    my($me,$field) = @_;
+    return (defined FETCH($me,$field));
+}
+
+
 sub STORE {
     my($me, $field,$val) = @_;
     my $code = $Flux::codes->{concentration}->{$field};
@@ -122,7 +156,6 @@ sub NEXTKEY {
 sub SCALAR {
     _stringify(@_);
 }
-
 
 
 1;
