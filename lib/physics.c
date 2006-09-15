@@ -585,7 +585,7 @@ void e_simple (VERTEX *V, HULL_VERTEX *verts) {
       bad=1;
     } else {
       A = 0.5*cross_2d(left->p,right->p);
-      Area =+ A;
+      Area += A;
     }
   }
 
@@ -646,7 +646,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
       A = 0.5*cross_2d(left->p,right->p);
       angle = left->a_l; //radians?
       iflux = flux * ( angle / 2.*PI );
-      psudo_energy =+ (iflux * iflux / Area);
+      psudo_energy += (iflux * iflux / Area);
     }
   }
 
