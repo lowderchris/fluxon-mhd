@@ -38,6 +38,7 @@ void e_simple2(VERTEX *V, HULL_VERTEX *verts); /* calculate energy assoc. with v
 void f_curvature(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
 void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
+void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 
 void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts); /* ang. equipartition pressure */
 void f_curv_hm(VERTEX *V, HULL_VERTEX *verts); /* harmonic-mean curvature  */ 
