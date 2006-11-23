@@ -116,7 +116,7 @@ sub simple_relaxer {
       print "ok\n";
     }
 
-    $w->render_lines;
+    $w->render_lines unless($disp_n==0);
     
     $dt = 0.1 unless defined($dt);
     
