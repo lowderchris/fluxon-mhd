@@ -55,7 +55,7 @@ sub new_from_ptr {
     my $ptr = shift;
     my %hash;
     tie %hash,"Flux::World",$ptr;
-    $hash{refct}=2;      # one reference (that we're returning) plus the tie
+    $hash{refct}=2;      # one reference (that we are returning) plus the tie
     return bless(\%hash,$class);
 }
 
@@ -782,6 +782,23 @@ If present, specifies that all lines should have this color (3-PDL)
 
 If present, specifies that all points should have this color (3-PDL)
 
+=item rgb_fluxons
+
+If present, this should be a hash ref whose keys are fluxon id numbers or the string
+'default', and whose values are either:
+
+=over 3
+
+=item a 3-PDL (RGB triplet) for the fluxon.  
+
+This sets the whole fluxon to the given color
+
+=item a pair of 3-PDLs with the colors for the north and south poles respectively. 
+
+The fluxon color is interpolated between these two values.
+
+=back
+
 =item RGB_CODE
 
 If present, contains a code ref that calculates the RGB values of
@@ -863,11 +880,76 @@ sub render {
 
     my @rgb,@prgb;
     print "Defining RGB..." if($Flux::debug);
+
     if($opt->{'RGB_CODE'}) {
+      ### RGB_CODE - just execute the code string
       eval $opt->{'RGB_CODE'};
+
+    } elsif($opt->{'rgb_fluxons'}) {
+      ### RGB_FLUXONS - specify color per-fluxon
+      my @fluxons = $w->fluxon_ids;
+      @rgb = ();
+
+      print "rgb_fluxons..." if($Flux::debug);
+
+      for my $i(0..$#fluxons) {
+
+	my $spec = $opt->{'rgb_fluxons'}->{$fluxons[$i]+0};
+	unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
+	  $spec = $opt->{'rgb_fluxons'}->{default};
+	  unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
+	    $spec = pdl(1,1,1);
+	  }
+	}
+
+	# Convert 3 x n PDLs to lists of 3-PDLs
+	if(ref $spec eq 'PDL' and $spec->dims == 2 ) {
+	  $spec = [ dog $spec ];
+	}
+
+	print "fluxon $i: spec is $spec...\n" if($Flux::debug);
+	
+	if(ref $spec eq 'PDL') {
+	  
+	  push(@rgb, $spec * ones($poly[$i]));
+	  
+	} elsif(ref $spec eq 'ARRAY') {
+	  
+	  if( @$spec == 1 ) {
+	    push(@rgb, $spec->[0] * ones($poly[$i]));
+	    
+	  } elsif( @$spec == 2 ) {
+	    my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
+	    my $beta = 1.0 - $alpha;
+	    push(@rgb,  ($alpha * $spec->[0] +
+			 $beta  * $spec->[1]
+			 ));
+	    
+	  } elsif( @$spec >= 3 ) {
+	    my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
+	    my $beta = 1.0-$alpha;
+	    my $gamma = sin($alpha * 3.14159);
+	    push(@rgb, ($alpha * $spec->[0] + 
+			$beta  * $spec->[2] +
+			$gamma * $spec->[1]
+			)
+		 );
+	  }
+
+	} else {
+
+	  ## Error -- should not happen ##
+	  push(@rgb, pdl(1,0.25,0) * ones($poly[$i]));
+
+	}
+      }
+
     } elsif(defined $opt->{'rgb'}) {
+      ### RGB - specify color for all fluxons at once
       @rgb = map { (ones($_) - (yvals($_)==0)) * $opt->{'rgb'} } @poly;
+
     } else {
+      ### Default case - blue->red color scheme for all fluxons
       @rgb = map { 
 	my $alpha = double yvals($_);
 	$alpha /= max($alpha);
@@ -880,19 +962,25 @@ sub render {
 
     print "Defining PRGB..." if($Flux::debug);
     if($opt->{'PRGB_CODE'}) {
-	eval $opt->{'PRGB_CODE'};
+
+      eval $opt->{'PRGB_CODE'};
+
     } elsif(defined $opt->{'prgb'}) {
+
       @prgb = map { (ones($_) - (yvals($_)==0)) * $opt->{'rgb'} } @poly;
+
     } else {
-	@prgb = map { 
-	    my $alpha = double yvals($_);
-	    $alpha /= max($alpha);
-	    my $beta = 1.0 - $alpha;
-	    my $gamma = sin($alpha*3.14159);
-	    my $prgb = $alpha * pdl(1,0,0) + $beta * pdl(0,0,1) + $gamma * pdl(0,1,0);
-	    $prgb;
-	} @poly;
+
+      @prgb = map { 
+	my $alpha = double yvals($_);
+	$alpha /= max($alpha);
+	my $beta = 1.0 - $alpha;
+	my $gamma = sin($alpha*3.14159);
+	my $prgb = $alpha * pdl(1,0,0) + $beta * pdl(0,0,1) + $gamma * pdl(0,1,0);
+	$prgb;
+      } @poly;
     }
+
 
     print "Defining polygons...\n" if($Flux::debug);
     $poly = pdl(0,0,0)->glue(1,@poly);
