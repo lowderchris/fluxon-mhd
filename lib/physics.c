@@ -55,6 +55,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_pressure_equi","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi},
   {"f_pressure_equi2","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi2},
   {"f_pressure_equi2a","(OLD) 2001 pressure law (B-normalized; patched for open field)",f_pressure_equi2a},
+  {"f_pressure_equi2b","(OLD) 2001 pressure law (B-normalized; patched for open field)",f_pressure_equi2b},
   {"f_curv_hm","Curvature force law (harmonic mean curvature)",f_curv_hm},
   {"f_curv_m","Curvature force law (mean curvature)",f_curv_m},
   {"f_p_eqa_radial","Angular equipartition pressure, radial forces",f_p_eqa_radial},
@@ -436,6 +437,107 @@ void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts) {
 
     fn = 2 * deltaphi / (M_PI * N->r);
     fp = 2 / (M_PI * N->r) * (cos(right->a_r - N->a) - cos(left->a_l - N->a));
+    {
+      NUM r = norm_2d(N->scr);
+      nhat_x = N->scr[0]/r;
+      nhat_y = N->scr[1]/r;
+    }
+    f_i[0] = - nhat_x * fn   +   nhat_y * fp ;
+    f_i[1] = - nhat_y * fn   -   nhat_x * fp ;
+
+    vec_mmult_3d( f_j, pmatrix, f_i );      /* Put back into 3-D */
+
+    sum_3d(force,force,f_j);
+    V->f_s_tot += sqrt( fn*fn + fp*fp );
+  }
+
+  sum_3d(V->f_s,V->f_s,force);
+
+  /*printf("f_pressure_equi -- force is (%8g,%8g,%8g), total is (%8g,%8g,%8g)\n\n",force[0],force[1],force[2],V->f_s[0],V->f_s[1],V->f_s[2]);*/
+
+  {
+    NUM r;
+    int ii;
+    /* Accumulate closest neighbor */
+    /* This code will need updating if fluxons get variable flux! */
+    r = -1;
+    for(ii=0;ii<V->neighbors.n;ii++) {
+      NUM a;
+      a = ((VERTEX *)(V->neighbors.stuff[ii]))->r;
+      if(r<0 || a<r)
+	r = a;
+    }
+    V->r =  r / 2;  /* If all fluxons have the same amount of flux, then the min.
+		       radius is always half of the closest neighbor's distance. */
+  }
+  
+  return;
+}
+
+/**********************************************************************
+ * f_pressure_equi2a
+ * Magnetic pressure `force' : - \del_perp(|B|) / |B|
+ * Corrects for the factor-of-two error in f_pressure_equi
+ *
+ * Magnetic pressure force, using the equipartition method 
+ * which distributes a given fluxon's flux equally by delta-phi.
+ * This method distributes current throughout each fluxon's cross-section.
+ * 
+ * This uses the Kankelborg/DeForest discretization:
+ * del_perp(|B|) / |B| ~ \sum_i ( n^_i delta\phi_i / (pi r_i) )
+ * where n^_i is the vector from the current point to the ith neighbor,
+ * delta\phi is the angular extent of the ith line segment in the 
+ * Voronoi hull, and r_i is the radius to the closest approach of the
+ * ith line segment (see DeForest notebook V, pp. 69-70)
+ *
+ * This version applies the force from the median angle of the cell wall,
+ * rather than from the normal.
+ * 
+ * In this version only the normal wall force, and not the parallel wall
+ * force, is doubled.
+ */
+void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
+  NUM force[3]; /* force accumulator */
+  static HULL_VERTEX *point_cache = 0;  /* Workspace grows and sticks */
+  static int pc_size = 0;               /* Workspace size */
+  int i;
+  NUM pmatrix[9];
+  NUM len;
+
+  force[0] = force[1] = force[2] = 0;
+
+  if(!V->next) 
+    return;
+
+  /* Get the perpendicular-plane projection matrix */
+  /* (This is wasteful -- it's already generated in geometry.c.  Is
+     there an easy way to send it back?) */
+  projmatrix(pmatrix, V->x, V->next->x);
+
+  /*printf("f_pressure_equi:  V%4d,  n=%d\n",V->label, V->neighbors.n);*/
+
+  for(i=0;i<V->neighbors.n;i++) {
+    NUM f_i[3];
+    NUM f_j[3];
+    NUM phi_l, phi_r, deltaphi, fn, fp, phi;
+    NUM nhat_x, nhat_y;
+    HULL_VERTEX *left, *right;
+    VERTEX *N = (VERTEX *)V->neighbors.stuff[i];
+
+    left = &verts[i];
+    right = (i==0) ? &verts[V->neighbors.n - 1] : &verts[i-1];
+    
+    deltaphi = left->a_l - right->a_r;
+
+    TRIM_ANGLE(deltaphi);
+    
+    if(deltaphi < -EPSILON) {
+      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg); correcting to %18.12g\n",deltaphi*180/M_PI,deltaphi*180/M_PI + 360);
+      deltaphi += M_PI+M_PI;
+    }
+    
+    fn = 2 * deltaphi / (M_PI * N->r);
+    fp = (cos(right->a_r - N->a) - cos(left->a_l - N->a)) / (M_PI * N->r);
     {
       NUM r = norm_2d(N->scr);
       nhat_x = N->scr[0]/r;

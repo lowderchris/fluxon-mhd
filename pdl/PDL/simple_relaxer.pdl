@@ -101,7 +101,8 @@ sub simple_relaxer {
     my $auto = $opt->{auto};
     my $movie_n = $opt->{movie_n};
     my $movie_f = $opt->{movie_f} || "flux-movie-%4.4d.ppm";
-    my $disp_n = $opt->{disp_n} || $movie_n || 10;
+    my $disp_n = $opt->{disp_n}; 
+    unless( defined($disp_n)) { $disp_n= $movie_n || 10;}
     my $range = $opt->{range};
     $range=$range->copy if (defined $range);
     $step=0 unless($n);
