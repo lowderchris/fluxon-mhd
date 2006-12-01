@@ -782,6 +782,13 @@ If present, specifies that all lines should have this color (3-PDL)
 
 If present, specifies that all points should have this color (3-PDL)
 
+=item dip_detector
+
+If this is set to a 3-PDL, then dips in the magnetic field are
+rendered in this color regardless of what color they would otherwise have.
+Dips are segments adjacent to a vertex that is lower than both its neighbors.
+  
+
 =item rgb_fluxons
 
 If present, this should be a hash ref whose keys are fluxon id numbers or the string
@@ -793,9 +800,11 @@ If present, this should be a hash ref whose keys are fluxon id numbers or the st
 
 This sets the whole fluxon to the given color
 
-=item a pair of 3-PDLs with the colors for the north and south poles respectively. 
+=item a pair of 3-PDLs with the colors for the north and south poles respectively.  The colors will be interpolated.
 
 The fluxon color is interpolated between these two values.
+
+=item a triplet of 3=PDLs with the colors for north, center, and south poles respectively.  The colors will be interpolated.
 
 =back
 
@@ -981,6 +990,34 @@ sub render {
       } @poly;
     }
 
+    ##############################
+    # Having defined the colors of everything, check for dip detection and execute if necessary
+    if(ref $opt->{'dip_detector'} eq 'PDL') {
+      print "Detecting dips...\n";
+      # Walk through the fluxons and identify any midpoint vertices that are lower than their 
+      # neighbors on the same fluxon
+      for my $i(0..$#poly) {
+	my $poly = $poly[$i];
+	my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
+	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
+	$mask->(0) .= 0;
+	$mask->(-1) .= 0;
+	print "mask is $mask\n";
+	my $mw = which($mask);
+	print "mw is $mw\n";
+	my $prgb = $prgb[$i];
+	print "mask->dims is ".join(",",$mask->dims)."\n";
+	print "prgb->dims is ",join(",",$prgb->dims)."\n";
+	print "slice dims are ",join(",",($prgb->(:,$mw))->dims),"\n";
+	if($mw->nelem) {
+	  $prgb->(:,$mw) .= $opt->{'dip_detector'};
+	  my $rgb= $rgb[$i];
+	  $rgb->(:,$mw) .= $opt->{'dip_detector'};
+	  $rgb->(:,$mw+1) .= $opt->{'dip_detector'};
+	}
+	
+      }
+    }
 
     print "Defining polygons...\n" if($Flux::debug);
     $poly = pdl(0,0,0)->glue(1,@poly);
