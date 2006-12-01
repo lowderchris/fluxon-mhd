@@ -993,7 +993,7 @@ sub render {
     ##############################
     # Having defined the colors of everything, check for dip detection and execute if necessary
     if(ref $opt->{'dip_detector'} eq 'PDL') {
-      print "Detecting dips...\n";
+      print "Detecting dips...\n" if($Flux::debug);
       # Walk through the fluxons and identify any midpoint vertices that are lower than their 
       # neighbors on the same fluxon
       for my $i(0..$#poly) {
@@ -1002,13 +1002,9 @@ sub render {
 	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
 	$mask->(0) .= 0;
 	$mask->(-1) .= 0;
-	print "mask is $mask\n";
+	print "mask is $mask\n" if($Flux::debug);
 	my $mw = which($mask);
-	print "mw is $mw\n";
 	my $prgb = $prgb[$i];
-	print "mask->dims is ".join(",",$mask->dims)."\n";
-	print "prgb->dims is ",join(",",$prgb->dims)."\n";
-	print "slice dims are ",join(",",($prgb->(:,$mw))->dims),"\n";
 	if($mw->nelem) {
 	  $prgb->(:,$mw) .= $opt->{'dip_detector'};
 	  my $rgb= $rgb[$i];
