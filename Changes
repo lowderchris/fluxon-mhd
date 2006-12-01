@@ -1,3 +1,7 @@
+1-Dec-2006 [cd]
+	- Rendering impreovements: 
+		-per-fluxon color & gradient specification
+		-dip detection & marking
 22-Aug-2006 [cd]
 	-Finish linking flux concentrations into the hash-ref formalism
 21-July-2006 [cd]
