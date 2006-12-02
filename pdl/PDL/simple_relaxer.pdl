@@ -107,7 +107,12 @@ sub simple_relaxer {
     $range=$range->copy if (defined $range);
     $step=0 unless($n);
     $final_step=$n;
-
+    if($Flux::debug ) {
+	print "Opt is:\n";
+	for $k(%$opt){
+	    print "\t$k => $opt->{$k}\n";
+	}
+    }
 #    $w = read_world($w)
 #      unless(ref $w) ;
 

@@ -50,7 +50,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"b_simple","inverse-area B field (breaks for open cells)",b_simple},
   {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
   {"e_simple", "B energy per vertex using simple inverse-area (breaks for open cells)",e_simple},
-  {"e_simple2", "B energy per vertex using simple inverse-area ( doesnt break for open cells)",e_simple},
+  {"e_simple2", "B energy per vertex using simple inverse-area ( doesnt break for open cells)",e_simple2},
   {"f_curvature","(OLD) simple curvature force (B-normalized)",f_curvature},
   {"f_pressure_equi","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi},
   {"f_pressure_equi2","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi2},
@@ -768,9 +768,10 @@ void b_simple (VERTEX *V, HULL_VERTEX *verts) {
 /**********************************************************************
  * e_simple
  * 
- * Very simple magnetic-energy calculation per vertex.  Follows the b_simple
- * method -- if the cell is open then the energy associated with it is zero, 
- * as the area is then infinity and the B field is zero.
+ * Very simple magnetic-energy calculation per vertex.  Follows the
+ * b_simple method -- if the cell is open then the energy associated
+ * with that vertex is zero, as the area is then infinity and the B
+ * field is zero.
  * 
  */
 void e_simple (VERTEX *V, HULL_VERTEX *verts) {
@@ -858,10 +859,9 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
        the ith is the last */
 
     if(!left->open && !right->open) {
-      A = 0.5*cross_2d(left->p,right->p);
+      Area = 0.5*cross_2d(left->p,right->p);
       angle = left->a_l; //radians?
-      iflux = flux * ( angle / 2.*PI );
-
+      iflux = flux * ( angle / (2.*PI) );
       psudo_energy += (iflux * iflux / Area);
 
     }
@@ -874,7 +874,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
   }
 
 
-  Energy= psudo_energy * (ds / (2 * PI) );
+  Energy= psudo_energy * (ds / (2. * PI) );
   V->energy = Energy;
 
   return;
