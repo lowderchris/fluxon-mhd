@@ -1,4 +1,3 @@
-
 /*
  * physics.c
  * 
@@ -51,6 +50,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
   {"e_simple", "B energy per vertex using simple inverse-area (breaks for open cells)",e_simple},
   {"e_simple2", "B energy per vertex using simple inverse-area ( doesnt break for open cells)",e_simple2},
+  {"e_eqa","B energy per vertex using angular equipartition",e_eqa},
   {"f_curvature","(OLD) simple curvature force (B-normalized)",f_curvature},
   {"f_pressure_equi","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi},
   {"f_pressure_equi2","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi2},
@@ -880,6 +880,41 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
   return;
 }
 
+/**********************************************************************
+ * e_eqa
+ *
+ * Calculates the magnetic energy contained in a fluxel, using angular 
+ * equipartition of flux.  See DeForest Notebox X, pp. 122-123
+ */
+void e_eqa(VERTEX *V, HULL_VERTEX *verts) {
+  NUM E_accum = 0;
+  static NUM R;
+  int n = V->neighbors.n;
+  int i;
+
+  for(i=0; i<n; i++) {
+    HULL_VERTEX *left = &(verts[i]);
+    HULL_VERTEX *right = (i==0) ? &(verts[n-1]) : &(verts[i-1]);
+    NUM righta, lefta;
+
+    righta = right->a_r - V->a;
+    TRIM_ANGLE(righta);
+    lefta = left->a_l - V->a;
+    TRIM_ANGLE(lefta);
+
+    if(righta > lefta) {
+      printf("ASSERTION FAILED in e_eqa - lefta should be >= righta, is not. vertex %d, hullpoint %d\n",V->label,i);
+    }
+    
+    R = ((VERTEX *)(V->neighbors.stuff[i]))->r * 0.5;
+    
+    E_accum += (lefta - righta) + sin(2 * (lefta-righta))/ ( 2 * R * R );
+  }
+
+  /* FIXME - flux per fluxon! */
+  V->energy = E_accum  /* * V->line->flux */  * (4/PI/PI) * cart_3d(V->next->x, V->x);
+}
+  
 
 /**********************************************************************
  * b_eqa

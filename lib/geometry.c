@@ -851,6 +851,9 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   // inverse FOURTH POWER sine!
   /* Scale by the inverse square sine of the projection angle:  */
   /* AB x (closest).  Note that this makes the metric asymmetric! */
+  
+  /* See also reflect_deluxe, which undoes the sin^4 for reflected (image) */
+  /* segment distances -- if you change this you must also change that...  */
    
   scale_3d(P,P,1.0/Plen);
 
