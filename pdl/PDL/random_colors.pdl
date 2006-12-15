@@ -1,0 +1,69 @@
+=head2 random_colors - generate a random color set for a fluxon field
+
+=for usage
+
+$rgb_fluxons = random_colors($world,\%opt);
+
+=for ref
+
+Generates a list of random fluxon colors to be used in rendering a world.
+The output is suitable for use as the rgb_fluxons parameter in render_world().
+
+=cut
+use PDL::NiceSlice;
+
+sub random_colors {
+    my $world = shift;
+    my $opt = shift;
+    
+    my $fluxons = [ map { $_->{label}} $a->fluxons ] ;
+
+    my $hr = $opt->{hr} || [0,1.0];
+    my $sr = $opt->{sr} || [0,1.0];
+    my $vr = $opt->{vr} || [0.5,1.0];
+    
+    my $rgb_out = {};
+    
+    my $hsvr = pdl($hr,$sr,$vr);
+
+    my $hsv = random(3,0+@$fluxons) * ($hsvr->((1))-$hsvr->((0))) + $hsvr->((0));
+
+    my $vvec  = $hsv->((2),*3)->copy;
+
+
+    my $sinh = sin(3.14159 * 2 * $hsv->((0)));
+    my $cosh = cos(3.14159 * 2 * $hsv->((0)));
+    
+    my $vhat = pdl(1,1,1); # not really a hat...
+
+    my $hhat = pdl(-1,0,1) * $cosh->(*1) + pdl(0,-1,1) * $sinh->(*1);
+
+    # Calculate the range of saturation lengths for each of the 
+    # (H,V) pairs -- this scales S.
+    my $trial_vecs = $hhat*3;
+    my $trials = $trial_vecs + $vvec;
+    my $pos_ratios = ($trials - 1)/abs($trial_vecs+0.00001);
+    my $maxpos = maximum($pos_ratios);
+    my $neg_ratios = (-$trials) /abs($trial_vecs+0.00001);
+    my $maxneg = maximum($neg_ratios);
+    my $ratio = maximum(pdl($maxpos,$maxneg)->mv(1,0));
+    my $s_scale = 3*(1.0-$ratio);
+    
+    print "hsv: ",join("x",$hsv->dims),"; hhat: ",join("x",$hhat->dims),"; sscale: ",join("x",$s_scale->dims),"\n";
+    my $rgb = $vvec + $s_scale->(*1) * $hsv->(1) * $hhat;
+
+    for my $i(0..$#$fluxons) {
+	$rgb_out->{$fluxons->[$i]}=$rgb->(:,($i))->copy;
+    }
+    return $rgb_out;
+}
+    
+    
+    
+    
+    
+
+    
+
+
+    

@@ -1,0 +1,38 @@
+=head2 gold_hoyle_tube
+
+=for usage
+
+ $s = gold_hoyle_tube($zlen,$steps,$t, $n,$dx);
+
+=for ref
+
+Generate a simple Gold-Hoyle flux tube to seed a fluxon relaxation.
+
+=cut
+
+sub gold_hoyle_simple {
+  my ($zlen,$steps,$t, $n,$dx) = @_;
+
+  my $z = xvals($steps+1)*($zlen/$steps);
+  my $za = $z * 3.14159 * 2 * $t/$zlen;
+  my $rmat = pdl([[cos($za),sin($za)],[-sin($za),cos($za)]])->mv(0,-1);
+  my $locations;
+  my @locations;
+  
+  for $i(-($n-1)/2..($n-1)/2) {
+    for $j(-($n-1)/2..($n-1)/2) {
+      $locations = zeroes(3,$z->nelem);
+      $locations->((2),:) .= $z;
+
+      $xy0 = pdl($dx*$i,$dx*$j);
+      $xy = ($rmat x $xy0->(*1))->((0))->sever;
+      $locations->(0:1) .= $xy;
+      push(@locations,$locations);
+    }
+  }
+
+  return @locations;
+}
+	
+	
+	

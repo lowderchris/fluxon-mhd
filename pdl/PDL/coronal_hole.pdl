@@ -1,0 +1,64 @@
+=head2 whole_sun
+
+=for ref
+
+Makes a whole Sun covered with randomly placed open and closed field lines
+and returns it.
+
+
+=cut
+
+use PDL::Transform;
+
+
+sub coronal_hole {
+  @lines = ();
+  @open = ();
+
+  $xform = !t_spherical() x t_scale([3.14159/180,3.14159/180,1]);
+# Make a bunch of open field lines
+  
+  for $i(-10..10){
+    next unless($i);
+    $n = floor(pdl(rand(10)+1));
+#    $n = 2;
+    $open = pdl( rand(360), rand(30)+59, 0)->(:,*4)->copy;
+    $open->((2)) .= xvals(4)+1;
+
+    for $j(1..$n){
+      $line = ($open+pdl(rand(2)-1,rand(2)-1,0))->apply($xform);
+      if($i<=0) {
+	$line->((2)) *= -1;
+	$line = $line->(:,-1:0:-1);
+      }
+      push(@open,$line->copy);
+    }
+    
+  }
+  
+
+# Make a bunch of active regions
+  for $i(1..12) {
+    $closed = pdl( rand(360),rand(100)-50, 0)->(:,*6)->copy;
+    $offset1 = pdl(rand(10)-5,rand(10)-5,0);
+    $offset2 = pdl(rand(10)-5,rand(10)-5,0);
+
+    $n = 4+rand(3);
+    for $j(1..$n) {
+      for $k(1..$n) {
+	$line = ( $closed 
+		  + $offset1 * (1+($j*0.1)) * pdl([[-1],[-1],[-0.5],[0.5],[1],[1]]) 
+		  + $offset2 * ($k*0.1) );
+	$line->((2)) .= 1 + pdl(0,0.3,0.5,0.5,0.3,0);
+	$line = $line->apply($xform);
+	push(@open,$line->copy);
+      }
+    }
+  }
+
+    
+
+
+  @open
+} 
+    

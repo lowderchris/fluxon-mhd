@@ -1,0 +1,81 @@
+=head2 make_world - given a list of lines, make a world.
+
+=for ref
+
+You feed in a list of pdls, one pdl per fluxon.  You get back a world
+with default characteristics and two flux concentrations per fluxon (north
+at the beginning, south at the end).
+
+=cut
+
+sub make_world {
+  my $opt = {};
+  if(ref $_[0] eq 'HASH') {
+    $opt = shift;
+  }
+
+  my @lines = @_;
+
+  my @out = "";
+
+  push(@out, "GLOBAL FORCES f_pressure_equi f_curvature f_vertex");
+  push(@out, "GLOBAL BFLAG 0");
+#  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 0.999");
+  push(@out, "GLOBAL OPEN 0 0 0 ".($opt->{rmax}+1)) if($opt->{rmax});
+  push(@out,"");
+
+  my $j=100;
+  my $ln=0;
+
+  foreach $line(@lines) {
+    my $fc0, $fc1, $fl;
+
+    $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
+    $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
+
+    $open_start = ($opt->{rmax} && $rstart >= $opt->{rmax});
+    $open_end   = ($opt->{rmax} && $rend   >= $opt->{rmax});
+
+    unless($open_start){
+      push(@out,sprintf("NEW %d %9.3g %9.3g %9.3g 1",
+			($fc0=$j++),
+			$line->at(0,0), $line->at(1,0), $line->at(2,0)
+			)
+	   );
+    }
+
+    unless($open_end){
+      push(@out,sprintf("NEW %d %9.3g %9.3g %9.3g -1",
+			($fc1=$j++),
+			$line->at(0,-1), $line->at(1,-1), $line->at(2,-1)
+			)
+	   );
+    }
+    
+    push(@out,sprintf("LINE %d %d %d 1",
+		      ($fl = $j++),  
+		      ($open_start ? -1 : $fc0),   
+		      ($open_end ? -2 : $fc1)
+		      )
+	 );
+    $ln++;
+    for $k(1..$line->dim(1)-2) {
+      print "line $ln; k=$k\n";
+      push(@out,sprintf("VERTEX %d %d %d %9.3g %9.3g %9.3g",
+			$fl,
+			$j++,
+			$k,
+			$line->(:,($k))->list
+			)
+	   );
+    }
+    push(@out,"");
+  }
+  join("\n",@out);
+}
+    
+
+		      
+
+
+  

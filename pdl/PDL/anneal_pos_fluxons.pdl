@@ -1,0 +1,97 @@
+=head1 NAME
+
+anneal_pos_fluxons -- distribute fluxons over a source surface
+
+=head1 SYNOPSIS
+
+$mgram = rfits($filename);
+$points = anneal_posfluxons($mgram,distrib_fluxons($mgram,1e20));
+
+$points = anneal_posfluxons($mgram,1e20);
+
+=head1 DESCRIPTION
+
+You give a magnetogram (in Gauss with FITS header) and an initial distribution
+of fluxons.  You get back an annealed distribution that approximates an
+ideal one.
+
+=head1 BUGS
+
+For now, NO units conversion is done -- that means your Maxwells value is actually in
+gauss-pixels!  (or, more precisely, gauss-mag-DN)
+
+
+=head1 HISTORY
+
+27-Sep-2001
+
+=cut
+use Carp;
+
+sub anneal_pos_fluxons {
+  my($im,$dist_in) = @_;
+  
+  my($dist) = (ref $dist_in eq 'PDL') ? $dist_in->copy : $dist_in;
+  
+  croak("anneal_pos_fluxons needs an image!\n")unless defined($im);
+  $dist = distrib_pos_fluxons($im,$dist) if(ref $dist ne 'PDL' or 
+					    scalar($dist->dims) != 2);
+
+  my($npoints) = $dist->((0),)->dims;
+
+  # Generate artificial image
+  my($imsum) = sum($im);
+
+  my($x) = xvals($im->dims,$npoints);
+  my($y) = yvals($im->dims,$npoints);
+  my($w,$h) = $im->dims;
+  my($dist0) = $dist->copy;
+  my($xdist) = $dist->((0),)->dummy(0,$h)->dummy(0,$w);
+  my($ydist) = $dist->((1),)->dummy(0,$h)->dummy(0,$w);
+
+  $make_im = sub {
+    my($x0) = ($x - $xdist);
+    my($y0) = ($y - $ydist);
+    my($r2) = $x0*$x0 + $y0*$y0;
+
+    my($val) = 1.0 / (2 + $r2);
+    return $val->xchg(0,2)->sumover / (sum($val) / $imsum);
+  };
+
+
+  print "ok\n";
+  my($im0,$im1);
+
+  $im0 = &$make_im;
+  $diff0 = sum(($im0-$im)*($im0-$im));
+  $dist0 = $dist->copy;
+
+  print "entering loop...\n";
+  do {
+    my($z) = $dist->(,(floor(rand($npoints)))) ;
+      help $z;
+    $z += 10 * random(2) - 5 ;
+    print "making image...\n";
+    $im1 = &$make_im;
+    
+    print "summing...";
+    $diff1 = pdl(sum(($im1-$im)*($im1-$im)));
+
+    print "diff1=$diff1; diff0=$diff0\n";
+    if($diff1 < $diff0) {
+      $dist0 .= $dist;
+      $im0 .= $im1;
+      $diff0 = $diff1->copy;
+      imag $im1;
+      hold;
+    } else {
+      $dist1 .= $dist0;
+    }
+    print ".";
+
+  } while(1);
+  
+  return $im0;
+}
+
+    

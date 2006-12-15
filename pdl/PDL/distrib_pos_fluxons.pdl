@@ -1,0 +1,77 @@
+=head1 NAME
+
+distrib_pos_fluxons -- distribute fluxons over a source surface
+
+=head1 SYNOPSIS
+
+$mgram = rfits($filename);
+$points = distrib_fluxons($mgram,1e20);
+
+=head1 DESCRIPTION
+
+You give a magnetogram (in Gauss with FITS header) and a value (in Maxwells) for
+each fluxon.  You get back a list of fluxon footpoints.  The 0th dimension is
+dimension index; the 1st dimension is footpoint index.
+
+Fluxons are plonked down at random. Afterward, try calling the annealer: 
+anneal_pos_fluxons.
+
+Only positive lines are placed!  To get both, you have to call twice.
+
+=head1 BUGS
+
+For now, NO units conversion is done -- that means your Maxwells value is actually in
+gauss-pixels!  (or, more precisely, gauss-mag-DN)
+
+
+=head1 HISTORY
+
+27-Sep-2001
+
+=cut
+use Carp;
+
+sub distrib_pos_fluxons{
+  my($im,$fluxperline) = @_;
+  croak("distrib_fluxons needs a FITS input!\n") unless(defined($im));
+  croak("distrib_fluxons needs a magnitude of each fluxon!\n") unless(defined($fluxperline));
+
+  
+  # Conversion factors go here!
+  my($fluxconv) = 1;  # FIX THIS LATER
+
+  # Calculate total no. of fluxons
+  my($totalflux) = sum($a) * $fluxconv;
+  my($count) = floor( $fluxconv / $fluxperline  + 0.5);
+  my($out) = zeroes(2,$count);
+  
+  # Generate random distribution of flux lines using rejection method
+  my($im1) = $im->clump(2);                        # $im1 gets linearized image
+  my($imp) = ($im1 * ($im1 > 0)) / max(abs($im1)); # $imp gets prob. of keeping sample
+  my($w) = ($im->dims);                            # $w gets width of image
+  my($n) = ($im1->dims);                           # $n gets number of pixels
+
+  print "w=$w; n=$n\n";
+
+  if($MAIN::DEBUG) {
+    print "Laying down $f fluxons...\n";
+  }
+
+  for(my($f)=0;$f<$count;$f++) {
+    my($ind,$p);
+    do {
+      $ind = floor(rand $n);
+      $p = rand(1);
+    } while($p > $imp->(($ind)));
+    $out->(,($f)) .= cat( $ind % $w , $ind / $w );
+    if($MAIN::DEBUG) {
+      print ".";
+    }
+  }
+
+  return $out;
+}
+    
+  
+  
+  
