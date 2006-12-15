@@ -1,6 +1,27 @@
-This is FLUX, the Field Line Universal Relaxer, v. 1.1cvs (working copy)
+This is FLUX, the Field Line Universal Relaxer, v. 1.1 (working copy)
 
-All source files are copyright (C) 2004-2005 Craig DeForest
+FLUX is a prototype MHD solver that is currently able to find
+nonlinear force-free fields with an exactly specified topology in a
+quasi-static, infinitely conductive, low-beta medium.  Unlike
+conventional extrapolation codes, FLUX accepts as input a collection
+of field line shapes that do not necessarily have physical meaning but
+that do have the correct topology that you want to study.
+
+The FLUX engine relaxes the position of those field lines until they
+approximate the physical force-free state with the same topology that you
+specified.
+
+FLUX consists of two parts: a relaxation engine, written in C, and a
+control interface in Perl.  The control interface is intended to be
+used The Perl Data Language (PDL).  If you do not have PDL on your
+system, you can get it for free from http://pdl.perl.org.  PDL
+compiles "out of the box" on most UNIX systems, and a "native" 
+version exists for Microsoft Windows.
+
+The author gratefully acknowledges support from NASA's Living With A
+Star and Solar/Heliospheric Physics programs.
+
+All source files are copyright (C) 2004-2006 Craig DeForest
 unless otherwise marked.  You may modify and/or make copies of this
 software under the terms of the Gnu Public License, version 2 (GPL
 v2).  You should have received a copy of the GPL v2 with this
