@@ -1,10 +1,1 @@
 Fix documentation directory!
-
-Problems with the newer magnetic & force calculations... (old ones work OK)
-(Think about line-pressure vs. force on vertex...)
-
-Problems with ultralarge forces (ultrasmall distances) in the last fluxel...
-	 noticed infinite regression in fix_proximity because of this,
-	 but that was a symptom of some sort of proximity problem.
-
-

@@ -1,4 +1,4 @@
-This is FLUX, the Field Line Universal Relaxer, v. 1.1 (working copy)
+This is FLUX, the Field Line Universal Relaxer, v. 1.1 
 
 FLUX is a prototype MHD solver that is currently able to find
 nonlinear force-free fields with an exactly specified topology in a
