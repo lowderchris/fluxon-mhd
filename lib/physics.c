@@ -833,11 +833,10 @@ void e_simple (VERTEX *V, HULL_VERTEX *verts) {
  */
 
 void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
-  int flux = 1;
+  NUM flux = 1;
   NUM iflux = 0;
   NUM ds = 0;
   NUM angle = 0;
-  NUM Area = 0;
   NUM psudo_energy =0;
   NUM Energy = 0;
   int n = V->neighbors.n;
@@ -859,10 +858,11 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
        the ith is the last */
 
     if(!left->open && !right->open) {
-      Area = 0.5*cross_2d(left->p,right->p);
+      A = 0.5*cross_2d(left->p,right->p);
       angle = left->a_l; //radians?
+
       iflux = flux * ( angle / (2.*PI) );
-      psudo_energy += (iflux * iflux / Area);
+      psudo_energy += (iflux * iflux / A);
 
     }
   }
@@ -880,6 +880,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
   return;
 }
 
+
 /**********************************************************************
  * e_eqa
  *
@@ -895,20 +896,19 @@ void e_eqa(VERTEX *V, HULL_VERTEX *verts) {
   for(i=0; i<n; i++) {
     HULL_VERTEX *left = &(verts[i]);
     HULL_VERTEX *right = (i==0) ? &(verts[n-1]) : &(verts[i-1]);
-    NUM righta, lefta;
+    NUM righta, lefta,deltaphi;
 
-    righta = right->a_r - V->a;
-    TRIM_ANGLE(righta);
-    lefta = left->a_l - V->a;
-    TRIM_ANGLE(lefta);
+    righta = right->a_r;
+    lefta = left->a_l;
+    deltaphi = lefta-righta;
+    TRIM_ANGLE(deltaphi);
 
-    if(righta > lefta) {
-      printf("ASSERTION FAILED in e_eqa - lefta should be >= righta, is not. vertex %d, hullpoint %d\n",V->label,i);
+    if(deltaphi<0) {
+      printf("ASSERTION FAILED in e_eqa - lefta should be >= righta, is not. vertex %d, hullpoint %d, lefta=%g deg, righta=%g deg\n",V->label,i,lefta*180/3.14159,righta*180/3.14159);
     }
     
     R = ((VERTEX *)(V->neighbors.stuff[i]))->r * 0.5;
-    
-    E_accum += (lefta - righta) + sin(2 * (lefta-righta))/ ( 2 * R * R );
+    E_accum += (deltaphi) + sin(2 * (deltaphi))/ ( 2 * R * R );
   }
 
   /* FIXME - flux per fluxon! */

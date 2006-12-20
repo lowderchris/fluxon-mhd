@@ -39,6 +39,14 @@ void fluxon_update_ends(FLUXON *f);
  * Neighborhood handling routines
  */
 
+enum neighbor_global {
+  normal_neighbors=0,
+  global_neighbors=1,
+  fast_neighbors=2,
+  faster_neighbors  =3,
+  gonzo_neighbors =4
+};
+  
 void world_update_neighbors(WORLD *a, char global);
 NUM *world_update_mag(WORLD *a, char global);
 void world_relax_step(WORLD *a, NUM t);

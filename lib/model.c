@@ -564,7 +564,17 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
  * Returns the hull vertex list that is used in the final winnowing
  * process, since it's needed for some of the force laws (see 
  * vertex_update_mag).
+ * 
+ * The 'global' flag can have several values, and the behavior changes accordingly::
+ * 
+ *    0 - "normal" non-global operation (about 300 candidates for the hull)
+ *    1 - global operation (every vertex is a candidate for every hull
+ *    2 - reduced operation (neighbors of neighbors and neighbors' next/prev only: about 60-70 candidates)
+ *    3 - stripped-down operation (neighbors and their next/prev only: about 24 candidates)
+ *    4 - gonzo operation (neighbors only: about 8 candidates)
  *
+ * The stripped-down operations operate much more quickly but at the expense of not
+ * finding neighbor candidates under evolution.  
  */
 
 static int ptr_cmp(void *a, void *b) { /* Helper routine for sorting by pointer */
@@ -662,8 +672,6 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
  * gather_neighbor_candidates should normally be followed immediately by
  * winnow_neighbor_candidates, which sorts and winnows the list.
  * 
- * The "global" flag indicates whether global search (SLOOOW) is required --
- * good for initial conditions or if a pathology is detected.
  */
 
 
@@ -818,9 +826,14 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
    * (and next and prev links) seems to be sufficient.  In pathological
    * cases, it might take a couple of timesteps to walk to the appropriate
    * new neighbor, but that doesn't seem to cause problems in practice.
+   * 
+   * The various "fast" setting of global introduce pathologies of their own
+   * by cutting down on the neighbor search.  Use with care but they can speed
+   * up the process considerably!
+   */
 
   /* Snarf neighbors */
-  if(!global) {
+  if(global != global_neighbors) {
     VERTEX *v1;
     int ilen,iwid;
 
@@ -830,44 +843,52 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
       printf("initial seed - %d; ",workspace->n);
     }
 
-    expand_lengthwise(workspace, 0, passno);
-    ilen = workspace->n;
-
-    if(verbosity >= 3) {
-      printf("len - %d; ", workspace->n);
+    if(global != gonzo_neighbors && global != faster_neighbors) {
+      expand_lengthwise(workspace, 0, passno);
+    
+      if(verbosity >= 3) {
+	printf("len - %d; ", workspace->n);
+      }
     }
-
+    ilen = workspace->n;
+      
     expand_via_neighbors(workspace, 0, passno);
     iwid = workspace->n;
-
+	
     if(verbosity >= 3) {
       printf("wid - %d; ", workspace->n);
     }
-    
-    expand_lengthwise(workspace, ilen, passno);
 
-    if(verbosity >= 3) {
-      printf("len - %d; ", workspace->n);
+    if(global != gonzo_neighbors) {
+      
+      expand_lengthwise(workspace, ilen, passno);
+      
+      if(verbosity >= 3) {
+	printf("len - %d; ", workspace->n);
+      }
+      
+      
+      if(global != faster_neighbors && global != fast_neighbors) {
+	expand_via_neighbors(workspace, iwid, passno);
+	
+	if(verbosity >= 3) {
+	  printf ("wid - %d; ", workspace->n);
+	}
+	
+	expand_lengthwise(workspace, 0, passno);
+	
+	if(verbosity >= 3) {
+	  printf("final - %d\n",workspace->n);
+	}
+      }
     }
-
-    expand_via_neighbors(workspace, iwid, passno);
-    
-    if(verbosity >= 3) {
-      printf ("wid - %d; ", workspace->n);
-    }
-
-    expand_lengthwise(workspace, 0, passno);
-    
-    if(verbosity >= 3) {
-      printf("final - %d\n",workspace->n);
-    }
-    
   }
+  
     
    /* Incremental neighbor searching didn't work -- do a global 
      grab (ouch!).
   */
-  if(global || (workspace->n == 0)) {
+  if(global==1 || (workspace->n == 0)) {
     FLUXON *f;
 
     if(verbosity >= 3)

@@ -1015,6 +1015,53 @@ sub render {
       }
     }
 
+    ##############################
+    # Having defined the colors of everything, check for sophisticated dip detection and execute if necessary
+    if(ref $opt->{'dip_detector2'} eq 'PDL') {
+      print "Detecting dips...\n" if($Flux::debug);
+      # Walk through the fluxons and identify any midpoint vertices that are lower than their 
+      # neighbors on the same fluxon
+      for my $i(0..$#poly) {
+	my $poly = $poly[$i];
+	my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
+	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
+	$mask->(0) .= 0;
+	$mask->(-1) .= 0;
+
+	# Now spread outward in the forward direction till we reach a local maximum
+	my @dips = list which($mask);
+	my @mw = ();
+
+	for $dip(@dips) {
+	    my ($before, $after) = ($dip, $dip);
+	    while($before >= 2 && $poly->(2,$before-1)>$poly->(2,$before)) {
+		$before--;
+	    }
+	    while($after < $poly->dim(1) - 1 && $poly->(2,$after+1)>$poly->(2,$after) &&
+		  ($after==$dip || $poly->(2,$after+1)<= $poly->(2,$before))) {
+		$after++;
+	    }
+	    while($before < $dip-1 && $poly->(2,$before) > $poly->(2,$after)) {
+		$before++;
+	    }
+
+	    push(@mw,$before..$after);
+	}
+	
+	if(@mw) {
+	    my $mw = pdl(@mw);
+	    my $prgb = $prgb[$i];
+	    if($mw->nelem) {
+		my $prgb = $prgb[$i];
+		$prgb->(:,$mw) .= $opt->{'dip_detector2'};
+		my $rgb= $rgb[$i];
+		$rgb->(:,$mw-1) .= $opt->{'dip_detector2'};
+		$rgb->(:,$mw) .= $opt->{'dip_detector2'};
+	    }
+	}	
+      }
+    }
+
     print "Defining polygons...\n" if($Flux::debug);
     $poly = pdl(0,0,0)->glue(1,@poly);
     print "a...\n" if($Flux::debug);

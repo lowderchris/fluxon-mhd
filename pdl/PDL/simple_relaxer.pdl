@@ -80,6 +80,29 @@ to disable on-screen rendering.  (Default value is 10).
 Contains a hash ref to be fed to Flux::World::render() when the field is
 rendered.
 
+=item neighbor_pattern
+
+Contains a list ref with a pattern to use for the global flag to update_force 
+with successive timesteps.  The global flag has the meanings:
+
+=over 3
+
+=item 0 - normal neighbor update (slow but sure)
+
+=item 1 - global neighbor update (SLOOOOOOW)
+
+=item 2 - fast update (excludes neighbors of the next/prev of this fluxel)
+
+=item 3 - faster update (excludes neighbors of neighbors of this fluxel)
+
+=item 4 - gonzo update (excludes everyone but existing neighbors)
+
+=back
+
+Something like [4,3,4,0] can achieve big speedups close to equilibrium when things aren't
+moving much relative to one another.
+
+
 =back
 
 Note that simple_relaxer is really a demonstation kludge -- it is not
@@ -135,8 +158,15 @@ sub simple_relaxer {
       print "Starting step $step...\n";
 
 #	$w->update_neighbors($global);
-      print "forces..\n";
-	$fmax = $w->update_force($global);
+      if($opt->{neighbor_pattern}) {
+	  my $neighbor_idx = $step % @{$opt->{neighbor_pattern}};
+	  print "forces (idx=$neighbor_idx; type=$opt->{neighbor_pattern}->[$neighbor_idx])...\n";
+	  $fmax = $w->update_force($opt->{neighbor_pattern}->[$neighbor_idx]);
+      } else {
+	  print "forces..\n";
+	  $fmax = $w->update_force($global);
+      }
+
       print "Relaxing...\n";
 	$w->relax_step($dt);
       print "relaxed ok\n";

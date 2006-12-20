@@ -1,3 +1,7 @@
+16-Dec-2006 [cd]
+	- Faster relaxation in near-relaxed conditions, using higher values of the 
+	global flag to update_neighbors/update_mag
+--- FLUX 1.1: 15-Dec-2006
 1-Dec-2006 [cd]
 	- Rendering impreovements: 
 		-per-fluxon color & gradient specification
