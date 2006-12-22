@@ -404,6 +404,21 @@ CODE:
 OUTPUT:
  RETVAL
 
+void
+reconnect(svv1, svv2)
+SV *svv1
+SV *svv2
+PREINIT:
+ VERTEX *v1, *v2;
+CODE:
+ v1 = SvVertex(svv1, "Flux::Vertex::reconnect");
+ v2 = SvVertex(svv2, "Flux::vertex::reconnect");
+ if(v1->line->fc0->world != v2->line->fc0->world) { 
+	fprintf(stderr,"Error: vertices belong to different worlds!");
+	return;
+ }
+ reconnect_vertices(v1, v2);
+
 SV *
 x(svrt)
 SV *svrt

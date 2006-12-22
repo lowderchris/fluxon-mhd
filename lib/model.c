@@ -1510,7 +1510,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
   /* f2 */
   j=1;
   for( vv = f2->start; vv->next; vv=vv->next ) {
-    i++;
+    j++;
     vv->line = f2;
   }
   f2->end = vv;

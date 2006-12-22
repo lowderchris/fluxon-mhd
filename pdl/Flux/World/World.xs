@@ -625,7 +625,6 @@ CODE:
 OUTPUT:
  RETVAL
 	
-	
 IV
 _b_flag(wsv)
  SV *wsv
