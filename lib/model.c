@@ -113,6 +113,11 @@ NUM *world_update_mag(WORLD *a, char global) {
   gl_gl = global;
   gl_f_funcs = a->f_funcs;
   gl_minmax = 0;
+  // ARD - Reset maxangle, meanangle and number of angles in world
+  a->max_angle = 1.0;
+  a->mean_angle = 0.0;
+  //  printf("Resetting  maxangle, meanangle\n");
+  //  fflush(stdout);
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_m_springboard, 0);
   return gl_minmax;
 }
@@ -237,6 +242,10 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
   int i=0;
   int verbosity = fl->fc0->world->verbosity;
   VERTEX *v = fl->start;
+  NUM cangle;
+  NUM b1hat[3];
+  NUM b2hat[3];
+
 
   if(!minmax) {
     minmax = output;
@@ -317,7 +326,7 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
     NUM f[3], fns, fnv, fn;
     NUM r = v->r_cl;
     NUM a;
-    
+  
     diff_3d(f,v->next->x,v->x);
     a = norm_3d(f);
     if(a<r && a>0)
@@ -354,11 +363,29 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
     if(*fr_max < 0 || fn/r > *fr_max)
       *fr_max = fn/r;
 
-    if(verbosity >= 3){ printf("V%4d: r=%g, fmax=%g, frmax=%g ",v->label, r, *f_max, *fr_max); fflush(stdout);}
+    // ARD Update max_angle, mean_angle here
+     
+    if (v->prev) {
+      diff_3d(b1hat, v->x, v->prev->x);
+      diff_3d(b2hat, v->next->x, v->x);
+      cangle = inner_3d(b1hat, b2hat);
+      cangle *= fabs(cangle);
+      cangle /= (norm2_3d(b1hat) * norm2_3d(b2hat));
+      if (verbosity >= 4) {
+	printf("\nCangle: cangle %f\n", cangle);
+	fflush(stdout);
+      }
+
+      if (cangle < fl->fc0->world->max_angle) fl->fc0->world->max_angle = cangle;
+
+      fl->fc0->world->mean_angle += (cangle / fl->fc0->world->vertices->world_links.n);
+    }
+
+    if(verbosity >= 3){ printf("V%4d: r=%g, fmax=%g, frmax=%g ",v->label, r, *f_max, *fr_max); fflush(stdout);}    
   }
 
   if(verbosity >= 3)  printf("\n");
-  
+
   return minmax;
 }
 

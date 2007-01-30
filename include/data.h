@@ -217,6 +217,15 @@ typedef struct WORLD {
 
   int passno;
 
+  // ARD added code to keep largest angle between fluxels and mean angle
+  // between fluxels for WORLD 
+
+  NUM max_angle;
+  NUM mean_angle;
+  // ARD - world should keep step and dt 
+  NUM dtau;
+  int rel_step;
+
 } WORLD;
 
 const char *world_state_name(WORLD *a);

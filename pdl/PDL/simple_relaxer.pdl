@@ -80,29 +80,6 @@ to disable on-screen rendering.  (Default value is 10).
 Contains a hash ref to be fed to Flux::World::render() when the field is
 rendered.
 
-=item neighbor_pattern
-
-Contains a list ref with a pattern to use for the global flag to update_force 
-with successive timesteps.  The global flag has the meanings:
-
-=over 3
-
-=item 0 - normal neighbor update (slow but sure)
-
-=item 1 - global neighbor update (SLOOOOOOW)
-
-=item 2 - fast update (excludes neighbors of the next/prev of this fluxel)
-
-=item 3 - faster update (excludes neighbors of neighbors of this fluxel)
-
-=item 4 - gonzo update (excludes everyone but existing neighbors)
-
-=back
-
-Something like [4,3,4,0] can achieve big speedups close to equilibrium when things aren't
-moving much relative to one another.
-
-
 =back
 
 Note that simple_relaxer is really a demonstation kludge -- it is not
@@ -124,18 +101,18 @@ sub simple_relaxer {
     my $auto = $opt->{auto};
     my $movie_n = $opt->{movie_n};
     my $movie_f = $opt->{movie_f} || "flux-movie-%4.4d.ppm";
-    my $disp_n = $opt->{disp_n}; 
-    unless( defined($disp_n)) { $disp_n= $movie_n || 10;}
+    my $disp_n = $opt->{disp_n} || $movie_n || 10;
     my $range = $opt->{range};
+    my $conv = 180.0 / (atan2(1,1)*4.);
     $range=$range->copy if (defined $range);
-    $step=0 unless($n);
+
+# ARD $step = $w->{rel_step} || 0; $step now kept in world 	
+# OLD   $step=0 unless($n);
+
+    $step = $w->{rel_step} || 0;	
     $final_step=$n;
-    if($Flux::debug ) {
-	print "Opt is:\n";
-	for $k(%$opt){
-	    print "\t$k => $opt->{$k}\n";
-	}
-    }
+    $final_step = $step + $n if $final_step <= $step; 
+
 #    $w = read_world($w)
 #      unless(ref $w) ;
 
@@ -147,7 +124,11 @@ sub simple_relaxer {
 
     $w->render_lines unless($disp_n==0);
     
-    $dt = 0.1 unless defined($dt);
+# ARD $dt now kept in world
+
+    $dt = $w->{dtau} || 0.1;
+
+# OLD    $dt = 0.1 unless defined($dt);
     
     if($opt->{log}) {
       open LOG,">$opt->{log}";
@@ -158,15 +139,8 @@ sub simple_relaxer {
       print "Starting step $step...\n";
 
 #	$w->update_neighbors($global);
-      if($opt->{neighbor_pattern}) {
-	  my $neighbor_idx = $step % @{$opt->{neighbor_pattern}};
-	  print "forces (idx=$neighbor_idx; type=$opt->{neighbor_pattern}->[$neighbor_idx])...\n";
-	  $fmax = $w->update_force($opt->{neighbor_pattern}->[$neighbor_idx]);
-      } else {
-	  print "forces..\n";
-	  $fmax = $w->update_force($global);
-      }
-
+      print "forces..\n";
+	$fmax = $w->update_force($global);
       print "Relaxing...\n";
 	$w->relax_step($dt);
       print "relaxed ok\n";
@@ -174,8 +148,11 @@ sub simple_relaxer {
 
 	$h = $w->stats;
 	
-	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},
-	$h->{n_av});
+#	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},$h->{n_av}, $w->{max_angle} * $conv, $w->{mean_angle} * $conv);
+	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n",
+	$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},
+	$h->{fs_av}, $h->{n_av}, acos(sqrt($w->{max_angle}))*$conv, 
+	acos(sqrt($w->{mean_angle}))*$conv);
 
 	printf LOG " time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},
       $h->{n_av} if($opt->{log});
@@ -211,7 +188,10 @@ sub simple_relaxer {
 #	print "Press <RETURN> for next step:";
 #	$a = <STDIN>;
 
-    }	
+    }
+# ARD Update world
+    $w->{dtau} = $dt;
+    $w->{rel_step} = $step;	
 }
 
 1;

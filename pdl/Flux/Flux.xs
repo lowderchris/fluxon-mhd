@@ -143,6 +143,10 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 		case 19: return (void *)&(w->step_scale.ds_power);	break;
 	        case 20: return (void *)&(w->refct);                    break;
 	        case 21: return (void *)&(w->rc_funcs);                 break;
+	        case 22: return (void *)&(w->max_angle);                break;
+	        case 23: return (void *)&(w->mean_angle);               break;
+	        case 24: return (void *)&(w->dtau);                     break;
+	        case 25: return (void *)&(w->rel_step);                 break;
 		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 				typeno, fieldno);		
 			 return (void *)0;

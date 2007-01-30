@@ -379,6 +379,10 @@ WORLD *new_world() {
 
   a->passno = 0;
 
+  // ARD added 
+  a->rel_step = 0;
+  a->dtau = 0.0;
+
   return a;
 }
 

@@ -14,6 +14,7 @@ libinstall:
 
 pdlinstall:
 	pushd pdl; perl Makefile.PL; make all; popd
+	pushd pdl/PDL; make install; popd
 
 clean:
 	rm -f *~ \#* 
