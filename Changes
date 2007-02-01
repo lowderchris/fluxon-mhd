@@ -1,3 +1,5 @@
+1-Feb-2007 [lr]
+	-Fixed e_simple2 to give the correct energy
 16-Dec-2006 [cd]
 	- Faster relaxation in near-relaxed conditions, using higher values of the 
 	global flag to update_neighbors/update_mag

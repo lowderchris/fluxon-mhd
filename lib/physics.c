@@ -816,7 +816,7 @@ void e_simple (VERTEX *V, HULL_VERTEX *verts) {
     return;
   }
 
-  Energy= ds * flux * flux / (2 * PI * Area);
+  Energy = ds * flux * flux / (8 * PI * Area);
   V->energy = Energy;
 
   return;
@@ -841,7 +841,6 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
   NUM Energy = 0;
   int n = V->neighbors.n;
   int i;
-  int bad = 0;
 
   if (!V->next) { // if ds=0, then energy=0
     V->energy = 0;
@@ -850,7 +849,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
     ds = cart_3d(V->x, V->next->x); //length to next vertex
   }
 
-  for(i=0;i<n && !bad;i++) { //i from 0 to n-1
+  for(i=0; i<n; i++) { //i from 0 to n-1
     NUM A;
     HULL_VERTEX *left = &(verts[i]);
     HULL_VERTEX *right = (i==(n-1)) ? &(verts[0]) : &(verts[i+1]); 
@@ -859,7 +858,13 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
 
     if(!left->open && !right->open) {
       A = 0.5*cross_2d(left->p,right->p);
-      angle = left->a_l; //radians?
+      angle = -atan2(left->p[1],left->p[0]) + atan2(right->p[1],right->p[0]);
+      /*fprintf(stderr,"angle=%g deg, \n",angle*180./PI);*/
+
+      if (angle < -PI){
+	/*fprintf(stderr,"angle=%g deg, vertex=%d \n",angle*180/PI, V->label);*/
+	angle += 2.*PI;
+	}
 
       iflux = flux * ( angle / (2.*PI) );
       psudo_energy += (iflux * iflux / A);
@@ -874,7 +879,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
   }
 
 
-  Energy= psudo_energy * (ds / (2. * PI) );
+  Energy= psudo_energy * (ds / (8. * PI) );
   V->energy = Energy;
 
   return;
