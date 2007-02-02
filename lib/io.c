@@ -14,7 +14,7 @@
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Southwest Research Institute, 2004
  * 
- * You may modify and/or distribute this software under the temrs of
+ * You may modify and/or distribute this software under the terms of
  * the Gnu Public License, version 2.  You should have received a copy
  * of the license with this software, in the file COPYING to be found
  * in the top level directory of the distribution.  You may obtain
@@ -404,8 +404,10 @@ int footpoint_action(WORLD *world, char *s) {
     {
       char gcmd[81];
       int off,n;
-      n = sscanf(s,"%*s %80s %n",gcmd,&off);
+      int fred;
+      NUM bert;
 
+      n = sscanf(s,"%*s %80s %n",gcmd,&off);
       if(n != 1) {
 	static char bstr[80];
 	sprintf(bstr,"Couldn't parse GLOBAL line (n=%d)\n",n);
@@ -627,6 +629,16 @@ int footpoint_action(WORLD *world, char *s) {
 	    }
 	  }
 	  break;
+	case 'R':
+	  if (sscanf(s, "%*s %*s %d", &(world->rel_step)) != 1) {
+	    badstr = "Couldn't parse world->rel_step";
+	  }
+	  break;
+	case 'D':
+	  if (sscanf(s, "%*s %*s %lf", &(world->dtau)) != 1) {
+	    badstr = "Couldn't parse world->dtau";
+	  }
+	  break;
 	case 'S': /* GLOBAL STATE  or GLOBAL SCALING */
 
 	  switch(*(gcmd+1)) {
@@ -801,6 +813,11 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   fprintf(file,"GLOBAL SCALING D %g\n", world->step_scale.d_power);
   fprintf(file,"GLOBAL SCALING S %g\n", world->step_scale.s_power);
   fprintf(file,"GLOBAL SCALING DS %g\n", world->step_scale.ds_power);
+  
+  /* ARD 020207 Added writing code fgor RSTEP and DTAU */
+
+  fprintf(file,"GLOBAL RSTEP %d\n", world->rel_step);
+  fprintf(file,"GLOBAL DTAU %lf\n", world->dtau);
 
   fprintf(file,"\n"); /* leave an extra space after the globals */
     
