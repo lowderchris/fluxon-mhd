@@ -149,10 +149,8 @@ sub simple_relaxer {
 	$h = $w->stats;
 	
 #	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},$h->{n_av}, $w->{max_angle} * $conv, $w->{mean_angle} * $conv);
-	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n",
-	$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},
-	$h->{fs_av}, $h->{n_av}, 
-acos(($w->{max_angle}/abs($w->{max_angle}))*(sqrt(abs($w->{max_angle})))*$conv, acos(($w->{mean_angle}/abs($w->{mean_angle}))*(sqrt(abs($w->{mean_angle})))*$conv);
+
+	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av}, acos(($w->{max_angle}/abs($w->{max_angle}))*(sqrt(abs($w->{max_angle}))))*$conv, acos(($w->{mean_angle}/abs($w->{mean_angle}))*(sqrt(abs($w->{mean_angle}))))*$conv);
 
 	printf LOG " time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},
       $h->{n_av} if($opt->{log});
