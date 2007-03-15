@@ -889,6 +889,7 @@ sub render {
 
     my @rgb,@prgb;
     print "Defining RGB..." if($Flux::debug);
+    my @fluxons = $w->fluxon_ids;
 
     if($opt->{'RGB_CODE'}) {
       ### RGB_CODE - just execute the code string
@@ -896,7 +897,6 @@ sub render {
 
     } elsif($opt->{'rgb_fluxons'}) {
       ### RGB_FLUXONS - specify color per-fluxon
-      my @fluxons = $w->fluxon_ids;
       @rgb = ();
 
       print "rgb_fluxons..." if($Flux::debug);
@@ -1022,6 +1022,7 @@ sub render {
       # Walk through the fluxons and identify any midpoint vertices that are lower than their 
       # neighbors on the same fluxon
       for my $i(0..$#poly) {
+	next if((ref $opt->{'no_dip'} eq 'HASH') && ($opt->{'no_dip'}->{$fluxons[$i]}));
 	my $poly = $poly[$i];
 	my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
 	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
