@@ -76,7 +76,8 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	case 23: return (void *)&(v->world_links.up);   break;
 	case 24: return (void *)&(v->world_links.left); break;
 	case 25: return (void *)&(v->world_links.right);break;
-	case 27: return (void *)&(v->energy);           break;
+	case 26: return (void *)&(v->energy);           break;
+	case 27: return (void *)&(v->plan_step[0]);     break;
 	default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 	                 typeno,fieldno);
 	         return (void *)0;
@@ -147,6 +148,9 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	        case 23: return (void *)&(w->mean_angle);               break;
 	        case 24: return (void *)&(w->dtau);                     break;
 	        case 25: return (void *)&(w->rel_step);                 break;
+	        case 26: return (void *)&(w->coeffs[0]);                break;
+	        case 27: return (void *)&(w->n_coeffs);                 break;
+	        case 28: return (void *)&(w->maxn_coeffs);              break;
 		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 				typeno, fieldno);		
 			 return (void *)0;
@@ -600,6 +604,89 @@ CODE:
 OUTPUT:
 	RETVAL
 			
+
+SV *
+_rcoeffs(sv, typeno, fieldno)
+ SV *sv
+ long typeno
+ long fieldno
+PREINIT:
+ AV *av;
+ WORLD *world;
+CODE:
+ I32 i;
+ world = (void *)SvFluxPtr(sv, "_rcoeffs", "Flux::World");
+
+ av = newAV();
+ av_clear(av);
+ av_extend(av, world->maxn_coeffs);
+
+ for (i=0;i<MAXNUMCOEFFS && i<world->n_coeffs && world->coeffs[i];i++) {
+	SV *vert;
+        vert = newSVnv(world->coeffs[i]);
+	av_push( av, vert );
+ }
+
+ RETVAL = newRV_inc((SV *) av);
+OUTPUT:
+ RETVAL
+
+
+SV *
+_wcoeffs(sv, typeno, fieldno, val)
+ SV *sv
+ long typeno
+ long fieldno
+ SV *val 
+PREINIT:
+ WORLD *world;
+CODE:
+ I32 i;
+ pdl *p;
+ PDL_Double *d;
+
+ world = (void *)SvFluxPtr(sv,"_wcoeffs","Flux::World");
+
+ if(SvROK(val) && sv_derived_from(val,"PDL")) {
+	 // printf("looks like a PDL...\n"); 
+	p = PDL->SvPDLV(val);
+ } else {
+	 // printf("Got a non-PDL...\n"); 
+	/* Hard way - got a not-PDL. Dive into perlspace to make one. */
+	I32 foo;	
+	SV *ret;
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newSVpv("PDL",0)));
+	XPUSHs(val);
+	PUTBACK;
+	foo = call_pv("PDL::new",G_SCALAR);
+	SPAGAIN;
+	if(foo != 1)
+	croak("_wcoeff: Big trouble with PDL::new");
+	ret = POPs;
+	SvREFCNT_inc(ret);
+	PUTBACK;
+	FREETMPS;
+	LEAVE;
+	p = PDL->SvPDLV(sv_2mortal(ret));
+ }
+
+ PDL->converttype(&p,PDL_D,1); // Promote to double
+ PDL->make_physical(p);
+
+ for (i=0;i<p->nvals;i++) world->coeffs[i] = ((double *)(p->data))[i];
+ world->n_coeffs = p->nvals;
+/* ARD - Bizarre array problems were caused by val being returned mortal -
+ *       too low a ref count led to it being freed.
+ */
+
+ SvREFCNT_inc(val);
+ RETVAL = val;
+OUTPUT:
+ RETVAL		
+ 
 	
 BOOT:
 /**********************************************************************

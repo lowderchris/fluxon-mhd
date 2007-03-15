@@ -46,7 +46,7 @@ all: 	lib
 	echo made all
 
 clean: 
-	rm -f *~ *.a *.o \#* core a.out $(OBJECTS) *.OOGL sample_output.txt *.c.f.c
+	rm -f *~ *.a *.o \#* core a.out $(OBJECTS) *.OOGL sample_output.txt *.cf.c
 
 %.o:	%.c $(HEADERS) Makefile
 	rm -f $<f.c

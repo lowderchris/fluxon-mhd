@@ -180,6 +180,14 @@ void fluxon_collect_stats(FLUXON *fl, VERTEX_STATS *st) {
  */
 static NUM gl_t;
 static long w_r_s_springboard(FLUXON *fl, int lab, int link, int depth) {
+  // ARD created separate calculation and relaxation routines to accomodate new
+  // schema for including influence of neighbor steps.
+ 
+  //  printf("Calling fluxon_calc_step\n");
+  //  fflush(stdout);
+  fluxon_calc_step(fl, gl_t);
+  //  printf("Calling fluxon_relax_step\n");
+  //  fflush(stdout);
   fluxon_relax_step(fl, gl_t);
   return 0;
 }
@@ -389,8 +397,14 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
   return minmax;
 }
 
+
 /**********************************************************************
  * fluxon_relax_step
+ *ARD NOTES
+ * fluxon relax step is now split into two parts. 
+ * fluxon_calc_step and fluxon_relax_step.
+ *
+ *PREVIOUS NOTES
  * 
  * Relaxes the vertex positions of a fluxon.  You must have pre-loaded
  * the fluxon's forces with fluxon_update_mag.
@@ -426,7 +440,7 @@ NUM fastpow( NUM num, NUM exponent ) {
   return out;
 }
     
-void fluxon_relax_step(FLUXON *f, NUM dt) {
+void fluxon_calc_step(FLUXON *f, NUM dt) {
   VERTEX *v = f->start;
   NUM a[3];
   NUM total[3];
@@ -562,8 +576,127 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
       }
     }
 
-    if(finite(a[0]) && finite(a[1]) &&finite(a[2])) 
-      sum_3d(v->x,v->x,a);	     
+    // OK we've finished calculating the step - stuff it into vertex->plan_step
+
+    v->plan_step[0] = a[0];
+    v->plan_step[1] = a[1];
+    v->plan_step[2] = a[2];
+  }
+}
+
+// ARD - Moved expand_lengthwise and expand_via_neighbors routines in file
+// so that they are defined before they are called.
+
+void expand_lengthwise(DUMBLIST *workspace, int start_idx, long passno) {
+  int i;
+  long n = workspace->n;
+  for(i=start_idx;i<n;i++) {
+    VERTEX *v = ((VERTEX *)(workspace->stuff[i]));
+    if(v->prev && v->prev->passno != passno) {
+      v->prev->passno = passno;
+      dumblist_quickadd(workspace, v->prev);
+    }
+    if(v->next && v->next->passno != passno) {
+      v->next->passno = passno;
+      dumblist_quickadd(workspace,v->next);
+    }
+  }
+}
+
+void expand_via_neighbors(DUMBLIST *workspace, int start_idx, long passno) {
+  int i;
+  int j;
+  long n = workspace->n;
+  for(i=start_idx;i<n;i++) {
+    VERTEX *v = ((VERTEX *)(workspace->stuff[i]));
+    DUMBLIST *nlist;
+
+    nlist = &(v->neighbors);
+    for(j=0; j<nlist->n; j++) {
+      VERTEX *vv;
+      vv = ((VERTEX *)(nlist->stuff[j]));
+      if(vv->line && vv->passno != passno) {
+	vv->passno = passno;
+	dumblist_quickadd(workspace, vv);
+      }
+    }
+
+    nlist = &(v->nearby);
+    for(j=0;j<nlist->n;j++) {
+      VERTEX *vv;
+      vv = ((VERTEX *)(nlist->stuff[j]));
+      if(vv->line && vv->passno != passno) {
+	vv->passno = passno;
+	dumblist_quickadd(workspace, vv);
+      }
+    }
+  }
+}
+      
+// ARD - New fluxon_relax_step routine. Step calculation is now in 
+// fluxon_calc_step
+
+void fluxon_relax_step(FLUXON *f, NUM dt) {
+  VERTEX *v = f->start;
+  NUM total[3];
+  static DUMBLIST *workspace =0;
+  long passno;
+  int idx, j, i;
+  WORLD *world = f->fc0->world;
+  int verbosity = world->verbosity;
+  int n_coeffs = world->n_coeffs;
+  POINT3D step, tmp_step;
+  VERTEX *vert_neigh;
+
+  if(!workspace) 
+    workspace = new_dumblist(); 
+
+  for(v=v->next; v && v->next; v=v->next) {
+
+    // ARD - Add in standard step - scaled in case we do something strange!
+
+    scale_3d(step, v->plan_step, world->coeffs[0]);
+
+    // ARD - Now add relative contributions of neighbors
+
+    workspace->n = 0; // Same as dumblist_clear(workspace)
+
+    // ARD - Unique passno for each vertex
+
+    passno = ++(world->passno);
+    idx = 0;
+
+    if (n_coeffs > 1) {
+      // ARD - add current vertex as first element of dumblist
+      dumblist_quickadd(workspace, v);
+
+      for (i=1;i<n_coeffs;i++) {
+	tmp_step[0] = tmp_step[1] = tmp_step[2] = 0.0;
+	expand_via_neighbors(workspace, idx, passno);
+	expand_lengthwise(workspace, idx, passno);
+	idx = workspace->n;
+	//	printf("IDX: %d\n", idx);
+        //      fflush(stdout);
+
+	for (j=0;j<idx;j++) {
+	  vert_neigh = ((VERTEX *)(workspace->stuff[j]));
+	  //	  printf("Vert_neigh: %lf %lf %lf\n", vert_neigh->plan_step[0], vert_neigh->plan_step[1], vert_neigh->plan_step[2]);
+	  //	  fflush(stdout);
+	  sum_3d(tmp_step, tmp_step, vert_neigh->plan_step);
+	}
+	
+	// ARD - Scale by (mean + coeff value) then add to step
+
+	scale_3d(tmp_step, tmp_step, (1.0/idx) * world->coeffs[i]);	
+    	
+	//	printf("step:   %lf %lf %lf\ntmp_step: %lf %lf %lf\n\n", step[0], step[1], step[2], tmp_step[0], tmp_step[1], tmp_step[2]);
+	
+	sum_3d(step, step, tmp_step);
+      }
+    }
+    
+    if(finite(step[0]) && finite(step[1]) &&finite(step[2])) 
+      sum_3d(v->x,v->x,step);	     
     else
       if(verbosity >= 3) 
 	printf("NON_FINITE OFFSET! f_s=(%g,%g,%g), f_v=(%g,%g,%g), f_t=(%g,%g,%g)",v->f_s[0],v->f_s[1],v->f_s[2],v->f_v[0],v->f_v[1],v->f_v[2],v->f_t[0],v->f_t[1],v->f_t[2]);
@@ -571,17 +704,17 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
     if(verbosity >= 3)    
       printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
   }
-
+  
   /******************************
    * Done with mid-fluxon update -- now adjust the start and end positions 
    * depending on boundary condition.  (Currently only line-tied, open-sphere, and
    * open-plane boundary conditions are supported).
    */
+
   fluxon_update_ends(f);
 }
     
   
-
 /**********************************************************************
  * vertex_update_neighbors 
  * 
@@ -776,53 +909,6 @@ static long line_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
 }
 
 
-/******/
-void expand_lengthwise(DUMBLIST *workspace, int start_idx, long passno) {
-  int i;
-  long n = workspace->n;
-  for(i=start_idx;i<n;i++) {
-    VERTEX *v = ((VERTEX *)(workspace->stuff[i]));
-    if(v->prev && v->prev->passno != passno) {
-      v->prev->passno = passno;
-      dumblist_quickadd(workspace, v->prev);
-    }
-    if(v->next && v->next->passno != passno) {
-      v->next->passno = passno;
-      dumblist_quickadd(workspace,v->next);
-    }
-  }
-}
-
-void expand_via_neighbors(DUMBLIST *workspace, int start_idx, long passno) {
-  int i;
-  int j;
-  long n = workspace->n;
-  for(i=start_idx;i<n;i++) {
-    VERTEX *v = ((VERTEX *)(workspace->stuff[i]));
-    DUMBLIST *nlist;
-
-    nlist = &(v->neighbors);
-    for(j=0; j<nlist->n; j++) {
-      VERTEX *vv;
-      vv = ((VERTEX *)(nlist->stuff[j]));
-      if(vv->line && vv->passno != passno) {
-	vv->passno = passno;
-	dumblist_quickadd(workspace, vv);
-      }
-    }
-
-    nlist = &(v->nearby);
-    for(j=0;j<nlist->n;j++) {
-      VERTEX *vv;
-      vv = ((VERTEX *)(nlist->stuff[j]));
-      if(vv->line && vv->passno != passno) {
-	vv->passno = passno;
-	dumblist_quickadd(workspace, vv);
-      }
-    }
-  }
-}
-      
 
 DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   static DUMBLIST *workspace =0;

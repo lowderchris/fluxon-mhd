@@ -32,6 +32,7 @@ magnetohydrodynamic simulator using the quasi-lagrangian fluxon
 approach.  Fluxons are discretized magnetic field lines; they interact
 at a distance via the magnetic curvature and pressure forces.
 
+
 This is the man page for version 1.0 of Flux, the first publically
 released version.  At the moment, FLUX is "merely" a
 topology-conserving force-free field solver.  As development proceeds,
@@ -255,20 +256,17 @@ package Flux;
 	};
     
     our $methods = {
-	num    => [\&_rnum,  \&_wnum  ],
-	long   => [\&_rlong, \&_wlong ],
-	vector => [\&_rvec,  \&_wvec  ],
-	vec    => [\&_rvec,  \&_wvec  ],
-	Vertex => [\&_rvertex, undef  ],
-	Fluxon => [\&_rfluxon, undef  ],
-	FluxonList => [\&_rfluxonlist, undef],
+	num    =>        [\&_rnum,  \&_wnum  ],
+	long   =>        [\&_rlong, \&_wlong ],
+	vector =>        [\&_rvec,  \&_wvec  ],
+	vec    =>        [\&_rvec,  \&_wvec  ],
+	Vertex =>        [\&_rvertex, undef  ],
+	Fluxon =>        [\&_rfluxon, undef  ],
+	FluxonList =>    [\&_rfluxonlist, undef],
 	Concentration => [ \&_rconcentration, undef ],
-        Neighbors => [sub{ _rdumblist("Flux::Vertex",@_) },
-		      undef
-		      ],
-        Nearby => [sub{ _rdumblist("Flux::Vertex",@_) },
-		      undef
-		      ]
+        Neighbors =>     [ sub{ _rdumblist("Flux::Vertex",@_) }, undef ],
+        Nearby =>        [ sub{ _rdumblist("Flux::Vertex",@_) }, undef ],
+        Coeffs =>        [ \&_rcoeffs, \&_wcoeffs ]
     };
 
     our $codes = { 
@@ -299,7 +297,8 @@ package Flux;
 	    links_left=> [24, 'Vertex'],
 	    links_right=>[25, 'Vertex'],
 	    links=>      [26, undef],
-	    energy=>     [27, 'num']
+	    energy=>     [27, 'num'],
+	    plan_step=>  [28, 'vec'],
 	    },
 	fluxon => {
 	    flux=>	          [1,'num'],
@@ -330,7 +329,7 @@ package Flux;
 	    },
 	world => {
 	    frame_number=>       [1,'long'],
-	    state =>              [2,'long'],
+	    state =>             [2,'long'],
 	    concentrations =>    [3,'Concentration'],
 	    lines =>             [4,'Fluxon'],
 	    vertices =>          [5,'Vertex'],
@@ -354,7 +353,10 @@ package Flux;
             mean_angle=>        [23,num],
             dtau=>              [24,num],
             rel_step=>          [25,long],
-	    },
+            coeffs=>            [26,'Coeffs'],
+            n_coeffs=>          [27,'long'],
+            maxn_coeffs=>       [28,'long'],
+	},
 	concentration => {
 	    world=>		 [1,'World'],
 	    flux=>               [2,'num'],

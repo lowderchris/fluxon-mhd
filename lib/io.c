@@ -629,12 +629,28 @@ int footpoint_action(WORLD *world, char *s) {
 	    }
 	  }
 	  break;
-	case 'R':
+	case 'C':  /* ARD Added - read coefficients */
+	  {
+	    int num_to_read, i, off, off2;
+	    double coeff;
+	    if (sscanf(s, "%*s %*s %d %n", &num_to_read, &off) != 1) 
+	      badstr = "Couldn't parse number of coefficients to read";
+	    for (i=0;i<num_to_read;i++) {
+	      if (sscanf(s+off, "%lf %n", &coeff, &off2) !=1) {
+		badstr = "Couldn't parse world->coeffs";
+	      }
+	      off += off2;
+	      world->coeffs[i] = coeff;
+	    }
+	    world->n_coeffs = num_to_read;
+	  }
+	  break;
+	case 'R':  /* ARD Added - read rel_step */
 	  if (sscanf(s, "%*s %*s %d", &(world->rel_step)) != 1) {
 	    badstr = "Couldn't parse world->rel_step";
 	  }
 	  break;
-	case 'D':
+	case 'D':  /* ARD Added - read_dtau */
 	  if (sscanf(s, "%*s %*s %lf", &(world->dtau)) != 1) {
 	    badstr = "Couldn't parse world->dtau";
 	  }
@@ -760,7 +776,7 @@ int print_world(WORLD *a, char *header) {
 
 int fprint_world(FILE *file, WORLD *world, char *header) {
   char *s;
-  int i;
+  int i, n;
 
   if(file==NULL) {
     fprintf(stderr,"print_world: null file supplied. Returning.\n");
@@ -814,12 +830,19 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   fprintf(file,"GLOBAL SCALING S %g\n", world->step_scale.s_power);
   fprintf(file,"GLOBAL SCALING DS %g\n", world->step_scale.ds_power);
   
-  /* ARD 020207 Added writing code fgor RSTEP and DTAU */
+  /*  ARD 020207 Added writing code fgor RSTEP and DTAU */
 
   fprintf(file,"GLOBAL RSTEP %d\n", world->rel_step);
   fprintf(file,"GLOBAL DTAU %lf\n", world->dtau);
 
-  fprintf(file,"\n"); /* leave an extra space after the globals */
+  /* ARD Added code for writing out global coefficients */
+ 
+  fprintf(file,"GLOBAL COEFFICIENTS %d", world->n_coeffs);
+  for (i=0;i<world->n_coeffs;i++) {
+    fprintf(file, " %f",  world->coeffs[i]); 
+  }
+  
+  fprintf(file,"\n\n"); /* leave an extra space after the globals */
     
   /* Write out all flux concentration locations */
   fprint_tree(file, world->concentrations, fc_lab_of, fc_ln_of, 0, fprint_fc_line_nonneg);

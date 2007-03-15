@@ -54,6 +54,7 @@ void world_relax_step(WORLD *a, NUM t);
 void fluxon_update_neighbors(FLUXON *fl, char global);
 NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minmax);
 
+void fluxon_calc_step(FLUXON *fl, NUM t);
 void fluxon_relax_step(FLUXON *fl, NUM t);
 
 HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global);

@@ -116,6 +116,7 @@ typedef struct VERTEX {
 
   long label;                  
   LINKS world_links;      /* tree access to all the vertices in the world */
+  POINT3D plan_step;       /* planned step */
 } VERTEX;
 
 #define V_ISDUMMY(v) ( (v)->label == 1 || (v)->label == 2 )
@@ -176,6 +177,8 @@ typedef struct PHOTOSPHERE {
 #define WORLD_STATE_RELAXED 4
 #define WORLD_STATE_READY   5
 
+#define MAXNUMCOEFFS 1024 /* Number of coefficients to create */
+
 #define N_FORCE_FUNCS 30    /* Number of functions allowed in the force list */
 #define N_RECON_FUNCS 5     /* Number of reconnection condition functions in the recon list */
 #define N_RECON_PARAMS 3    /* Number of world-global parameters to be stored for each reconnection function */
@@ -224,8 +227,11 @@ typedef struct WORLD {
   NUM mean_angle;
   // ARD - world should keep step and dt 
   NUM dtau;
-  int rel_step;
-
+  long rel_step;
+  // ARD - array of coefficients 
+  NUM coeffs[MAXNUMCOEFFS];
+  long n_coeffs;
+  long maxn_coeffs;
 } WORLD;
 
 const char *world_state_name(WORLD *a);

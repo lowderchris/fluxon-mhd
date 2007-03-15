@@ -314,6 +314,7 @@ FLUX_CONCENTRATION *new_flux_concentration(
  * Creates a new world with sensible beginning parameters, forces etc.
  */
 WORLD *new_world() {
+  int i;
   WORLD *a = (WORLD *)localmalloc(sizeof(WORLD),MALLOC_WORLD);
   if(!a) barf(BARF_MALLOC,"new_world");
   
@@ -381,7 +382,11 @@ WORLD *new_world() {
 
   // ARD added 
   a->rel_step = 0;
-  a->dtau = 0.0;
+  a->dtau = 0.1;
+  // ARD initialize coeffs 
+  a->coeffs[0] = 1.0;
+  a->n_coeffs = 1;
+  a->maxn_coeffs = MAXNUMCOEFFS;
 
   return a;
 }
