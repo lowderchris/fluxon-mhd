@@ -179,13 +179,20 @@ void fluxon_collect_stats(FLUXON *fl, VERTEX_STATS *st) {
  * laws.  You feed in a world and a tau-timestep.
  */
 static NUM gl_t;
-static long w_r_s_springboard(FLUXON *fl, int lab, int link, int depth) {
+static long w_ca_s_springboard(FLUXON *fl, int lab, int link, int depth) {
   // ARD created separate calculation and relaxation routines to accomodate new
   // schema for including influence of neighbor steps.
  
   //  printf("Calling fluxon_calc_step\n");
   //  fflush(stdout);
   fluxon_calc_step(fl, gl_t);
+  return 0;
+}
+
+static long w_r_s_springboard(FLUXON *fl, int lab, int link, int depth) {
+  // ARD created separate calculation and relaxation routines to accomodate new
+  // schema for including influence of neighbor steps.
+ 
   //  printf("Calling fluxon_relax_step\n");
   //  fflush(stdout);
   fluxon_relax_step(fl, gl_t);
@@ -193,6 +200,8 @@ static long w_r_s_springboard(FLUXON *fl, int lab, int link, int depth) {
 }
 
 void world_relax_step(WORLD *a, NUM t) {
+  gl_t=t;
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_ca_s_springboard, 0);
   gl_t=t;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_springboard, 0);
 }
@@ -682,6 +691,16 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	  vert_neigh = ((VERTEX *)(workspace->stuff[j]));
 	  //	  printf("Vert_neigh: %lf %lf %lf\n", vert_neigh->plan_step[0], vert_neigh->plan_step[1], vert_neigh->plan_step[2]);
 	  //	  fflush(stdout);
+	  if (!finite(vert_neigh->plan_step[0]) &&
+	      !finite(vert_neigh->plan_step[1]) &&
+	      !finite(vert_neigh->plan_step[2])) {
+	    printf("Zero step: %lf %lf %lf\n", 
+		   vert_neigh->plan_step[0],
+		   vert_neigh->plan_step[1],
+		   vert_neigh->plan_step[2]);
+	    fflush(stdout);
+	  }
+	      
 	  sum_3d(tmp_step, tmp_step, vert_neigh->plan_step);
 	}
 	
@@ -694,11 +713,14 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	sum_3d(step, step, tmp_step);
       }
     }
+     
+    printf("step:   %lf %lf %lf\n", step[0], step[1], step[2]);
+    fflush(stdout);
     
     if(finite(step[0]) && finite(step[1]) &&finite(step[2])) 
       sum_3d(v->x,v->x,step);	     
     else
-      if(verbosity >= 3) 
+      //      if(verbosity >= 3) 
 	printf("NON_FINITE OFFSET! f_s=(%g,%g,%g), f_v=(%g,%g,%g), f_t=(%g,%g,%g)",v->f_s[0],v->f_s[1],v->f_s[2],v->f_v[0],v->f_v[1],v->f_v[2],v->f_t[0],v->f_t[1],v->f_t[2]);
 
     if(verbosity >= 3)    
