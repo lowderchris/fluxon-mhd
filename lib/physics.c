@@ -50,6 +50,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"b_eqa","2004 angular equipartion B calculation (B required at start of list)",b_eqa},
   {"e_simple", "B energy per vertex using simple inverse-area (breaks for open cells)",e_simple},
   {"e_simple2", "B energy per vertex using simple inverse-area ( doesnt break for open cells)",e_simple2},
+  {"e_open", "B energy per vertex with angular equipartition, includes open cells",e_open},
   {"e_eqa","B energy per vertex using angular equipartition",e_eqa},
   {"f_curvature","(OLD) simple curvature force (B-normalized)",f_curvature},
   {"f_pressure_equi","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi},
@@ -882,6 +883,89 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
   Energy= psudo_energy * (ds / (8. * PI) );
   V->energy = Energy;
 
+  return;
+}
+
+/**********************************************************************
+ * e_open
+ * 
+ * Magnetic-energy calculation per vertex. Uses angular equipartition
+ * of flux. Accounts for open hulls by calculating fluxes of hull
+ * segments relative to angle and integrates the area of the open
+ * cells.
+ * 
+ */
+
+void e_open (VERTEX *V, HULL_VERTEX *verts) {
+  NUM flux = 1;
+  NUM ds = 0;
+  NUM ienergy =0;
+  NUM pseudo_energy =0;
+  NUM Energy = 0;
+  NUM factor=1.;
+  int n = V->neighbors.n;
+  int i;
+
+  if (!V->next) { // if ds=0, then energy=0
+    V->energy = 0;
+    return;
+  } else {
+    ds = cart_3d(V->x, V->next->x); //length to next vertex
+  }
+
+  for(i=0; i<n; i++) { //i from 0 to n-1
+
+    HULL_VERTEX *current_h = &(verts[i]);
+    HULL_VERTEX *next_h = (i==(n-1)) ? &(verts[0]) : &(verts[i+1]); 
+    /* next is the next hull vertex or the first one if 
+       the ith is the last */
+    
+    // n=h+1
+    VERTEX *current_n = (i==(n-1)) ? 
+                        ((VERTEX *)(V->neighbors.stuff[0])) : 
+                        ((VERTEX *)(V->neighbors.stuff[i+1]));
+         //to get to current neighbor, do i+1 from current hull 
+    
+    NUM ro = .5 * current_n->r;  //half distance to corresponding neighbor
+    NUM nhull = (next_h->a_l < 0) ? next_h->a_l + (2.*PI) : next_h->a_l;
+    NUM chull = (current_h->a_r < 0) ? current_h->a_r + (2.*PI) : current_h->a_r;
+    NUM cneigh = (current_n->a < 0) ? current_n->a + (2.*PI) : current_n->a;
+    NUM ang_dif = 0;
+
+    ang_dif = nhull - chull;
+
+    if (ang_dif < 0) {
+      ang_dif += 2. * PI;
+    }
+
+    ienergy =  ang_dif + 
+	       .5*(sin(2. * (nhull - cneigh)) - 
+                   sin(2. * (chull - cneigh)) );
+    pseudo_energy += ienergy/(ro*ro);
+
+    if (ienergy/(ro*ro) < 0) {
+      fprintf(stderr,"Hey!  energy is less than zero in e_open at ith hull (vertex %d!)\n",V->label);
+      fprintf(stderr,"cur_h=%3.3f,%d;next_h=%3.3f,%d;cur_n=%3.3f;ro=%3.3f,ei=%3.3f,i=%d,vertex=%d \n",
+	      chull,   current_h->open,
+	      nhull,         next_h->open,
+	      cneigh,
+	      ro, ienergy/ro,i,V->label);
+      fprintf(stderr,"sin part = %3.3f \n",.5*(sin(2. * (nhull - cneigh)) - sin(2. * (chull - cneigh))));
+      fprintf(stderr,"first part = %3.3f \n", nhull - chull);
+      fflush(stderr);
+    }
+
+    /*        if (current_h->open){
+	  fprintf(stderr,"this one open,i=%d, p_energy=%f,vertex %d\n",i,pseudo_energy,V->label);
+      fflush(stderr);
+      } */
+  }
+
+  Energy= pseudo_energy * ((ds * flux * flux) / (4. * PI * PI * factor) );
+  V->energy = Energy;
+  //fprintf(stderr,"n=%d, energy=%f,vertex %d\n",n,Energy,V->label);
+  //  fflush(stderr);
+  
   return;
 }
 

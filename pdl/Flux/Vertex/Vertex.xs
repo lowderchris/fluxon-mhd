@@ -448,8 +448,10 @@ PREINIT:
  VERTEX *v;
 CODE:
  v=SvVertex(svv, "Flux::Vertex::_inc_world_refct");
- v->line->fc0->world->refct ++;
- if(v->line->fc0->world->verbosity) 
+ if(v->line) {
+	 v->line->fc0->world->refct ++;
+ }
+ if(v->line && v->line->fc0->world->verbosity) 
 	printf("Vertex:  world refct++ (now %d) (pointer is 0x%x)\n",v->line->fc0->world->refct,v);
 
 
@@ -460,10 +462,12 @@ PREINIT:
  VERTEX *v;
 CODE:
  v = SvVertex(svrt, "Flux::Vertex::_dec_refct_destroy_world");
- v->line->fc0->world->refct--;
- if(v->line->fc0->world->verbosity)
+ if(v->line) {
+	v->line->fc0->world->refct--;
+ }
+ if(v->line && v->line->fc0->world->verbosity)
 	printf("Flux::Vertex::_dec_refct_destroy_world - world refcount is now %d (pointer is 0x%x)\n",v->line->fc0->world->refct,v);
- if(v->line->fc0->world->refct <= 0)
+ if(v->line && v->line->fc0->world->refct <= 0)
 	free_world(v->line->fc0->world);
 	
 
