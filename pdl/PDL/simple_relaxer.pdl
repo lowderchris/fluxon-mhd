@@ -101,10 +101,13 @@ sub simple_relaxer {
     my $auto = $opt->{auto};
     my $movie_n = $opt->{movie_n};
     my $movie_f = $opt->{movie_f} || "flux-movie-%4.4d.ppm";
-    my $disp_n = $opt->{disp_n} || $movie_n || 10;
+    my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
     my $range = $opt->{range};
     my $conv = 180.0 / (atan2(1,1)*4.);
     $range=$range->copy if (defined $range);
+
+# LAR my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
+# OLD my $disp_n = $opt->{disp_n} || $movie_n || 10; can't set $disp_n to zero;
 
 # ARD $step = $w->{rel_step} || 0; $step now kept in world 	
 # OLD   $step=0 unless($n);

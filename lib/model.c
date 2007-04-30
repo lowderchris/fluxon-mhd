@@ -714,8 +714,8 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
       }
     }
      
-    printf("step:   %lf %lf %lf\n", step[0], step[1], step[2]);
-    fflush(stdout);
+    //    printf("step:   %lf %lf %lf\n", step[0], step[1], step[2]);
+    //fflush(stdout);
     
     if(finite(step[0]) && finite(step[1]) &&finite(step[2])) 
       sum_3d(v->x,v->x,step);	     
