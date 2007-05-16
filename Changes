@@ -1,4 +1,6 @@
-27-April-2007 [lr] 
+16-May-2007 [cd]
+  -fixed energy access problem
+17-April-2007 [lr] 
 	-created new energy rouline, o_open which accounts for more of the open vertex energy. Works a little better than e_simple2, but still not what we expect.
 1-Feb-2007 [lr]
 	-Fixed e_simple2 to give the correct energy

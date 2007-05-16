@@ -296,9 +296,9 @@ package Flux;
 	    links_up=>   [23, 'Vertex'],
 	    links_left=> [24, 'Vertex'],
 	    links_right=>[25, 'Vertex'],
-	    links=>      [26, undef],
-	    energy=>     [27, 'num'],
-	    plan_step=>  [28, 'vec'],
+##	    links=>      [26, undef],
+	    energy=>     [26, 'num'],
+	    plan_step=>  [27, 'vec'],
 	    },
 	fluxon => {
 	    flux=>	          [1,'num'],
