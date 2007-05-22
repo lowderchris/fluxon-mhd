@@ -118,6 +118,12 @@ void scale_3d(NUM *out, NUM *a, NUM b) {
   *(out++) = *(a++) * b;
   *(out) = *(a) * b;
 }
+
+void scale_2d(NUM *out, NUM *a, NUM b) {
+  *(out++) = *(a++) * b;
+  *(out) = *(a++) * b;
+}
+
   
 /**********************************************************************
  * sum - Add two 3-vectors and stick 'em into the destination array.
@@ -435,7 +441,6 @@ NUM l_l_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
  * closest approach to C.  Scant degeneracy checking is done, because
  * the algorithm works more-or-less gracefully in nearly-degenerate cases.
  * 
- * returns the alpha coefficient, which can often be safely ignored.
  */
 
 NUM p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
@@ -821,6 +826,8 @@ NUM fl_segment_dist(VERTEX *v0, VERTEX *v1) {
 NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   NUM a,b,Plen;
   NUM P[3], seg[3], cr[3];
+  WORLD *w = v0->line->fc0->world;
+  int vb = w->verbosity;
 
   /* Exclude trivial cases, adjacent-segment case, and next-nearest-segment case. */
   /* (farther segments aren't as likely to cause trouble) */
@@ -830,12 +837,12 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   if(v0==v1 ||   (v0->next == v1) ||  (v1->next == v0) )
     return 1e50;
 
-  if(v0->line->fc0->world->verbosity >= 5) 
+  if(vb >= 5) 
     printf("fl_segment_dist: calling ls_closest_approach...\n");
 
   ls_closest_approach(P0,P1,v0->x,v0->next->x,v1->x,v1->next->x);
 
-  if(v0->line->fc0->world->verbosity >= 5) 
+  if(vb >= 5) 
     printf("fl_segment_dist: got back... P1=%d; P0=%d\n",P1,P0);
 
   diff_3d(P,P1,P0);
@@ -843,16 +850,16 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   if(Plen==0)
     return 1e50;
 
-  if (v0->line->fc0->world->verbosity >= 6) {
+  if (vb>= 6) {
     printf("\nfl_segment_deluxe_dist: v0=%d,v1=%d; Plen is %g\n",v0->label,v1->label,Plen);
     printf("P0=(%g,%g,%g); P1=(%g,%g,%g)\n",P0[0],P0[1],P0[2],P1[0],P1[1],P1[2]);
   }
 
-  // inverse FOURTH POWER sine!
+  // inverse square sine...
   /* Scale by the inverse square sine of the projection angle:  */
   /* AB x (closest).  Note that this makes the metric asymmetric! */
   
-  /* See also reflect_deluxe, which undoes the sin^4 for reflected (image) */
+  /* See also reflect_deluxe, which undoes the sin^2 for reflected (image) */
   /* segment distances -- if you change this you must also change that...  */
    
   scale_3d(P,P,1.0/Plen);
@@ -861,14 +868,37 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   scale_3d(seg,seg,1.0/norm_3d(seg));
 
   cross(cr,P,seg);
-  a = norm2_3d(cr);
-  a *= a;               // sin^2 --> sin^4
+  a = norm2_3d(cr); // this is sin^2 theta...
+  a *= a;          // sin^2 --> sin^4
 
-  if(a == 0) 
-    return 1e50;
 
-  Plen /= a;
-
+  // Now scale by the limited skew angle between the two segments if our World is set for that.
+  if(w->handle_skew) {
+    NUM alpha;
+    NUM skewlimit_recip = 4;
+    NUM s1[3];
+    NUM mat[9];
+    
+    
+    projmatrix(mat, P0, P1);
+    
+    diff_3d(P, v1->next->x, v1->x);
+    mat_vmult_3d(s1, mat, P);
+    
+    mat_vmult_3d(P, mat, seg);
+    
+    alpha = 2.0  / ( fabs(   ( norm_2d(s1) * norm_2d(P))   / inner_2d(s1, P) ) + skewlimit_recip ) ;
+    if(a == 0) 
+      return 1e50;
+    
+    Plen *= alpha/a;
+  } else {
+    if(a == 0) 
+      return 1e50;
+    Plen /= a;
+  }
+  
+  
   return Plen;
 }
 				   

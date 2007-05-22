@@ -379,6 +379,7 @@ WORLD *new_world() {
   a->concentrations = tree_binsert(a->concentrations, a->fc_pe, fc_lab_of, fc_ln_of);
 
   a->passno = 0;
+  a->handle_skew = 0; // by default don't skew...
 
   // ARD added 
   a->rel_step = 0;

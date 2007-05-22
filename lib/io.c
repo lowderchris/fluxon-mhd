@@ -655,7 +655,7 @@ int footpoint_action(WORLD *world, char *s) {
 	    badstr = "Couldn't parse world->dtau";
 	  }
 	  break;
-	case 'S': /* GLOBAL STATE  or GLOBAL SCALING */
+	case 'S': /* GLOBAL STATE  or GLOBAL SCALING or GLOBAL SKEW */
 
 	  switch(*(gcmd+1)) {
 	  case 'C': case 'c': /* GLOBAL SCALING */
@@ -698,10 +698,17 @@ int footpoint_action(WORLD *world, char *s) {
 
 	    }
 	    break;
+
 	  case 'T': case 't': /* GLOBAL STATE */
 	    sscanf(s+off,"%d",&(world->state)) || 
 	      (badstr="couldn't parse GLOBAL STATE");
 	    break;
+
+	  case 'K': case 'k': /* GLOBAL SKEW */
+	    sscanf(s+off,"%d",&(world->handle_skew)) ||
+	      (badstr = "couldn't parse GLOBAL SKEW");
+	    break;
+
 	  }
 	  break;
 	
@@ -841,6 +848,8 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   for (i=0;i<world->n_coeffs;i++) {
     fprintf(file, " %f",  world->coeffs[i]); 
   }
+
+  fprintf(file,"GLOBAL SKEW_HANDLING %d", world->handle_skew);
   
   fprintf(file,"\n\n"); /* leave an extra space after the globals */
     

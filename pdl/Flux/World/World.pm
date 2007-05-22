@@ -1141,7 +1141,12 @@ sub render {
 	    use PDL::Graphics::TriD::Labels;
 	    my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
 		    
-	    for my $j(0..$#labels) {
+	    label:for my $j(0..$#labels) {
+		unless( all($normal_coords->(:,($j)) >= $range->transpose->minimum &
+			$normal_coords->(:,($j)) <= $range->transpose->maximum)
+			){
+		    next label;
+		}
 		my $l = new PDL::Graphics::TriD::Labels($normal_coords->(:,($j)),
 							{Strings=>["$labels[$j]"],
 							 Font=>$PDL::Graphics::TriD::GL::fontbase});

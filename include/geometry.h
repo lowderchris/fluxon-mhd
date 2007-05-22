@@ -39,6 +39,7 @@ inline NUM cross_2d(NUM *p0, NUM *p1);
 #define cross_3d cross
 inline void *cross(NUM *out, NUM *p0, NUM *p1);
 
+inline void scale_2d(NUM *out, NUM *a, NUM alpha);
 inline void scale_3d(NUM *out, NUM *a, NUM alpha);
 
 inline void sum_3d(NUM *out, NUM *a, NUM *b);

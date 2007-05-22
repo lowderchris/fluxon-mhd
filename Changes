@@ -1,3 +1,6 @@
+22-May-2007 [cd]
+  - added skew angle handling
+  - added some label filtering in render (more to come).
 16-May-2007 [cd]
   -fixed energy access problem
 17-April-2007 [lr] 

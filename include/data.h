@@ -217,8 +217,8 @@ typedef struct WORLD {
     NUM ds_power;
   } step_scale;
 
-
   int passno;
+  int handle_skew; // flag used to tweak Voronoi cell wall projection; see geometry.c
 
   // ARD added code to keep largest angle between fluxels and mean angle
   // between fluxels for WORLD 
