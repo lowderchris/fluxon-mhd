@@ -1,3 +1,5 @@
+23-May-2007 [cd]
+  - added filter-by-fluxon to label option in renderer
 22-May-2007 [cd]
   - added skew angle handling
   - added some label filtering in render (more to come).

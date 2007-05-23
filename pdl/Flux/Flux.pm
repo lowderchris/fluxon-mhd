@@ -192,6 +192,10 @@ steps during the relaxation).
 
 Indicates the currennt state of the fluxon World as saved.  Not used in version 1.0.
 
+=item GLOBAL SKEW <count>
+
+Indicates whether to account for skew-angle projection effects in projected distances of neighbor fluxels.
+
 =back
 
 =back

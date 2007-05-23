@@ -871,7 +871,6 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   a = norm2_3d(cr); // this is sin^2 theta...
   a *= a;          // sin^2 --> sin^4
 
-
   // Now scale by the limited skew angle between the two segments if our World is set for that.
   if(w->handle_skew) {
     NUM alpha;

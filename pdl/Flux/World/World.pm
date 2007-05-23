@@ -838,7 +838,8 @@ Flag indicating the width of the LineStrip objects used to render the fluxons.
 =item label
 
 Flag indicating whether to use a Label object to indicate the numeric label of every
-vertex.  (Default is 0).
+vertex.  (Default is 0).  If label is an array ref, then it is treated as a list of 
+fluxons to label -- all other fluxons are NOT labeled.
 
 =item neighbors
 
@@ -990,30 +991,6 @@ sub render {
       } @poly;
     }
 
-    ##############################
-    # Having defined the colors of everything, check for dip detection and execute if necessary
-    if(ref $opt->{'dip_detector'} eq 'PDL') {
-      print "Detecting dips...\n" if($Flux::debug);
-      # Walk through the fluxons and identify any midpoint vertices that are lower than their 
-      # neighbors on the same fluxon
-      for my $i(0..$#poly) {
-	my $poly = $poly[$i];
-	my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
-	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
-	$mask->(0) .= 0;
-	$mask->(-1) .= 0;
-	print "mask is $mask\n" if($Flux::debug);
-	my $mw = which($mask);
-	my $prgb = $prgb[$i];
-	if($mw->nelem) {
-	  $prgb->(:,$mw) .= $opt->{'dip_detector'};
-	  my $rgb= $rgb[$i];
-	  $rgb->(:,$mw) .= $opt->{'dip_detector'};
-	  $rgb->(:,$mw+1) .= $opt->{'dip_detector'};
-	}
-	
-      }
-    }
 
     ##############################
     # Having defined the colors of everything, check for sophisticated dip detection and execute if necessary
@@ -1063,13 +1040,47 @@ sub render {
       }
     }
 
+
+    ##############################
+    # Having defined the colors of everything, check for simplistic dip detection and execute if necessary
+    if(ref $opt->{'dip_detector'} eq 'PDL') {
+      print "Detecting dips...\n" if($Flux::debug);
+      # Walk through the fluxons and identify any midpoint vertices that are lower than their 
+      # neighbors on the same fluxon
+      for my $i(0..$#poly) {
+	my $poly = $poly[$i];
+	my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
+	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
+	$mask->(0) .= 0;
+	$mask->(-1) .= 0;
+	print "mask is $mask\n" if($Flux::debug);
+	my $mw = which($mask);
+	my $prgb = $prgb[$i];
+	if($mw->nelem) {
+	  $prgb->(:,$mw) .= $opt->{'dip_detector'};
+	  my $rgb= $rgb[$i];
+	  $rgb->(:,$mw) .= $opt->{'dip_detector'};
+	  $rgb->(:,$mw+1) .= $opt->{'dip_detector'};
+	}
+	
+      }
+    }
+
     print "Defining polygons...\n" if($Flux::debug);
     $poly = pdl(0,0,0)->glue(1,@poly);
     print "a...\n" if($Flux::debug);
     $rgb = pdl(0,0,0)->glue(1,@rgb);
     print "b...\n" if($Flux::debug);
     $prgb = pdl(0,0,0)->glue(1,@prgb);
-
+    print "range_by_fluxon...\n" if($Flux::debug);
+    my $range_by_fluxon = zeroes(2, 0+@fluxons);
+    my $loc = 1;
+    print "Running 0..$#fluxons (poly count is $#poly)..." if($Flux::debug);
+    for my $i(0..$#fluxons) {
+	print "$i " if($Flux::debug);
+	$range_by_fluxon->(:,($i)) .= pdl($loc,$loc+$poly[$i]->nelem-1);
+	$loc += $poly[$i]->nelem;
+    }
 
     print "nokeeptwiddling3d...\n" if($Flux::debug);
     nokeeptwiddling3d;
@@ -1121,6 +1132,9 @@ sub render {
     # Generate line strips for each fluxon...
     my $rgbdex = 0;
     my @id = $w->fluxon_ids;
+
+    my $olabel = pdl($opt->{label}) if ( ref $opt->{label} eq 'ARRAY');
+
     print "Defining line strips...\n" if($Flux::debug);
     for my $i(0..$#id) {
 	my $fp = $w->fluxon($id[$i])->polyline;
@@ -1131,7 +1145,30 @@ sub render {
 
 #	line3d($fp,$rgb[$i]);
 
+	##############################
+	# Label fluxon endpoints if desired
+	if($opt->{label_fluxons}) {
+	    my $l1 = new PDL::Graphics::TriD::Labels($normal_coords->(:,(0)),
+						    {Strings=>["N-$id[$i]-N"],
+						     Font=>$PDL::Graphics::TriD::GL::fontbase,
+						 });
+	    $w3d->add_object($l1);
+	    my $l2 = new PDL::Graphics::TriD::Labels($normal_coords->(:,(-1)),
+						    {Strings=>["S-$id[$i]-S"],
+						     Font=>$PDL::Graphics::TriD::GL::fontbase
+						     });
+	    $w3d->add_object($l2);
+	}
+
+	##############################
+	# Label every vertex if desired
 	if($opt->{label}) {
+
+	    next if(ref $opt->{label} eq 'ARRAY' && 
+		    which( $id[$i] == $olabel )->nelem != 1
+		    );
+
+		
 	    ##############################
 	    # Label each point in the fluxon...
 	    # This is really cheesy since label seems to take normalized coordinates 
@@ -1140,6 +1177,10 @@ sub render {
 	    # Graphics/TriD/Graph.pm within PDL, but they are somewhat opaque to me.
 	    use PDL::Graphics::TriD::Labels;
 	    my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
+
+	    if(ref $opt->{label} eq 'ARRAY') {
+		
+	    }
 		    
 	    label:for my $j(0..$#labels) {
 		unless( all($normal_coords->(:,($j)) >= $range->transpose->minimum &
@@ -1153,6 +1194,8 @@ sub render {
 		$w3d->add_object($l);
 	    }
 	}
+
+
     }
 
     print "Neighbors?\n" if($Flux::debug);
