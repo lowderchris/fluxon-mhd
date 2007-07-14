@@ -61,6 +61,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_curv_m","Curvature force law (mean curvature)",f_curv_m},
   {"f_p_eqa_radial","Angular equipartition pressure, radial forces",f_p_eqa_radial},
   {"f_vertex","Vertex distribution pseudo-force (DEPRECATED)",f_vertex},
+  {"f_vertex2","Vertex distribution pseudo-force",f_vertex2},
   {"f_vert","Vertex distribution pseudo-force",f_vert},
   {0,0,0}
 };
@@ -707,6 +708,112 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
   return;
 }
  
+
+
+ /**********************************************************************
+ * f_vertex2
+ * Pseudoforce that moves vertices along field lines.  Used to keep them 
+ * nicely evened out along the lines and to attract them to 
+ * curvature.
+ * 
+ * Strictly speaking, this is threeo forces: a vertex repulsive force,
+ * a force that attracts vertices toward curvature, and one that
+ * attracts vertices towards a high density of fluxons.  But the three
+ * should always be used together, so they're included together.
+ *
+ * f_vertex2 is optimized for the older forces (f_pressure_equi and
+ * f_curvature) that are b-normalized.  Use f_vert with the newer
+ * ones. This force is unitless.
+ * 
+ */
+
+void f_vertex2(VERTEX *V, HULL_VERTEX *verts) {
+  NUM force[3];
+  NUM d1[3], d1n [3], d2[3], d2n[3];
+  NUM d1nr,d2nr,fn1,fn2,fn3; /* fn's are scalers */
+  NUM l1, l2, l_fac;
+  NUM dpp[3], dnn[3];
+  NUM alpha_p, alpha_n, lnn, lpp, i1; 
+  /* Exclude endpoints */
+  if(!V->next || !V->prev)
+    return;
+
+
+  /* Repulsive force from nearest neighbors.  The force drops as 
+   *  1/r.
+   */
+
+  diff_3d(d1,V->x,V->prev->x);
+  scale_3d(d1n, d1, (d1nr = 1.0 / (l1=norm_3d(d1)))); /* assignment */
+
+  diff_3d(d2,V->next->x, V->x);
+  scale_3d(d2n, d2, (d2nr = 1.0 / (l2=norm_3d(d2)))); /* assignment */
+  
+  l_fac = 3. / ( d1nr + d2nr );
+
+  fn1 = (d1nr - d2nr) * l_fac;
+  V->f_v_tot += fabs(fn1); 
+
+  /* Proximity-attractive force.  This attracts vertices toward places
+   * where field lines are interacting.
+   */
+
+  if(V->prev && V->next) {
+    NUM r_clp, r_cln;
+  
+    r_clp = 2.0 / V->prev->r_cl;
+    r_cln = 2.0 / V->r_cl;
+  
+    fn2 = 0.2 * (r_cln - r_clp) * l_fac; 
+    V->f_v_tot += fabs(fn2);
+      
+  } else {
+
+    fn2 = 0.0;
+
+  }
+    
+  /* Curvature-attractive force.  This attracts vertices toward
+   * curvature so that sharp angles attract vertices to smooth
+   * themselves out.
+   */
+
+  if(V->prev->prev && V->next->next) {
+
+    diff_3d(dnn,V->next->next->x,V->next->x);
+    lnn = norm_3d(dnn);
+
+    diff_3d(dpp,V->prev->x,V->prev->prev->x);
+    lpp = norm_3d(dpp);
+
+    alpha_p = M_PI - acos( (inner_3d(dpp, d1)) / (l1 * lpp) );
+    alpha_n = M_PI - acos( (inner_3d(dnn, d2)) / (l2 * lnn) );
+    
+    fn3 = 5. * (alpha_p - alpha_n);
+    V->f_v_tot += fabs(fn3);
+     
+  } else {
+
+    fn3 = 0.0;
+  
+  }
+
+
+  /* Generate a unit vector along the field line and scale it to the
+   * calculated force.
+   */
+
+  sum_3d(force,d1n, d2n);
+  scale_3d(force, force, 0.5 * (fn1 + fn2 + fn3) / norm_3d(force) );
+
+  /* Stick the force where it belongs in the VERTEX's force vector.*/
+
+  sum_3d(V->f_v, V->f_v, force);
+
+  //printf("f_vertex2: V%4d, f=(%g,%g,%g), |f|=%g \n",V->label,force[0],force[1],force[2], norm_3d(force) );
+
+  return;
+}
  
 
 /**********************************************************************

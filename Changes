@@ -1,10 +1,12 @@
+14-July-2007 [lr]
+	-fixef f_vertex. there is now an f_vertex2. Realized that f_vertex didn't have the pseudo-foce where vertices are attracted to curvature. I have added that force in an tweaked the strengths of the 3 pseudo-forces in f_vertex2 to give good results.
 23-May-2007 [cd]
   - added filter-by-fluxon to label option in renderer
 22-May-2007 [cd]
   - added skew angle handling
   - added some label filtering in render (more to come).
 16-May-2007 [cd]
-  -fixed energy access problem
+  	-fixed energy access problem
 17-April-2007 [lr] 
 	-created new energy rouline, o_open which accounts for more of the open vertex energy. Works a little better than e_simple2, but still not what we expect.
 1-Feb-2007 [lr]

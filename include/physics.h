@@ -48,6 +48,7 @@ void f_curv_hm(VERTEX *V, HULL_VERTEX *verts); /* harmonic-mean curvature  */
 void f_curv_m(VERTEX *V, HULL_VERTEX *verts);  /* normal mean curvature */ 
 
 void f_vertex(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
+void f_vertex2(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
 void f_vert(VERTEX *V, HULL_VERTEX *verts);   /* vertex pseudoforce */
 
 
