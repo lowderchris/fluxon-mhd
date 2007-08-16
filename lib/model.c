@@ -1051,8 +1051,14 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 
   }
 
-  /* If there's a photosphere, add the dummy photospheric mirror image */
-  if(v->next) {
+  /* If there's a photosphere, add the dummy photospheric mirror image          */
+  /* For line-tied conditions, we don't let the last segment interact with the  */
+  /* photosphere, since it generally intersects the photosphere.  Plasmoids     */
+  /* do interact with the photosphere, since they generally don't intersect it. */
+  if(v->next && 
+     ((v->next->next && v->prev) ||   /* Not an end vertex OR...           */
+      (v->line->plasmoid)))           /* ... a member of a plasmoid fluxon */
+ {
     PHOTOSPHERE *phot;
     PLANE *p;
     NUM a;

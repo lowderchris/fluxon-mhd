@@ -1,4 +1,6 @@
-14-July-2007 [lr]
+16-August-2007 [cd]
+	- added a mask to prevent the first and last fluxels in a fluxon from 'seeing' the boundary condition images - this should prevent the vertical-field-at-boundary condition that we have been imposing.
+14-July-2007 [lr] 
 	-fixef f_vertex. there is now an f_vertex2. Realized that f_vertex didn't have the pseudo-foce where vertices are attracted to curvature. I have added that force in an tweaked the strengths of the 3 pseudo-forces in f_vertex2 to give good results.
 23-May-2007 [cd]
   - added filter-by-fluxon to label option in renderer
