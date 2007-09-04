@@ -1772,11 +1772,14 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
     dumblist_grow(ws,16);
   }
 
+  if(! horde->n) 
+    return;
+
   for(i=0;!w && i<horde->n; i++) 
     if( (((VERTEX **)(horde->stuff))[i])->line )
       w = (((VERTEX **)(horde->stuff))[i])->line->fc0->world;
   if(!w) {
-    fprintf(stderr,"You're in trouble, guv! exiting...\n");
+    fprintf(stderr,"You're in trouble, guv! exiting (horde->n was %d)...\n",horde->n);
     exit(99);
   }
 

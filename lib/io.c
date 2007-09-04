@@ -844,7 +844,7 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
 
   /* ARD Added code for writing out global coefficients */
  
-  fprintf(file,"GLOBAL COEFFICIENTS %d", world->n_coeffs);
+  fprintf(file,"GLOBAL COEFFICIENTS %d\n", world->n_coeffs);
   for (i=0;i<world->n_coeffs;i++) {
     fprintf(file, " %f",  world->coeffs[i]); 
   }

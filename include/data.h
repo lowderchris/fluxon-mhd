@@ -81,7 +81,6 @@ typedef struct DUMBLIST {
 } DUMBLIST;
 
 typedef struct VERTEX {
-  NUM energy;                            /* calculated B energy for segment */
   struct FLUXON *line;                   /* Which line are we on? */
   struct VERTEX *prev,*next;  
 
@@ -102,6 +101,7 @@ typedef struct VERTEX {
      /* Remember that it is segment-centered, not vertex-centered. */
   POINT3D b_vec;                /* Stores the local B vector */
   NUM     b_mag;                /* Stores the magnitude of the B field */
+  NUM energy;                            /* calculated B energy for segment */
 
      /* Force accumulators are filled by the force functions in physics.c. */
   POINT3D f_v;                  /* Stores force on the vertex */
