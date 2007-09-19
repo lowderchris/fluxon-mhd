@@ -146,6 +146,6 @@ NUM atan2_oct(NUM x, NUM y);
 /* regularize an angle that is between -3PI and 3PI, to the range
  * -PI to PI.
  */
-#define TRIM_ANGLE(a) do { if((a)<=-PI) { (a)+=2*PI; } else if((a)>PI) { (a) -= 2*PI; } } while(0)
+#define TRIM_ANGLE(a) do { if((a)<-PI) { (a)+=2*PI; } else if((a)>=PI) { (a) -= 2*PI; } } while(0)
 
 #endif /* overall file include */

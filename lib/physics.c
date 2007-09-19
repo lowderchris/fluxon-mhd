@@ -53,6 +53,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"e_open", "B energy per vertex with angular equipartition, includes open cells",e_open},
   {"e_eqa","B energy per vertex using angular equipartition",e_eqa},
   {"f_curvature","(OLD) simple curvature force (B-normalized)",f_curvature},
+  {"f_curvature2","(OLD) simple curvature force (B-normalized) with stiffener",f_curvature2},
   {"f_pressure_equi","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi},
   {"f_pressure_equi2","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi2},
   {"f_pressure_equi2a","(OLD) 2001 pressure law (B-normalized; patched for open field)",f_pressure_equi2a},
@@ -62,6 +63,8 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_p_eqa_radial","Angular equipartition pressure, radial forces",f_p_eqa_radial},
   {"f_vertex","Vertex distribution pseudo-force (DEPRECATED)",f_vertex},
   {"f_vertex2","Vertex distribution pseudo-force",f_vertex2},
+  {"f_vertex3","Vertex distribution pseudo-force",f_vertex3},
+  {"f_vertex4","Vertex distribution pseudo-force (r^2 repulsion)",f_vertex4},
   {"f_vert","Vertex distribution pseudo-force",f_vert},
   {0,0,0}
 };
@@ -126,6 +129,77 @@ void f_curvature(VERTEX *V, HULL_VERTEX *verts) {
   diff_3d(curve,b2hat,b1hat);
   scale_3d(curve,curve,recip_len); /* convert to force per unit length */
 
+  sum_3d(V->f_v,V->f_v,curve);
+
+  V->f_v_tot += norm_3d(curve);
+
+
+}
+
+/**********************************************************************
+ * f_curvature
+ * Curvature `force':   (B^ . \del) B^ 
+ *      = b^_x ( db^_x / dx ) + b^_y ( db^_y / dy ) + b^_z ( db^_z / dz )
+ * 
+ * but b^ is just l^.
+ *
+ * The curvature force is a vertex-centered force.  There's actually 
+ * a little too much information:  not only do we get an angle and a 
+ * length, we get an extra length too (there are *two* legs out of the
+ * segment, not just one, and they have differing lengths).  I use 
+ * the harmonic mean because that's dominated by the smaller of the
+ * two lengths rather than by the larger.
+ *
+ * This version 2 of the force law goes to infinity as the angle goes to 
+ * 180 degrees -- hopefully the extra stiffness far from the small angle
+ * condition will prevent certain kinds of runaway.  The stiffening factor
+ * is secant(theta/2), scaled down by a factor of 2.  
+ * 
+ * Stiffening fudge factor at selected angles:
+ *   15 deg - 1.008
+ *   30 deg - 1.036
+ *   45 deg - 1.086
+ *   60 deg - 1.167
+ *   75 deg - 1.294
+ *   90 deg - 1.500
+ *  105 deg - 1.849
+ *  120 deg - 2.500
+ *  135 deg - 3.914
+ *  150 deg - 7.965
+ *  165 deg -29.85 
+ *  
+ */
+void f_curvature2(VERTEX *V, HULL_VERTEX *verts) {
+  NUM recip_l1, recip_l2, recip_len, len;
+  NUM b1hat[3];
+  NUM b2hat[3];
+  NUM curve[3];
+  NUM force[3];
+  // NUM cross[3];
+  // NUM sin2;
+  NUM sec;
+  NUM fudge;
+
+  if(!V->next || !V->prev) 
+    return;
+
+  diff_3d(b2hat,V->next->x,V->x);
+  scale_3d(b2hat,b2hat, (recip_l2 = 1.0 / norm_3d(b2hat)));
+
+  diff_3d(b1hat,V->x,V->prev->x);
+  scale_3d(b1hat,b1hat, (recip_l1 = 1.0 /norm_3d(b1hat)));
+
+  recip_len =  ( recip_l1 + recip_l2 ) * 0.5;
+  
+
+  // Calculate fudge factor -- near unity where we like the angles to be, 
+  // but extra powerful near 180 degrees.  
+  sec = 2.0/(1 + inner_3d(b1hat, b2hat)); // secant(theta/2)
+  fudge = (sec+1)/2;
+  
+  diff_3d(curve,b2hat,b1hat);
+  scale_3d(curve,curve,recip_len * fudge); // force/length, with fudge
+  
   sum_3d(V->f_v,V->f_v,curve);
 
   V->f_v_tot += norm_3d(curve);
@@ -312,8 +386,21 @@ void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts) {
     //    printf("vertex %d (%d): deltaphi=%g\t",V->label,N->label,deltaphi*180/3.14159);
 
     if(deltaphi < -EPSILON) {
-      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg); correcting to %18.12g\n",deltaphi*180/M_PI,deltaphi*180/M_PI + 360);
+      //      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg); correcting to %18.12g (vertex %d, neighbor %d, hull on left: %g, hull on right: %g)\n",deltaphi*180/M_PI,deltaphi*180/M_PI + 360,V->label,i, left->a_l*180/3.14159, right->a_r*180/3.14159);
       deltaphi += M_PI+M_PI;
+#ifdef NEVER
+	{
+	  int j,k;
+	  VERTEX *vn;
+	  for(j=0;j<V->neighbors.n;j++) {
+	    vn = ((VERTEX *)(V->neighbors.stuff[j]));
+	    fprintf(stderr,"Neighbor #%d: label is %d, a is %g, r is %g, hull angles: %g, %g\n",j,vn->label,vn->a*180/3.1415926,vn->r, verts[j].a_l*180/3.14159,verts[(j+1) % V->neighbors.n].a_r*180/3.14159);
+	    //    for(k=0;k<vn->nearby.n;k++) {
+	    //  fprintf(stderr,"  nearby #%d: %d\n",k,((VERTEX *)(vn->nearby.stuff[k]))->label);
+	    //}
+	  }
+	}
+#endif
     }
     
     /*    fprintf(stderr," VERTEX #%d, i=%d: deltaphi=%g\tr=%g\n",N->label,i,deltaphi,N->r);*/
@@ -327,10 +414,21 @@ void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts) {
     /*    printf("  in plane: (%g,%g,%g); projects back to (%g,%g,%g)\n",N->scr[0],N->scr[1],N->scr[2],f_i[0],f_i[1],f_i[2]);*/
 
     {
-      /* Scale to the proper force */
+      /* Scale to the proper f  orce */
       NUM a = norm_3d(f_i);
       if(a==0) {
-	fprintf(stderr,"Assertion failed in physics.c!  f_i has 0 norm!\n");
+	fprintf(stderr,"Assertion failed in physics.c!  f_i has 0 norm (vertex %d on %d (next is %d, prev is %d), neighbor %d on %d (next is %d, prev is %d), i=%d, V->neighbors.n=%d)\n",V->label,V->line->label, V->next?V->next->label:0, V->prev?V->prev->label:0, N->label, N->line->label , N->next?N->next->label:0, N->prev?N->prev->label:0,V->neighbors.n);
+	{
+	  int j,k;
+	  VERTEX *vn;
+	  for(j=0;j<V->neighbors.n;j++) {
+	    vn = ((VERTEX *)(V->neighbors.stuff[j]));
+	    fprintf(stderr,"Neighbor #%d: label is %d\n",j,vn->label);
+	    //	    for(k=0;k<vn->nearby.n;k++) {
+	    //  fprintf(stderr,"  nearby #%d: %d\n",k,((VERTEX *)(vn->nearby.stuff[k]))->label);
+	    //}
+	  }
+	}
 	exit(99);
       }
       scale_3d(f_i,f_i, - f / a);  /* Scale to the calc. force */
@@ -805,6 +903,167 @@ void f_vertex2(VERTEX *V, HULL_VERTEX *verts) {
 
   sum_3d(force,d1n, d2n);
   scale_3d(force, force, 0.5 * (fn1 + fn2 + fn3) / norm_3d(force) );
+
+  /* Stick the force where it belongs in the VERTEX's force vector.*/
+
+  sum_3d(V->f_v, V->f_v, force);
+
+  //printf("f_vertex2: V%4d, f=(%g,%g,%g), |f|=%g \n",V->label,force[0],force[1],force[2], norm_3d(force) );
+
+  return;
+}
+ 
+
+ /**********************************************************************
+ * f_vertex3
+ * Pseudoforce that moves vertices along field lines.  Used to keep them 
+ * nicely evened out along the lines and to attract them to 
+ * curvature.
+ * 
+ * Strictly speaking, this is threeo forces: a vertex repulsive force,
+ * a force that attracts vertices toward curvature, and one that
+ * attracts vertices towards a high density of fluxons.  But the three
+ * should always be used together, so they're included together.
+ *
+ * f_vertex2 is optimized for the older forces (f_pressure_equi and
+ * f_curvature) that are b-normalized.  Use f_vert with the newer
+ * ones. This force is unitless.
+ * 
+ */
+
+void f_vertex3(VERTEX *V, HULL_VERTEX *verts) {
+  NUM force[3];
+  NUM d1[3], d1n [3], d2[3], d2n[3];
+  NUM d1nr,d2nr,fn1,fn2,fn3; /* fn's are scalers */
+  NUM l1, l2, l_fac;
+  NUM dpp[3], dnn[3];
+  NUM alpha_p, alpha_n, lnn, lpp, i1; 
+  /* Exclude endpoints */
+  if(!V->next || !V->prev)
+    return;
+
+
+  /* Repulsive force from nearest neighbors.  The force drops as 
+   *  1/r.
+   */
+
+  diff_3d(d1,V->x,V->prev->x);
+  scale_3d(d1n, d1, (d1nr = 1.0 / (l1=norm_3d(d1)))); /* assignment */
+
+  diff_3d(d2,V->next->x, V->x);
+  scale_3d(d2n, d2, (d2nr = 1.0 / (l2=norm_3d(d2)))); /* assignment */
+  
+  l_fac = 3. / ( d1nr + d2nr );
+
+  fn1 = (d1nr - d2nr) * l_fac;
+  V->f_v_tot += fabs(fn1); 
+
+  fn2 = 0.0;
+    
+  /* Curvature-attractive force.  This attracts vertices toward
+   * curvature so that sharp angles attract vertices to smooth
+   * themselves out.
+   */
+
+  if(V->prev->prev && V->next->next) {
+
+    diff_3d(dnn,V->next->next->x,V->next->x);
+    lnn = norm_3d(dnn);
+
+    diff_3d(dpp,V->prev->x,V->prev->prev->x);
+    lpp = norm_3d(dpp);
+
+    alpha_p = M_PI - acos( (inner_3d(dpp, d1)) / (l1 * lpp) );
+    alpha_n = M_PI - acos( (inner_3d(dnn, d2)) / (l2 * lnn) );
+    
+    fn3 = 5. * (alpha_p - alpha_n);
+    V->f_v_tot += fabs(fn3);
+     
+  } else {
+
+    fn3 = 0.0;
+  
+  }
+
+
+  /* Generate a unit vector along the field line and scale it to the
+   * calculated force.
+   */
+
+  sum_3d(force,d1n, d2n);
+  scale_3d(force, force, 0.25 * (fn1 + fn2 + fn3) / norm_3d(force)  );
+
+  /* Stick the force where it belongs in the VERTEX's force vector.*/
+
+  sum_3d(V->f_v, V->f_v, force);
+
+  //printf("f_vertex2: V%4d, f=(%g,%g,%g), |f|=%g \n",V->label,force[0],force[1],force[2], norm_3d(force) );
+
+  return;
+}
+
+void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
+  NUM force[3];
+  NUM d1[3], d1n [3], d2[3], d2n[3];
+  NUM d1nr,d2nr,fn1,fn2,fn3; /* fn's are scalers */
+  NUM l1, l2, l_fac;
+  NUM dpp[3], dnn[3];
+  NUM alpha_p, alpha_n, lnn, lpp, i1; 
+  /* Exclude endpoints */
+  if(!V->next || !V->prev)
+    return;
+
+
+  // Find the normal vectors pointing along the previous and next segments,
+  // and collect the lengths of the original vectors...
+
+  diff_3d(d1,V->x,V->prev->x);
+  scale_3d(d1n, d1, (d1nr = 1.0 / (l1=norm_3d(d1)))); /* assignment */
+
+  diff_3d(d2,V->next->x, V->x);
+  scale_3d(d2n, d2, (d2nr = 1.0 / (l2=norm_3d(d2)))); /* assignment */
+
+
+  /* Repulsive force from nearest neighbors.  The force drops as 
+   *  1/r^2 but is normalized to 1/r.
+   */
+  fn1 = (d1nr*d1nr-d2nr*d2nr)*((l1+l2)*0.5);
+  fn1 *= 0.1;
+
+  /* Curvature-attractive force.  This attracts vertices toward
+   * curvature so that sharp angles attract vertices to smooth
+   * themselves out.
+   */
+
+  if(V->prev->prev && V->next->next) {
+
+    diff_3d(dnn,V->next->next->x,V->next->x);
+    lnn = norm_3d(dnn);
+
+    diff_3d(dpp,V->prev->x,V->prev->prev->x);
+    lpp = norm_3d(dpp);
+
+    alpha_p = M_PI - acos( (inner_3d(dpp, d1)) / (l1 * lpp) );
+    alpha_n = M_PI - acos( (inner_3d(dnn, d2)) / (l2 * lnn) );
+    
+    fn3 = 1 * (alpha_p - alpha_n)* (2 / (l1 + l2));
+    V->f_v_tot += fabs(fn3);
+     
+    fn3 *= 2.0;
+  } else {
+
+    fn3 = 0.0;
+  
+  }
+
+  /* Generate a unit vector along the field line and scale it to the
+   * calculated force.
+   */
+  V->f_v_tot += fabs(fn1 + fn3) /(l1+l2); 
+
+
+  sum_3d(force,d1n, d2n);
+  scale_3d(force, force, (fn1 + fn3) / norm_3d(force) / (l1+l2) );
 
   /* Stick the force where it belongs in the VERTEX's force vector.*/
 

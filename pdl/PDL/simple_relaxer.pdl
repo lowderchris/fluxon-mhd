@@ -139,22 +139,21 @@ sub simple_relaxer {
     }
 
     while(!$final_step || $step<$final_step) {
-      print "Starting step $step...\n";
+#      print "Starting step $step...\n";
 
 #	$w->update_neighbors($global);
-      print "forces..\n";
+#      print "forces..\n";
 	$fmax = $w->update_force($global);
-      print "Relaxing...\n";
+#      print "Relaxing...\n";
 	$w->relax_step($dt);
-      print "relaxed ok\n";
+#      print "relaxed ok\n";
 	$t += $dt;
 
 	$h = $w->stats;
 	
 #	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},$h->{n_av}, $w->{max_angle} * $conv, $w->{mean_angle} * $conv);
 
-	printf(" Here\n");
-	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av}, acos(($w->{max_angle}/abs($w->{max_angle}))*(sqrt(abs($w->{max_angle}))))*$conv, acos(($w->{mean_angle}/abs($w->{mean_angle}))*(sqrt(abs($w->{mean_angle}))))*$conv);
+	printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av}, acos(($w->{max_angle}/abs($w->{max_angle}))*(sqrt(abs($w->{max_angle}))))*$conv, acos(($w->{mean_angle}/abs($w->{mean_angle}))*(sqrt(abs($w->{mean_angle}))))*$conv);
 
 	printf LOG " time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},
       $h->{n_av} if($opt->{log});
@@ -184,7 +183,7 @@ sub simple_relaxer {
 #	    $w->fix_curvature(0.2);
 #        }
 
-	print "step $step..."; 
+#	print "step $step..."; 
 	$step++;
 	
 #	print "Press <RETURN> for next step:";

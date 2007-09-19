@@ -431,6 +431,7 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
  *     d  - harmonic mean of the various distances of neighbors and such
  *     b  - mean of the field strengths of the two segments on the vertex
  *     s  - stiffness coefficient from the force calculation
+ *     ds - ratio of sum to difference of local vertex's forces and next/previous vertices'
  */
 
 
@@ -666,51 +667,49 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 
     scale_3d(step, v->plan_step, world->coeffs[0]);
 
-    // ARD - Now add relative contributions of neighbors
+    ///////////////////// ARD - Now add relative contributions of neighbors
 
-    workspace->n = 0; // Same as dumblist_clear(workspace)
+    dumblist_clear(workspace);
 
-    // ARD - Unique passno for each vertex
-
+    // Avoid duplication with the passno marking mechanism...
     passno = ++(world->passno);
     idx = 0;
 
     if (n_coeffs > 1) {
+
       // ARD - add current vertex as first element of dumblist
       dumblist_quickadd(workspace, v);
 
       for (i=1;i<n_coeffs;i++) {
-	tmp_step[0] = tmp_step[1] = tmp_step[2] = 0.0;
+	long newidx = workspace->n;
+	long n_found = 0;
+
 	expand_via_neighbors(workspace, idx, passno);
 	expand_lengthwise(workspace, idx, passno);
-	idx = workspace->n;
-	//	printf("IDX: %d\n", idx);
-        //      fflush(stdout);
+	idx = newidx;
 
-	for (j=0;j<idx;j++) {
+	// Accumulate temporary step for the current set of neighbors.
+	// Start accumulating at the END of the previous batch, to keep
+	// track of neighbor generational averages...
+	tmp_step[0] = tmp_step[1] = tmp_step[2] = 0.0;
+
+	for (j=idx;j<workspace->n;j++) {
 	  vert_neigh = ((VERTEX *)(workspace->stuff[j]));
-	  //	  printf("Vert_neigh: %lf %lf %lf\n", vert_neigh->plan_step[0], vert_neigh->plan_step[1], vert_neigh->plan_step[2]);
-	  //	  fflush(stdout);
-	  if (!finite(vert_neigh->plan_step[0]) &&
-	      !finite(vert_neigh->plan_step[1]) &&
-	      !finite(vert_neigh->plan_step[2])) {
-	    printf("Zero step: %lf %lf %lf\n", 
-		   vert_neigh->plan_step[0],
-		   vert_neigh->plan_step[1],
-		   vert_neigh->plan_step[2]);
-	    fflush(stdout);
+	  if(vert_neigh->next && vert_neigh->prev) {
+	    sum_3d(tmp_step, tmp_step, vert_neigh->plan_step);
+	    n_found++;
 	  }
-	      
-	  sum_3d(tmp_step, tmp_step, vert_neigh->plan_step);
 	}
 	
-	// ARD - Scale by (mean + coeff value) then add to step
-
-	scale_3d(tmp_step, tmp_step, (1.0/idx) * world->coeffs[i]);	
+	// Get the mean for this batch, scale it, and add.
+	// The if clause avoids division-by-zero if none exist at this tier.
+	if(n_found) {
+	  scale_3d(tmp_step, tmp_step, (world->coeffs[i] / (n_found)));
     	
 	//	printf("step:   %lf %lf %lf\ntmp_step: %lf %lf %lf\n\n", step[0], step[1], step[2], tmp_step[0], tmp_step[1], tmp_step[2]);
 	
-	sum_3d(step, step, tmp_step);
+	  sum_3d(step, step, tmp_step);
+	}
       }
     }
      

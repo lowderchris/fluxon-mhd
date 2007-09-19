@@ -869,7 +869,7 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
 
   cross(cr,P,seg);
   a = norm2_3d(cr); // this is sin^2 theta...
-  a *= a;          // sin^2 --> sin^4
+  //  a *= a;          // sin^2 --> sin^4
 
   // Now scale by the limited skew angle between the two segments if our World is set for that.
   if(w->handle_skew) {
@@ -1807,6 +1807,8 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   /* always add the first eligible VERTEX in the list... */
   for(i=0;i<horde->n && 
 	( horde->stuff[i] == central_v ||             // skip the main vertex if present
+	  horde->stuff[i] == central_v->prev ||       
+	  horde->stuff[i] == central_v->next || 
 	  !( ((VERTEX *)(horde->stuff[i]))->next ) || // skip endpoint vertices if present
 	  !( ((VERTEX *)(horde->stuff[i]))->line)     // skip image vertices
 	  );
@@ -1834,7 +1836,8 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
     char keep;
     int  flag;
 
-    if(v->passno == passno || v == central_v || !v->next ) {
+    if(v->passno == passno || v == central_v || !v->next || 
+       ( v->line==central_v->line && (v->next==central_v || v->prev==central_v))) {
  #if DEBUG_HULL
       if(verbosity >= 5)
 	printf("vertex %d has already been inspected (or is the same as %d), or has no next field (0x%x) - skipping...\n",v->label, central_v->label, v->next);

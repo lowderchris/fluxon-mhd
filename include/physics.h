@@ -38,6 +38,7 @@ void e_open(VERTEX *V, HULL_VERTEX *verts); /* calculate energy assoc. with vert
 void e_eqa(VERTEX *V, HULL_VERTEX *verts);
 
 void f_curvature(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
+void f_curvature2(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
 void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
@@ -49,10 +50,9 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts);  /* normal mean curvature */
 
 void f_vertex(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
 void f_vertex2(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
+void f_vertex3(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
+void f_vertex4(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
 void f_vert(VERTEX *V, HULL_VERTEX *verts);   /* vertex pseudoforce */
-
-
-                                                   
 
 
 /* F_CONV_TABLE is an array that associates function names with 

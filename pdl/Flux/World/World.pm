@@ -1232,20 +1232,23 @@ sub render {
 
     if($opt->{'hull'}) {
 
+	nokeeptwiddling3d();
+	
       print "hullrgb...\n";
 	$hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
 
       print "hullopen...\n";
 	$hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
-
+	my $zz = 0;
 	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
 	    next unless($v->next);
+	    twiddle3d() unless ($zz++ % 50);
 
 	    $xcen = 0.5 * ($v->x + $v->next->x);
 	    
 	    my $pm = $v->projmatrix;
 	    
-	    my $hull = $v->hull;
+	    my $hull = $v->hull(0);
 
 	    my @hpoints = ();
 
