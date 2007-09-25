@@ -1028,7 +1028,7 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
    *  1/r^2 but is normalized l to yield something like 1.
    */
   fn1 = (d1nr*d1nr-d2nr*d2nr) * ( (l1+l2)*0.5 ) * ( (l1+l2)*0.5 );
-  fn1 *= 0.1;
+  fn1 *= 0.5;
 
   /* Curvature-attractive force.  This attracts vertices toward
    * curvature so that sharp angles attract vertices to smooth
