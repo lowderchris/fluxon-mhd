@@ -575,7 +575,7 @@ void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts) {
 }
 
 /**********************************************************************
- * f_pressure_equi2a
+ * f_pressure_equi2b
  * Magnetic pressure `force' : - \del_perp(|B|) / |B|
  * Corrects for the factor-of-two error in f_pressure_equi
  *
@@ -1025,9 +1025,9 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
 
 
   /* Repulsive force from nearest neighbors.  The force drops as 
-   *  1/r^2 but is normalized to 1/r.
+   *  1/r^2 but is normalized l to yield something like 1.
    */
-  fn1 = (d1nr*d1nr-d2nr*d2nr)*((l1+l2)*0.5);
+  fn1 = (d1nr*d1nr-d2nr*d2nr) * ( (l1+l2)*0.5 ) * ( (l1+l2)*0.5 );
   fn1 *= 0.1;
 
   /* Curvature-attractive force.  This attracts vertices toward
@@ -1046,10 +1046,10 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
     alpha_p = M_PI - acos( (inner_3d(dpp, d1)) / (l1 * lpp) );
     alpha_n = M_PI - acos( (inner_3d(dnn, d2)) / (l2 * lnn) );
     
-    fn3 = 1 * (alpha_p - alpha_n)* (2 / (l1 + l2));
+    fn3 = 1 * (alpha_p - alpha_n);
     V->f_v_tot += fabs(fn3);
      
-    fn3 *= 2.0;
+    fn3 *= 0.5;
   } else {
 
     fn3 = 0.0;
@@ -1059,17 +1059,14 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
   /* Generate a unit vector along the field line and scale it to the
    * calculated force.
    */
-  V->f_v_tot += fabs(fn1 + fn3) /(l1+l2); 
-
 
   sum_3d(force,d1n, d2n);
-  scale_3d(force, force, (fn1 + fn3) / norm_3d(force) / (l1+l2) );
+  scale_3d(force, force, (fn1 + fn3) / norm_3d(force) / (l1+l2) / 2);
 
   /* Stick the force where it belongs in the VERTEX's force vector.*/
 
   sum_3d(V->f_v, V->f_v, force);
-
-  //printf("f_vertex2: V%4d, f=(%g,%g,%g), |f|=%g \n",V->label,force[0],force[1],force[2], norm_3d(force) );
+  V->f_v_tot+= norm_3d(force);
 
   return;
 }
