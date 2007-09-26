@@ -1,4 +1,3 @@
-#define SORT_WARN 1
 /* data.c 
  *
  * Basic data manipulation routines and definitions for FLUX -- how to 
@@ -66,30 +65,14 @@
  *  dd_vertex_printer - prints out the label of a given vertex
  *  dumblist_dump - prints out the labels or the pointers of a dumblist
  *  fl_eq - tests whether two numbers are reasonably close
+ * mallocs: these are switched in by compiler flags, and are used for debugging.
  *  flux_malloc - 
  *  flux_perl_malloc - 
  *  flux_padded_malloc - 
- *  (NOT YET) kill_fluxon - Unlink and delete all of a fluxons vertexs.
  *  
- * This is data.c version 1.1 - part of the FLUX 1.1 release.
+ * This is data.c version 1.2 - part of the FLUX 1.2 release.
  *
- *   fuctions not found/no longer here:
- *   add_vertex - Given a vertex and an X,Y, and Z location, create
- *             a new vertex and link it into the list at that location.
- *   find_neighbor_candidates - Find the neighbor-candidates of a vertex.
- *             The vertex gets the union of its neighbor list, its 
- *             fluxon partners' lists, and the neighbors of everybody
- *             on that list.  If the vertex is the first on its fluxon,
- *             then its flux concentrations are searched for neighbors.  If
- *             it is the first fluxon on the flux concentration, then 
- *             the neighbors its Delauney neighbors.  (These are currently
- *             found by exhaustive Voronoi cell construction; this is slow
- *             but should work for now.)
- *  tree_bunlink - (the call of choice) - Remove a node from a tree,
- *                   and rebalance the tree if necessary.
- *  sorted_dumblist_delete - deletes a given item from a sorted dumblist
-
-*/
+ */
 #include "data.h"
 #include "physics.h" /* for declaration of force subroutines */
 #include <math.h>
@@ -559,39 +542,30 @@ void free_world( WORLD *w ) {
      }
 #endif
 
+
+static int ptr_cmp(void *a, void *b) { /* Helper routine for sorting by pointer */
+  if(a<b) return -1;
+  else if(a>b) return 1;
+  return 0;
+}
+
 void unlink_vertex(VERTEX *v) {
   int i;
 
+
+  //printf("unlink_vertex: %d has %d neighbors and %d nearby\n",v->label,v->neighbors.n, v->nearby.n);
+  
   if(!v)			/* do nothing if not given a v */
     return;
   if((!v->prev || !v->next) && v->line->fc0->world->verbosity) {	/* if one of the links is missing */
-    fprintf(stderr,"unlink_vertex: this is an end condition. Proceeding...\n");
+    fprintf(stderr,"unlink_vertex: warning - vertex %d is a fluxon endpoint. Proceeding anyway...\n",v->label);
   }
 
   if(!v->line) {		/* if it doesn't belong to a fluxon */
-    fprintf(stderr,"unlink_vertex: strangeness!\n");
+    fprintf(stderr,"unlink_vertex: warning - vertex %d has no fluxon!  Proceeding anyway...!\n",v->label);
     return;
   }
 
-
-  /******************************
-   * debugging -- scan the whole data structure to figure out who points here
-   */
-#ifdef DEBUGGING_DEREF
-  {
-    FLUXON *f = v->line->fc0->world->lines;
-    
-    printf("\n\n==== Unlinking vertex %d. pre-unlink locations it's found:\n",v->label);
-    srch_vtx_lab = v->label;
-    srch_vtx = v;
-    nflag = 0;
-    tree_walker((void *)f,(int)fl_lab_of,(int)fl_all_ln_of,dbg_vsearch,0);
-    nflag = 1;
-    tree_walker((void *)f,(int)fl_lab_of,(int)fl_all_ln_of,dbg_vsearch,0);
-    fflush(stdout);
-  }
-#endif
-  
   if(v->prev) 
     v->prev->next = v->next;
   else 
@@ -608,9 +582,14 @@ void unlink_vertex(VERTEX *v) {
   /* Shuffle around the neighbor and nearby vertex lists to remove v
    * and put in v's next and previous vertices. 
    */
+
+  dumblist_sort(&(v->neighbors),ptr_cmp);
+  dumblist_crunch(&(v->neighbors),ptr_cmp);
   for(i=0;i<v->neighbors.n;i++) {
     VERTEX *a = ((VERTEX **)(v->neighbors.stuff))[i];
     if(a) {
+      //      printf(" neighbor %d: purging %d's nearby link to %d\n",i,a->label,v->label);
+
       long n = a->nearby.n;
       dumblist_delete( &(a->nearby), v);
       if(n == a->nearby.n) {
@@ -630,10 +609,18 @@ void unlink_vertex(VERTEX *v) {
   }
   v->neighbors.n=0;
 
+  dumblist_sort(&(v->nearby),ptr_cmp);
+  dumblist_crunch(&(v->nearby),ptr_cmp);
   for(i=0;i<v->nearby.n;i++) {
     VERTEX *a = ((VERTEX **)(v->nearby.stuff))[i];
     if(a) {
+
+      // printf(" nearby %d: purging %d's neighbor link to %d\n",i,a->label,v->label);
+      long n = a->neighbors.n;
       dumblist_delete(&(a->neighbors), v);
+      if(n == a->neighbors.n) {
+	printf("WHOA THERE! doomed vertex %d's nearby %d had no neighbor link back!\n",v->label,a->label);
+      }
       
       if(v->next) {
 	dumblist_add(   &(a->neighbors), v->next);
@@ -1894,16 +1881,6 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   }
 }
   
-/**********************************************************************
- * ptr_cmp
- * compares two pointers, returns -1,0,1
- */
-
-int ptr_cmp(void *a, void *b) { /* Helper routine for sorting by pointer */
-  if(a<b) return -1;
-  else if(a>b) return 1;
-  return 0;
-}
 
 /**********************************************************************
  * dumblist_snarf 

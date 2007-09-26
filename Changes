@@ -1,3 +1,5 @@
+25-Sep-2007 [cd]
+  - fixed vertex deallocation bug in fix_curvature.
 24-Sep-2007 [cd]
   - f_vertex4 fix...
 14-Sep-2007 [cd]

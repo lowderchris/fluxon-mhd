@@ -21,7 +21,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
- * This is model.c version 1.1 - part of the FLUX 1.1 release.
+ * This is model.c version 1.2 - part of the FLUX 1.2 release.
  * 
  */
 #include "model.h"

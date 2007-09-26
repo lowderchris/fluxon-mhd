@@ -511,19 +511,7 @@ void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts) {
     left = &verts[i];
     right = (i==0) ? &verts[V->neighbors.n - 1] : &verts[i-1];
     
-    ///* Calculate delta-phi by calculating the maximal phis and subtracting. 
-    // * In the open case, the endpoint phi is the middle of the open region.
-    // * In the closed case, 
-    // * it's the angle to the vertex.
-    // */
-    //
-    //    deltaphi = ( ((left->open) ? 0.5 * ( left->a_l + left->a_r ) : left->a_l) 
-    //		 - 
-    //		 ((right->open) ? 0.5 * ( right->a_l + right->a_r) : right->a_r)
-    //		 );
     deltaphi = left->a_l - right->a_r;
-
-
     TRIM_ANGLE(deltaphi);
     //    printf("vertex %d (%d): deltaphi=%g\t",V->label,N->label,deltaphi*180/3.14159);
     
@@ -536,7 +524,7 @@ void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts) {
 
 
     fn = 2 * deltaphi / (M_PI * N->r);
-    fp = 2 / (M_PI * N->r) * (cos(right->a_r - N->a) - cos(left->a_l - N->a));
+    fp = 2 * (cos(right->a_r - N->a) - cos(left->a_l - N->a)) / (M_PI * N->r);
     {
       NUM r = norm_2d(N->scr);
       nhat_x = N->scr[0]/r;
@@ -596,6 +584,7 @@ void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts) {
  * In this version only the normal wall force, and not the parallel wall
  * force, is doubled.
  */
+
 void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
   NUM force[3]; /* force accumulator */
   static HULL_VERTEX *point_cache = 0;  /* Workspace grows and sticks */

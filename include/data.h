@@ -322,6 +322,8 @@ inline void dumblist_sort(DUMBLIST *dl, int((*compare)(void *a, void *b)));
 inline void dumblist_snarf(DUMBLIST *dl, DUMBLIST *source);
 inline void dumblist_grow(DUMBLIST *dl, int size);
 inline void dumblist_clear(DUMBLIST *dl);
+inline void dumblist_crunch(DUMBLIST *dl,int((*cmp)(void *a, void *b)));
+
 
 inline char fl_eq(NUM a, NUM b);
 
