@@ -1,0 +1,106 @@
+=head2 fluxon_placement_fs - use the Floyd-Steinberg dithering algorithm to place fluxons
+
+=for ref  
+
+Floyd-Steinberg dithering is a common brightness-diffusion algorithm
+used for dithering grayscale images.  Here, we adapt it to place
+fluxons for shooting through a pre-existing flux distribution.
+Floyd-Steinberg is slightly different than the normal fluxon placement
+problem, as it decides only whether to turn on or off pixels that are
+placed on a regular grid, rather than where to place pixels in a
+floating-point sense.
+
+We adapt it by selecitng a grid size that is dense enough so that the
+densest part of the image can support all the fluxons within it, on a
+regular grid.
+
+You supply a magnetogram and either a fluxon count (estimated total
+number of fluxons) or a fluxon size (in units of magnetogram-DN
+pixels; if the magnetogram is in Gauss, then it is in units of
+Gauss-pixels).  If you specify a count it should be positive; if you specify 
+a size it should be negative.
+
+You get back a 3xN PDL with fluxon placements for the magnetogram.
+Each row consists of (x,y,sign).  The minus field is -1 for south end
+of fluxons, +1 for north ends of fluxons.  The x and y are floating
+point, but are quantized to the selected grid size.
+
+
+
+=cut
+
+sub fluxon_placement_fs {
+  my $bgram = shift;
+  my $fluxon_count = shift;
+
+
+
+  my $smooth = $bgram->convolveND(ones(3,3)/9,{b=>'m'});
+  my $sm_max = $smooth->abs->max;
+  my $sm_us_sum = $smooth->abs->sum;
+
+  unless($fluxon_count) {
+      print "Warning - no fluxon count specified; using 250\n";
+      $fluxon_count = 250;;
+  }
+
+  my $flux;
+
+  if($fluxon_count < 0) {
+      $flux = -$fluxon_count;
+      $fluxon_count = $sm_us_sum / $flux;
+  } else{
+      $flux = $sm_us_sum / $fluxon_count;
+  }
+
+  $gridsperpixel = ceil(sqrt($sm_max/$flux));
+  $fluxon_count= $smooth->abs->sum / $flux;
+  print "grids per pixel is $gridsperpixel; estimated total count is $fluxon_count\n";
+
+  $dithered = zeroes(short, $gridsperpixel * $bgram->dim(0), $gridsperpixel * $bgram->dim(1));
+  $expanded = (float $bgram)->match($dithered) / $gridsperpixel / $gridsperpixel;
+
+  my $fs_matrix = pdl([0,0,7],[3,5,1])/16;
+
+  my $thresh = $flux/2;
+
+  my ($x,$y,$xx);
+
+  for($y=0;$y<$expanded->dim(1)-2; $y+=2){
+      for $x(1..$expanded->dim(0)-2) {
+	  my $exrgn = $expanded->($x-1:$x+1,$y:$y+1);
+	  my $exp = $expanded->($x,$y);
+	  my $dth = $dithered->($x,$y);
+
+
+
+	  $dth .= ($exp > $thresh) ? 1: ($exp < -$thresh) ? -1 : 0;
+	  $exrgn += $fs_matrix * ($exp - $flux * $dth);
+      }
+      
+      $y++;
+      for $xx(1..$expanded->dim(0)-2) {
+	  $x = $expanded->dim(0)-1-$xx;
+	  my $exrgn = $expanded->($x+1:$x-1:-1,$y:$y+1);
+	  my $exp = $expanded->($x,$y);
+	  my $dth = $dithered->($x,$y);
+	  $dth .= ($exp > $thresh) ? 1: ($exp < -$thresh) ? -1 : 0;	  
+	  $exrgn += $fs_matrix * ($exp - $flux * $dth);
+      }
+      print "$y....";
+      $y--;
+  }
+
+  $pos = whichND($dithered==1) / $gridsperpixel;
+  $neg = whichND($dithered==-1) / $gridsperpixel;
+
+  return $pos->glue(0,ones(1,$pos->dim(1))) ->glue(1, 
+						   $neg->glue(0, -1 * ones(1, $neg->dim(1)))
+						   );
+  
+}
+
+
+      
+	
+	

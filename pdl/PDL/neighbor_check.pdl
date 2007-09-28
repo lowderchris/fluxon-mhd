@@ -1,0 +1,87 @@
+=head2 neighbor_check - check the neighbors/nearby lists of a Flux::World for consistency
+
+=for ref
+
+You feed in a World; it combs through the neighbor lists and makes sure that each neighbor has the
+source vertex as a nearby element; likewise that each nearby element has the source vertex as a 
+neighbor.
+
+You get back a list of violations.
+
+=cut
+
+sub neighbor_check {
+    my $w = shift;
+    my @f = $w->fluxons;
+    
+    my @neighbor_vio = ();
+    my @nearby_vio = ();
+
+    print "v2\n";
+
+    for my $f(@f){
+	my @v = $f->vertices;
+	
+	for my $v(@v) {
+	    my @n = $v->neighbors;
+	    my $vid = $v->{label};
+
+	    my %found = ();
+
+	    for my $n(@n) {
+
+		if($found{$n->{label}}) {
+		    print "Vertex $v->{label} on fluxon $f->{label}: neighbor $v->{label} is duplicated!\n";
+		    push(@neighbor_vio,[$v->{label},$n->{label},3]);
+		}
+		$found{$n->{label}}++;
+
+		my @nrb = $n->nearby;
+		my $match = undef;
+	      inner: for my $nrb(@nrb) {
+		  if($nrb->{label} == $vid) {
+		      $match = 1;
+		      last inner;
+		  }
+	      }
+		unless($match) {
+		    print "Vertex $v->{label} on fluxon $f->{label}: neighbor $v->{label} has no return link!\n";
+		    push(@neighbor_vio, [$v->{label}, $n->{label},1]);
+		}
+	    }
+
+	    %found = ();
+
+	    @n = $v->{nearby};
+	    for my $n(@n) {
+		
+		if($found{$n->{label}}){
+		    print "Vertex $v->{label} on fluxon $f->{label}: nearby $v->{label} is duplicated!\n";
+		    push(@nearby_vio,[$v->{label},$n->{label},4]);
+		}
+		$found{$n->{label}}++;
+
+		my @nei= $n->neighbors;
+		my $match = undef;
+		
+	      inner2: for my $nei(@nei) {
+		  if($nei->{label}==$vid) {
+		      $match = 1;
+		      last inner2;
+		  }
+	      }
+		unless($match) {
+		    print "Vertex $v->{label} -on fluxon $f->{label}: nearby $v->{label} has no return link!\n";
+		    push(@nearby_vio, [$v->{label}, $n->{label},2]);
+		}
+	    }
+	      
+	}
+    }
+    return (@nearby_vio,@neighbor_vio);
+}
+
+
+    
+		
+		
