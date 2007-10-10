@@ -57,23 +57,326 @@ static long w_u_e_springboard(FLUXON *fl, int lab, int link, int depth) {
 }
 
 void world_update_ends(WORLD *a) {
+
   tree_walker(a->lines,fl_lab_of, fl_all_ln_of, w_u_e_springboard,0);
 }
 
 /**********************************************************************
  * fluxon_update_ends
- * Checks and updates the magic boundary vertices at the end of a fluxon
+ * Checks and updates the magic boundary vertices at the end of a fluxon.
+ * 
+ * If the world has automatic open vertex handling ON, then 
+ * fluxon_update_ends also checks to see if any new ends are
+ * required, and creates 'em.
+ *
+ * It also handles U-loop exit (sometime in the indefinite future).
  */
 void fluxon_update_ends(FLUXON *f) {
+  WORLD *w = f->fc0->world;
+
+  /*** End condition updates ***/
    if(f->fc0->bound) {	
 	(*(f->fc0->bound))(f->start);
    }
    if(f->fc1->bound) {
 	(*(f->fc1->bound))(f->end);
    }
-}  
+
+   if(w->auto_open) {
+     fluxon_auto_open(f);
+   }
+}
 
 
+/**********************************************************************
+ * check_auto_open - given a FLUXON, check whether any of its vertices
+ * need to be opened (are outside the open-field boundary).
+ *
+ * If so, do so.
+ * 
+ * Does nothing unless the associated WORLD auto_open flag is set.
+ */
+void fluxon_auto_open(FLUXON *f) {
+
+  WORLD *w = f->fc0->world;
+  
+  VERTEX *v = f->start;
+  NUM x0[3];
+  int v_ct = 0;
+  NUM r2;
+  NUM *xcen;
+  
+  if( ! (w->auto_open) )
+    return;
+
+  r2 = w->fc_ob->locale_radius;
+  r2 *= r2;
+  
+  xcen = w->fc_ob->x;
+  
+  //  printf("auto_open - fluxon %d:",f->label);
+
+
+  /**************************************************
+   * Check for vanishing U-loops
+   */
+
+  if( (f->fc0 == w->fc_ob) &&
+      (f->fc1 == w->fc_oe) ) {
+    // It's a U-loop...
+
+    // Trivial U-loops...
+    if(f->v_ct < 3) {
+      printf(" Fluxon %d is a trivial U-loop.  Deleting...\n",f->label);
+      delete_fluxon(f);
+      return;
+    } 
+  
+    // Tiny U-loops...
+    printf("Checking fluxon %d for triviality (start is at (%g,%g,%g))\n",
+	   f->label, f->start->x[0], f->start->x[1], f->start->x[2]);
+    if(trivloop(f)) {
+      printf("Deleting %d...\n",f->label);
+      delete_fluxon(f);
+      return;
+    }
+    
+  }
+
+  /**************************************************
+   * Check for newly opened lines
+   */
+
+  for(v=v->next; v && v->next; (v=v->next) && v_ct++) {
+    diff_3d(x0,v->x,xcen);
+    fflush(stdout);
+    
+    if( norm2_3d(x0) > r2 ) {
+      //      printf("v%d ",v->label);
+      //printf("Open!  ");
+      //fflush(stdout);
+      
+      /******************************
+       * Cut the fluxon into two.  The new 
+       * endpoints are placed on the open surface
+       * at the points of intersection.
+       */
+      
+      if( f->plasmoid ) {
+	
+	fprintf(stderr,"Can't open plasmoids yet! Ignoring %d, which is too big!\n",f->label);
+	
+      } else /* not a plasmoid */ {
+	
+	/****************
+         * Not a plasmoid...
+         */
+
+	NUM x1[3];
+	NUM newx[3];
+	NUM rp_n, rn_n, r_n_diff, alpha;
+	VERTEX *Vnext;
+	VERTEX *Vprev;
+	
+	// Vnext is the next vertex located inside the sphere.  If there aren't any at all, 
+	// then we simply open the fluxon at the current point.
+	{
+	  int inside = 0;
+	  for(Vnext = v->next; Vnext && !inside; Vnext = Vnext->next) {
+	    NUM x2[3];
+	    diff_3d(x2, Vnext->x, w->fc_oe->x);
+	    rn_n = norm_3d(x1)/w->fc_oe->locale_radius;
+	    inside = (rn_n < 1);
+	  }
+	}
+	
+	if(!Vnext) {
+	  
+	  //printf("Hmmmm, no Vnext --- purging to end of fluxon...\n");
+
+	  /****************************************
+	   * The whole rest of the fluxon is open.  Truncate it and connect it to the 
+	   * open end vertex.
+           *
+           *
+           * **** CASE: whole last half is outside the boundary **** 
+	   */
+	  while(v->next) {
+	    delete_vertex(v->next);
+	  }
+	  f->end = v;
+
+	  if(f->fc1 != w->fc_oe) {
+	    f->fc1->lines = tree_unlink(f,fl_lab_of, fl_end_ln_of);
+	    f->fc1 = w->fc_oe;
+	    w->fc_oe->lines = tree_binsert(w->fc_oe->lines, f, fl_lab_of, fl_end_ln_of);
+
+	    // Invoke the end boundary condition on the newly opened endpoint.
+	    (*(f->fc1->bound))(f->end);
+	  }
+	  
+
+	} else /* Vnext exists - normal case */ { 
+	  
+	  /****************************************
+	   * There's at least one non-outside vertex following, so we need to 
+	   * cut the current fluxon in two.
+	   */
+	  
+	  NUM xp[3];
+	  
+	  // Calculate Vprev...
+	  Vprev = v->prev;
+	  diff_3d(xp, v->prev->x, w->fc_ob->x);
+	  rp_n = norm_3d(xp)/w->fc_ob->locale_radius;
+	  
+	  if(rp_n > 1) {
+
+	    //printf("Hmmm .. no previous vertex.  Opening start of fluxon...\n");
+	    
+	    /* If there are no previous inside vertices, but there are following 
+	     * inside vertices, then we need to open the beginning...
+             *
+             *
+             *  **** CASE: whole first hlaf is outside the boundary ****
+             */
+	    if(Vnext) {
+	      while(Vnext->prev) {
+		delete_vertex(Vnext->prev);
+	      }
+	      f->start = Vnext;
+	    } else {
+	      while(v->prev) {
+		delete_vertex(v->prev);
+	      }
+	      f->start = v;
+	    }
+
+	    if(f->fc0 != w->fc_ob) {
+	      f->fc0->lines = tree_unlink(f,fl_lab_of, fl_start_ln_of);
+	      f->fc0 = w->fc_ob;
+	      w->fc_ob->lines = tree_binsert(w->fc_ob->lines, f, fl_lab_of, fl_start_ln_of);
+	    }
+	    
+	    
+	  }  else /* Previous vertex is inside */ {
+	    // Vprev is inside, so we cut.
+	    
+	    // Now v (and possible next links) is outside, Vprev is inside, and Vnext is inside.
+	    // We need exactly two vertices between Vnext and Vprev.  If there is only one, add one.
+	    // If there is more than one, excise 'em.
+	    
+	    if(Vprev->next == Vnext->prev) {
+
+	      // Add an extra vertex, colocated.  
+
+	      VERTEX *Vnew = new_vertex(0, v->x[0],v->x[1],v->x[2], 0);
+	      add_vertex_after(f, v, Vnew);
+
+	      {
+		long n;
+		for(n=0; n < v->neighbors.n; n++) {
+		  VERTEX *vn = (VERTEX *)(v->neighbors.stuff[n]);
+		  dumblist_add(&(Vnew->neighbors),(void *)vn);
+		  dumblist_add(&(vn->nearby), (void *)Vnew);
+		}
+	      }
+	    
+	    } else if( Vprev->next->next != Vnext->prev ) {
+
+	      // Trim vertices out of the middle
+
+	      VERTEX *vv;
+	      for( vv=Vprev->next->next->next; vv != Vnext; vv=vv->next ) {
+		delete_vertex(vv->prev);
+	      }
+	    }
+	    
+	    // Now we should have Vprev->a->b->Vnext.
+	    //printf("Vprev is %d; next is %d; next is %d; next is %d; Vnext is %d\n",
+	    //   Vprev->label, Vprev->next->label, Vprev->next->next->label, Vprev->next->next->next->label, Vnext->label);
+	    
+	    // Now reposition the intermediate vertices approximately on the sphere, by truncating their respective segments.
+	    {
+	      NUM ra_n, rb_n;
+	      NUM alpha_a, alpha_b;
+	      NUM xx[3];
+	      diff_3d(xx, Vprev->next->x, w->fc_ob->x);
+	      ra_n = norm_3d(xx)/w->fc_ob->locale_radius;
+	      
+	      diff_3d(xx, Vnext->prev->x, w->fc_oe->x);
+	      rb_n = norm_3d(xx)/w->fc_oe->locale_radius;
+	      
+	      alpha_a = (1 - rp_n)/(ra_n-rp_n) * 0.9;
+	      alpha_b = (1 - rn_n)/(rb_n-rn_n) * 0.9;
+	      //printf("alpha_a = %g; alpha_b=%g\n",alpha_a, alpha_b);
+	      
+	      diff_3d(xx, Vprev->next->x, Vprev->x);
+	      scale_3d(xx, xx, alpha_a);
+	      sum_3d(Vprev->next->x, xx, Vprev->x);
+	      
+	      diff_3d(xx, Vnext->prev->x, Vnext->x);
+	      scale_3d(xx, xx, alpha_b);
+	      sum_3d(Vnext->prev->x, xx, Vnext->x);
+	    }
+	    
+	    // Finally, create a new fluxon and cut the old one between the two 
+	    // intermediate vertices.
+	    // Convenience block...
+	    {
+	      int n;
+	      VERTEX *vv;
+	      FLUXON *Fnew = new_fluxon( f->flux,
+					 w->fc_ob,
+					 f->fc1,
+					 0,
+					 0
+					 );
+	      // Cut the linked lists.
+	      Vnext->prev->prev->next = 0;
+	      Vnext->prev->prev = 0;
+	      Fnew->end = f->end;
+	      f->end = Vprev->next;
+	      Fnew->start = Vnext->prev;
+
+	      
+	      // Switch the original fluxon to its new endpoint
+	      f->fc1->lines = tree_unlink(f, fl_lab_of, fl_end_ln_of);
+	      f->fc1 = w->fc_oe;
+	      w->fc_oe->lines = tree_binsert(w->fc_oe->lines, f, fl_lab_of, fl_end_ln_of);
+	      
+	      // Cut off the vertices in the middle
+	      n=0;
+	      for(vv=f->start; vv; vv=vv->next) n++;
+	      f->v_ct = n;
+	      //printf("setting end of %d to %d (%d)",f->label, f->end, (f->end?f->end->label:0));
+	      // Give the new fluxon the old endpoint and an open start
+	      w->fc_ob->lines = tree_binsert(w->fc_ob->lines, Fnew, fl_lab_of, fl_start_ln_of);
+	      Fnew->fc1->lines = tree_binsert(Fnew->fc1->lines, Fnew, fl_lab_of, fl_end_ln_of);
+	      w->lines = tree_insert( w->lines, Fnew, fl_lab_of, fl_all_ln_of);
+
+	      // Set up the vertices...
+	      n=0;
+	      for(vv=Vnext->prev; vv; vv=vv->next) {
+		n++;
+		vv->line = Fnew;
+	      }
+	      Fnew->v_ct = n;
+
+	      // Finally - clean up new fluxon (old will be cleaned below)
+	      // and ensure we keep scanning down the new fluxon.
+	      v=Vnext;
+	      f=Fnew;
+	    } /* End of convenience block */
+	  } /* end of normal-case check (prev. vertex is inside) */
+	} /* end of normal-case check (next vertex is inside) */
+      } /* end of non-plasmoid opening code */
+    } /* end of open-check loop */
+  } /* end of vertex for-loop */
+  //printf("\n");
+} /* end of fluxon_auto_open */
+
+  
 /**********************************************************************
  * world_update_neighbors
  * 
@@ -179,6 +482,7 @@ void fluxon_collect_stats(FLUXON *fl, VERTEX_STATS *st) {
  * laws.  You feed in a world and a tau-timestep.
  */
 static NUM gl_t;
+
 static long w_ca_s_springboard(FLUXON *fl, int lab, int link, int depth) {
   // ARD created separate calculation and relaxation routines to accomodate new
   // schema for including influence of neighbor steps.
@@ -716,11 +1020,31 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
     //    printf("step:   %lf %lf %lf\n", step[0], step[1], step[2]);
     //fflush(stdout);
     
-    if(finite(step[0]) && finite(step[1]) &&finite(step[2])) 
-      sum_3d(v->x,v->x,step);	     
-    else
+    if(finite(step[0]) && finite(step[1]) &&finite(step[2])) {
+
+      if(world->photosphere.type==PHOT_PLANE) {
+	/* Check for and eliminate photospheric plane crossings */
+	NUM x1[3];
+	NUM x1z;
+	diff_3d(x1,v->x,world->photosphere.plane->origin);
+	sum_3d(x1,x1,step);
+
+	x1z = inner_3d(x1,world->photosphere.plane->normal);
+	if(x1z < 0) {
+	  NUM delta[3];
+	  scale_3d(delta, world->photosphere.plane->normal, - (x1z * 1.00001) / norm2_3d(world->photosphere.plane->normal));
+	  sum_3d(x1,x1,delta);
+	}
+		   
+	sum_3d(v->x, x1, world->photosphere.plane->origin);
+      } else {
+	/* Otherwise just step */
+	sum_3d(v->x,v->x,step);	     
+      }
+    } else {
       //      if(verbosity >= 3) 
 	printf("NON_FINITE OFFSET! f_s=(%g,%g,%g), f_v=(%g,%g,%g), f_t=(%g,%g,%g)",v->f_s[0],v->f_s[1],v->f_s[2],v->f_v[0],v->f_v[1],v->f_v[2],v->f_t[0],v->f_t[1],v->f_t[2]);
+    }
 
     if(verbosity >= 3)    
       printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
@@ -1388,7 +1712,7 @@ int fluxon_fix_proximity(FLUXON *F, NUM scale_thresh) {
 
   while(V && V != F->end) {
     VERTEX *Vnext = V->next;
-    if(verbosity >= 3) printf("  vertex %d\n",V->label);
+     if(verbosity >= 3) printf("  vertex %d\n",V->label);
     ret += fix_proximity(V,scale_thresh);
     V=Vnext;
   }
@@ -1747,10 +2071,12 @@ void fl_b_start_open(VERTEX *v) {
     fprintf(stderr,"HEY! fl_b_start_open got a middle vertex!  Doing nothing...\n");
     return;
   } 
-  
-  diff_3d( a,    v->next->x, v->line->fc0->x );
-  scale_3d(a,    a,          v->line->fc0->locale_radius / norm_3d(a) );
-  sum_3d(  v->x, a,          v->line->fc0->x );
+ 
+  if(v->line->fc0->locale_radius > 0) {
+    diff_3d( a,    v->next->x, v->line->fc0->x );
+    scale_3d(a,    a,          v->line->fc0->locale_radius / norm_3d(a) );
+    sum_3d(  v->x, a,          v->line->fc0->x );
+  }
 }
 
 void fl_b_end_open(VERTEX *v) {
@@ -1764,9 +2090,11 @@ void fl_b_end_open(VERTEX *v) {
     return;
   }
   
-  diff_3d( a,     v->prev->x,   v->line->fc1->x );
-  scale_3d(a,     a,            v->line->fc1->locale_radius / norm_3d(a) );
-  sum_3d(  v->x,  a,            v->line->fc1->x );
+  if(v->line->fc1->locale_radius > 0) {
+    diff_3d( a,     v->prev->x,   v->line->fc1->x );
+    scale_3d(a,     a,            v->line->fc1->locale_radius / norm_3d(a) );
+    sum_3d(  v->x,  a,            v->line->fc1->x );
+  }
 } 
 
 void fl_b_start_plasmoid(VERTEX *v) {

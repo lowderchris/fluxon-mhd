@@ -66,6 +66,8 @@ sub fluxon_placement_fs {
 
   my ($x,$y,$xx);
 
+  print "expanded dims are ",join(",",$expanded->dims),"\n";
+
   for($y=0;$y<$expanded->dim(1)-2; $y+=2){
       for $x(1..$expanded->dim(0)-2) {
 	  my $exrgn = $expanded->($x-1:$x+1,$y:$y+1);
@@ -91,12 +93,18 @@ sub fluxon_placement_fs {
       $y--;
   }
 
-  $pos = whichND($dithered==1) / $gridsperpixel;
-  $neg = whichND($dithered==-1) / $gridsperpixel;
+  my $pos = whichND($dithered==1) / $gridsperpixel;
+  my $neg = whichND($dithered==-1) / $gridsperpixel;
 
-  return $pos->glue(0,ones(1,$pos->dim(1))) ->glue(1, 
+  my $out =  $pos->glue(0,ones(1,$pos->dim(1))) ->glue(1, 
 						   $neg->glue(0, -1 * ones(1, $neg->dim(1)))
 						   );
+
+  if (wantarray) {
+      return ($out, $flux, $fluxon_count, $pos->dim(1), $neg->dim(1));
+  } else {
+      return $out;
+  }
   
 }
 

@@ -37,7 +37,7 @@ inline NUM inner_3d(NUM *p0, NUM *p1);
 
 inline NUM cross_2d(NUM *p0, NUM *p1);
 #define cross_3d cross
-inline void *cross(NUM *out, NUM *p0, NUM *p1);
+inline void cross(NUM *out, NUM *p0, NUM *p1);
 
 inline void scale_2d(NUM *out, NUM *a, NUM alpha);
 inline void scale_3d(NUM *out, NUM *a, NUM alpha);
@@ -65,6 +65,15 @@ inline void vec_mmult_3d(NUM *out, NUM *mat, NUM *v);
 
 inline NUM det_2d(NUM *mat);
 inline NUM det_3d(NUM *mat);
+
+/**********************************************************************
+ * Planar & topology functions
+ */
+inline void points2plane(PLANE *plane, NUM *p0, NUM *p1, NUM *p2);
+inline int p_l_intersection(NUM *out, PLANE *plane, NUM *p0, NUM *p1);
+inline int xy_l_intersection(NUM *out, NUM *p0, NUM *p1);
+inline int p_inside_tri(NUM *tri0, NUM *tri1, NUM *tri2, NUM *p);
+inline int trivloop(FLUXON *f);
 
 /**********************************************************************
  * Projection functions

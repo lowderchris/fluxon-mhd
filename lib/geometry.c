@@ -102,7 +102,7 @@ NUM cross_2d(NUM *p0, NUM *p1) {
 }
 
 /* cross_3d is defined to cross in geometry.h */
-void *cross(NUM *out, NUM *p0, NUM *p1) {
+inline void cross(NUM *out, NUM *p0, NUM *p1) {
   *(out++) = p0[1]*p1[2]-p0[2]*p1[1];
   *(out++) = p0[2]*p1[0]-p0[0]*p1[2];
   *out     = p0[0]*p1[1]-p0[1]*p1[0];
@@ -289,6 +289,170 @@ NUM det_2d(NUM *mat) {
 NUM det_3d(NUM *mat) {
   return(  mat[0]*mat[4]*mat[8] + mat[1]*mat[5]*mat[6] + mat[2]*mat[3]*mat[7]
 	  -mat[0]*mat[5]*mat[7] - mat[1]*mat[3]*mat[8] - mat[2]*mat[4]*mat[6]);
+}
+
+/**********************************************************************
+ **********************************************************************
+ *** Plane & topology support
+ */
+
+/**********************************************************************
+ * points2plane - given three noncolinear points, return the plane that
+ * contains them as a PLANE structure.
+ */
+void points2plane(PLANE *plane, NUM *p0, NUM *p1, NUM *p2) {
+  NUM x1[3];
+  NUM x2[3];
+  NUM cr[3];
+
+  diff_3d(x1, p1, p0);
+  diff_3d(x2, p2, p0);
+  cross_3d(cr, x1, x2);
+  scale_3d(plane->normal, cr, 1.0/norm_3d(cr));
+  cp_3d(plane->origin, p0);
+}
+
+/**********************************************************************
+ * p_l_intersection - given a plane and a line (specified by two points)
+ * return the intersection between them.
+ * Returns a flag indicating whether the intersection is between 
+ * the two points (1=between, 0=not between)
+ */
+int p_l_intersection(NUM *out, PLANE *plane, NUM *p0, NUM *p1) {
+  NUM x0[3];
+  NUM x1[3];
+  NUM zeta0, zeta1;
+  diff_3d(x0, p0, plane->origin);
+  diff_3d(x1, p1, plane->origin);
+
+  zeta0 = inner_3d(x0, plane->normal);
+  zeta1 = inner_3d(x1, plane->normal);
+
+  if(zeta1==0) {
+    cp_3d(out,p1);
+    return 1;
+  } else if(zeta0==0){
+    cp_3d(out,p0);
+    return 1;
+  } else {
+    scale_3d(out, x1, -(zeta0/zeta1));
+    sum_3d(out, out, x0);
+    sum_3d(out, out, plane->origin);
+    return (zeta0 * zeta1 <= 0);
+  }
+  // Never get here...
+}
+
+/**********************************************************************
+ * xy_l_intersection - find the intersection between a line and the xy plane
+ */
+int xy_l_intersection(NUM *out, NUM *p0, NUM *p1) {
+  if(p1[2]==0) {
+    cp_3d(out, p1);
+    return 1;
+  } else if(p0[2]==0) {
+    cp_3d(out, p0);
+    return 1;
+  } else {
+    scale_3d(out, p1, -p0[2]/p1[2]);
+    sum_3d(out, out, p0);
+    return (p0[2]*p1[2] <= 0);
+  }
+  // Never get here...
+}
+  
+/**********************************************************************
+ * p_inside_tri - given a triangle and a point in the plane, determine
+ * whether the point is strictly inside the triangle (1) or outside it (0).
+ */
+int p_inside_tri(NUM *tri0, NUM *tri1, NUM *tri2, NUM *p) {
+  NUM c1, c2, c3;
+  NUM x0[2],x1[2],x2[2];
+  diff_2d(x0, tri0, p);
+  diff_2d(x1, tri1, p);
+  diff_2d(x2, tri2, p);
+
+  c1 = cross_2d(x0,x1);
+  c2 = cross_2d(x1,x2);
+  c3 = cross_2d(x2,x0);
+
+  return ( (c1 > 0  &&  c2 > 0  && c3 > 0) ||
+	   (c1 < 0  &&  c2 < 0  && c3 < 0)
+	   );
+}
+
+
+/**********************************************************************
+ * trivloop - given a fluxon, return whether it is a trivial loop, that
+ * is to say if it can be contained in a neighborhood that is small compared
+ * to the distance to the nearest neighbor that is not part of the fluxon.
+ *
+ * Trivloop tells you nothing about the topology of the loop -- e.g. whether
+ * it is the unknot.  Hence it is not so useful for determining whether a 
+ * plasmoid should vanish in ideal MHD -- but it is pretty good for deciding
+ * whether a small U-loop should vanish in open boundary conditions.
+ *
+ * A fluxon is a trivial loop if all of its internal distances vanish 
+ * compared to the corresponding distances to each neighbor.
+ *
+
+ * Requires that the neighbor function have already been executed.
+ */
+#define trivloop_factor 3
+
+int trivloop(FLUXON *f) {
+  NUM max_internal_dist = 0;;
+  NUM min_neighbor_dist = 1e100;
+  VERTEX *v;
+  VERTEX *v1;
+
+  for(v=f->start; v && v->next; v=v->next) {
+    int i;
+
+    for(i=0; i<v->neighbors.n; i++) {
+      NUM r;
+      VERTEX *vn = (VERTEX *)(v->neighbors.stuff[i]);
+      if(vn->next && vn->line != f) {
+	r=p_ls_dist(v->x, vn->x, vn->next->x);
+	if(r<min_neighbor_dist) {
+	  min_neighbor_dist = r;
+	  if(min_neighbor_dist < max_internal_dist * trivloop_factor) {
+	    printf("trivloop: not trivial (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
+	    return 0;
+	  }
+	}
+      }
+    }
+    
+    for(i=0;i<v->nearby.n; i++) {
+      NUM r;
+      VERTEX *vn = (VERTEX *)(v->nearby.stuff[i]);
+      if(vn->next && vn->line != f) {
+	r=p_ls_dist(v->x, vn->x, vn->next->x);
+	if(r<min_neighbor_dist) {
+	  min_neighbor_dist = r;
+	  if(min_neighbor_dist < max_internal_dist * trivloop_factor) {
+	    printf("trivloop: not trivial; case 2 (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
+	    return 0;
+	  }
+	}
+      }
+    }
+	
+    
+    for(v1=v; v1&&v1->next; v1=v1->next) {
+      NUM r = cart_3d(v->x, v1->x);
+      if(r > max_internal_dist) {
+	max_internal_dist = r;
+	if( min_neighbor_dist < max_internal_dist * trivloop_factor) {
+	  printf("trivloop: not trivial; case 3 (%g < %g); v=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label);
+	  return 0;
+	}
+      }
+    }
+  }
+
+  return 1;
 }
 
 /**********************************************************************

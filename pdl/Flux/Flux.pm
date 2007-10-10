@@ -360,7 +360,8 @@ package Flux;
             coeffs=>            [26,'Coeffs'],
             n_coeffs=>          [27,'long'],
             maxn_coeffs=>       [28,'long'],
-	    handle_skew=>       [29,'long']
+	    handle_skew=>       [29,'long'],
+	    auto_open=>         [30,'long']
 	},
 	concentration => {
 	    world=>		 [1,'World'],

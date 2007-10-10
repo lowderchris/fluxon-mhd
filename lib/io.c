@@ -609,18 +609,20 @@ int footpoint_action(WORLD *world, char *s) {
 
 	  }
 	  break;
-	case 'O': /* OPEN <x> <y> <z> <r> - where is the open sphere? */
+	case 'O': /* OPEN <x> <y> <z> <r> <auto> - where is the open sphere, and should open lines be handled automagically? */
 	  {
 	    char phscan[80];
-	    sprintf(phscan, "%%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
-	    if(4 > sscanf(s+off,phscan,
+	    sprintf(phscan, "%%%sf %%%sf %%%sf %%%sf %%d",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+
+	    if(5 > sscanf(s+off,phscan,
 			  &(world->fc_oe->x[0]),
 			  &(world->fc_oe->x[1]),
 			  &(world->fc_oe->x[2]),
-			  &(world->fc_oe->locale_radius)
+			  &(world->fc_oe->locale_radius),
+			  &(world->auto_open)
 			  )
 	       ) {
-	      badstr = "Couldn't parse four values from GLOBAL OPEN";
+	      badstr = "Couldn't parse four values from GLOBAL OPENcd ";
 	    } else {
 	      world->fc_ob->x[0] = world->fc_oe->x[0];
 	      world->fc_ob->x[1] = world->fc_oe->x[1];
@@ -849,6 +851,13 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
     fprintf(file, " %f",  world->coeffs[i]); 
   }
   fprintf(file,"\n");
+  fprintf(file,"GLOBAL OPEN %g %g %g %g %d\n",
+	  world->fc_ob->x[0],
+	  world->fc_ob->x[1],
+	  world->fc_ob->x[2],
+	  world->fc_ob->locale_radius,
+	  world->auto_open
+	  );
 
   fprintf(file,"GLOBAL SKEW_HANDLING %d", world->handle_skew);
   

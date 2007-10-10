@@ -1,3 +1,6 @@
+9-Oct-2007 [cd]
+ - Added auto-opening code, including U-loops
+ - Added explicit non-crossing-photosphere test in stepping code
 25-Sep-2007 [cd]
   - fixed vertex deallocation bug in fix_curvature.
 24-Sep-2007 [cd]

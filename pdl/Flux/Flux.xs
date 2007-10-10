@@ -152,6 +152,7 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	        case 27: return (void *)&(w->n_coeffs);                 break;
 	        case 28: return (void *)&(w->maxn_coeffs);              break;
 		case 29: return (void *)&(w->handle_skew);              break;
+		case 30: return (void *)&(w->auto_open);                break;
 		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 				typeno, fieldno);		
 			 return (void *)0;

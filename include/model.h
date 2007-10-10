@@ -34,6 +34,7 @@
  */
 void world_update_ends(WORLD *a);
 void fluxon_update_ends(FLUXON *f);
+void fluxon_auto_open(FLUXON *f);
 
 /**********************************************************************
  * Neighborhood handling routines

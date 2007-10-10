@@ -227,7 +227,7 @@ FLUXON *new_fluxon(      NUM flux,
  *
  */
 
-inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) { 
+VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) { 
   VERTEX *tp;				/* new vertex name */
   int i;
 
@@ -256,7 +256,7 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   clear_links(&(tp->world_links));
 
   return tp;
-}  
+}
 
 /**********************************************************************
  * new_flux_concentration
@@ -267,9 +267,9 @@ inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
 
 FLUX_CONCENTRATION *new_flux_concentration(
 					  WORLD *world,
-					   NUM x, NUM y, NUM z,
-					   NUM flux,
-					   long label
+					  NUM x, NUM y, NUM z,
+					  NUM flux,
+					  long label
 					   ) {
   FLUX_CONCENTRATION *fc;
   
@@ -323,10 +323,10 @@ WORLD *new_world() {
   a->verbosity = 0;  /* No verbose printouts by default */
 
   /* Put in a sensible default force list (physics.c) */
-  a->f_funcs[0] = b_eqa;
-  a->f_funcs[1] = f_curv_m;
-  a->f_funcs[2] = f_p_eqa_radial; 
-  a->f_funcs[3] = f_vert;
+  a->f_funcs[0] = f_pressure_equi2b;
+  a->f_funcs[1] = f_curvature;
+  a->f_funcs[2] = f_vertex4;
+  a->f_funcs[3] = 0;
   a->f_funcs[4] = 0;
 
   /* Put in a blank reconnection list (physics.c) */
@@ -340,15 +340,20 @@ WORLD *new_world() {
   a->step_scale.s_power = 1;
   a->step_scale.ds_power = 0;
   
+  /* By default, don't handle automatically open field lines */
+  a->auto_open = 0;
+
   /* Initialize the open-field and plasmoid pseudo flux concentrations */
   a->fc_ob = new_flux_concentration(a,0,0,0,1,-1);
   a->fc_ob->label = -1;
   a->fc_ob->bound = fl_b_start_open;
+  a->fc_ob->locale_radius = 0;
   a->concentrations = tree_binsert(a->concentrations, a->fc_ob, fc_lab_of, fc_ln_of);
   
   a->fc_oe = new_flux_concentration(a,0,0,0,-1,-2);
   a->fc_oe->label = -2;
   a->fc_oe->bound = fl_b_end_open;
+  a->fc_oe->locale_radius = 0;
   a->concentrations = tree_binsert(a->concentrations, a->fc_oe, fc_lab_of, fc_ln_of);
   
   a->fc_pb = new_flux_concentration(a,0,0,0,1,-3);
@@ -391,6 +396,7 @@ void delete_fluxon ( FLUXON *f ) {
   }
   delete_vertex(f->start); f->start = 0;
   delete_vertex(f->end);   f->end = 0;
+  f->v_ct = 0;
   f->fc0->world->lines = tree_unlink(f, fl_lab_of, fl_all_ln_of);
   f->fc0->lines = tree_unlink(f, fl_lab_of, fl_start_ln_of);
   f->fc1->lines = tree_unlink(f, fl_lab_of, fl_end_ln_of);
@@ -1051,6 +1057,16 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
     return item;
   }
 
+  if( ((LINKS *)(root+link_offset))->up != NULL ) {
+    NUM a;
+    NUM b;
+    printf("tree_insert -- warning: up from here is nonzero!  Throwing an arithmetic exception...\n");
+    a=1.0;
+    b=0.0;
+    a/= b;
+  }
+
+
   /* Find the proper parent location for the new item */
   for( foo=root; foo; ) {
     long foo_label = *( (long *)(foo+label_offset) );
@@ -1061,6 +1077,11 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
 	foo_links->right = item;
 	break;
       } else {
+	if( ((LINKS *)(foo_links->right+link_offset))->up != foo) {
+	  NUM a,b;
+	  printf("Right link's up doesn't link back!  Killing myself with an arithmetic exception...\n");
+	  a=1;  b=0;  a/=b;
+	}
 	foo = foo_links->right;
       }
     }
@@ -1070,6 +1091,11 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
 	foo_links->left = item;
 	break;
       } else {
+	if( ((LINKS *)(foo_links->left+link_offset))->up != foo) {
+	  NUM a,b;
+	  printf("Left link's up doesn't link back!  Killing myself with an arithmetic exception...\n");
+	  a=1;  b=0;  a/=b;
+	}
 	foo = foo_links->left;
       } 
     }
@@ -1084,6 +1110,11 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
 	foo_links->left = item;
 	break;
       } else {
+	if( ((LINKS *)(foo_links->left+link_offset))->up != foo) {
+	  NUM a,b;
+	  printf("Left link's up doesn't link back!  Killing myself with an arithmetic exception...\n");
+	  a=1;  b=0;  a/=b;
+	}
 	foo = foo_links->left;
       }
     }
@@ -1092,6 +1123,12 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
   if(foo == NULL) {		/* full exit */
     fprintf(stderr,"tree_insert should never get here.  You lose.\n");
     exit(2);
+  }
+
+  /* If it's already in the tree, return. */
+  if(item_links->up == foo) {
+    printf("Hey! tree_insert found that this item is already in the tree!\n");
+    return;
   }
 
   /* Link it up! (and notate the item as a leaf) */

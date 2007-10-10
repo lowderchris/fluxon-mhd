@@ -198,6 +198,8 @@ typedef struct WORLD {
 
   VERTEX *image, *image2;
   NUM locale_radius;        /* Default radius for concentrations' neighborhoods */
+
+  long auto_open;             // Flag indicating whether a full-auto open boundary is being maintained
   
   FLUX_CONCENTRATION *fc_ob; /* bogus flux concentration to store open fluxons     */
   FLUX_CONCENTRATION *fc_oe; /* bogus flux concentration to store open fluxons     */
