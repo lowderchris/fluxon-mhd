@@ -317,6 +317,7 @@ long tree_walker(void *tree, int label_ofset, int link_offset, long ((*func)()),
 
 DUMBLIST *new_dumblist();
 void free_dumblist(DUMBLIST *dl);
+inline void dumblist_init(DUMBLIST *foo);
 inline void dumblist_add(DUMBLIST *dl, void *a);
 inline void dumblist_delete(DUMBLIST *dl, void *a);
 inline void dumblist_rm(DUMBLIST *dl, int i);
