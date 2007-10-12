@@ -318,15 +318,22 @@ int footpoint_action(WORLD *world, char *s) {
 	    fc0->lines = tree_binsert(fc0->lines, f0, fl_lab_of, fl_start_ln_of);
 	    fc1->lines = tree_binsert(fc1->lines, f0, fl_lab_of, fl_end_ln_of);
 	    world->lines   = tree_binsert(world->lines,   f0, fl_lab_of, fl_all_ln_of);
-	    
-	    /* Make sure it has at least the two end vertices */
-	    {
+
+	    if(fc0->label==-3 && fc1->label==-4) {
+	      f0->plasmoid = 1;
+	    } else if(fc0->label==-3 || fc1->label==-4) {
+	      badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
+	      sprintf(badstr,"Fluxon %ld uses one (but not both) of the reserved plasmoid FC's (-3 and -4)! Not allowed.",f->label);
+	    }
+
+	    if(!badstr) {
+	      /* Make sure it has at least the two end vertices */
 	      VERTEX *v0, *v1;
 	      if(vl0==0) 
 		vl0 = -(f0->label*2);
 	      if(vl1==0) 
 		vl1 = -(f0->label*2)+1;
-
+	      
 	      v0 = new_vertex( vl0, fc0->x[0],fc0->x[1],fc0->x[2],f0);
 	      v1 = new_vertex( vl1, fc1->x[0],fc1->x[1],fc1->x[2],f0);
 	      if(!v0 || !v1) {
@@ -340,7 +347,7 @@ int footpoint_action(WORLD *world, char *s) {
 	}
       }
     }
-
+    
     break;
     
   case 'V': 

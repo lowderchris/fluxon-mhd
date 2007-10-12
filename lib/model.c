@@ -185,14 +185,14 @@ void fluxon_auto_open(FLUXON *f) {
 	  for(Vnext = v->next; Vnext && !inside; Vnext = Vnext->next) {
 	    NUM x2[3];
 	    diff_3d(x2, Vnext->x, w->fc_oe->x);
-	    rn_n = norm_3d(x1)/w->fc_oe->locale_radius;
+	    rn_n = norm_3d(x2)/w->fc_oe->locale_radius;
 	    inside = (rn_n < 1);
 	  }
 	}
 	
 	if(!Vnext) {
 	  
-	  //printf("Hmmmm, no Vnext --- purging to end of fluxon...\n");
+	  printf("Hmmmm, no Vnext --- purging to end of fluxon...\n");
 
 	  /****************************************
 	   * The whole rest of the fluxon is open.  Truncate it and connect it to the 
@@ -232,7 +232,7 @@ void fluxon_auto_open(FLUXON *f) {
 	  
 	  if(rp_n > 1) {
 
-	    //printf("Hmmm .. no previous vertex.  Opening start of fluxon...\n");
+	    printf("Hmmm .. no previous vertex.  Opening start of fluxon...\n");
 	    
 	    /* If there are no previous inside vertices, but there are following 
 	     * inside vertices, then we need to open the beginning...
@@ -293,8 +293,8 @@ void fluxon_auto_open(FLUXON *f) {
 	    }
 	    
 	    // Now we should have Vprev->a->b->Vnext.
-	    //printf("Vprev is %d; next is %d; next is %d; next is %d; Vnext is %d\n",
-	    //   Vprev->label, Vprev->next->label, Vprev->next->next->label, Vprev->next->next->next->label, Vnext->label);
+	    printf("Vprev is %d; next is %d; next is %d; next is %d; Vnext is %d\n",
+	       Vprev->label, Vprev->next->label, Vprev->next->next->label, Vprev->next->next->next->label, Vnext->label);
 	    
 	    // Now reposition the intermediate vertices approximately on the sphere, by truncating their respective segments.
 	    {
@@ -534,7 +534,7 @@ void fluxon_update_neighbors(FLUXON *fl, char global) {
     (*(fl->fc1->bound))(fl->end);
   }
 
-  while(v->next) {
+  while(v->next) {   
     if(verbosity>=3)  printf("\tfluxon_update_neighbors... vertex %d\n",v->label);
     vertex_update_neighbors(v,global);
     if(verbosity>=4)   fdump_fluxon(stdout,fl,0);
@@ -542,6 +542,7 @@ void fluxon_update_neighbors(FLUXON *fl, char global) {
     v=v->next;
     i++;
   }
+
 }
 
 /**********************************************************************
@@ -1182,14 +1183,14 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
 
 /*
  * snarf_filtered
- * Helper routine snarfs up a dumblist but skips over already-grabbed vertices and
- * image vertices.
+ * Helper routine snarfs up a dumblist but skips over already-grabbed vertices,
+ * image vertices, and plasmoid final segments.
  */
 static inline void snarf_filtered(DUMBLIST *ws, DUMBLIST *dl, long passno) {
   int i;
   for(i=0;i<dl->n;i++) {
     VERTEX *V = (VERTEX *)(dl->stuff[i]);
-    if( V->passno != passno && V->line ) {        
+    if( V && V->next && V->passno != passno && V->line && ((!V->line->plasmoid) || V->next->next) ) {        
       V->passno = passno;
       dumblist_quickadd(ws, dl->stuff[i]);
     }
@@ -1247,7 +1248,7 @@ static inline void expand_list(DUMBLIST *workspace, long passno) {
 static DUMBLIST *snarfer_workspace;
 static long line_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
   VERTEX *v;
-  for(v = f->start; v->next; v=v->next) {
+  for(v = f->start; v->next && ((!f->plasmoid) || v->next->next); v=v->next) {
     dumblist_quickadd(snarfer_workspace, v);
   }
   return 0;
@@ -1379,9 +1380,10 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   /* photosphere, since it generally intersects the photosphere.  Plasmoids     */
   /* do interact with the photosphere, since they generally don't intersect it. */
   if(v->next && 
-     ((v->next->next && v->prev) ||   /* Not an end vertex OR...           */
-      (v->line->plasmoid)))           /* ... a member of a plasmoid fluxon */
- {
+     v->prev &&
+     (v->next->next || v->line->plasmoid)
+     )
+  {
     PHOTOSPHERE *phot;
     PLANE *p;
     NUM a;
@@ -1461,9 +1463,6 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     }
   }
 
-  /* Sort by vertex number, to avoid simple duplication */
-  //  dumblist_sort(workspace, winnow_cmp_1);
-  //if(verbosity >= 3) printf("gather_neighbor_candidates: sorting yielded %d elements\n",workspace->n);
   if(verbosity >= 3) printf("gather_neighbor_candidates: returning %d elements (may include dupes)\n",workspace->n);
 
   return workspace;
@@ -1529,7 +1528,7 @@ void winnow_neighbor_candidates(VERTEX *v, DUMBLIST *horde) {
 	
       /* Find distances to the next and prev segments */
       d_next = fl_segment_dist(v,vn->next);
-      d_prev = fl_segment_dist(v,vn->prev);
+      d_prev = fl_segment_dist(v,vn->prev ? vn->prev : (vn->line->plasmoid ? vn->line->end->prev->prev : NULL) );
       /* Step forward or backward if necessary.  Fork if the field line
        * bends toward us.
        */
@@ -1537,8 +1536,11 @@ void winnow_neighbor_candidates(VERTEX *v, DUMBLIST *horde) {
 	if( (d_prev > 0) && (d_prev < d_next)) 
 	  dumblist_quickadd(horde,vn->prev);
 	(*vnp) = vn->next;
+	if( (*vnp)->line->plasmoid && !((*vnp)->next->next) ) {
+	  (*vnp) = (*vnp)->line->start;
+	}
       } else if( (d_prev > 0) && (d_prev < d0)) {
-	(*vnp) = vn->prev;
+	(*vnp) = (vn->prev ? vn->prev : (vn->line->plasmoid ? vn->line->end->prev->prev : NULL));
       } else
 	break;     /* Only exit from loop! */
     } while(1);
@@ -1944,60 +1946,196 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
     fprintf(stderr,"reconnect_vertices: error -- got a null or end vertex!\n");
     return;
   }
+  
+  if(v1==v2) {
+    fprintf(stderr,"reconnect_vertices: error -- tried to reconnect a vertex to itself!\n");
+    return;
+  }
 
   f1 = v1->line;
   f2 = v2->line;
   
   if(f1==f2) {
-    fprintf(stderr,"reconnect_vertices:  reconnection from %d to %d would create a plasmoid; not yet supported.  ignoring!\n",v1->label,v2->label);
+    /*********************************************
+     * Self-reconnection: create a new plasmoid 
+     */
+    
+    FLUXON *Fnew;
+    VERTEX *firstv, *lastv, *v;
+    WORLD *w;
+    long ifirst, ilast,i;
+    firstv = 0;
+    lastv = 0;
+
+    w = f1->fc0->world;
+
+    /* Sort the vertices into (first,last) order */
+    for(i=0, v=f1->start; v && v->next && !lastv; i++, v=v->next) {
+      if( v==v1 || v==v2 ) {
+	if( !firstv ) {
+	  ifirst = i;
+	  firstv = v;
+	} else {
+	  ilast = i;
+	  lastv = v;
+	}
+      }
+    }
+
+    if(!firstv || !lastv) {
+      fprintf(stderr,"Error in plasmoid reconnection code: one or more of the vertices weren't on the fluxon! Ignoring.\n");
+      return;
+    }
+
+    if(firstv->next==lastv || firstv->next->next==lastv) {
+      fprintf(stderr,"Error in plasmoid reconnection code: must be more than two vertices between the two reconnecting vertices! Ignoring.\n");
+      return;
+    }
+
+    /* Create the new plasmoid and link it into the world */
+    Fnew = new_fluxon(f1->flux, 
+			       w->fc_pb,
+			       w->fc_pe,
+			       0,
+			       0
+		      );
+    Fnew->plasmoid = 1;
+    w->fc_pb->lines = tree_binsert( w->fc_pb->lines, Fnew, fl_lab_of, fl_start_ln_of );
+    w->fc_pe->lines = tree_binsert( w->fc_pe->lines, Fnew, fl_lab_of, fl_end_ln_of );
+    w->lines = tree_binsert( w->lines, Fnew, fl_lab_of, fl_all_ln_of );
+    
+
+    /* Create the new plasmoid's end vertices and link them into the world */
+    Fnew->start = new_vertex(0, 
+			     0,0,0,
+			     Fnew);
+    w->vertices = tree_binsert( w->vertices, Fnew->start, v_lab_of, v_ln_of );
+
+    Fnew->end = new_vertex(0,
+			   0,0,0,
+			   Fnew);
+    w->vertices = tree_binsert( w->vertices, Fnew->end, v_lab_of, v_ln_of );
+
+    
+    /* Now cut the plasmoid out of the original fluxon... */
+    v = firstv->next;
+
+    firstv->next = lastv->next;
+    lastv->next->prev = firstv;
+    firstv->line->v_ct -= (ilast - ifirst);
+
+    /* ... and link it into the new fluxon */
+    Fnew->start->next = v;
+    v->prev = Fnew->start;
+
+    Fnew->end->prev = lastv;
+    lastv->next = Fnew->end;
+    
+    Fnew->v_ct = 2 + (ilast - ifirst);
+    
+    for(i=0, v=Fnew->start; v; i++, v=v->next )
+      v->line = Fnew;
+    
+    if(i != Fnew->v_ct) {
+      fprintf(stderr, "Error in plasmoid reconnection case - v_ct is %d, i is %d!\n", Fnew->v_ct, i);
+      Fnew->v_ct = i;
+    }
     return;
-  }
-  
-  /* Do the reconnection */
-  vv = v1->next;
-  v1->next = v2->next;
-  v1->next->prev = v1;
 
-  v2->next = vv;
-  v2->next->prev = v2;
+  } else if(f1->plasmoid || f2->plasmoid) {
+    /*********************************************
+     * Non-self reconnection involving a plasmoid: destroys a fluxon
+     */
+    VERTEX *v, *vpstart;
 
-  /* Now clean up the fluxons and the back-to-fluxon links in the individual vertices. */
-  
-  /* f1 */
-  i=1;
-  for( vv = f1->start; vv->next; vv=vv->next ) {
-    i++;
-    vv->line = f1;
-  }
-  f1->end = vv;
-  
-  /* f2 */
-  j=1;
-  for( vv = f2->start; vv->next; vv=vv->next ) {
-    j++;
-    vv->line = f2;
-  }
-  f2->end = vv;
-  
-  if(i+j != f1->v_ct + f2->v_ct) {
-    fprintf(stderr,"Hmmm -- something's funny with the vertex count.  Reconnected %d(fl %d) to %d (fl %d), final total vertex count is %d, previously %d\n",v1->label,f1->label,v2->label,f2->label,i+j,f1->v_ct+f2->v_ct);
-  }
-  f1->v_ct = i;
-  f2->v_ct = j;
-  
-  /* Switch the end flux concentrations... */
-  f1->fc1->lines = tree_unlink(f1, fl_lab_of, fl_end_ln_of);
-  f2->fc1->lines = tree_unlink(f2, fl_lab_of, fl_end_ln_of);
+    if(f1->plasmoid && !f2->plasmoid) {
+      // Swap the vertices to ensure that f2 is the plasmoid 
+      v=v2; v2=v1; v1=v;
+      f1=v1->line; 
+      f2=v2->line;
+    }
+    
+    /******************************
+     * Rectify the plasmoid linked list...
+     */
+    // If it's the very first VERTEX, switch to second-to-last (equivalent in a plasmoid)...
+    if( ! v2->prev ) 
+      v2 = v2->line->end->prev;
 
-  fc = f1->fc1;
-  f1->fc1 = f2->fc1;
-  f2->fc1 = fc;
-  
-  f1->fc1->lines = tree_binsert(f1->fc1->lines, f1, fl_lab_of, fl_end_ln_of);
-  f2->fc1->lines = tree_binsert(f2->fc1->lines, f2, fl_lab_of, fl_end_ln_of);
-  
+    // splice a genuine loop out of the plasmoid
+    v2->line->end->prev->next = v2->line->start->next;
+    v2->line->start->next->prev = v2->line->end->prev;
+    v2->line->start->next = v2->line->end;
+    v2->line->end->prev = v2->line->start;
+    
+    // Cut the genuine loop and splice it into the other fluxon
+    v=v1->next;
+    v1->next = v2->next;
+    v1->next->prev = v1;
+
+    v2->next = v;
+    v2->next->prev = v2;
+    
+    // Set the fluxon pointer of all vertices
+    for(v=v1->next; v && v != v2->next; v=v->next)
+      v->line = f1;
+
+    // Fix up the vertex counters of both fluxons
+    f1->v_ct += f2->v_ct - 2;
+    f2->v_ct = 2;
+
+    // Now delete the trivial plasmoid
+    delete_fluxon(f2);
+     
+  } else {
+    /*********************************************
+     * Non-self-reconnection - normal case 
+     */
+    vv = v1->next;
+    v1->next = v2->next;
+    v1->next->prev = v1;
+    
+    v2->next = vv;
+    v2->next->prev = v2;
+    
+    /* Now clean up the fluxons and the back-to-fluxon links in the individual vertices. */
+    
+    /* f1 */
+    i=1;
+    for( vv = f1->start; vv->next; vv=vv->next ) {
+      i++;
+      vv->line = f1;
+    }
+    f1->end = vv;
+    
+    /* f2 */
+    j=1;
+    for( vv = f2->start; vv->next; vv=vv->next ) {
+      j++;
+      vv->line = f2;
+    }
+    f2->end = vv;
+    
+    if(i+j != f1->v_ct + f2->v_ct) {
+      fprintf(stderr,"Hmmm -- something's funny with the vertex count.  Reconnected %d(fl %d) to %d (fl %d), final total vertex count is %d, previously %d\n",v1->label,f1->label,v2->label,f2->label,i+j,f1->v_ct+f2->v_ct);
+    }
+    f1->v_ct = i;
+    f2->v_ct = j;
+    
+    /* Switch the end flux concentrations... */
+    f1->fc1->lines = tree_unlink(f1, fl_lab_of, fl_end_ln_of);
+    f2->fc1->lines = tree_unlink(f2, fl_lab_of, fl_end_ln_of);
+    
+    fc = f1->fc1;
+    f1->fc1 = f2->fc1;
+    f2->fc1 = fc;
+    
+    f1->fc1->lines = tree_binsert(f1->fc1->lines, f1, fl_lab_of, fl_end_ln_of);
+    f2->fc1->lines = tree_binsert(f2->fc1->lines, f2, fl_lab_of, fl_end_ln_of);
+    
+  }
 }
-
+  
 /******************************
  * v_recon_check: checks the current reconnection condition between a 
  * vertex and each of its neighbors.  Reconnection with an image charge

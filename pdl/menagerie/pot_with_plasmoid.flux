@@ -1,4 +1,4 @@
-GLOBAL FORCES f_pressure_equi f_curvature f_vertex
+GLOBAL FORCES f_pressure_equi2b f_curvature f_vertex4
 GLOBAL B_FLAG 0
 GLOBAL PHOTOSPHERE 0 0 -0.001 0 0 1
 

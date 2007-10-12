@@ -1,4 +1,3 @@
-#define DEBUG_HULL 0
 /**********************************************************************
  * Geometry.c -- routines that embody geometrical operations
  * used for the fieldine model.
@@ -1924,12 +1923,32 @@ int check_hullpoint(VERTEX *v,
  */
 static DUMBLIST *ws = 0;
 
+
+// Local helper plasmoid_conjugate identifies nodes that are "adjacent"
+// to the start and end nodes of a plasmoid fluxon
+static inline char plasmoid_conjugate(VERTEX *a, VERTEX *b) {
+  if((a->line != b->line) || (!a->line->plasmoid))
+    return 0;
+  if( a == a->line->start ) 
+    return (b == b->line->end->prev || b==b->line->end->prev->prev);
+  if( a == a->line->start->next )
+    return (b == b->line->end->prev);
+  if( b == a->line->start )
+    return (a == a->line->end->prev || a==a->line->end->prev->prev);
+  if( b == a->line->start->next )
+    return (a == a->line->end->prev);
+  return 0;
+}
+  
 void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   int n = horde->n;
   int horde_i;
   long passno;
   WORLD *w = 0;
   int i,j;
+#ifdef DEBUG_HULL
+  int verbosity;
+#endif
 
   if(ws==0) {
     ws = new_dumblist();
@@ -1947,10 +1966,10 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
     exit(99);
   }
 
-#if DEBUG_HULL
+#ifdef DEBUG_HULL
   verbosity = w->verbosity;
-  if(!verbosity && central_v->label==32)
-    verbosity = 5;
+  //  if(!verbosity && central_v->label==2036)
+  //  verbosity = 5;
 #endif
 
   passno = ++w->passno;
@@ -1968,13 +1987,15 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   if(horde->n == 0)
     return;
 
+
   /* always add the first eligible VERTEX in the list... */
   for(i=0;i<horde->n && 
-	( horde->stuff[i] == central_v ||             // skip the main vertex if present
-	  horde->stuff[i] == central_v->prev ||       
-	  horde->stuff[i] == central_v->next || 
-	  !( ((VERTEX *)(horde->stuff[i]))->next ) || // skip endpoint vertices if present
-	  !( ((VERTEX *)(horde->stuff[i]))->line)     // skip image vertices
+	( horde->stuff[i] == central_v ||                                 // skip the main vertex if present
+	  horde->stuff[i] == central_v->prev ||                           // skip the following segment if present
+	  horde->stuff[i] == central_v->next ||                           // skip the previous segment if present
+	  !( ((VERTEX *)(horde->stuff[i]))->next ) ||                     // skip endpoint vertices if present
+	  !( ((VERTEX *)(horde->stuff[i]))->line) ||                      // skip image vertices
+	  plasmoid_conjugate( (VERTEX *)(horde->stuff[i]), central_v )
 	  );
       i++) 
     ;
@@ -2000,8 +2021,18 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
     char keep;
     int  flag;
 
-    if(v->passno == passno || v == central_v || !v->next || 
-       ( v->line==central_v->line && (v->next==central_v || v->prev==central_v))) {
+    // Check for skip conditions...
+    if(v->passno == passno ||                               // Already been here
+       v == central_v ||                                    // Skip ourselves if we encounter us
+       !v->next ||                                          // Must have a following segment to be valid
+       ( v->line==central_v->line &&                  // Several end conditions for same fluxon:
+	 ( v->next==central_v ||                            // Skip next segment
+	   v->prev==central_v ||                            // Skip previous segment
+	   plasmoid_conjugate( v, central_v)
+	   )
+	 )
+       ) {     // end of conditional
+
  #if DEBUG_HULL
       if(verbosity >= 5)
 	printf("vertex %d has already been inspected (or is the same as %d), or has no next field (0x%x) - skipping...\n",v->label, central_v->label, v->next);
@@ -2032,8 +2063,8 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	  )
 	;
 
-#if DEBUG_HULL      
-      if(verbosity >= 5) 
+#ifdef DEBUG_HULL
+      if(verbosity >= 5)
 	printf("position %d in current hull (out of %d)\n",next_idx,ws->n);
 #endif
 
@@ -2290,7 +2321,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
     } /* end of non-duplication test block */
 
 #if DEBUG_HULL
-    if(w->verbosity >= 3) {
+    if(verbosity >= 3) {
       printf("horde-loop: finished %d; %d neighbors in list...\n",v->label,ws->n);
     }
 #endif
@@ -2320,7 +2351,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   horde->n = i;
 
 #if DEBUG_HULL
-  if(w->verbosity >= 5)  {
+  if(verbosity >= 5)  {
     int i;
     
     for(i=0;i<ws->n;i++) {
