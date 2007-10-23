@@ -17,5 +17,5 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile( NAME => 'Flux::World',
 	       INC=>join(" ",map { "-I$_"} @inc),
-	       OBJECT => '$(BASEEXT)$(OBJ_EXT) /usr/local/lib/libflux.a'
+	       OBJECT => '$(BASEEXT)$(OBJ_EXT)'
 	       );

@@ -71,6 +71,10 @@
 
 #include "pdl.h"
 #include "pdlcore.h"
+
+static FluxCore* FLUX; /* FLUX core functions (run-time linking) */
+static SV *FluxCoreSV;
+
 static Core* PDL; /* PDL core functions (run-time linking)     */
 static SV* CoreSV;/* gets perl var holding the core structures */
 
@@ -117,7 +121,7 @@ CODE:
 	if(  !(f = fopen(s,"r"))  ) 
 	    croak("Couldn't open file '%s' to read a Flux::World",s);
 
-	w = read_world(f,(WORLD *)0);
+	w = FLUX->read_world(f,(WORLD *)0);
 	printf("read_world: world refct is %d\n",w->refct);
 	fclose(f);
 	
@@ -164,7 +168,7 @@ CODE:
   w = SvWorld(wsv,"write_world");
   if( !(f=fopen(s,"w")) ) 
     croak("Couldn't open file '%s' to write a Flux::World",s);
-  fprint_world(f,w,"");
+  FLUX->fprint_world(f,w,"");
   fclose(f);
 
 
@@ -179,7 +183,7 @@ PREINIT:
 /**/
 CODE:
   w = SvWorld(wsv,"fix_proximity");
-  RETVAL = global_fix_proximity(w,alpha);
+  RETVAL = FLUX->global_fix_proximity(w,alpha);
 OUTPUT:
   RETVAL
 
@@ -195,7 +199,7 @@ PREINIT:
 /**/
 CODE:
   w = SvWorld(wsv,"fix_curvature");
-  RETVAL = global_fix_curvature(w,alpha,beta);
+  RETVAL = FLUX->global_fix_curvature(w,alpha,beta);
 OUTPUT:
   RETVAL
 
@@ -210,7 +214,7 @@ PREINIT:
  */
 CODE:
   w = SvWorld(wsv,"update_neighbors");
-  world_update_neighbors(w,globalflag);
+  FLUX->world_update_neighbors(w,globalflag);
 
 
 IV
@@ -296,7 +300,7 @@ CODE:
  av_clear(RETVAL);
  if(w->lines) {
 	av_extend(RETVAL, (w->lines->all_links).n);
- 	tree_walker(w->lines,fl_lab_of,fl_all_ln_of,fluxons_helper,0);
+ 	FLUX->tree_walker(w->lines,fl_lab_of,fl_all_ln_of,fluxons_helper,0);
  }
 OUTPUT:
  RETVAL
@@ -319,7 +323,7 @@ CODE:
  av_clear(RETVAL);
  if(w->vertices) {
 	av_extend(RETVAL, (w->vertices->world_links).n);
-	tree_walker(w->vertices, v_lab_of, v_ln_of, vertices_helper,0);
+	FLUX->tree_walker(w->vertices, v_lab_of, v_ln_of, vertices_helper,0);
  }
 OUTPUT:
  RETVAL
@@ -338,7 +342,7 @@ PREINIT:
  */
 CODE:
   w = SvWorld(wsv,"Flux::World::fluxon");
-  f = (FLUXON *)tree_find(w->lines,id,fl_lab_of,fl_all_ln_of);
+  f = (FLUXON *)(FLUX->tree_find(w->lines,id,fl_lab_of,fl_all_ln_of));
   if(f) {
 	I32 foo;
 	ENTER;
@@ -381,7 +385,7 @@ PREINIT:
  */
 CODE:
   w = SvWorld(wsv,"Flux::World::vertex");
-  v = (VERTEX *)tree_find((void *)(w->vertices),id,v_lab_of,v_ln_of);
+  v = (VERTEX *)(FLUX->tree_find((void *)(w->vertices),id,v_lab_of,v_ln_of));
   if(v) {
      	I32 foo;
  
@@ -445,11 +449,11 @@ CODE:
  for(i=0;i<N_FORCE_FUNCS && w->f_funcs[i]; i++) {
    int j;
    for(j=0; 
-       FLUX_FORCES[j].func && FLUX_FORCES[j].func != w->f_funcs[i];
+       FLUX->FLUX_FORCES[j].func && FLUX->FLUX_FORCES[j].func != w->f_funcs[i];
        j++
        );
    if(FLUX_FORCES[j].func) {
-     sv = newSVpv(FLUX_FORCES[j].name,strlen(FLUX_FORCES[j].name));
+     sv = newSVpv(FLUX->FLUX_FORCES[j].name,strlen(FLUX->FLUX_FORCES[j].name));
    } else {
      char s[80];
      sprintf(s,"0x%x",(unsigned long)(w->f_funcs[i]));
@@ -486,10 +490,10 @@ CODE:
    RETVAL=1;
  } else {
   for(j=0;
-     FLUX_FORCES[j].func && strcmp(FLUX_FORCES[j].name,what);
+     FLUX->FLUX_FORCES[j].func && strcmp(FLUX->FLUX_FORCES[j].name,what);
      j++)
        ;
-     if(!FLUX_FORCES[j].func) {
+     if(!FLUX->FLUX_FORCES[j].func) {
        if(what[0]=='0' && what[1]=='x') {
 	 unsigned long ul;
 	 sscanf(what+2,"%x",&ul);
@@ -499,7 +503,7 @@ CODE:
          croak("Unknown force function '%s'\n",what);
        }
      } else {
-        w->f_funcs[where] = FLUX_FORCES[j].func;
+        w->f_funcs[where] = FLUX->FLUX_FORCES[j].func;
 	RETVAL = 2;
      }
   }
@@ -531,11 +535,11 @@ CODE:
   for(i=0;i<N_RECON_FUNCS && w->rc_funcs[i]; i++) {
 	int j;
 	for( j=0;	
- 	     FLUX_RECON[j].func && FLUX_RECON[j].func != w->rc_funcs[i];
+ 	     FLUX->FLUX_RECON[j].func && FLUX->FLUX_RECON[j].func != w->rc_funcs[i];
 	     j++
 	);
 	if(FLUX_RECON[j].func) {
-		sv = newSVpv(FLUX_RECON[j].name,strlen(FLUX_RECON[j].name));
+		sv = newSVpv(FLUX->FLUX_RECON[j].name,strlen(FLUX->FLUX_RECON[j].name));
 	} else {
 		char s[80];
 		sprintf(s,"0x%x",(unsigned long)(w->rc_funcs[i]));
@@ -545,10 +549,10 @@ CODE:
 		printf("x...");
 	
 	av_store(RETVAL, av_len(RETVAL)+1, sv) || svREFCNT_dec(sv);
-	av_clear(sv2 = newAV());
+	av_clear((AV *)(sv2 = (SV *)newAV()));
 	for( j=0; j<N_RECON_PARAMS; j++ )  {
 		sv = newSVnv(w->rc_params[i][j]);
-		av_store(sv2, av_len(sv2)+1, sv) || svREFCNT_dec(sv);
+		av_store((AV *)sv2, av_len((AV *)sv2)+1, sv) || svREFCNT_dec(sv);
 	}
 	sv2 = newRV_noinc(sv2);
 	av_store(RETVAL, av_len(RETVAL)+1, sv2) || svREFCNTT_dec(sv2);
@@ -583,12 +587,12 @@ CODE:
 		RETVAL = 1;
 	} else {
 		for(j=0;
-		FLUX_RECON[j].func && strcmp(FLUX_RECON[j].name,what);
+		FLUX->FLUX_RECON[j].func && strcmp(FLUX->FLUX_RECON[j].name,what);
 		j++)
 		;
 
-		if(FLUX_RECON[j].func) {
-			w->rc_funcs[where] = FLUX_RECON[j].func;
+		if(FLUX->FLUX_RECON[j].func) {
+			w->rc_funcs[where] = FLUX->FLUX_RECON[j].func;
 	
 			if( params && 
 			    params != &PL_sv_undef && 
@@ -621,7 +625,7 @@ PREINIT:
 	WORLD *w;
 CODE:
 	w = SvWorld(wsv, "Flux::World::reconnect");
-	RETVAL = global_recon_check(w);
+	RETVAL = FLUX->global_recon_check(w);
 OUTPUT:
  RETVAL
 	
@@ -734,7 +738,7 @@ PREINIT:
  */
 CODE:
  w = SvWorld(wsv,"Flux::World::update_force");
- minmax = world_update_mag(w,global);
+ minmax = FLUX->world_update_mag(w,global);
  RETVAL = minmax[1];
 OUTPUT:
  RETVAL
@@ -747,7 +751,7 @@ PREINIT:
  WORLD *w;
 CODE:
  w = SvWorld(wsv,"Flux::World::relax_step");
- world_relax_step(w,time);
+ FLUX->world_relax_step(w,time);
 
 
 HV *
@@ -758,7 +762,7 @@ PREINIT:
  struct VERTEX_STATS *st;
 CODE:
  w = SvWorld(wsv,"Flux::World::stats");
- st = world_collect_stats(w);	
+ st = FLUX->world_collect_stats(w);	
  RETVAL = newHV();
  hv_store(RETVAL, "n",    1, newSViv(st->n),0);
  if(st->n>0) {
@@ -802,7 +806,7 @@ CODE:
   b[0] = b_0; b[1]=b_1; b[2]=b_2;
   c[0] = c_0; c[1]=c_1; c[2]=c_2;
   d[0] = d_0; d[1]=d_1; d[2]=d_2;
-  ls_closest_approach(P0,P1,a,b,c,d);
+  FLUX->ls_closest_approach(P0,P1,a,b,c,d);
   RETVAL = newAV();
   av_clear(RETVAL);
   av_extend(RETVAL,6);
@@ -837,7 +841,7 @@ CODE:
   a[0] = a_0; a[1]=a_1; a[2]=a_2;
   b[0] = b_0; b[1]=b_1; b[2]=b_2;
   c[0] = c_0; c[1]=c_1; c[2]=c_2;
-  p_ls_closest_approach(P,a,b,c);
+  FLUX->p_ls_closest_approach(P,a,b,c);
   RETVAL = newAV();
   av_clear(RETVAL);
   av_extend(RETVAL,3);
@@ -868,7 +872,7 @@ CODE:
  */
  a[0] = a_0; a[1] = a_1; a[2] = a_2;
  b[0] = b_0; b[1] = b_1; b[2] = b_2;
- projmatrix(matrix,a,b);
+ FLUX->projmatrix(matrix,a,b);
  p = PDL->create(PDL_PERM);
  dims[0] = 3;
  dims[1] = 3;
@@ -915,7 +919,7 @@ CODE:
  m[0] = m_0; m[1] = m_1; m[2] = m_2;
  m[3] = m_3; m[4] = m_4; m[5] = m_5;
  m[6] = m_6; m[7] = m_7; m[8] = m_8;
- mat_vmult_3d(b,m,a);
+ FLUX->mat_vmult_3d(b,m,a);
  p = PDL->create(PDL_PERM);
  dims[0] = 3;
  PDL->setdims(p,dims,1);
@@ -954,7 +958,7 @@ CODE:
  m[0] = m_0; m[1] = m_1; m[2] = m_2;
  m[3] = m_3; m[4] = m_4; m[5] = m_5;
  m[6] = m_6; m[7] = m_7; m[8] = m_8;
- vec_mmult_3d(b,m,a);
+ FLUX->vec_mmult_3d(b,m,a);
  p = PDL->create(PDL_PERM);
  dims[0] = 3;
  PDL->setdims(p,dims,1);
@@ -1016,8 +1020,8 @@ printf("p is a %d-dim PDL (%d x %d)\n",p->ndims,p->dims[0],p->dims[1]);
 /******************************
  * Stuff the PDL values into a collection of spankin'-new vertices
  */
-horde = new_dumblist();
-dumblist_grow(horde,p->dims[1]);
+horde = FLUX->new_dumblist();
+FLUX->dumblist_grow(horde,p->dims[1]);
 for(i=0;i<p->dims[1];i++) {
 	double x,y;
 	VERTEX *v = new_vertex(i,0,0,0,0);
@@ -1036,7 +1040,7 @@ horde->n = p->dims[1];
  * Allocate the hull data, and call hull_2d
  */
 hull = (HULL_VERTEX *)malloc(sizeof(HULL_VERTEX) * p->dims[1]);
-hull_2d(hull,horde,rejects=new_dumblist());
+FLUX->hull_2d(hull,horde,rejects=new_dumblist());
 /******************************
  * Create an output PDL
  */
@@ -1099,3 +1103,13 @@ BOOT:
  PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
  if (PDL->Version != PDL_CORE_VERSION)
     Perl_croak(aTHX_ "Flux::Fluxon needs to be recompiled against the newly installed PDL");
+
+ 
+ perl_require_pv("Flux::Core");
+ FluxCoreSV = perl_get_sv("Flux::Core::FLUX",FALSE);
+ if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required b Flux)");
+ FLUX = INT2PTR(FluxCore*, SvIV(FluxCoreSV));
+ if(FLUX->CoreVersion != FLUX_CORE_VERSION) {
+	printf("FLUX->CoreVersion is %d; FLUX_%s is %d\n",FLUX->CoreVersion,"CORE_VERSION",FLUX_CORE_VERSION);
+	Perl_croak(aTHX_ "Flux needs to be recompiled against the newly installed FLUX libraries");
+}

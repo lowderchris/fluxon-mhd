@@ -33,6 +33,9 @@
 #include "pdl.h"
 #include "pdlcore.h"
 
+static FluxCore* FLUX; /* FLUX core functions (run-time linking) */
+static SV *FluxCoreSV;
+
 static Core* PDL; /* PDL core functions (run-time linking)     */
 static SV* CoreSV;/* gets perl var holding the core structures */
 
@@ -112,7 +115,8 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 		case 22: return (void *)&(f->end_links.left);	break;
 		case 23: return (void *)&(f->end_links.right);	break;
 		case 24: return (void *)&(f->fc0);              break;
-		case 25: return (void *)&(f->fc1);
+		case 25: return (void *)&(f->fc1);              break;
+	        case 26: return (void *)&(f->plasmoid);         break;
 		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 				typeno,fieldno);
 			return (void *)0;
@@ -153,6 +157,7 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	        case 28: return (void *)&(w->maxn_coeffs);              break;
 		case 29: return (void *)&(w->handle_skew);              break;
 		case 30: return (void *)&(w->auto_open);                break;
+	        case 31: return (void *)&(w->default_bound);            break;
 		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 				typeno, fieldno);		
 			 return (void *)0;
@@ -175,6 +180,7 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 		case 10: return (void *)&(fc->links.right);		break;
 		case 11: return (void *)&(fc->x[0]);			break;
 		case 12: return (void *)&(fc->locale_radius);		break;
+	        case 13: return (void *)&(fc->bound);                   break;
 		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 				typeno, fieldno);
 			return (void *)0;
@@ -567,15 +573,15 @@ PREINIT:
  SV *sv;
 CODE:
  buf[0] = '\0';
- strcpy(buf,code_info_data);
+ strcpy(buf,FLUX->code_info_data);
  strcat(buf,newline);
- strcat(buf,code_info_io);
+ strcat(buf,FLUX->code_info_io);
  strcat(buf,newline);
- strcat(buf,code_info_geometry);
+ strcat(buf,FLUX->code_info_geometry);
  strcat(buf,newline);
- strcat(buf,code_info_model);
+ strcat(buf,FLUX->code_info_model);
  strcat(buf,newline);
- strcat(buf,code_info_physics);
+ strcat(buf,FLUX->code_info_physics);
  strcat(buf,newline);
  RETVAL = newSVpv(buf,0);
 OUTPUT:
@@ -688,7 +694,194 @@ CODE:
  RETVAL = val;
 OUTPUT:
  RETVAL		
+
+
+SV *
+_rforces(sv, typeno, fieldno)
+ SV *sv
+ long typeno
+ long fieldno
+PREINIT:
+ AV *av;
+ SV *rv;
+ WORLD *world;
+ void **f_funcs;
+CODE:
+ I32 i;
+ world = (void *)SvFluxPtr(sv,"_rforces", "Flux::World");
+ f_funcs = fieldptr(world, typeno, fieldno);
+
+ av = newAV();
+ for(i=0;i<N_FORCE_FUNCS && f_funcs[i]; i++) {
+   int j;
+   for(j=0; 
+       FLUX->FLUX_FORCES[j].func && FLUX->FLUX_FORCES[j].func != f_funcs[i];
+       j++
+       ) 
+	;
+
+   if(FLUX->FLUX_FORCES[j].func) {
+//printf("Match: %s (j=%d)\n",FLUX->FLUX_FORCES[j].name,j);
+     sv = newSVpv(FLUX->FLUX_FORCES[j].name,strlen(FLUX->FLUX_FORCES[j].name));
+   } else {
+     char s[80];
+     sprintf(s,"UNKNOWN (0x%x)",(unsigned long)(f_funcs[i]));
+     sv = newSVpv(s,strlen(s));
+   }
+   av_store(av, av_len(av)+1, sv) || svREFCNT_dec(sv);
+ }
+ rv = newRV_noinc((SV *)av);
+ SvREFCNT_inc(rv);
+ RETVAL = rv;
+OUTPUT:
+ RETVAL
+
+
+SV *
+_wforces(sv, typeno, fieldno, val)
+ SV *sv
+ long typeno
+ long fieldno
+ SV *val
+PREINIT:
+ WORLD *world;
+ void **f_funcs;
+ SV *val_sv;
+ AV *av;
+CODE:
+ I32 i,j,l;
+ void ((*(new_f_funcs[N_FORCE_FUNCS]))());
+ char *what;
+
+ world = (void *)SvFluxPtr(sv, "_wforces","Flux::World");
+ f_funcs = fieldptr(world, typeno, fieldno);
+
+ if( !SvROK(val) ) {
+	croak("Flux::_wforces: requires an array ref");
+ }
+
+ val_sv = SvRV(val);
+ if(SvTYPE(val_sv) != SVt_PVAV) {
+	croak("Flux::_wforces: non-array ref found (requires array ref)");
+ }
+ av = (AV *)val_sv;
  
+ l = av_len(av)+1;
+ for(i=0;i<l;i++) {
+   SV **svp = av_fetch(av,i,0);
+   what = (svp ? SvPV_nolen(*svp) : "");
+   for(j=0;
+     FLUX->FLUX_FORCES[j].func && strcmp(FLUX->FLUX_FORCES[j].name,what);
+     j++)
+       ;
+
+   if(!(FLUX->FLUX_FORCES[j].func)) {
+	char buf[10240];
+	sprintf(buf, "Unknown force function '%s' (must be one of: %s", what, FLUX->FLUX_FORCES[0].name);
+	for(i=1; FLUX->FLUX_FORCES[i].func; i++) {
+		strcat(buf, ", ");
+		strcat(buf, FLUX->FLUX_FORCES[i].name);
+	}
+	strcat(buf,")\n");
+        croak(buf);
+   } else {
+      printf("Match: %s at %d\n",FLUX->FLUX_FORCES[j].name,i);
+      new_f_funcs[i] = FLUX->FLUX_FORCES[j].func;
+   }
+  }
+
+  for(j=0;j<l;j++) 
+    f_funcs[j] = new_f_funcs[j];
+  f_funcs[l] = 0;
+  SvREFCNT_inc(val);
+  RETVAL = val;
+OUTPUT:
+  RETVAL  
+
+
+SV *
+_rbound(sv, typeno, fieldno)
+ SV *sv
+ long typeno
+ long fieldno
+PREINIT:
+ AV *av;
+ SV *rv;
+ void *ptr;
+ void **field;
+CODE:
+ I32 i;
+ ptr = (void *)SvFluxPtr(sv,"_rbound", "Flux");
+ field = fieldptr(ptr,typeno, fieldno);
+
+ av = newAV();
+ for(i=0;FLUX->F_B_NAMES[i].func && 
+	( (void *)(FLUX->F_B_NAMES[i].func) != *field);
+	i++)
+	;
+ if(((void *)FLUX->F_B_NAMES[i].func) == *field) {
+     sv = newSVpv(FLUX->F_B_NAMES[i].name,
+	 strlen(  FLUX->F_B_NAMES[i].name));
+ } else {
+     char s[80];
+     sprintf(s,"UNKNOWN (0x%x)",(unsigned long)(*field));
+     sv = newSVpv(s,strlen(s));
+ }
+ RETVAL = sv;
+OUTPUT:
+ RETVAL
+
+
+
+SV *
+_wbound(sv, typeno, fieldno, val)
+ SV *sv
+ long typeno
+ long fieldno
+ SV *val
+PREINIT:
+ void *ptr;
+ void **field;
+ SV *val_sv;
+ char *what;
+CODE:
+ I32 j;
+ I32 l;
+
+ ptr = (void *)SvFluxPtr(sv, "_wbound","Flux");
+ field = fieldptr(ptr, typeno, fieldno);
+
+ what = SvPV_nolen(val);
+
+ if(!*what) {
+	*field = 0;
+ } else {
+	 for(j=0;
+	     FLUX->F_B_NAMES[j].func &&
+	     strcmp(FLUX->F_B_NAMES[j].name, what);
+	     j++)
+	//printf("Trying 0x%x (%s); value is %x\n",FLUX->F_B_NAMES[j].func,FLUX->F_B_NAMES[j].name,*field);
+	       ;
+	 if(!(FLUX->F_B_NAMES[j].func)) {
+		char buf[10240];
+		sprintf(buf, "Unknown fluxon end condition '%s' (must be one of: %s", what, FLUX->F_B_NAMES[0].name);
+		for(j=1;FLUX->F_B_NAMES[j].func;j++) {
+			strcat(buf, ", ");
+			strcat(buf, FLUX->F_B_NAMES[j].name);
+	        }
+		strcat(buf,")\n");
+		croak(buf);
+	 } else {
+	     *field = (void*)(FLUX->F_B_NAMES[j].func);
+	 }
+  }
+  RETVAL = newSVsv(val);
+OUTPUT:
+  RETVAL  
+
+
+
+
 	
 BOOT:
 /**********************************************************************
@@ -702,3 +895,14 @@ BOOT:
  PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
  if (PDL->Version != PDL_CORE_VERSION)
     Perl_croak(aTHX_ "Flux needs to be recompiled against the newly installed PDL");
+
+ perl_require_pv("Flux::Core");
+ FluxCoreSV = perl_get_sv("Flux::Core::FLUX",FALSE);
+ if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required b Flux)");
+ 
+ FLUX = INT2PTR(FluxCore*, SvIV(FluxCoreSV));
+ if(FLUX->CoreVersion != FLUX_CORE_VERSION) {
+	Perl_croak(aTHX_ "Flux needs to be recompiled against the newly installed FLUX libraries");
+}
+
+  

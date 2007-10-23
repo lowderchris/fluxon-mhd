@@ -36,6 +36,10 @@
 #include "pdl.h"
 #include "pdlcore.h"
 
+
+static FluxCore* FLUX; /* FLUX core functions (run-time linking) */
+static SV *FluxCoreSV;
+
 static Core* PDL;  /* PDL core functions (run-time linking) */
 static SV* CoreSV; /* gets perl var holding the core structures */
 
@@ -285,5 +289,15 @@ BOOT:
  PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
  if (PDL->Version != PDL_CORE_VERSION)
     Perl_croak(aTHX_ "Flux::Fluxon needs to be recompiled against the newly installed PDL");
+
+
+ perl_require_pv("Flux::Core");
+ FluxCoreSV = perl_get_sv("Flux::Core::FLUX",FALSE);
+ if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required b Flux)");
+ 
+ FLUX = INT2PTR(FluxCore*, SvIV(FluxCoreSV));
+ if(FLUX->CoreVersion != FLUX_CORE_VERSION) {
+	Perl_croak(aTHX_ "Flux needs to be recompiled against the newly installed FLUX libraries");
+}
 
  

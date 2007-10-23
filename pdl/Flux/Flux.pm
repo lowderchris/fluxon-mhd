@@ -1,4 +1,4 @@
-
+use Flux::Core;
 use Flux::World;
 use Flux::Fluxon;
 use Flux::Vertex;
@@ -270,12 +270,14 @@ package Flux;
 	Concentration => [ \&_rconcentration, undef ],
         Neighbors =>     [ sub{ _rdumblist("Flux::Vertex",@_) }, undef ],
         Nearby =>        [ sub{ _rdumblist("Flux::Vertex",@_) }, undef ],
-        Coeffs =>        [ \&_rcoeffs, \&_wcoeffs ]
+        Coeffs =>        [ \&_rcoeffs, \&_wcoeffs ], 
+        Forces =>        [ \&_rforces, \&_wforces ],
+	Bound  =>        [ \&_rbound, \&_wbound ]
     };
 
     our $codes = { 
 	vertex => {
-	    line=>        [1, 'Line'],
+	    line=>        [1, 'Fluxon'],
 	    prev=>        [2, 'Vertex'],
 	    next=>        [3, 'Vertex'],
 	    x=>           [4, 'vector'],
@@ -330,6 +332,7 @@ package Flux;
 	    end_links_right=>     [23,'Fluxon'],
 	    fc_start =>           [24,'Concentration'],
 	    fc_end =>             [25,'Concentration'],
+            plasmoid =>           [26,'long']
 	    },
 	world => {
 	    frame_number=>       [1,'long'],
@@ -346,7 +349,7 @@ package Flux;
 	    fc_pb =>            [12,'Concentration'],
 	    fc_pe =>            [13,'Concentration'],
 	    verbosity =>        [14,'long'],
-	    forces =>           [15,undef],
+	    forces =>           [15,'Forces'],
 	    scale_b_power=>     [16,'num'],
 	    scale_d_power=>     [17,'num'],
 	    scale_s_power=>     [18,'num'],
@@ -361,7 +364,8 @@ package Flux;
             n_coeffs=>          [27,'long'],
             maxn_coeffs=>       [28,'long'],
 	    handle_skew=>       [29,'long'],
-	    auto_open=>         [30,'long']
+	    auto_open=>         [30,'long'],
+            default_bound =>    [31,'Bound']
 	},
 	concentration => {
 	    world=>		 [1,'World'],
@@ -376,6 +380,7 @@ package Flux;
 	    links_right=>        [10,'Concentration'],
 	    x=>                  [11,'vector'],
 	    locale_radius=>      [12,'num'],
+            bound=>              [13,'Bound']
 	}
     };
 
