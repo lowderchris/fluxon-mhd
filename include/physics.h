@@ -30,11 +30,11 @@
 #include <stdio.h>
 
 void b_eqa(VERTEX *V, HULL_VERTEX *verts); /* calculate B field at vertex */
-void b_simple(VERTEX *V, HULL_VERTEX *verts); /* calculate B field at vertex */
+void b_simple(VERTEX *V, HULL_VERTEX *verts); /* B field at vertex */
 
-void e_simple(VERTEX *V, HULL_VERTEX *verts); /* calculate energy assoc. with vertex, breaks if hull is open */
-void e_simple2(VERTEX *V, HULL_VERTEX *verts); /* calculate energy assoc. with vertex */
-void e_open(VERTEX *V, HULL_VERTEX *verts); /* calculate energy assoc. with vertex */
+void e_simple(VERTEX *V, HULL_VERTEX *verts); /* energy, breaks if hull is open */
+void e_simple2(VERTEX *V, HULL_VERTEX *verts); /* energy assoc. with vertex */
+void e_open(VERTEX *V, HULL_VERTEX *verts); /* energy assoc. with vertex */
 void e_eqa(VERTEX *V, HULL_VERTEX *verts);
 
 void f_curvature(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
@@ -44,7 +44,7 @@ void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 
-void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts); /* ang. equipartition pressure */
+void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts); /* ang. equipart. pressure */
 void f_curv_hm(VERTEX *V, HULL_VERTEX *verts); /* harmonic-mean curvature  */ 
 void f_curv_m(VERTEX *V, HULL_VERTEX *verts);  /* normal mean curvature */ 
 
@@ -52,6 +52,7 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
 void f_vertex2(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
 void f_vertex3(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
 void f_vertex4(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
+void f_vertex5(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
 void f_vert(VERTEX *V, HULL_VERTEX *verts);   /* vertex pseudoforce */
 
 

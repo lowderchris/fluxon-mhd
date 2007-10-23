@@ -246,7 +246,7 @@ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
 
   dumblist_init( &(tp->neighbors) );
   dumblist_init( &(tp->nearby) );
-
+  
 
   tp->b_mag = 0;
   tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
@@ -283,9 +283,9 @@ FLUX_CONCENTRATION *new_flux_concentration(
   fc->x[0] = x;	 	 	/* position */
   fc->x[1] = y;
   fc->x[2] = z;
-  fc->locale_radius = 0; 	/* locale_radius isn't used just now */
+  fc->locale_radius = 0; 	/* notional size of the flux concentration... */
   
-  fc->bound = 0;
+  fc->bound = 0; 
 
   clear_links(&(fc->links));
   fc->links.sum = fc->flux;
@@ -305,6 +305,8 @@ WORLD *new_world() {
   a->state = WORLD_STATE_NEW;
   a->refct = 0;
   printf("new_world - set refct to %d\n",a->refct);
+
+  a->default_bound = NULL;
 
   a->concentrations = NULL;	/* nothing in the world yet */
   a->vertices = NULL;
@@ -561,8 +563,11 @@ void unlink_vertex(VERTEX *v) {
 
   //printf("unlink_vertex: %d has %d neighbors and %d nearby\n",v->label,v->neighbors.n, v->nearby.n);
   
-  if(!v)			/* do nothing if not given a v */
+  if(!v){			/* do nothing if not given a v */
+    fprintf(stderr,"unlink_vertex: warning - got a null vertex!\n");
     return;
+  }
+
   if((!v->prev || !v->next) && v->line->fc0->world->verbosity) {	/* if one of the links is missing */
     fprintf(stderr,"unlink_vertex: warning - vertex %d is a fluxon endpoint. Proceeding anyway...\n",v->label);
   }
@@ -575,12 +580,12 @@ void unlink_vertex(VERTEX *v) {
   if(v->prev) 
     v->prev->next = v->next;
   else 
-    v->line->start = 0;
+    v->line->start = v->next;
 
   if(v->next)
     v->next->prev = v->prev;
   else
-    v->line->end = 0;
+    v->line->end = v->prev;
       
   v->line->v_ct--;		/* decrease vertex count in the fluxon */
 
@@ -589,25 +594,28 @@ void unlink_vertex(VERTEX *v) {
    * and put in v's next and previous vertices. 
    */
 
-  dumblist_sort(&(v->neighbors),ptr_cmp);
-  dumblist_crunch(&(v->neighbors),ptr_cmp);
+  dumblist_crunch(&(v->neighbors));
+
+
   for(i=0;i<v->neighbors.n;i++) {
+    int j;
     VERTEX *a = ((VERTEX **)(v->neighbors.stuff))[i];
-    if(a) {
+    
+    if( a && a != v ) {
       //      printf(" neighbor %d: purging %d's nearby link to %d\n",i,a->label,v->label);
 
       long n = a->nearby.n;
       dumblist_delete( &(a->nearby), v);
       if(n == a->nearby.n) {
-	printf("WHOA THERE! doomed vertex %d's neighbor %d had no nearby link back!\n",v->label,a->label);
+  	printf("WHOA THERE! doomed vertex %d's neighbor %d had no nearby link back!\n",v->label,a->label);
       }
 
-      if(v->next) {
+      if(v->next && a != v->next && a != v->next->next ) {
 	dumblist_add(    &(v->next->neighbors), a);
 	dumblist_add(    &(a->nearby), v->next);
       }
 
-      if(v->prev) {     
+      if(v->prev && a != v->prev && a != v->prev->prev ) {     
 	dumblist_add(    &(v->prev->neighbors), a);
 	dumblist_add(    &(a->nearby), v->prev);
       }
@@ -615,11 +623,11 @@ void unlink_vertex(VERTEX *v) {
   }
   v->neighbors.n=0;
 
-  dumblist_sort(&(v->nearby),ptr_cmp);
-  dumblist_crunch(&(v->nearby),ptr_cmp);
+  dumblist_crunch(&(v->nearby));
+
   for(i=0;i<v->nearby.n;i++) {
     VERTEX *a = ((VERTEX **)(v->nearby.stuff))[i];
-    if(a) {
+    if( a && a != v ) {
 
       // printf(" nearby %d: purging %d's neighbor link to %d\n",i,a->label,v->label);
       long n = a->neighbors.n;
@@ -628,12 +636,12 @@ void unlink_vertex(VERTEX *v) {
 	printf("WHOA THERE! doomed vertex %d's nearby %d had no neighbor link back!\n",v->label,a->label);
       }
       
-      if(v->next) {
+      if(v->next && a != v->next && a != v->next->next ) {
 	dumblist_add(   &(a->neighbors), v->next);
 	dumblist_add(   &(v->next->nearby), a);
       }
       
-      if(v->prev) {
+      if(v->prev && a != v->prev && a != v->prev->prev ) {
 	dumblist_add(   &(a->neighbors), v->prev);
 	dumblist_add(   &(v->prev->nearby), a);
       }
@@ -705,8 +713,12 @@ void unlink_vertex(VERTEX *v) {
  */
 
 void delete_vertex(VERTEX *v) {
-  if(!v) 
+  if(!v) {
+    fprintf(stderr,"delete_vertex - got a null vertex!\n");
     return;
+  }
+  //  printf("delete_vertex: deleting %d\n",v->label);
+
   unlink_vertex(v);
   if(v->neighbors.stuff) {		/* zero out the neighbor links */
     localfree(v->neighbors.stuff);
@@ -1521,7 +1533,9 @@ void dumblist_add(DUMBLIST *dl, void *a) {
   if(dl->n >= dl->size)
     dumblist_grow(dl,1.5 * dl->size  + 10);
 
-  dl->stuff[(dl->n)++] = a;
+  dl->stuff[dl->n] = a;
+  dl->n++;
+
   return;
 }
 
@@ -1530,11 +1544,6 @@ void dumblist_add(DUMBLIST *dl, void *a) {
  * attempt to remove an item from a dumb list. Finds each occurence 
  * of the item and blasts 'em.  If no such item is found, then
  * nothing happens.  
- * 
- * The variant, sorted_dumblist_delete, knocks off as soon as a 
- * larger number than the requested one is found.  It could be 
- * reworked to run in log time rather than linear time, but who
- * has the time? ** can't find sorted_dumblist_delete **
  */
 
 inline void dumblist_delete(DUMBLIST *dl, void *a) {
@@ -1803,37 +1812,45 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
 /******************************
  * dumblist_crunch 
  * crunches a SORTED dumblist, removing duplicate elements and nulls. duplicate
- * elements must be pointing to same thing to be considered duplicate
+ * elements must be pointing to same thing to be considered duplicate.
+ * 
+ * The dumblist need not be sorted.
+ *
+ * The algorithm is O(n^2), so don't use it to crunch huge dumblists -- it's great, though,
+ * for stuff the size of a typical neighbor list.
+ *
  */
 
-void dumblist_crunch(DUMBLIST *dl,int((*cmp)(void *a, void *b))) {
+void dumblist_crunch(DUMBLIST *dl) {
   void **a, **b;
   int i,j;
 
-  b = &(dl->stuff[0]);      /* start at the beginning of the dumblist, b,a */
-  a = &(dl->stuff[1]);
-  j =0;
+  if(dl->n <= 1)
+    return;
 
-  for (i=1; i<dl->n; i++){  /* loop for the used spaces int the dumblist */
-    if (*a){
-      if (*b){
-        if ((*cmp)(*b,*a)){ /* if a and b pointers exist and values are diff*/
-          b++;          /* advance b */
-          j++;          /* advance j */
-          if (b != a)   /* if they don't point to same positon, and *a, *b exist */
-  	   *b = *a;     /* copy pointer a into pointer b */
-        }
-      } 
-      else {            /* if a, not b */
-        *b = *a;        /* copy pointer a into pointer b */
+  // Loop over the whole list...
+  for(i=0; i<dl->n; i++) {
+    
+    
+    if(dl->stuff[i] == NULL) {
+      // If the element is null, remove it.
+
+      dumblist_rm( dl, i );
+      i--;
+
+    } else {
+
+      // If the element is not null, sweep the rest of the dumblist for dups
+      for(j=i+1; j<dl->n; j++) {
+
+	if( dl->stuff[i] == dl->stuff[j] ) {
+	  dumblist_rm(dl, j);
+	  j--;
+	}
       }
-    }  /* if not b, not a || b, not a || a, b but they point to same thing: do
-        * nothing but advance a like they do in all of the possibilities */
-    a++;                /* advance a at the end no matter what */
+    }
   }
-  dl->n = j+1;          /* set the crunched n */
 }
-
 
 
 /**********************************************************************
@@ -1871,11 +1888,10 @@ void dumblist_sort(DUMBLIST *dl, int ((*cmp)(void *a, void *b))) {
   if(dl->n <= 1) 
     return;
 
-
   if( dl->n <= 150 ) {             /* use shellsort for the small cases */
     //    printf("s");fflush(stdout);
     dumblist_shellsort(dl,cmp);
-    dumblist_crunch(dl,cmp);
+    dumblist_crunch(dl);
   } else {
     int odls_size;
     //    printf("q");fflush(stdout);

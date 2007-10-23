@@ -416,7 +416,7 @@ int trivloop(FLUXON *f) {
 	if(r<min_neighbor_dist) {
 	  min_neighbor_dist = r;
 	  if(min_neighbor_dist < max_internal_dist * trivloop_factor) {
-	    printf("trivloop: not trivial (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
+	    //printf("trivloop: not trivial (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
 	    return 0;
 	  }
 	}
@@ -431,7 +431,7 @@ int trivloop(FLUXON *f) {
 	if(r<min_neighbor_dist) {
 	  min_neighbor_dist = r;
 	  if(min_neighbor_dist < max_internal_dist * trivloop_factor) {
-	    printf("trivloop: not trivial; case 2 (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
+	    //printf("trivloop: not trivial; case 2 (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
 	    return 0;
 	  }
 	}
@@ -444,7 +444,7 @@ int trivloop(FLUXON *f) {
       if(r > max_internal_dist) {
 	max_internal_dist = r;
 	if( min_neighbor_dist < max_internal_dist * trivloop_factor) {
-	  printf("trivloop: not trivial; case 3 (%g < %g); v=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label);
+	  //printf("trivloop: not trivial; case 3 (%g < %g); v=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label);
 	  return 0;
 	}
       }
@@ -1390,7 +1390,7 @@ void sort_by_angle_2d(DUMBLIST *horde) {
 
   /* Do the actual sort... */
   dumblist_sort(horde,angle_cmp);
-  dumblist_crunch(horde,angle_cmp);
+  //dumblist_crunch(horde); (crunching is handled by the sorter)
 }  
 
 

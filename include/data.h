@@ -164,6 +164,7 @@ typedef struct PLANE {
 #define PHOT_SPHERE 2
 #define PHOT_CYL 3
 extern char *BOUNDARY_NAMES[4];  /* in data.c */
+	
 
 typedef struct PHOTOSPHERE {
   PLANE *plane;
@@ -205,6 +206,8 @@ typedef struct WORLD {
   FLUX_CONCENTRATION *fc_oe; /* bogus flux concentration to store open fluxons     */
   FLUX_CONCENTRATION *fc_pb; /* bogus flux concentration to store plasmoid fluxons */
   FLUX_CONCENTRATION *fc_pe; /* bogus flux concentration to store plasmoid fluxons */
+
+  void (*default_bound)(VERTEX *v);  /* Boundary condition routine */
 
   long verbosity;           /* Verbose flag turns on/off debugging lines */
   
@@ -325,7 +328,7 @@ inline void dumblist_sort(DUMBLIST *dl, int((*compare)(void *a, void *b)));
 inline void dumblist_snarf(DUMBLIST *dl, DUMBLIST *source);
 inline void dumblist_grow(DUMBLIST *dl, int size);
 inline void dumblist_clear(DUMBLIST *dl);
-inline void dumblist_crunch(DUMBLIST *dl,int((*cmp)(void *a, void *b)));
+inline void dumblist_crunch(DUMBLIST *dl);
 
 
 inline char fl_eq(NUM a, NUM b);
@@ -346,7 +349,6 @@ inline char fl_eq(NUM a, NUM b);
 
 
 char *malloc_types[MALLOC_MAXTYPENO+1];
-
 
 #define valid_malloc_type(x) ((x)>0 && (x)<=MALLOC_MAXTYPENO)
 
@@ -398,9 +400,6 @@ void flux_memcheck();
 #endif /**** use_padded_malloc test ***/
 #endif /**** use_perl_malloc test ****/
 #endif /**** malloc switch ****/
-
-
-
 #endif /* overall file include */
 
 

@@ -1,3 +1,9 @@
+22-Oct-2007 [cd]
+ - Added Core infrastructure
+ - Added hash access to forces; also, helpful error messages
+ - Added f_vertex5
+ - Added line-tied vertex-management boundaries
+ - Added default-boundary-condition infrastructure to World.
 11-Oct-2007 [cd]
  - plasmoid reconnection code
  - some testing

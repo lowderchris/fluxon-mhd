@@ -77,9 +77,14 @@ void fluxon_update_ends(FLUXON *f) {
   /*** End condition updates ***/
    if(f->fc0->bound) {	
 	(*(f->fc0->bound))(f->start);
+   } else if(f->fc0->world->default_bound) {
+     (*(f->fc0->world->default_bound))(f->start);
    }
+
    if(f->fc1->bound) {
 	(*(f->fc1->bound))(f->end);
+   } else if(f->fc1->world->default_bound) {
+     (*(f->fc1->world->default_bound))(f->end);
    }
 
    if(w->auto_open) {
@@ -114,9 +119,6 @@ void fluxon_auto_open(FLUXON *f) {
   
   xcen = w->fc_ob->x;
   
-  //  printf("auto_open - fluxon %d:",f->label);
-
-
   /**************************************************
    * Check for vanishing U-loops
    */
@@ -133,10 +135,10 @@ void fluxon_auto_open(FLUXON *f) {
     } 
   
     // Tiny U-loops...
-    printf("Checking fluxon %d for triviality (start is at (%g,%g,%g))\n",
-	   f->label, f->start->x[0], f->start->x[1], f->start->x[2]);
+    //    printf("Checking fluxon %d for triviality (start is at (%g,%g,%g))\n",
+    //   f->label, f->start->x[0], f->start->x[1], f->start->x[2]);
     if(trivloop(f)) {
-      printf("Deleting %d...\n",f->label);
+      //printf("Deleting %d...\n",f->label);
       delete_fluxon(f);
       return;
     }
@@ -152,9 +154,9 @@ void fluxon_auto_open(FLUXON *f) {
     fflush(stdout);
     
     if( norm2_3d(x0) > r2 ) {
-      //      printf("v%d ",v->label);
-      //printf("Open!  ");
-      //fflush(stdout);
+     printf("v%d (on %d) ",v->label,f->label);
+      printf("Open!  ");
+      fflush(stdout);
       
       /******************************
        * Cut the fluxon into two.  The new 
@@ -163,8 +165,124 @@ void fluxon_auto_open(FLUXON *f) {
        */
       
       if( f->plasmoid ) {
+
+	VERTEX *vp = v->prev;  // vp gets the last one inside the boundary
+	VERTEX *vn = v;        
+	char stop = 0;
 	
-	fprintf(stderr,"Can't open plasmoids yet! Ignoring %d, which is too big!\n",f->label);
+	for( vn=v ; vn != vp  && !stop 
+	       ; vn = ( (vn->next && vn->next->next) ? vn->next : f->start ) ) {
+	  diff_3d(x0, vn->x, xcen);
+	  stop = (norm2_3d(x0) <= r2);
+	}
+	
+	/******************************
+	 * All the vertices were outside -- delete the fluxon.
+         */
+	if(vn==vp) {
+	  printf("Deleting fluxon %d\n",f->label);
+	  delete_fluxon(f);
+	  return;
+	}
+
+	/******************************
+         * Splice the plasmoid into a single fully-open fluxon.
+         */
+
+	// Wrap around the end of the plasmoid if we have to...
+	if(! vp->prev)
+	  vp= f->end->prev;
+	if(! vp->next)
+	  vp= f->start->next;
+
+	if(!vn->prev)
+	  vn = f->end->prev;
+	if(!vn->next)
+	  vn = f->start->next;
+
+
+	{
+	  int i;
+	  VERTEX *vvv;
+	  printf("fluxon %d: f->v_ct is %d, ",f->label,f->v_ct);
+	  for(i=0,vvv=f->start; vvv; vvv=vvv->next, i++)
+	    ;
+	  printf("counted %d\n",i);
+	}
+
+
+	// Create a real loop, cutting out the dummy vertices
+	f->end->prev->next   = f->start->next;
+	f->start->next->prev = f->end->prev;
+
+	// Unlink the dummy first and last vertices from the plasmoid
+	f->start->next = NULL;
+	f->start->prev = NULL;
+	f->end->next=NULL;
+	f->end->prev=NULL;
+
+	  
+	// Delete the dummy first and last vertices (also decrements v_ct)
+	{
+	  VERTEX *fe = f->end;
+	  
+	  delete_vertex(f->start);
+	  //	  printf("deleted - v_ct is %d\n",f->v_ct);
+	  delete_vertex(fe);
+	  //printf("deleted - v_ct is %d\n",f->v_ct);
+	}
+
+	// Delete the intervening vertices between vp and vn
+	// (also decrementing v_ct)
+	{
+	  int ii= 0;
+	  VERTEX *vv;
+	  for(vv=vp->next; vv != vn; vv=vp->next) {
+	    delete_vertex(vv);
+	    // printf("deleted - v_ct is %d\n",f->v_ct);
+	    ii++;
+	  }
+	  // printf("deleted %d (+2) vertices...\n",ii);
+	}
+
+	// Link in the proper (new) start and end
+	f->start = vn;
+	f->end = vp;
+
+	// Remove the circular links
+	f->start->prev = NULL;
+	f->end->next = NULL;
+
+	// clear plasmoid flag and relink flux concentrations...
+	f->plasmoid = 0;
+	{
+	  WORLD *w;
+	  w = f->fc0->world;
+	  if(f->fc0 != w->fc_pb) 
+	    printf("Hey! plasmoid beginning wasn't the world plasmoid start\n");
+	  if(f->fc1 != w->fc_pe) 
+	    printf("Hey! plasmoid end wasn't the world plasmoid end\n");
+	    
+	  f->fc0->lines = tree_unlink(f, fl_lab_of, fl_start_ln_of);
+	  f->fc1->lines = tree_unlink(f, fl_lab_of, fl_end_ln_of);
+
+	  f->fc0 = w->fc_ob;
+	  f->fc1 = w->fc_oe;
+	  f->fc0->lines = tree_binsert(f->fc0->lines, f, fl_lab_of, fl_start_ln_of);
+	  f->fc1->lines = tree_binsert(f->fc1->lines, f, fl_lab_of, fl_end_ln_of);
+	}
+
+
+	{
+	  int i;
+	  VERTEX *vvv;
+	  printf("fluxon %d: f->v_ct is %d, ",f->label,f->v_ct);
+	  for(i=0,vvv=f->start; vvv; vvv=vvv->next, i++)
+	    ;
+	  printf("counted %d\n",i);
+	}
+
+	return;
 	
       } else /* not a plasmoid */ {
 	
@@ -1959,13 +2077,16 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
     /*********************************************
      * Self-reconnection: create a new plasmoid 
      */
-    
     FLUXON *Fnew;
     VERTEX *firstv, *lastv, *v;
     WORLD *w;
     long ifirst, ilast,i;
     firstv = 0;
     lastv = 0;
+
+
+    printf("self-reconnection: disabled (%d,l=%d -- %d,l=%d)\n",v1->label,v1->line->label,v2->label,v2->line->label);
+    return;
 
     w = f1->fc0->world;
 
@@ -1988,7 +2109,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
     }
 
     if(firstv->next==lastv || firstv->next->next==lastv) {
-      fprintf(stderr,"Error in plasmoid reconnection code: must be more than two vertices between the two reconnecting vertices! Ignoring.\n");
+      fprintf(stderr,"Error in plasmoid reconnection code: must be more than two vertices between the two reconnecting vertices! Ignoring (vertices = (%d, l=%d; %d, l=%d).\n",v1->label,v1->line->label,v2->label,v2->line->label);
       return;
     }
 
@@ -2054,13 +2175,24 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
       f1=v1->line; 
       f2=v2->line;
     }
+
+    printf("Reconnecting (%d; l=%d%s) -- (%d; l=%d%s)\n",
+	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
+	   v2->label, v2->line->label, v2->line->plasmoid?" P":""
+	   );
     
     /******************************
      * Rectify the plasmoid linked list...
      */
     // If it's the very first VERTEX, switch to second-to-last (equivalent in a plasmoid)...
-    if( ! v2->prev ) 
+    if( ! v2->prev ) {
+      printf("v2 was at the start of the plasmoid: v%d -> v%d\n",v2->label,v2->line->end->prev->label);
       v2 = v2->line->end->prev;
+    } else if(!v2->next->next) {
+      printf("v2 was at the end of the plasmoid: v%d -> v%d\n",v2->label,v2->line->end->prev->label);
+      v2 = v2->line->start->next;
+    }
+
 
     // splice a genuine loop out of the plasmoid
     v2->line->end->prev->next = v2->line->start->next;
@@ -2091,6 +2223,12 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
     /*********************************************
      * Non-self-reconnection - normal case 
      */
+
+    printf("(normal case): Reconnecting (%d; l=%d%s) -- (%d; l=%d%s)\n",
+	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
+	   v2->label, v2->line->label, v2->line->plasmoid?" P":""
+	   );
+
     vv = v1->next;
     v1->next = v2->next;
     v1->next->prev = v1;
@@ -2199,6 +2337,185 @@ long global_recon_check(WORLD *w) {
  * to be consistent with the boundary condition
  */
 
+struct F_B_NAMES F_B_NAMES[] = {
+  {fl_b_tied_inject, "fl_b_tied_inject"},
+  {fl_b_tied_force,  "fl_b_tied_force"},
+  {fl_b_start_open,  "fl_b_start_open"},
+  {fl_b_end_open,   "fl_b_end_open"},
+  {fl_b_start_plasmoid, "fl_b_start_plasmoid"},
+  {fl_b_end_plasmoid, "fl_b_end_plasmoid"},
+  {0, 0},
+  {0,0}
+};
+
+void fl_b_tied_inject(VERTEX *v) {
+  POINT3D a;
+  NUM lr;
+  NUM r;
+
+  if(!v->prev) {
+    if(!v->next) {
+      fprintf(stderr,"HEY! fl_b_tied_inject got a loner vertex! Ignoring....\n");
+      return;
+    }
+
+    // Handle start-of-fluxon case
+
+    lr = v->line->fc0->locale_radius;
+    if(lr>0) {
+      diff_3d(a, v->next->x, v->x);
+      r = norm_3d(a);
+      
+      if(r > lr) {
+	VERTEX *vn;
+	long i;
+       
+	// Inject a new vertex, colinear, halfway between the offending vertex and the start
+	sum_3d(a, v->next->x, v->x);
+	scale_3d(a, a, 0.5);
+	vn = new_vertex(0, a[0], a[1], a[2], v->line);
+	add_vertex_after(v->line, v, vn);
+
+	vn->r_cl = v->r_cl;
+	
+	// Seed the new vertex with some neighbors...
+	for(i=0;i<v->neighbors.n;i++) {
+	  dumblist_add( &(vn->neighbors), v->neighbors.stuff[i] );
+	  dumblist_add( &(((VERTEX *)(v->neighbors.stuff[i]))->nearby), vn );
+	}
+
+	// ... and stick it in the neighbors' candidate lists...
+	for(i=0; i<v->nearby.n; i++) {
+	  dumblist_add( &(vn->nearby), v->nearby.stuff[i] );
+	  dumblist_add( &(((VERTEX *)(v->nearby.stuff[i]))->neighbors), vn);
+	}
+
+	// ... Finally, rig it up to do nothing this time step...
+	cp_3d(vn->f_s, v->f_s);
+	vn->f_s_tot = v->f_s_tot;
+	vn->f_v[0] = vn->f_v[1] = vn->f_v[2] = 0;
+	vn->f_v_tot = 1.0;
+	cp_3d(vn->f_t, v->f_t);
+	vn->r_v = v->r_v;
+	vn->r_s = v->r_s;
+	vn->b_mag = v->b_mag;
+	cp_3d(vn->b_vec, v->b_vec);
+	
+
+      }
+    }
+    return;
+  } 
+
+
+  else if( !v->next ) {
+    
+    // Handle end-of-fluxon case
+
+    lr = v->line->fc0->locale_radius; 
+    if(lr>0) {
+      diff_3d(a, v->prev->x, v->x);
+      r = norm_3d(a);
+
+      if(r > lr) {
+	VERTEX *vn;
+	long i;
+	
+	// Inject a new vertex, colinear, halfway between the offending vertex and the end
+	sum_3d(a, v->prev->x, v->x);
+	scale_3d(a, a, 0.5);
+	vn = new_vertex(0, a[0], a[1], a[2], v->line);
+	add_vertex_after(v->line, v->prev, vn);
+	
+	vn->r_cl = v->prev->r_cl;
+	
+	// Seed the new vertex with some neighbors...
+	for(i=0;i<v->prev->neighbors.n;i++) {
+	  dumblist_add( &(vn->neighbors), v->prev->neighbors.stuff[i] );
+	  dumblist_add( &(((VERTEX *)(v->prev->neighbors.stuff[i]))->nearby), vn );
+	}
+
+	// ... and stick it in the neighbors' candidate lists...
+	for(i=0; i<v->prev->nearby.n; i++) {
+	  dumblist_add( &(vn->nearby), v->prev->nearby.stuff[i] );
+	  dumblist_add( &(((VERTEX *)(v->prev->nearby.stuff[i]))->neighbors), vn);
+	}
+
+	// ... Finally, rig it up to do nothing this time step...
+	cp_3d(vn->f_s, v->prev->f_s);
+	vn->f_s_tot = v->prev->f_s_tot;
+	vn->f_v[0] = vn->f_v[1] = vn->f_v[2] = 0;
+	vn->f_v_tot = 1.0;
+	cp_3d(vn->f_t, v->prev->f_t);
+	vn->r_v = v->prev->r_v;
+	vn->r_s = v->prev->r_s;
+	vn->b_mag = v->prev->b_mag;
+	cp_3d(vn->b_vec, v->prev->b_vec);
+      }
+    }
+    return;
+  }
+
+  else {
+    fprintf(stderr," fl_b_tied_inject: got a middle vertex; ignoring...\n");
+    return;
+  }
+
+}
+	
+void fl_b_tied_force(VERTEX *v) {
+  POINT3D a;
+  NUM lr;
+  NUM r;
+
+  if(!v->prev) {
+    if(!v->next) {
+      fprintf(stderr,"HEY! fl_b_tied got a loner vertex! Ignoring...\n");
+      return;
+    }
+
+    // Handle start-of-fluxon case
+
+    lr = v->line->fc0->locale_radius;
+    if( lr > 0 ) {
+      diff_3d(a, v->next->x, v->x);
+      r = norm_3d(a);
+      
+      if( r > lr ) {
+	scale_3d(a, a, lr / r);
+	sum_3d(v->next->x, a, v->x);
+      }
+    }
+    return;
+
+  }
+
+  else if(!v->next) {
+    
+    // handle end-of-fluxon case 
+
+    lr = v->line->fc0->locale_radius;
+    if(lr > 0) {
+      diff_3d(a, v->prev->x, v->x);
+      r = norm_3d(a);
+      
+      if( r > lr ) {
+	scale_3d( a, a, lr/r );
+	sum_3d(v->prev->x, a, v->x);
+      }
+    }
+    return;
+  }
+
+
+  else {
+    fprintf(stderr,"HEY! fl_b_tied got a middle vertex! Ignoring...\n");
+    return;
+  }
+
+}
+
+
 void fl_b_start_open(VERTEX *v) {
   POINT3D a;
   if(!v->next) {
@@ -2234,6 +2551,7 @@ void fl_b_end_open(VERTEX *v) {
     sum_3d(  v->x,  a,            v->line->fc1->x );
   }
 } 
+
 
 void fl_b_start_plasmoid(VERTEX *v) {
   if(!v->next) {
