@@ -452,7 +452,7 @@ CODE:
        FLUX->FLUX_FORCES[j].func && FLUX->FLUX_FORCES[j].func != w->f_funcs[i];
        j++
        );
-   if(FLUX_FORCES[j].func) {
+   if(FLUX->FLUX_FORCES[j].func) {
      sv = newSVpv(FLUX->FLUX_FORCES[j].name,strlen(FLUX->FLUX_FORCES[j].name));
    } else {
      char s[80];
@@ -538,7 +538,7 @@ CODE:
  	     FLUX->FLUX_RECON[j].func && FLUX->FLUX_RECON[j].func != w->rc_funcs[i];
 	     j++
 	);
-	if(FLUX_RECON[j].func) {
+	if(FLUX->FLUX_RECON[j].func) {
 		sv = newSVpv(FLUX->FLUX_RECON[j].name,strlen(FLUX->FLUX_RECON[j].name));
 	} else {
 		char s[80];
