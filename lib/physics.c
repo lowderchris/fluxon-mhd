@@ -1113,7 +1113,7 @@ void f_vertex5(VERTEX *V, HULL_VERTEX *verts) {
     fn2 = 0.0;
 
   }
-
+ 
   /* Generate a unit vector along the field line and scale it to the
    * calculated force.  Remember, we want force per unit length (hence the
    * final division by (l1+l2)/2).
