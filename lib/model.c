@@ -1991,19 +1991,31 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
 	/* by the above mess for most cases.  That's an assignment.      */
 	(curve = ATAN2(sincurve,coscurve)) < curve_thresh_low
 	) {
-      NUM offset_dist;
-      NUM pdist,ndist;
-      /* Check maximum displacement of the fluxel if straightened */
-      offset_dist = p_ls_dist(V->x,V->prev->x,V->next->x);
-      offset_dist *= 1.333;
-      if(offset_dist >= 0 && 
-	 offset_dist < V->prev->r_cl && 
-	 offset_dist < V->next->r_cl) {
-	if(V->line->fc0->world->verbosity > 3){
-	  printf("fix_curvature: unlinking %d from line %d\n",V->label,V->line->label);
+
+      /* Check distance to nearest neighbor... */
+      NUM dnext, dprev;
+      
+      dnext = cart_3d(V->x, V->next->x);
+      dprev = cart_3d(V->x, V->prev->x);
+      if(dnext < V->r_cl / 2 &&
+	 dprev < V->prev->r_cl / 2) {
+      
+	/* Check maximum displacement of the fluxel if straightened */
+	NUM offset_dist;
+	NUM pdist,ndist;
+	
+	offset_dist = p_ls_dist(V->x,V->prev->x,V->next->x);
+	offset_dist *= 1.5;
+	if(offset_dist >= 0 && 
+	   offset_dist < V->prev->r_cl && 
+	   offset_dist < V->r_cl && 
+	   offset_dist < V->next->r_cl) {
+	  if(V->line->fc0->world->verbosity > 3){
+	    printf("fix_curvature: unlinking %d from line %d\n",V->label,V->line->label);
+	  }
+	  delete_vertex(V);
+	  return -1;
 	}
-	delete_vertex(V);
-	return -1;
       }
     }
   }
@@ -2053,14 +2065,15 @@ int global_fix_curvature(WORLD *w, NUM curv_thresh_high, NUM curv_thresh_low) {
  * reconnect_vertices: given two vertices on different fluxons, 
  * swap their ->next connections.  No need to slosh vertices -- that is handled
  * adequately in gather_neighbor_candidates, on the next force iteration.
+ *
  */
-void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
+void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
   VERTEX *vv;
   FLUXON *f1, *f2;
   FLUX_CONCENTRATION *fc;
   int i,j;
 
-  if(!v1 || !v2 || !v1->next || !v2->next) {
+  if(!v1 || !v2 || !v1->next || !v2->next ) {
     fprintf(stderr,"reconnect_vertices: error -- got a null or end vertex!\n");
     return;
   }
@@ -2084,9 +2097,10 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
     firstv = 0;
     lastv = 0;
 
-
-    printf("self-reconnection: disabled (%d,l=%d -- %d,l=%d)\n",v1->label,v1->line->label,v2->label,v2->line->label);
-    return;
+    printf("(self case): Reconnecting (%d; l=%d%s) -- (%d; l=%d%s)\n",
+	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
+	   v2->label, v2->line->label, v2->line->plasmoid?" P":""
+	   );
 
     w = f1->fc0->world;
 
@@ -2104,7 +2118,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
     }
 
     if(!firstv || !lastv) {
-      fprintf(stderr,"Error in plasmoid reconnection code: one or more of the vertices weren't on the fluxon! Ignoring.\n");
+      fprintf(stderr,"Error in self-reconnection code: one or more of the vertices weren't on the fluxon! Ignoring.\n");
       return;
     }
 
@@ -2140,9 +2154,8 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
     
     /* Now cut the plasmoid out of the original fluxon... */
     v = firstv->next;
-
     firstv->next = lastv->next;
-    lastv->next->prev = firstv;
+    firstv->next->prev = firstv;
     firstv->line->v_ct -= (ilast - ifirst);
 
     /* ... and link it into the new fluxon */
@@ -2161,6 +2174,11 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
       fprintf(stderr, "Error in plasmoid reconnection case - v_ct is %d, i is %d!\n", Fnew->v_ct, i);
       Fnew->v_ct = i;
     }
+
+    /* Now taint the vertices with the current passno */
+    Fnew->start->next->passno = passno;
+    firstv->passno = passno;
+
     return;
 
   } else if(f1->plasmoid || f2->plasmoid) {
@@ -2176,11 +2194,11 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
       f2=v2->line;
     }
 
-    printf("Reconnecting (%d; l=%d%s) -- (%d; l=%d%s)\n",
+    printf("(plasmoid case): Reconnecting (%d; l=%d%s) -- (%d; l=%d%s)\n",
 	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
 	   v2->label, v2->line->label, v2->line->plasmoid?" P":""
 	   );
-    
+
     /******************************
      * Rectify the plasmoid linked list...
      */
@@ -2193,28 +2211,32 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
       v2 = v2->line->start->next;
     }
 
-
     // splice a genuine loop out of the plasmoid
-    v2->line->end->prev->next = v2->line->start->next;
-    v2->line->start->next->prev = v2->line->end->prev;
-    v2->line->start->next = v2->line->end;
-    v2->line->end->prev = v2->line->start;
-    
+    f2->end->prev->next   = f2->start->next;
+    f2->start->next->prev = f2->end->prev;
+    f2->start->next       = f2->end;
+    f2->end->prev         = f2->start;
+
     // Cut the genuine loop and splice it into the other fluxon
     v=v1->next;
     v1->next = v2->next;
     v1->next->prev = v1;
-
     v2->next = v;
     v2->next->prev = v2;
     
     // Set the fluxon pointer of all vertices
-    for(v=v1->next; v && v != v2->next; v=v->next)
+    for(v=f1->start; v; v=v->next)
       v->line = f1;
 
     // Fix up the vertex counters of both fluxons
     f1->v_ct += f2->v_ct - 2;
+    f2->start->next = f2->end;
+    f2->end->prev = f2->start;
     f2->v_ct = 2;
+
+    // Taint the reconnected vertices
+    v1->passno = passno;
+    v2->passno = passno;
 
     // Now delete the trivial plasmoid
     delete_fluxon(f2);
@@ -2228,7 +2250,6 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
 	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
 	   v2->label, v2->line->label, v2->line->plasmoid?" P":""
 	   );
-
     vv = v1->next;
     v1->next = v2->next;
     v1->next->prev = v1;
@@ -2240,19 +2261,21 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
     
     /* f1 */
     i=1;
-    for( vv = f1->start; vv->next; vv=vv->next ) {
+    for( vv = f1->start; vv && vv->next; vv=vv->next ) {
       i++;
       vv->line = f1;
     }
     f1->end = vv;
+    f1->end->line = f1;
     
     /* f2 */
     j=1;
-    for( vv = f2->start; vv->next; vv=vv->next ) {
+    for( vv = f2->start; vv && vv->next; vv=vv->next ) {
       j++;
       vv->line = f2;
     }
     f2->end = vv;
+    f2->end->line = f2;
     
     if(i+j != f1->v_ct + f2->v_ct) {
       fprintf(stderr,"Hmmm -- something's funny with the vertex count.  Reconnected %d(fl %d) to %d (fl %d), final total vertex count is %d, previously %d\n",v1->label,f1->label,v2->label,f2->label,i+j,f1->v_ct+f2->v_ct);
@@ -2270,22 +2293,35 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2 ) {
     
     f1->fc1->lines = tree_binsert(f1->fc1->lines, f1, fl_lab_of, fl_end_ln_of);
     f2->fc1->lines = tree_binsert(f2->fc1->lines, f2, fl_lab_of, fl_end_ln_of);
-    
+
+    /* Taint the reconnected vertices */
+    v1->passno = passno;
+    v2->passno = passno;
   }
 }
   
 /******************************
  * v_recon_check: checks the current reconnection condition between a 
- * vertex and each of its neighbors.  Reconnection with an image charge
+ * VERTEX and each of its neighbors.  The *following* segment is 
+ * (possibly) reconnected. Reconnection with an image charge
  * is not allowed!  The reconnection conditions are found via the rc_funcs table
  * in the world. 
+ *
+ * Cleanliness is achieved via the passno tainting mechanism, so you don't
+ * get multiple reconnections of the same segment.
  */
-int vertex_recon_check( VERTEX *v1 ) {
+int vertex_recon_check( VERTEX *v1, long passno ) {
   WORLD *w = v1->line->fc0->world;
   RC_FUNC **rcfuncp;
   VERTEX *rv = 0;
   int i;
 
+  if(!v1)
+    return 0;
+
+  if(v1->passno == passno)
+    return 0;
+  
   for( i=0, rcfuncp = w->rc_funcs; 
        !rv && i<N_RECON_FUNCS && *rcfuncp ; 
        i++, rcfuncp++ ) 
@@ -2299,7 +2335,9 @@ int vertex_recon_check( VERTEX *v1 ) {
 	     i-1
 	     );
     }
-    reconnect_vertices(v1,rv);
+    if(rv->passno == passno)
+      return 0;
+    reconnect_vertices(v1,rv, passno);
     return 1;
   }
   return 0;
@@ -2307,29 +2345,58 @@ int vertex_recon_check( VERTEX *v1 ) {
 
 /******************************
  * fluxon_recon_check
- * Iterates over all the vertices in a fluxon
+ * Iterates over all the vertices in a fluxon.
+ * 
+ * DEPRECATED!  The fluxon can disappear in midstream.  The
+ * only way to avoid that is to fall back to the vertex level.
+ *
  */
-long fluxon_recon_check( FLUXON *f ) {
+long fluxon_recon_check( FLUXON *f, long passno ) {
   VERTEX *v;
   int retval = 0;
   if( !(f->start) || !(f->start->next) || !(f->start->next->next) ) 
     return retval;
 
   for(v=f->start->next; v->next && v->next->next; v=v->next) {
-    retval += vertex_recon_check(v);
+    retval += vertex_recon_check(v, passno);
+    if(retval)
+      return retval;
   }
   return retval;
 }
 
-static long grc_acc;
-static long grc_tramp(FLUXON *fl, int lab, int link, int depth) {
-  grc_acc += fluxon_recon_check(fl);
+static DUMBLIST *grc_vertexlist = 0;
+static long grc_tramp(VERTEX *v, int lab, int link, int depth) {
+  if( v->next && (v->prev || !(v->line->plasmoid)) )
+    grc_vertexlist->stuff[ (grc_vertexlist->n)++ ] = (void *)v;
+  return 0;
 }
 
 long global_recon_check(WORLD *w) {
-  grc_acc = 0;
-  tree_walker( w->lines, fl_lab_of, fl_all_ln_of, grc_tramp, 0);
-  return grc_acc;
+  long recon_ct = 0;
+  long passno = ++(w->passno);
+  long i;
+
+  if(!grc_vertexlist) {
+    grc_vertexlist = new_dumblist();
+  }
+  if(grc_vertexlist->size < w->vertices->world_links.n) {
+    dumblist_grow(grc_vertexlist, w->vertices->world_links.n);
+  }
+  grc_vertexlist->n = 0;
+
+  // Accumulate a DUMBLIST of all existing vertices that aren't 
+  // plasmoid starts or fluxon ends.  (No other vertex can be 
+  // destroyed by the reconnection process...)
+
+  tree_walker( w->vertices, v_lab_of, v_ln_of, grc_tramp, 0);
+
+  printf("global_recon_check: found %d vertices to check...\n",grc_vertexlist->n);
+
+  for(i=0;i<grc_vertexlist->n;i++) 
+    recon_ct += vertex_recon_check((VERTEX *)(grc_vertexlist->stuff[i]) , passno);
+
+  return recon_ct;
 }
     
 /********************************************************************

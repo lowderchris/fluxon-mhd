@@ -179,6 +179,7 @@ FLUX->fl_segment_dist			= fl_segment_dist;
 FLUX->fl_segment_deluxe_dist	= fl_segment_deluxe_dist;
 FLUX->perp_bisector_2d		= perp_bisector_2d;
 FLUX->intersection_2d		= intersection_2d;
+FLUX->project_n_fill            = project_n_fill;
 FLUX->hull_2d			= hull_2d;
 FLUX->hull_2d_us		= hull_2d_us;
 FLUX->code_info_model           = code_info_model;

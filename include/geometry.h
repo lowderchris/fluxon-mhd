@@ -26,81 +26,81 @@
 #include "data.h"
 
 
-inline NUM norm_2d(NUM *x);
-inline NUM norm_3d(NUM *x);
+ NUM norm_2d(NUM *x);
+ NUM norm_3d(NUM *x);
 
-inline NUM norm2_2d(NUM *x);
-inline NUM norm2_3d(NUM *x);
+ NUM norm2_2d(NUM *x);
+ NUM norm2_3d(NUM *x);
 
-inline NUM inner_2d(NUM *p0, NUM *p1);
-inline NUM inner_3d(NUM *p0, NUM *p1);
+ NUM inner_2d(NUM *p0, NUM *p1);
+ NUM inner_3d(NUM *p0, NUM *p1);
 
-inline NUM cross_2d(NUM *p0, NUM *p1);
+ NUM cross_2d(NUM *p0, NUM *p1);
 #define cross_3d cross
-inline void cross(NUM *out, NUM *p0, NUM *p1);
+ void cross(NUM *out, NUM *p0, NUM *p1);
 
-inline void scale_2d(NUM *out, NUM *a, NUM alpha);
-inline void scale_3d(NUM *out, NUM *a, NUM alpha);
+ void scale_2d(NUM *out, NUM *a, NUM alpha);
+ void scale_3d(NUM *out, NUM *a, NUM alpha);
 
-inline void sum_3d(NUM *out, NUM *a, NUM *b);
-inline void diff_3d(NUM *out, NUM *a, NUM *b);
+ void sum_3d(NUM *out, NUM *a, NUM *b);
+ void diff_3d(NUM *out, NUM *a, NUM *b);
 
-inline void cp_3d(NUM *out, NUM *a);
+ void cp_3d(NUM *out, NUM *a);
 
 
 /**********************************************************************
  * Matrix manipulation & rotation matrix generation
  */
-inline void rotmat_2d(NUM *out, NUM alpha);
-inline void rotmat_2d_fr_slope(NUM *out, NUM dy, NUM dx);
-inline void mat_mult_2d(NUM *out, NUM *a, NUM *b);
+ void rotmat_2d(NUM *out, NUM alpha);
+ void rotmat_2d_fr_slope(NUM *out, NUM dy, NUM dx);
+ void mat_mult_2d(NUM *out, NUM *a, NUM *b);
 
-inline void transpose_2x2(NUM *mat);
-inline void transpose_3x3(NUM *mat);
+ void transpose_2x2(NUM *mat);
+ void transpose_3x3(NUM *mat);
 
-inline void mat_mult_3d(NUM *out, NUM *a, NUM *b);
-inline void mat_vmult_2d(NUM *out, NUM *mat, NUM *v);
-inline void mat_vmult_3d(NUM *out, NUM *mat, NUM *v);
-inline void vec_mmult_3d(NUM *out, NUM *mat, NUM *v);
+ void mat_mult_3d(NUM *out, NUM *a, NUM *b);
+ void mat_vmult_2d(NUM *out, NUM *mat, NUM *v);
+ void mat_vmult_3d(NUM *out, NUM *mat, NUM *v);
+ void vec_mmult_3d(NUM *out, NUM *mat, NUM *v);
 
-inline NUM det_2d(NUM *mat);
-inline NUM det_3d(NUM *mat);
+ NUM det_2d(NUM *mat);
+ NUM det_3d(NUM *mat);
 
 /**********************************************************************
  * Planar & topology functions
  */
-inline void points2plane(PLANE *plane, NUM *p0, NUM *p1, NUM *p2);
-inline int p_l_intersection(NUM *out, PLANE *plane, NUM *p0, NUM *p1);
-inline int xy_l_intersection(NUM *out, NUM *p0, NUM *p1);
-inline int p_inside_tri(NUM *tri0, NUM *tri1, NUM *tri2, NUM *p);
-inline int trivloop(FLUXON *f);
+ void points2plane(PLANE *plane, NUM *p0, NUM *p1, NUM *p2);
+ int p_l_intersection(NUM *out, PLANE *plane, NUM *p0, NUM *p1);
+ int xy_l_intersection(NUM *out, NUM *p0, NUM *p1);
+ int p_inside_tri(NUM *tri0, NUM *tri1, NUM *tri2, NUM *p);
+ int trivloop(FLUXON *f);
 
 /**********************************************************************
  * Projection functions
  */
-inline void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3);
+ void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3);
 
 /**********************************************************************
  * Distance functions
  */
-inline NUM cart2_2d(NUM *x1, NUM *x2);
-inline NUM cart2_3d(NUM *x1, NUM *x2);
+ NUM cart2_2d(NUM *x1, NUM *x2);
+ NUM cart2_3d(NUM *x1, NUM *x2);
 
-inline NUM cart_2d(NUM *x1, NUM *x2);
-inline NUM cart_3d(NUM *x1, NUM *x2);
+ NUM cart_2d(NUM *x1, NUM *x2);
+ NUM cart_3d(NUM *x1, NUM *x2);
 
-inline NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1);  /* point-line dist */
-inline NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1); /* point-line segment dist */
-inline NUM l_l_dist( NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]); /* line-line dist */
-inline NUM p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]);
-inline void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]);
-inline NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]); /* seg-seg dist */
+ NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1);  /* point-line dist */
+ NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1); /* point-line segment dist */
+ NUM l_l_dist( NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]); /* line-line dist */
+ NUM p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]);
+ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]);
+ NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]); /* seg-seg dist */
 
-inline NUM fl_segment_masked_dist(VERTEX *v0, VERTEX *v1); 
-inline NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1);
+ NUM fl_segment_masked_dist(VERTEX *v0, VERTEX *v1); 
+ NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1);
 
-inline NUM fl_segment_dist(VERTEX *v1, VERTEX *v2);        
-inline NUM fl_segment_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1);
+ NUM fl_segment_dist(VERTEX *v1, VERTEX *v2);        
+ NUM fl_segment_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1);
 
 
 
@@ -111,10 +111,12 @@ inline NUM fl_segment_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1);
  */
 
 
-inline int perp_bisector_2d(NUM *out, NUM *P, NUM *Q);           /* Find the perpendicular bisector
+ int perp_bisector_2d(NUM *out, NUM *P, NUM *Q);           /* Find the perpendicular bisector
 							     of a line segment */
-inline int intersection_2d(NUM *out, NUM *L1, NUM *L2);          /* Find the intersection of two
+ int intersection_2d(NUM *out, NUM *L1, NUM *L2);          /* Find the intersection of two
 							     line segments */
+void project_n_fill(VERTEX *v, DUMBLIST *horde);
+
 
 NUM neighbor_triangle(NUM *dAdp, NUM *L, NUM *M, NUM *N);  /* Characterize the 
 							 partial-neighborhood triangle

@@ -26,7 +26,7 @@
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 2
+#define FLUX_CORE_VERSION 3
 
 typedef struct FluxCore {
 
@@ -128,9 +128,9 @@ typedef struct FluxCore {
   int (*fluxon_fix_curvature)(FLUXON *F, NUM curve_thresh_high, NUM curve_thresh_low);
   int (*global_fix_curvature)(WORLD *w, NUM curve_thresh_high, NUM curve_thresh_low);
 
-  void (*reconnect_vertices)( VERTEX *v1, VERTEX *v2 );
-  int (*vertex_recon_check)( VERTEX *v1 );
-  long (*fluxon_recon_check)( FLUXON *f );
+  void (*reconnect_vertices)( VERTEX *v1, VERTEX *v2, long passno );
+  int (*vertex_recon_check)( VERTEX *v1, long passno );
+  long (*fluxon_recon_check)( FLUXON *f, long passno );
   long (*global_recon_check)( WORLD *w );
 
   VERTEX_STATS *(*world_collect_stats)(WORLD *a);
@@ -187,6 +187,7 @@ typedef struct FluxCore {
 
   int (*perp_bisector_2d)(NUM *out, NUM *P, NUM *Q); 
   int (*intersection_2d)(NUM *out, NUM *L1, NUM *L2);
+  void (*project_n_fill)(VERTEX *v, DUMBLIST *horde);
   void (*hull_2d)(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects);
   void (*hull_2d_us)(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v);
 

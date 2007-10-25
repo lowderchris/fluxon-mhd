@@ -562,6 +562,21 @@ void unlink_vertex(VERTEX *v) {
 
 
   //printf("unlink_vertex: %d has %d neighbors and %d nearby\n",v->label,v->neighbors.n, v->nearby.n);
+#ifdef NEVER
+  {
+    int ii;
+    printf("unlink_vertex: unlinking %d.\n\tNeighbors are: ",v->label);
+    for(ii=0;ii<v->neighbors.n;ii++) {
+      printf("%d ",v->neighbors.stuff[ii]?(((VERTEX *)(v->neighbors.stuff[ii]))->label):0);
+    }
+    printf("\n\tNearby is: ");
+    for(ii=0;ii<v->nearby.n;ii++) {
+      printf("%d ",v->nearby.stuff[ii]?(((VERTEX *)(v->nearby.stuff[ii]))->label):0);
+    }
+    printf("\n");
+  }
+#endif
+  
   
   if(!v){			/* do nothing if not given a v */
     fprintf(stderr,"unlink_vertex: warning - got a null vertex!\n");
@@ -611,8 +626,8 @@ void unlink_vertex(VERTEX *v) {
       }
 
       if(v->next && a != v->next && a != v->next->next ) {
-	dumblist_add(    &(v->next->neighbors), a);
-	dumblist_add(    &(a->nearby), v->next);
+      	dumblist_add(    &(v->next->neighbors), a);
+      	dumblist_add(    &(a->nearby), v->next);
       }
 
       if(v->prev && a != v->prev && a != v->prev->prev ) {     
@@ -854,8 +869,8 @@ int add_vertex_after(FLUXON *f, VERTEX *lucy, VERTEX *v) {
   }
 
   else {		   /* if there is a <lucy> */
-    if(lucy->line != f) {  /* if <lucy> isn't on same fluxon */
-      fprintf(stderr,"add_vertex_after: neighbor is not on its fluxon!\n");
+    if(lucy && (lucy->line != f)) {  /* if <lucy> isn't on same fluxon */
+      fprintf(stderr,"add_vertex_after: adding %d to f%d after %d: %d is on f%d (0x%x), not f%d (0x%x)!\n",v->label,f->label,lucy?lucy->label:0,lucy?lucy->label:0,lucy?lucy->line->label:0,lucy?lucy->line:0,f->label,f);
       return 1;
     }
     

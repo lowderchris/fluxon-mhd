@@ -299,7 +299,7 @@ PREINIT:
  PDL_Double *d;
 CODE:
  v = SvVertex(svrt,"Flux::Vertex::hull");
- hull_verts = vertex_update_neighbors(v, global);
+ hull_verts = FLUX->vertex_update_neighbors(v, global);
  
  /* Now stuff the hull vertices into the first PDL. */
  p = PDL->create(PDL_PERM);
@@ -351,7 +351,7 @@ CODE:
 	PDL->make_physical(p);
 	x0[0] = v->x[0]; x0[1] = v->x[1]; x0[2] = v->x[2];
 	x1[0] = v->next->x[0]; x1[1] = v->next->x[1]; x1[2] = v->next->x[2];
-	projmatrix(mat,x0,x1);
+	FLUX->projmatrix(mat,x0,x1);
 	d2=p->data;
 	d = mat;
 	*(d2++)=*(d++);
@@ -384,12 +384,12 @@ CODE:
  v = SvVertex(svrt,"Flux::Vertex::proj_neighbors");
 
  if(global) {
-  dl = gather_neighbor_candidates(v,1);
+  dl = FLUX->gather_neighbor_candidates(v,1);
  } else {
-  vertex_update_neighbors(v,1);
+  FLUX->vertex_update_neighbors(v,1);
   dl = &(v->neighbors);
  }
- project_n_fill(v,dl);
+ FLUX->project_n_fill(v,dl);
  
  /* Now stuff the dumblist of vertices into the return PDL. */
  p = PDL->create(PDL_PERM);
@@ -411,19 +411,27 @@ OUTPUT:
  RETVAL
 
 void
-reconnect(svv1, svv2)
+reconnect(svv1, svv2, svpassno)
 SV *svv1
 SV *svv2
+SV *svpassno
 PREINIT:
  VERTEX *v1, *v2;
+ long passno;
 CODE:
  v1 = SvVertex(svv1, "Flux::Vertex::reconnect");
  v2 = SvVertex(svv2, "Flux::vertex::reconnect");
+ if(SvROK(svpassno)) 
+	croak("Flux::Vertex::reconnect: Can't take a PDL or reference as a passno");
+if(svpassno == &PL_sv_undef) 
+	passno = ++(v1->line->fc0->world->passno);
+else
+	passno = SvIV(svpassno);
  if(v1->line->fc0->world != v2->line->fc0->world) { 
 	fprintf(stderr,"Error: vertices belong to different worlds!");
 	return;
  }
- reconnect_vertices(v1, v2);
+ FLUX->reconnect_vertices(v1, v2, passno);
 
 SV *
 x(svrt)
