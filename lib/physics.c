@@ -1143,7 +1143,7 @@ void f_vertex5(VERTEX *V, HULL_VERTEX *verts) {
   i1 = 2/(1/l1 + 1/l2);
   scale_3d(force, force, (fn2 + fn3 ) / norm_3d(force) / i1);
 
-  if( !isfinite(fabs((fn2+fn3)/i1)) ) {
+  if( !finite(fabs((fn2+fn3)/i1)) ) {
     printf("vertex %d: vertex force was (%g,%g,%g); f_vertex5 is (%g,%g,%g) (total %g); i1 is %g\n",V->label,V->f_v[0],V->f_v[1],V->f_v[2],force[0],force[1],force[2],fabs((fn2+fn3)/i1),i1);
     printf("\tfn2 is %g; fn3 is %g; V->prev->r_cl is %g; V->next->r_cl is %g; l1 is %g; l2 is %g; lpp is %g; lnn is %g; alpha_p is %g; alpha_n is %g; alpha_p arg is %g; alpha_n arg is %g\n",fn2, fn3, V->prev->r_cl, V->next->r_cl, l1, l2, lpp, lnn, alpha_p, alpha_n, (inner_3d(dpp,d1))/(l1*lpp),(inner_3d(dnn,d2))/(l2*lnn));
   }
