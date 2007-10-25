@@ -9,14 +9,47 @@ $rgb_fluxons = random_colors($world,\%opt);
 Generates a list of random fluxon colors to be used in rendering a world.
 The output is suitable for use as the rgb_fluxons parameter in render_world().
 
+Useful options are:
+
+=over 3
+
+=item hr
+
+The "hue range" (hues go from 0 to 1) around the color wheel (default: 0-1)
+
+=item sr
+
+The "saturation range" (saturation from 0 to 1); this is *relative* saturation, not 
+absolute saturation.
+
+=item vr
+
+The "luminance range" (from 0 to 1).  Note that this affects saturation:  strongly saturated
+colors are only available near 0.5.  
+
+=item old
+
+If you want to augment an old colormap to accomodate new fluxons, supply the old colormap here.
+
+=back
+
 =cut
 use PDL::NiceSlice;
 
 sub random_colors {
     my $world = shift;
     my $opt = shift;
-    
-    my $fluxons = [ map { $_->{label}} $a->fluxons ] ;
+
+    my $fluxons = [];
+
+    $opt->{old} = {} unless defined($opt->{old});
+    for my $f(map { $_->label } $a->fluxons) {
+	if( exists $opt->{old}->{$f} ) {
+	    $rgb_out->{$f} = $opt->{old}->{$f}->copy;
+	} else {
+	    push(@$fluxons, $f);
+	}
+    }
 
     my $hr = $opt->{hr} || [0,1.0];
     my $sr = $opt->{sr} || [0,1.0];

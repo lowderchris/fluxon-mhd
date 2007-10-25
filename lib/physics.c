@@ -54,6 +54,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"e_eqa","B energy per vertex using angular equipartition",e_eqa},
   {"f_curvature","(OLD) simple curvature force (B-normalized)",f_curvature},
   {"f_curvature2","(OLD) simple curvature force (B-normalized) with stiffener",f_curvature2},
+  {"f_curvature3","simple curvature force (B-normalized) with stiffener and distance scaling",f_curvature3},
   {"f_pressure_equi","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi},
   {"f_pressure_equi2","(OLD) 2001 pressure law (B-normalized)",f_pressure_equi2},
   {"f_pressure_equi2a","(OLD) 2001 pressure law (B-normalized; patched for open field)",f_pressure_equi2a},
@@ -203,6 +204,47 @@ void f_curvature2(VERTEX *V, HULL_VERTEX *verts) {
   
   sum_3d(V->f_v,V->f_v,curve);
 
+  V->f_v_tot += norm_3d(curve);
+
+
+}
+
+void f_curvature3(VERTEX *V, HULL_VERTEX *verts) {
+  NUM recip_l1, recip_l2, recip_len, len;
+  NUM b1hat[3];
+  NUM b2hat[3];
+  NUM curve[3];
+  NUM force[3];
+  // NUM cross[3];
+  // NUM sin2;
+  NUM sec;
+  NUM fudge;
+  NUM dist_recip;
+
+  if(!V->next || !V->prev) 
+    return;
+
+  diff_3d(b2hat,V->next->x,V->x);
+  scale_3d(b2hat,b2hat, (recip_l2 = 1.0 / norm_3d(b2hat)));
+
+  diff_3d(b1hat,V->x,V->prev->x);
+  scale_3d(b1hat,b1hat, (recip_l1 = 1.0 /norm_3d(b1hat)));
+
+  recip_len =  ( recip_l1 + recip_l2 ) * 0.5;
+  
+
+  // Calculate fudge factor -- near unity where we like the angles to be, 
+  // but extra powerful near 180 degrees.  
+  sec = 2.0/(1 + inner_3d(b1hat, b2hat)); // secant(theta/2)
+  fudge = (sec+1)/2;
+  
+  diff_3d(curve,b2hat,b1hat);
+  
+  // Proximity
+  dist_recip = 0.5 * (1/V->r_cl + 1/V->prev->r_cl);
+
+  scale_3d(curve,curve,recip_len * fudge * dist_recip ); // force/length, with fudge
+  sum_3d(V->f_v,V->f_v,curve);
   V->f_v_tot += norm_3d(curve);
 
 

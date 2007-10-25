@@ -39,6 +39,7 @@ void e_eqa(VERTEX *V, HULL_VERTEX *verts);
 
 void f_curvature(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
 void f_curvature2(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
+void f_curvature3(VERTEX *V, HULL_VERTEX *verts);   
 void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
 void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */

@@ -1151,11 +1151,33 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	x1z = inner_3d(x1,world->photosphere.plane->normal);
 	if(x1z < 0) {
 	  NUM delta[3];
-	  scale_3d(delta, world->photosphere.plane->normal, - (x1z * 1.00001) / norm2_3d(world->photosphere.plane->normal));
+	  scale_3d(delta, world->photosphere.plane->normal, - (x1z * 1.001) / norm2_3d(world->photosphere.plane->normal));
 	  sum_3d(x1,x1,delta);
+	  sum_3d(v->x, x1, world->photosphere.plane->origin);
+
+	  // Add some new vertices so that we hopefully don't have this problem next time.
+	  add_vertex_after( v->line, v, 
+			    new_vertex(0, 
+				       0.5 * (v->x[0] + v->next->x[0]),
+				       0.5 * (v->x[1] + v->next->x[1]),
+				       0.5 * (v->x[2] + v->next->x[2]),
+				       v->line
+				       )
+			    );
+	  if(v->prev) {
+	    add_vertex_after( v->line, v->prev,
+			      new_vertex(0,
+					 0.5 * (v->prev->x[0] + v->x[0]),
+					 0.5 * (v->prev->x[1] + v->x[1]),
+					 0.5 * (v->prev->x[2] + v->x[2]),
+					 v->line
+					 )
+			      );
+	  }
+	} else {
+	  sum_3d(v->x, v->x, step);
 	}
-		   
-	sum_3d(v->x, x1, world->photosphere.plane->origin);
+
       } else {
 	/* Otherwise just step */
 	sum_3d(v->x,v->x,step);	     
@@ -1914,36 +1936,15 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
   diff_3d(d1,V->prev->x,V->x); /* d1 = segment A */
   diff_3d(d2,V->x,V->next->x); /* d2 = segment B */
   
-  cross(cr,d1,d2);
-
   scale = 1.0/sqrt(norm2_3d(d1) * norm2_3d(d2));
 
+  cross_3d(cr,d1,d2);
   sincurve = norm_3d(cr) * scale;
   coscurve = inner_3d(d1,d2) * scale;
-	
-  /* Do a bilinear, Q&D check to see if splitting is necessary -- this */
-  /* avoids having to do any trig for most non-splitting cases! */
-  /* This slows down a bit for curvature thresholds above 30 degrees, but */
-  /* adds no overhead for small curvature thresholds.  theta/sin(theta) is */
-  /* 1.047 for 30 degrees, 1.209 for 60 degrees, and pi/2 for 90 degrees -- */
-  /* hence the magic numbers.  */
-  if( ( (sincurve * 1.048 > curve_thresh_high) ||
-	(curve_thresh_high > (M_PI * 1.0/3)  && 
-	 ( (sincurve * 1.210 > curve_thresh_high) ||
-	   (curve_thresh_high > (M_PI * 2.0/3) && 
-	    ( (sincurve * (M_PI / 2)  > curve_thresh_high) ||
-	      (coscurve < 0)
-	      )
-	    )
-	   )
-	 )
-	)
-	&& 
-      /* This is the actual check but the trig operation is masked out */
-      /* by the above mess for most cases.  That's an assignment.      */
-      (curve = ATAN2(sincurve,coscurve)) > curve_thresh_high
-      ) {
+  curve = ATAN2(sincurve,coscurve);
 
+
+  if( curve > curve_thresh_high ) {
     VERTEX *Vnew;
     NUM P[3], P0[3],P1[3];
 
@@ -1973,24 +1974,8 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
     /******************************
      * Check for deletion
      */
-    
-    if( curve_thresh_low != 0 && 
-	! ( (sincurve * 1.048 > curve_thresh_low) ||
-	    (curve_thresh_low > (M_PI * 1.0/3)  && 
-	     ( (sincurve * 1.210 > curve_thresh_low) ||
-	       (curve_thresh_low > (M_PI * 2.0/3) && 
-		( (sincurve * (M_PI / 2)  > curve_thresh_low) ||
-		  (coscurve < 0)
-		  )
-		)
-	       )
-	     )
-	    )
-	&& 
-	/* This is the actual check but the trig operation is masked out */
-	/* by the above mess for most cases.  That's an assignment.      */
-	(curve = ATAN2(sincurve,coscurve)) < curve_thresh_low
-	) {
+
+    if( curve < curve_thresh_low ) {
 
       /* Check distance to nearest neighbor... */
       NUM dnext, dprev;
