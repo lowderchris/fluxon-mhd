@@ -268,11 +268,13 @@ package Flux;
 	Fluxon =>        [\&_rfluxon, undef  ],
 	FluxonList =>    [\&_rfluxonlist, undef],
 	Concentration => [ \&_rconcentration, undef ],
+	World  =>        [ \&_rworld, undef ],
         Neighbors =>     [ sub{ _rdumblist("Flux::Vertex",@_) }, undef ],
         Nearby =>        [ sub{ _rdumblist("Flux::Vertex",@_) }, undef ],
         Coeffs =>        [ \&_rcoeffs, \&_wcoeffs ], 
         Forces =>        [ \&_rforces, \&_wforces ],
-	Bound  =>        [ \&_rbound, \&_wbound ]
+	Bound  =>        [ \&_rbound, \&_wbound ],
+        Photosphere =>   [ \&_rphot,  \&_wphot ]
     };
 
     our $codes = { 
@@ -340,7 +342,7 @@ package Flux;
 	    concentrations =>    [3,'Concentration'],
 	    lines =>             [4,'Fluxon'],
 	    vertices =>          [5,'Vertex'],
-	    photosphere =>       [6,undef],
+	    photosphere =>       [6,'Photosphere'],
 	    image =>             [7,'Vertex'],
 	    image2 =>            [8,'Vertex'],
 	    locale_radius =>     [9,'num'],
@@ -518,6 +520,56 @@ sub tree {
     push(@out, $me);
     push(@out, tree($r,$lname)) if(defined $r);
     @out;
+}
+
+##############################
+# Read a photosphere using the World->_photosphere method
+sub _rphot {
+    my $me = shift;
+    my $type = shift;
+    my $field = shift;
+
+    barf("_rphot requires a Flux::World") if(ref $me ne 'Flux::World');
+    my $p = $me->photosphere;
+    my $hash = {
+	type=>$p->[6]
+	};
+    if($p->[6]) {
+	$hash->{origin} = pdl($p->[0],$p->[1],$p->[2]);
+	$hash->{normal} = pdl($p->[3],$p->[4],$p->[5]);
+    }
+    return $hash;
+}
+	
+sub _wphot {
+    my $me = shift;
+    my $type = shift;
+    my $field = shift;
+    my $val = shift;
+
+    barf("_wphot requires a Flux::World") 
+	unless(ref $me eq 'Flux::World');
+
+    barf("_wphot requires a hash ref with a type field")
+	unless( ref $val eq 'HASH' and 
+		exists $val->{type}
+		);
+
+    barf("_wphot: origin and normal fields must each be 3-PDLs")
+	unless( !$val->{type} or (
+				  ref $val->{origin} eq 'PDL' and 
+				  ref $val->{normal} eq 'PDL' and
+				  $val->{origin}->ndims == 1 and
+				  $val->{origin}->dim(0) == 3 and
+				  $val->{normal}->ndims == 1 and 
+				  $val->{origin}->dim(0) == 3
+				  )
+		);
+    if($val->{type}) {
+	$me->photosphere([$val->{origin}->list, $val->{normal}->list, $val->{type}]);
+    } else {
+	$me->photosphere([0,0,0,0,0,0,0]);
+    }
 }
 
 =pod

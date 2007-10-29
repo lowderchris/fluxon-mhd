@@ -26,7 +26,7 @@
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 3
+#define FLUX_CORE_VERSION 4
 
 typedef struct FluxCore {
 
@@ -132,6 +132,8 @@ typedef struct FluxCore {
   int (*vertex_recon_check)( VERTEX *v1, long passno );
   long (*fluxon_recon_check)( FLUXON *f, long passno );
   long (*global_recon_check)( WORLD *w );
+
+  int (*fc_cancel)( FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1 );
 
   VERTEX_STATS *(*world_collect_stats)(WORLD *a);
   void (*fluxon_collect_stats)(FLUXON *fl, VERTEX_STATS *st);

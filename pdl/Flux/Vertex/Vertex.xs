@@ -285,6 +285,53 @@ CODE:
 OUTPUT:
  RETVAL
 
+
+SV *
+add_vertex_after(vsv, locsv)
+SV *vsv
+SV *locsv
+PREINIT:
+ VERTEX *v;
+ VERTEX *nv;
+ pdl *loc;
+CODE:
+ v = SvVertex(vsv,"Flux::Vertex::add_vertex_after");
+ loc = SvPDLV(locsv);
+ if(!loc || loc->ndims<1 || loc->dims[0] != 3) 
+	croak("Flux::Vertex::add_vertex_after- requires a 3-PDL location");
+ PDL->converttype(&loc, PDL_D, 1);
+ PDL->make_physical(loc);
+ nv = FLUX->new_vertex(0, 
+	((PDL_Double *)(loc->data))[0],
+	((PDL_Double *)(loc->data))[1],
+	((PDL_Double *)(loc->data))[2],
+	v->line
+	);
+ FLUX->add_vertex_after(v->line, v, nv);
+ {
+ 	I32 foo;	
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	XPUSHs( sv_2mortal(newSVpv( "Flux::Vertex", 0)) );
+	XPUSHs( sv_2mortal(newSViv((IV)nv)) );
+	PUTBACK;
+	foo = call_pv( "Flux::Vertex::new_from_ptr", G_SCALAR );
+	SPAGAIN;
+	
+	if(foo==1) 
+		RETVAL = POPs;
+	else {
+		croak("Big trouble in Flux::Vertex::add_vertex_after");
+	}
+
+	SvREFCNT_inc(RETVAL);
+	PUTBACK;
+	FREETMPS;
+	LEAVE;
+ }
+OUTPUT:
+ RETVAL
  
 SV *
 hull(svrt,global=0)
@@ -298,6 +345,9 @@ PREINIT:
  int i;
  PDL_Double *d;
 CODE:
+ /*********************************************
+  * hull - return the Voronoi hull of a vertex
+  */
  v = SvVertex(svrt,"Flux::Vertex::hull");
  hull_verts = FLUX->vertex_update_neighbors(v, global);
  

@@ -37,6 +37,7 @@ BEGIN {
 use PDL::Graphics::TriD; 
 
 package Flux::World;
+use PDL;
 
 require Exporter;
 require DynaLoader;
@@ -55,7 +56,7 @@ sub new_from_ptr {
     my $ptr = shift;
     my %hash;
     tie %hash,"Flux::World",$ptr;
-    $hash{refct}=2;      # one reference (that we are returning) plus the tie
+    $hash{refct}++;  
     return bless(\%hash,$class);
 }
 
@@ -417,17 +418,17 @@ sub _conc_helper {
     my $me = shift;
     my $depth = shift||0;
     my @a;
-#    print " "x(2*$depth)."l ($me->{label})\n";
+
     if(exists($me->{links_left})) {
 	push(@a, _conc_helper($me->{links_left},$depth+1));
     }
-    print " "x(2*$depth)."* ($me->{label})\n";
+
     push(@a, $me);
-#    print " "x(2*$depth)."r:($me->{label})\n";
+
     if(exists($me->{links_right})) {
 	push(@a, _conc_helper($me->{links_right},$depth+1));
     }
-    print " "x(2*$depth)."...\n";
+
     return @a;
 }
 
@@ -438,6 +439,22 @@ sub concentrations {
     print "_conc_helper returned ".(0+@list)." elements....\n";
     return @list;
 }
+
+=pod
+
+=head2 concentration
+
+=for usage
+
+ $conc = $world->concentration($cid);
+
+=for ref
+
+Return the flux concentration wtih the given ID, as a Flux::Concentration object.
+
+=cut
+
+# Implemented in World.xs
 
 =pod
 
@@ -454,8 +471,6 @@ Return the fluxon with the given ID, as a Flux::Fluxon object.
 =cut
 
 # fluxon is implemented in World.xs
-
-
 
 =pod
 
@@ -553,7 +568,125 @@ sub vertices {
     return @vertices;
 }
 
+=pod
 
+=head2 new_concentration - generate a new flux concentration
+
+=for usage
+
+    $fc = $world->new_concentration( $where, $flux, $label, $end );
+
+=for ref
+
+Adds a new flux concentration to the world at the given location --
+$where must be a 3-PDL or something convertible into one.  $flux is the
+amount of magnetic flux to be stored in the flux concentration.  If $label
+is nonzero then it will be used as the label field of the new concentration, 
+otherwise a unique label will be autochosen.  If $end is present then it
+should be an end-condition string; otherwise the worldwide default end condition
+is used.
+
+=cut
+
+sub new_concentration {
+    my $w = shift;
+    my $x = pdl(shift);
+    my $flux = shift;
+    my $label = shift;
+    my $endsv = shift;
+    return _new_concentration($w,$x,$flux,$label,$endsv); # _new_concentration in World.xs
+}
+
+
+=pod
+
+=head2 emerge - generate two flux concentrations connected by a fluxon
+
+=for usage
+
+    $source = $world->emerge($source_loc, $sink_loc, $flux, $vertices);
+    $source = $world->emerge($source_loc, $sink_loc, $flux, $n);
+
+=for ref
+
+This is a convenience routine for producing two flux concentrations and a single-fluxon 
+loop at a desired location.  You specify the locations of the two concentrations (as 3-PDLs)
+and the flux (currently ignored of course but included as a placeholder for later).  If
+you hand in a 3xN PDL it is treated as a vertex location list.  If you hand in a scalar 
+(or 1 PDL) it is treated as a number of nontrivial vertices to include, and the fluxon is
+shaped as close to a straight line as possible consistent with the photosphere in the world.
+
+The flux concentrations are line-tied with the default boundary.
+
+=cut
+
+sub emerge {
+    my($world, $src, $snk, $flux, $vertices) = @_;
+
+    barf "emerge needs a world"        unless(ref $world eq 'Flux::World');
+    barf "emerge needs a 3-PDL source" unless(ref $src eq 'PDL' and $src->ndims==1 and $src->dim(0)==3);
+    barf "emerge needs a 3-PDL sink"   unless(ref $snk eq 'PDL' and $snk->ndims==1 and $snk->dim(0)==3);
+    
+    $flux = 1 unless($flux);
+    
+    barf "vertices must be a scalar or 3xN" if(ref $vertices eq 'PDL' and 
+					       $vertices->dim(0) != 3
+					       );
+
+    my $fc0 = new_concentration($world, $src, 1, 0, undef);
+    print "emerge: after first new_concentration, ref count is $world->{refct}\n" if($world->{verbosity});
+    my $fc1 = new_concentration($world, $snk, -1, 0, undef);
+    print "emerge: after 2nd new_concentration, ref count is $world->{refct}\n" if($world->{verbosity});
+
+    my $fl;
+
+    if( ref $vertices eq 'PDL' && $vertices->dim(0)==3) {
+
+	$fl = $fc0->new_fluxon($fc1, 1, 0, $verts);
+	print "emerge: after fluxon origination, ref count is $world->{refct}\n" if($world->{verbosity});
+
+    } else {
+	$fl = $fc0->new_fluxon($fc1, 1, 0);
+	print "emerge: after fluxon origination, ref count is $world->{refct} (nonspecified vertex case)\n" if($world->{verbosity});
+
+	if("$vertices") {
+	    my $nv = ( pdl(0)+$vertices )->at(0);
+
+	    my $svec = ($snk - $src)/($nv+1);
+	    my $sep = (($snk - $src) * ($snk - $src))->sumover->sqrt;
+	    my $ph = $world->{photosphere};
+	    my $vertex = $fl->{start};
+	    for my $i(1..$nv){
+		my $loc = $svec * $i + $src;
+
+		if($ph->{type}==1) {
+		    ### Planar photosphere -- if it's below the photosphere, move it up to the surface
+		    ### plus 10% of the separation between the footpoints.
+
+		    $vertcoord = (($loc - $ph->{origin}) * ($ph->{normal}))->sumover;
+		    if($vertcoord < 0) {
+			$loc -= $vertcoord * $ph->{normal};
+			$loc += $sep * 0.1 * $ph->{normal};
+		    }
+
+		} elsif($ph->{type}==2) {
+		    ### Spherical photosphere -- if it's below the photosphere, move it outward to 
+		    ### the surface plus 1% of the separation between the footpoints.
+		    
+		    $radius = (($loc - $ph->{origin}) * ($loc - $ph->{origin}))->sumover->sqrt;
+		    if($radius < $ph->{normal}->((0))) {
+			my $rhat = ($loc - $ph->{origin}) / $radius;
+			my $disp = $ph->{normal}->((0)) + 0.1 * $sep - $radius;
+			$loc += $disp * $rhat;
+		    }
+		}
+		$vertex = $vertex->add_vertex_after( $loc );
+	    }
+	}
+    }
+    return $fc0;
+}
+    
 
 =pod
 
@@ -571,6 +704,10 @@ in the simulation, or set them.  The forces have predefined names
 that are present at the top of physics.c.  Unknown forces are referred to
 by hex value, but that way lies madness unless you are the linker (and
 I don't mean you, John).
+
+Like all the original access methods, "forces" is deprecated -- you ought
+to be using the more regularized hash interface instead (the relevant
+field is $a->{forces}).  
 
 =cut
 
@@ -620,38 +757,6 @@ sub reconnection {
     }
     _set_rc($me,$i++,"",[]);
   }
-}
-
-
-
-=pod
-
-=head2 b_flag
-
-=for usage
- 
-  print $world->b_flag;
-  $world->b_flag(1);
-
-=for ref
-
-Returns the state of the B-normalization flag in the World.
-When set to 0, the flag causes all the forces to be treated as if the 
-local magnetic field magnitude were divided out.  This is appropriate
-for the older forces (f_pressure_equi and f_curvature) but not
-for the newer ones.  When set to 1, the flag causes all the forces
-to be treated as, well, ordinary physical forces.
-
-=cut
-
-sub b_flag {
-    my $me = shift;
-    if(@_==0) {
-	return $me->_b_flag;    # Retrieve forces (in World.xs)
-    } else {
-	$me->_set_b_flag(@_);
-	return;
-    }
 }
 
 
@@ -788,7 +893,6 @@ If this is set to a 3-PDL, then dips in the magnetic field are
 rendered in this color regardless of what color they would otherwise have.
 Dips are segments adjacent to a vertex that is lower than both its neighbors.
   
-
 =item rgb_fluxons
 
 If present, this should be a hash ref whose keys are fluxon id numbers or the string
@@ -819,6 +923,18 @@ faint of heart!)
 If present, contains a code ref in the same style as RGB_CODE that
 calculates the RGB values of individual points in the local context of
 render. (Not for the faint of heart!)
+
+=item concentrations
+
+Flag indicating whether or not to draw flux concentrations separately at the
+end of field lines.  They are rendered as large points. (Default is 1).
+
+=item rgb_fcs
+
+If present, this should be a hash ref whose keys are flux concentration labels
+and whose values are 3-PDLs with the color in which the concentration is to be 
+rendered.  (By default, source concentrations are blue, sink concentrations are
+red, unknown concentrations are white, and errors are green).
 
 =item points
 
@@ -1197,6 +1313,42 @@ sub render {
 
 
     }
+
+    ##############################
+    # Generate flux concentrations if desired
+
+    if($opt->{'concentrations'} || !defined($opt->{'concentrations'})) {
+	my @fc_points = ();
+	my @fc_rgb = ();
+	for my $fc( $w->concentrations ) {
+	    if($fc->{label} < -4 || $fc->{label} > 0) {
+		push( @fc_points, $fc->{x} );
+		if($opt->{'rgb_fcs'} && defined $opt->{'rgb_fcs'}->{$fc->{label}}) {
+		    push(@fc_rgb, $opt->{'rgb_fcs'}->{$fc->{label}});
+		} else {
+		    if($fc->{lines}) {
+			if( $fc->{lines}->{fc_start}->{label} == $fc->{label} ) {
+			    push(@fc_rgb, pdl(0,0.25,1));
+			} elsif( $fc->{lines}->{fc_end}->{label} == $fc->{label} ) {
+			    push(@fc_rgb, pdl(1,0.25,0));
+			} else {
+			    push(@fc_rgb, pdl(0.25,1,0.25));
+			}
+		    } else {
+			push(@fc_rgb, pdl(1,1,1));
+		    }
+		}
+	    }
+	    if(@fc_points) {
+		my $fc_points = cat(@fc_points);
+		my $fc_rgb = cat(@fc_rgb);
+		my $normal_coords = ($fc_points - $boxmin)/($boxmax-$boxmin);
+		my $p = new PDL::Graphics::TriD::Points($normal_coords,$fc_rgb,{PointSize=>8});
+		$w3d->add_object($p);
+	    }
+	}
+    }
+	    
 
     print "Neighbors?\n" if($Flux::debug);
     $nscale = $opt->{'nscale'} || 0.25;

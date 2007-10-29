@@ -34,16 +34,17 @@ If you want to augment an old colormap to accomodate new fluxons, supply the old
 =back
 
 =cut
+
 use PDL::NiceSlice;
 
 sub random_colors {
     my $world = shift;
     my $opt = shift;
-
     my $fluxons = [];
-
+    $opt = {} unless defined($opt);
     $opt->{old} = {} unless defined($opt->{old});
-    for my $f(map { $_->label } $a->fluxons) {
+
+    for my $f(map { $_->{label} } $a->fluxons) {
 	if( exists $opt->{old}->{$f} ) {
 	    $rgb_out->{$f} = $opt->{old}->{$f}->copy;
 	} else {
@@ -54,7 +55,7 @@ sub random_colors {
     my $hr = $opt->{hr} || [0,1.0];
     my $sr = $opt->{sr} || [0,1.0];
     my $vr = $opt->{vr} || [0.5,1.0];
-    
+
     my $rgb_out = {};
     
     my $hsvr = pdl($hr,$sr,$vr);

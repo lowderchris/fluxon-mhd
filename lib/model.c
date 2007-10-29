@@ -2383,6 +2383,117 @@ long global_recon_check(WORLD *w) {
 
   return recon_ct;
 }
+
+
+/******************************
+ * fc_cancel - cancel two flux concentrations.  
+ * The two flux concentrations must have opposite fluxes (one source, one sink).
+ * Fluxons that connect one concentration to the other are deleted.  If, at the 
+ * end of the deletion, there are any fluxons left in the weaker of the two, then
+ * fluxons are reconnected (in tree [random] order) to connect the two, and then 
+ * deleted.  The process stops when one or both concentrations have all their 
+ * flux exhausted.
+ *
+ * Finally, if either of the concentrations has zero flux remaining, it is deleted.
+ * 
+ * The first flux concentration must be a source, the second a sink.
+ *
+ * Returns 0 on success, or nonzero on failure.
+ */
+
+/** FIXME: Will need to be updated to handle variable-flux fluxons... **/
+int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
+  long n_min;
+  WORLD *w = fc0->world;
+  int v = w->verbosity;
+
+
+  if(v) printf("fc_cancel: %d and %d\n",fc0->label,fc1->label);
+  
+  // Handle the trivial cases.
+  if(!fc0->lines && !fc1->lines) {
+    if(v) printf("fc_cancel: trivial case (both sides).\n");
+    delete_flux_concentration( fc0 );
+    delete_flux_concentration( fc1 );
+    return 0;
+  }
+
+  if(!fc0->lines) {
+    if(v) printf("fc_cancel: trivial case (fc0).\n");
+    delete_flux_concentration(fc0);
+    return 0;
+  } 
+
+  if(!fc1->lines) {
+    if(v) printf("fc_cancel: trivial case (fc1).\n");
+    delete_flux_concentration(fc1);
+    return 0;
+  }
+
+  if(fc0->lines->fc0 != fc0) {
+    fprintf(stderr,"cancel: fc0 is not the source of its root fluxon!");
+    return 1;
+  }
+
+  if(fc1->lines->fc1 != fc1) {
+    fprintf(stderr,"cancel: fc1 is not the sink of its root fluxon!");
+    return 2;
+  }
+
+
+  n_min = fc0->lines->start_links.n;
+  if(fc1->lines->end_links.n < n_min)
+    n_min = fc1->lines->end_links.n;
+
+  if(v) printf("fc_cancel: fc0.n is %d; fc1.n is %d; n_min is %d\n",
+	       fc0->lines->start_links.n,
+	       fc1->lines->end_links.n,
+	       n_min
+	       );
+
+  while( n_min  ) {
+    printf("%d: ",n_min);
+
+    if(!fc0->lines || !fc1->lines) {
+      fprintf(stderr, "cancel: accounting error! (n_min=%d, fc0 has %d, fc1 has %d)\n",n_min, (fc0->lines? fc0->lines->start_links.n : 0), (fc1->lines ? fc1->lines->end_links.n : 0) );
+      return 3;
+    }
+    
+    if( fc0->lines->fc1 == fc1 ) {
+      if(v) printf("fc_cancel: fluxon %d (top of fc0) goes fc0->fc1\n",fc0->lines->label);
+      delete_fluxon( fc0->lines );
+      goto cancel_loop_end;
+    } 
+
+    if( fc1->lines->fc0 == fc0 ) {
+      if(v) printf("fc_cancel: fluxon %d (top of fc1) goes fc0->fc1\n",fc1->lines->label);
+      delete_fluxon( fc1->lines );
+      goto cancel_loop_end;
+    } 
+
+    if(v) printf("No fc0->fc1 found. Reconnecting %d and %d...\n",fc0->lines->label,fc1->lines->label);
+    reconnect_vertices( fc0->lines->start, fc1->lines->end->prev, ++(fc0->world->passno));
+    if(fc0->lines->fc1 != fc1) {
+      fprintf(stderr, "cancel: reconnection didn't work out like we hoped for fluxon %d...\n",fc0->lines->label);
+      return 4;
+    }
+    delete_fluxon(fc0->lines);
+
+  cancel_loop_end: n_min--;
+  }
+
+  if(!fc0->lines) {
+    printf("Deleting fc0 (%d) ",fc0->label);
+    delete_flux_concentration(fc0);
+  }
+
+  if(!fc1->lines) {
+    printf("Deleting fc1 (%d) ",fc1->label);
+    delete_flux_concentration(fc1);
+  }
+
+  return 0;
+}
     
 /********************************************************************
  * fluxon end-condition handlers - update end position of the fluxon

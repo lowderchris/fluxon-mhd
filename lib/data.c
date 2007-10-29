@@ -693,13 +693,13 @@ void unlink_vertex(VERTEX *v) {
 
     /* Normalize world root... */
     for(root=w->vertices;
-	((LINKS *)(root+v_ln_of))->up; 
+	root && ((LINKS *)(root+v_ln_of))->up; 
 	root=((LINKS *)(root+v_ln_of))->up)
       ;
     v->line->fc0->world->vertices = root;
     
     /* Compare with actual root */
-    for(root=v; ((LINKS *)(root+v_ln_of))->up; root=((LINKS *)(root+v_ln_of))->up);
+    for(root=v; root && ((LINKS *)(root+v_ln_of))->up; root=((LINKS *)(root+v_ln_of))->up);
     if(root==w->vertices) {
       if(w->verbosity>=4)
 	printf("calling tree_unlink...\n");

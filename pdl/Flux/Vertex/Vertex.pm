@@ -22,6 +22,7 @@ This is version 1.1 of Vertex.pm, part of the 1.1 release of Flux
 
 BEGIN {
 package Flux::Vertex;
+use PDL;
 
 require Exporter;
 require DynaLoader;

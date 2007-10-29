@@ -329,6 +329,46 @@ OUTPUT:
  RETVAL
 
 SV *
+concentration(wsv,id)
+ SV *wsv
+ IV id
+PREINIT:
+ WORLD *w;
+ FLUX_CONCENTRATION *fc;
+ SV *sv;
+/**********************************************************************
+ * concentration - generate and return a Flux::Concentration object
+ * associated with the given id
+ */
+CODE:
+ w = SvWorld(wsv,"Flux::World::concentration");
+ fc = (FLUX_CONCENTRATION *)(FLUX->tree_find(w->concentrations,id,fc_lab_of, fc_ln_of));
+ if(fc) {
+	I32 foo;
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newSVpv("Flux::Concentration",0)));
+	XPUSHs(sv_2mortal(newSViv((IV)fc)));
+	PUTBACK;
+	foo = call_pv("Flux::Concentration::new_from_ptr",G_SCALAR);
+	SPAGAIN;
+	
+	if(foo != 1)
+		croak("Big trouble in Flux::World::concentration!");
+	
+	RETVAL = POPs;
+	SvREFCNT_inc(RETVAL); /* Inc ref count so that XS can decrement it */
+	PUTBACK;
+	FREETMPS;
+	LEAVE;
+ } else {
+	RETVAL = &PL_sv_undef;
+ }
+OUTPUT:
+ RETVAL
+
+SV *
 fluxon(wsv,id)
  SV *wsv
  IV id
@@ -414,7 +454,6 @@ CODE:
 OUTPUT:
   RETVAL
 
-
 void
 _dec_refct_destroy(svw)
 SV *svw
@@ -425,9 +464,78 @@ CODE:
  w->refct--;
  if(w->verbosity)
 	printf("Flux::World::_dec_refct_destroy - world refcount is now %d\n",w->refct);
- if(w->refct <= 0)
-	free_world(w);
+ if(w->refct <= 0) 
+   free_world(w); 
 	
+SV *
+_new_concentration( wsv, xsv, flux, label, endsv );
+ SV *wsv;
+ SV *xsv;
+ NV flux;
+ IV label;
+ SV *endsv;
+PREINIT:
+ WORLD *w;
+ pdl *x;
+ FLUX_CONCENTRATION *fc;
+CODE:
+ w = SvWorld(wsv, "Flux::World::new_concentration");
+ x = PDL->SvPDLV(xsv);
+ if(!x || x->ndims != 1 || x->dims[0] != 3) {
+	croak("Flux::World::new_concentration requires a 3-PDL location!");
+ }
+ PDL->converttype(&x, PDL_D, 1);
+ PDL->make_physical(x);
+ fc = FLUX->new_flux_concentration(w, 
+	((PDL_Double *)(x->data))[0], 
+	((PDL_Double *)(x->data))[1],
+	((PDL_Double *)(x->data))[2],
+	flux,
+	label
+	);
+ w->concentrations = FLUX->tree_binsert(w->concentrations, fc, fc_lab_of, fc_ln_of);
+ {
+	I32 foo;
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newSVpv("Flux::Concentration",0)));
+	XPUSHs(sv_2mortal(newSViv((IV)(fc))));
+	PUTBACK;
+	foo = call_pv("Flux::Concentration::new_from_ptr",G_SCALAR);
+	SPAGAIN;
+
+	if(foo==1)
+	 	RETVAL = POPs;
+	else
+		croak("Big trouble in Flux::World::new_concentration!");
+	
+	SvREFCNT_inc(RETVAL);
+	PUTBACK;
+	FREETMPS;
+	LEAVE;
+ }
+
+ // Set the boundary, if specified...
+ if(endsv && endsv != &PL_sv_undef && *(SvPV_nolen(endsv))) {
+	I32 foo;
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	XPUSHs(RETVAL);
+	XPUSHs(sv_2mortal(newSViv( 5  ))); // magic number for flux concentrations
+	XPUSHs(sv_2mortal(newSViv( 13 ))); // magic number for the bound field 
+	XPUSHs(sv_2mortal(newSVsv(endsv)));
+	PUTBACK;
+	foo = call_pv("Flux::_wbound",G_SCALAR);
+	SPAGAIN;
+	PUTBACK;
+	FREETMPS;
+	LEAVE;
+ }
+OUTPUT:
+ RETVAL
+
 
 AV *
 _forces(wsv)

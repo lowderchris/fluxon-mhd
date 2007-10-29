@@ -503,6 +503,42 @@ CODE:
 OUTPUT:
   	RETVAL
 
+SV *
+_rworld(sv, typeno, fieldno)
+ SV *sv
+ long typeno
+ long fieldno
+PREINIT:
+ void *ptr;
+ WORLD **wp;
+CODE:
+	ptr = (void *)SvFluxPtr(sv,"_rfluxon","Flux");
+	wp = (WORLD **)fieldptr(ptr,typeno,fieldno);
+	if(wp && *wp) {
+		I32 foo;
+		ENTER;
+		SAVETMPS;
+		PUSHMARK(SP);
+		XPUSHs(sv_2mortal(newSVpv("Flux::World",0)));
+		XPUSHs(sv_2mortal(newSViv((IV)(*wp))));
+		PUTBACK;
+		foo = call_pv("Flux::World::new_from_ptr",G_SCALAR);
+		SPAGAIN;
+		
+		if(foo==1)
+			RETVAL = POPs;
+		else
+			croak("Big trouble in _rfluxon!");
+		
+		SvREFCNT_inc(RETVAL);
+		PUTBACK;
+		FREETMPS;
+		LEAVE;
+	} else {
+		RETVAL = &PL_sv_undef;
+	}
+OUTPUT:
+  	RETVAL
 
 SV *
 _rdumblist(class, sv, typeno, fieldno)

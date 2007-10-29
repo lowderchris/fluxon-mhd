@@ -252,6 +252,109 @@ CODE:
 OUTPUT:
  RETVAL
 
+
+
+SV *
+_new(wsv, fc0sv, fc1sv, flux, labelsv, vertssv)
+ SV *wsv
+ SV *fc0sv
+ SV *fc1sv
+ NV flux
+ SV *labelsv
+ SV *vertssv
+PREINIT:
+ FLUXON *f;
+ VERTEX *v;
+ WORLD *w;
+ FLUX_CONCENTRATION *fc0;
+ FLUX_CONCENTRATION *fc1;
+ pdl *verts;
+ PDL_Double *data;
+ long label;
+ /******************************
+  * _new - generates a new fluxon.  For more options use the 
+  * standard constructor Flux::Fluxon::new (in Fluxon.pm).
+  * Two vertices are automagically created at the endpoints,
+  * whether you specify intermediate vertices or no.
+  * 
+  * Returns a perl structure pointing to the new fluxon.
+  */
+CODE:
+  w   = SvWorld(wsv,  "Flux::Fluxon::_new - world");
+  fc0 = SvConc (fc0sv,"Flux::Fluxon::_new - fc0");
+  fc1 = SvConc (fc1sv,"Flux::Fluxon::_new - fc1");
+
+  if(!vertssv || vertssv == &PL_sv_undef || !(*(SvPV_nolen(vertssv)))) {
+ 	verts = 0;
+  } else {
+ 	verts = PDL->SvPDLV(vertssv);
+
+ 	if(!verts) 
+ 		croak("Flux::Fluxon::_new - couldn't understand verts argument");
+ 	if(verts->ndims<1 || verts->ndims > 2) 
+ 		croak("Flux::Fluxon::_new - 3-PDL or 3xn-PDL required for verts argument");
+ 	if(verts->dims[0] != 3) 
+ 		croak("Flux::Fluxon::_new - 0th dim of verts argument must have size 3");
+ 	if(verts->ndims==1) {
+ 		verts->ndims=2;
+ 		verts->dims[1]=1;
+  		verts->dimincs[1]=3*verts->dimincs[0];
+ 	}
+ 	PDL->converttype(&verts, PDL_D, 1);
+         PDL->make_physical(verts);
+ }
+
+ label = SvIV(labelsv);
+ f = FLUX->new_fluxon(1.0, fc0, fc1, label, 0);
+
+ fc0->lines  = FLUX->tree_binsert(fc0->lines, f, fl_lab_of, fl_start_ln_of);
+ fc1->lines  = FLUX->tree_binsert(fc1->lines, f, fl_lab_of, fl_end_ln_of);
+ w->lines    = FLUX->tree_binsert(w->lines,   f, fl_lab_of, fl_all_ln_of);
+ f->start = FLUX->new_vertex( -(f->label*2),   fc0->x[0], fc0->x[1], fc0->x[2], f );
+ f->end   = FLUX->new_vertex( -(f->label*2)+1, fc1->x[0], fc1->x[1], fc1->x[2], f );
+ f->start->next = f->end;
+ f->end->prev = f->start;
+ f->v_ct = 2;
+ if(verts) {
+ 	long vno;
+ 	VERTEX *vlast = f->start;
+ 	long st = verts->dimincs[0];
+ 
+ 	for(vno=0;vno<verts->dims[1];vno++) {
+ 		long of = verts->dimincs[1] * vno;
+ 		FLUX->add_vertex_after(f, vlast, FLUX->new_vertex( 0,
+ 								   ((PDL_Double *)(verts->data))[ of           ],
+ 								   ((PDL_Double *)(verts->data))[ of + st      ],
+ 								   ((PDL_Double *)(verts->data))[ of + st + st ],
+ 								   f
+ 								 )
+ 					);
+		vlast = vlast->next;
+ 	}
+ }
+ {
+  I32 foo;
+  ENTER;
+  SAVETMPS;
+  PUSHMARK(SP);
+  XPUSHs(sv_2mortal(newSVpv("Flux::Fluxon",0)));
+  XPUSHs(sv_2mortal(newSViv((IV)(f))));
+  PUTBACK;
+  foo = call_pv("Flux::Fluxon::new_from_ptr",G_SCALAR);
+  SPAGAIN;
+  if(foo==1) 
+ 	RETVAL=POPs;
+  else
+ 	croak("Big trouble in Flux::Fluxon::_new!");
+  SvREFCNT_inc(RETVAL);
+  PUTBACK;
+  FREETMPS;
+  LEAVE;
+ }
+OUTPUT:
+	 RETVAL		
+  
+
 void 
 _inc_world_refct(svfl)
 SV *svfl

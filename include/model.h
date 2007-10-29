@@ -81,6 +81,8 @@ int vertex_recon_check( VERTEX *v1, long passno );
 long fluxon_recon_check( FLUXON *f, long passno );
 long global_recon_check( WORLD *w );
 
+int fc_cancel( FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1 );
+
 typedef struct VERTEX_STATS {
   long n;         /* Number of vertices included in stats */
   NUM f_acc;      /* average resultant magnitude of force */

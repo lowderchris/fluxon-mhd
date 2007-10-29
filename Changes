@@ -1,3 +1,8 @@
+29-Oct-2007 [cd]
+ - Updates to force laws
+ - Added emerge and cancel functions
+ - Concentrations have an XS interface
+ - Core structure
 22-Oct-2007 [cd]
  - Added Core infrastructure
  - Added hash access to forces; also, helpful error messages
