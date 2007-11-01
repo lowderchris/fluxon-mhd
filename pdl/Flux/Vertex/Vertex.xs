@@ -216,7 +216,7 @@ PREINIT:
 CODE:
  v = SvVertex(vsv,"Flux::Vertex::add_vertex_after",1);
 	
- loc = SvPDLV(locsv);
+ loc = PDL->SvPDLV(locsv);
  if(!loc || loc->ndims<1 || loc->dims[0] != 3) 
 	croak("Flux::Vertex::add_vertex_after- requires a 3-PDL location");
  PDL->converttype(&loc, PDL_D, 1);
