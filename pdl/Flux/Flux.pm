@@ -452,7 +452,7 @@ sub _rphot {
     my $type = shift;
     my $field = shift;
 
-    barf("_rphot requires a Flux::World") if(ref $me ne 'Flux::World');
+    PDL::barf("_rphot requires a Flux::World") if(ref $me ne 'Flux::World');
     my $p = $me->photosphere;
     my $hash = {
 	type=>$p->[6]
@@ -470,15 +470,15 @@ sub _wphot {
     my $field = shift;
     my $val = shift;
 
-    barf("_wphot requires a Flux::World") 
+    PDL::barf("_wphot requires a Flux::World") 
 	unless(ref $me eq 'Flux::World');
 
-    barf("_wphot requires a hash ref with a type field")
+    PDL::barf("_wphot requires a hash ref with a type field")
 	unless( ref $val eq 'HASH' and 
 		exists $val->{type}
 		);
 
-    barf("_wphot: origin and normal fields must each be 3-PDLs")
+    PDL::barf("_wphot: origin and normal fields must each be 3-PDLs")
 	unless( !$val->{type} or (
 				  ref $val->{origin} eq 'PDL' and 
 				  ref $val->{normal} eq 'PDL' and
