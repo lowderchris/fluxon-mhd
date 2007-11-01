@@ -1,5 +1,12 @@
-This is the C module portion of Version 1.1 of FLUX, the Field Line
-Universal relaXer.
+This is the C module portion of FLUX, the Field Line Universal
+relaXer.  The '.c' files are copied with 'subst_filename' to
+'<foo>.cf.c', to preserve the current time & date in the compiled
+code.  The modules themselves compile to a library, 'libflux.a', 
+which can be installed into /usr/local/lib.
+
+
+
+
 
 
 
