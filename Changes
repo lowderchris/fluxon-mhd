@@ -1,3 +1,11 @@
+31-Oct-2007 [cd]
+ - Perl interface more standardized; seems to avoid memory leaks 
+ - Perl objects always work in through the World and tree_find; this
+    avoids deallocation problems in (e.g.) cancellation or mesh refinement.
+ - allocation concentrated in a Core routine
+ - deallocation is somewhat faster and actually works
+ - emerge/submerge code seems to work OK
+ - All new structures are immediately linked into the world trees by the constructors.
 29-Oct-2007 [cd]
  - Updates to force laws
  - Added emerge and cancel functions

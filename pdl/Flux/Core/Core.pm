@@ -19,6 +19,8 @@ all.
 
 All the action happens in the BOOT: section of Core.xs.
 
+This file is part of FLUX 2.0 (31-Oct-2007).
+
 =head1 Methods
 
 -none-

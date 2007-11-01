@@ -26,7 +26,7 @@ A Flux::World object is just a pointer off into hyperspace.
 
 VERSION
 
-This is version 1.1 of World.pm - part of the 1.1 Flux release, 21-Oct-2005
+This file is part of the Flux 2.0 release, 31-Oct-2007
 
 =head1 FUNCTIONS
 
@@ -50,15 +50,6 @@ bootstrap Flux::World;
 package Flux::World;
 use overload '""' => \&_stringify;
 
-
-sub new_from_ptr {
-    my $class = shift;
-    my $ptr = shift;
-    my %hash;
-    tie %hash,"Flux::World",$ptr;
-    $hash{refct}++;  
-    return bless(\%hash,$class);
-}
 
 =pod
 
@@ -226,6 +217,8 @@ sub summary {
 
 =for ref
 
+(Deprecated; use the hash interface instead, via the scale_FOO_power fields)
+
 Starting with FLUX 1.1, there is fine grained control over the power laws used for
 calculating the size of the steps taken by individual vertices.  The force laws all
 calculate force per unit length along the fluxon, so length compensation is needed; 
@@ -285,10 +278,11 @@ happen.
     
 =for ref
 
-Adds additional vertices as needed to ensure that no vertices have too
-much curvature.  The $thresh_high is the maximum bend angle, in
+Adds and subtracts vertices as needed to ensure that no vertices have too
+much or too little curvature.  The $thresh_high is the maximum bend angle, in
 radians, that is allowed at each vertex.  $thresh_low is the minimum
-bend angle in radians. You get back a count of the number of fluxels
+bend angle in radians, though no vertex is removed unless it meets certain
+proximity criteria as well. You get back a count of the number of fluxels
 different from the previous number.
 
 You have to have primed the world with at least one timestep or
@@ -303,8 +297,6 @@ sub fix_curvature {
     my $thresh_low = shift ;
     _fix_curvature ($me, $thresh_high || 0, $thresh_low || 0 );
 }
-
-
 
 =pod
 
@@ -340,6 +332,11 @@ so that you don't die of ennui before the simulation completes.
     $v = $world->verbosity();
     $world->verbosity($v);
 
+
+=for ref
+
+(Deprecated - use the 'verbosity' field in the tied hash instead)
+
 Controls the level of, well, verbosity associated with operations on $world.
 High values send insane amounts of stuff to the console.
 
@@ -372,8 +369,6 @@ Describe activity within each vertex operation -- notably neighbor searches.
 =cut
 
 # Implemented in World.xs
-
-
 
 
 =pod
@@ -652,6 +647,8 @@ sub emerge {
 	if("$vertices") {
 	    my $nv = ( pdl(0)+$vertices )->at(0);
 
+	    print "emerge: generating vertices ($vertices)\n" if($world->{verbosity});
+
 	    my $svec = ($snk - $src)/($nv+1);
 	    my $sep = (($snk - $src) * ($snk - $src))->sumover->sqrt;
 	    my $ph = $world->{photosphere};
@@ -699,6 +696,8 @@ sub emerge {
 
 =for ref
 
+(Deprecated; use the "forces" field in the tied hash instead)
+
 Return the names of the forces that are queued up to act on each fluxel
 in the simulation, or set them.  The forces have predefined names
 that are present at the top of physics.c.  Unknown forces are referred to
@@ -736,6 +735,8 @@ sub forces {
 
 =for ref
 
+(Deprecated; use the "rc_funcs" field in the tied hash instead)
+
 The reconnection criteria accept numeric parameters in an array ref.
 Check the documentation array or the source code to find out what they
 mean.  Setting the reconnection parameters doesn't make reconnection
@@ -771,16 +772,18 @@ sub reconnection {
 
 =for ref
 
+(Deprecated; use the photosphere element of the tied hash instead)
+
 With no additional arguments, returns a seven-element perl list.  Elements
 0-6 are the numeric values of the boundary parameters, and element 7 is
 the type code for the boundary.  If no boundary is in use, then the empty
 list is returned.
 
-If you pass in a list ref, then the contents 
-
-six-element list containing the 
-(origin, normal-vector) coordinates of the photospheric plane, or a
-zero-element list indicating that there is no photospheric plane.  If you
+If you pass in a list ref, then the contents should be a 
+seven-element list containing the 
+(origin, normal-vector) coordinates of the photospheric plane, followed
+by a numeric type code, or a zero-element list indicating that there is no 
+photospheric plane.  If you
 pass in a list ref, it is used to set the photospheric plane parameters.
 The list ref is copied into the boundary parameter array internally.  The 
 $type code should be the numeric type code for the boundary condition you want:
@@ -862,11 +865,11 @@ and average number of neighbors per vertex.  The answer comes back in a perl has
 
 =pod
 
-=head2 render_lines
+=head2 render
 
 =for usage
 
- $world->render_lines($interactive, $range, $opt)
+ $world->render($interactive, $range, $opt)
 
 =for ref
 
@@ -1321,7 +1324,7 @@ sub render {
 	my @fc_points = ();
 	my @fc_rgb = ();
 	for my $fc( $w->concentrations ) {
-	    if($fc->{label} < -4 || $fc->{label} > 0) {
+	    if($fc->{label} < -9 || $fc->{label} > 0) {
 		push( @fc_points, $fc->{x} );
 		if($opt->{'rgb_fcs'} && defined $opt->{'rgb_fcs'}->{$fc->{label}}) {
 		    push(@fc_rgb, $opt->{'rgb_fcs'}->{$fc->{label}});
@@ -1685,32 +1688,26 @@ sub _plot_hull {
     $win->points(0,0,{symsize=>3,charsize=>3,color=>1});
 
     $win->release;
-}
-
+}		
 
 sub DESTROY {
-  # DESTROY gets called twice -- once for the tied hash and once for the underlying object
-  # (which is a scalar ref, not a hash ref). Only destroy the world if this is the scalar ref 
-  # layer (not the hash ref layer).
-
-  eval 'my $a = ${$_[0]}; $a;';
-  if($@) {
-    undef $@;
-    return;
-  }
-
-  _dec_refct_destroy( $_[0] );
+    Flux::destroy_sv( $_[0] );
 }
 
 ######################################################################
 # TIED INTERFACE
 # Mostly relies on the general utility functions in Flux....
 
+# TIEHASH not used much - the C side uses FLUX->sv_from_ptr to do the tying.
 sub TIEHASH {
     my $class = shift;
-    my $ptr = shift;
-    my $me = \$ptr;
+    my $me = shift;
     return bless($me,$class);
+}
+
+sub EXISTS {
+    my ($me, $field)=@_;
+    return ($FLUX::codes->{world}->{$field});
 }
 
 sub FETCH {

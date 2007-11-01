@@ -1,3 +1,13 @@
+=head2 test_hull - test the hull algorithm
+
+=for ref
+
+This routine is intended to test the hull (Voronoi) hull algorithm in geometry.c.
+
+This file is part of FLUX 2.0, released 31-Oct-2007.
+
+=cut
+
 use Flux;
 
 $a = read_world('menagerie/simple-8.flux') unless defined($a);

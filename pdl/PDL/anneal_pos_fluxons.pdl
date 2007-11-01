@@ -15,6 +15,9 @@ You give a magnetogram (in Gauss with FITS header) and an initial distribution
 of fluxons.  You get back an annealed distribution that approximates an
 ideal one.
 
+This isn't nearly as efficient as the Floyd-Steinberg ditherer; you might want
+to try that instead.
+
 =head1 BUGS
 
 For now, NO units conversion is done -- that means your Maxwells value is actually in
@@ -23,7 +26,7 @@ gauss-pixels!  (or, more precisely, gauss-mag-DN)
 
 =head1 HISTORY
 
-27-Sep-2001
+This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 use Carp;

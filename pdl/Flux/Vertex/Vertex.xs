@@ -2,7 +2,7 @@
  * in perl.
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) 2004 Craig DeForest.  You may distribute this
+ * Copyright (c) 2004-2007 Craig DeForest.  You may distribute this
  * file under the terms of the Gnu Public License (GPL), version 2.
  * You should have received a copy of the GPL with this file.
  * If not, you may retrieve it from "http://www.gnu.org".
@@ -16,13 +16,14 @@
  *  next               Returns the next vertex on the fluxon - obviated by tied-hash
  *  prev               Returns the prevoius vertex on the fluxon - obviated by tied-hash
  *  _adjacent	       Returns a perl list containing either the neighbors or nearby dumblist.
+ *  add_vertex_after   Constructs a VERTEX and adds it after the specified one.
  *  hull               Returnns the projected hull of the vertex as a 7xN PDL
  *  projmatrix         Returns the projection matrix used for hull, as a 3x3 PDL
  *  proj_neighbors     Calls vertex_update_neighbors.
+ *  reconnect          Forces reconnection with another vertex
  *  x                  Returns the coordinates of the vertex - obviated by tied-hash
- *  _dec_refct_destroy_world  Decrements the owning world's refct and, if zero, destroys the world.
  * 
- * This is Vertex.xs version 1.1 - part of the FLUX 1.1 release.
+ * This is part of the FLUX 2.0 release (31-Oct-2007).
  */
 
 #include "EXTERN.h"
@@ -66,7 +67,8 @@ PREINIT:
  * _stringify - generate a summary string about a fluxon
  */
 CODE: 
-  v = SvVertex(vrt,"Flux::Vertex::_stringify");
+  v = SvVertex(vrt,"Flux::Vertex::_stringify",1);
+
   if(v->line) {
 	sprintf(str,"vertex %5d (fl %5d): xyz=%7.3g,%7.3g,%7.3g, |B|=%7.3g, n=%5d,p=%5d, out/in:%2d/%2d\n",
 	v->label,
@@ -96,9 +98,11 @@ PREINIT:
  SV *dv;
 /**********************************************************************
  * id - return the longint ID as a perl scalar 
+ * Kind of lame, as we could just pull the id out of the internal perl representation,
+ * but calling SvVertex forces a consistency check.
  */
 CODE:
- v = SvVertex(vrt,"Flux::Vertex::id");
+ v = SvVertex(vrt,"Flux::Vertex::id",1);
  RETVAL = v->label;
 OUTPUT:
  RETVAL
@@ -109,38 +113,18 @@ fluxon(vrt)
 PREINIT:
  FLUXON *f;
  VERTEX *v;
+ WORLD *w;
 /**********************************************************************
  * fluxon - return the containing fluxon, as a Flux::Fluxon object
  */
 CODE:
-  v = SvVertex(vrt,"Flux::Vertex::fluxon");
-  f = v->line;
-
-  {
-   	I32 foo;
-
-   	ENTER;
-  	SAVETMPS;
-
-  	PUSHMARK(SP);
-  	XPUSHs( sv_2mortal(newSVpv( "Flux::Fluxon", 0)) );
-  	XPUSHs( sv_2mortal(newSViv((IV)f)) );
-  	PUTBACK;
-  	foo = call_pv( "Flux::Fluxon::new_from_ptr", G_SCALAR );
-	SPAGAIN;
-
-  	if(foo==1)
-	    RETVAL = POPs;
-	else {
-	    croak("Big trouble in Flux::Fluxon::new_from_ptr call from Vertex->fluxon()...");
-	}
-  
-  	SvREFCNT_inc(RETVAL);
-  
-  	PUTBACK;
-  	FREETMPS;
-  	LEAVE; 
-  }
+  v = SvVertex(vrt,"Flux::Vertex::fluxon",1);
+  w = SvWorld(vrt, "Flux::Vertex::fluxon",1);
+	
+  RETVAL = (v->line ? 
+	FLUX->new_sv_from_ptr(w, FT_FLUXON, v->line->label) :
+	&PL_sv_undef
+	);
 OUTPUT:
  RETVAL
 
@@ -149,38 +133,18 @@ next(vrt)
  SV *vrt
 PREINIT:
  VERTEX *v;
+ WORLD *w;
 /**********************************************************************
  * next - hop to the next vertex on the fluxon
  */
 CODE:
- v = SvVertex(vrt,"Flux::Vertex::next");
- if(v->next) {	
-   	I32 foo;
-
-   	ENTER;
-  	SAVETMPS;
-
-  	PUSHMARK(SP);
-  	XPUSHs( sv_2mortal(newSVpv( "Flux::Vertex", 0)) );
-  	XPUSHs( sv_2mortal(newSViv((IV)v->next)) );
-  	PUTBACK;
-  	foo = call_pv( "Flux::Vertex::new_from_ptr", G_SCALAR );
-	SPAGAIN;
-
-  	if(foo==1)
-	    RETVAL = POPs;
-	else {
-	    croak("Big trouble in Flux::Vertex::new_from_ptr call from Vertex->next()...");
-	}
-  
-  	SvREFCNT_inc(RETVAL);
-  
-  	PUTBACK;
-  	FREETMPS;
-  	LEAVE; 
- } else {
-  RETVAL = &PL_sv_undef;
- }
+ v = SvVertex(vrt,"Flux::Vertex::next",1);
+ w = SvWorld(vrt, "Flux::Vertex::next",1);
+ RETVAL = 
+	(v->next ?
+	FLUX->new_sv_from_ptr(w, FT_VERTEX, v->next->label) : 
+	&PL_sv_undef
+	);
 OUTPUT:
  RETVAL
 
@@ -189,38 +153,18 @@ prev(vrt)
  SV *vrt
 PREINIT:
  VERTEX *v;
+ WORLD *w;
 /**********************************************************************
  * prev - hop to the previous vertex on the fluxon
  */
 CODE:
- v = SvVertex(vrt,"Flux::Vertex::prev");
- if(v->prev) {
-   	I32 foo;
-
-   	ENTER;
-  	SAVETMPS;
-
-  	PUSHMARK(SP);
-  	XPUSHs( sv_2mortal(newSVpv( "Flux::Vertex", 0)) );
-  	XPUSHs( sv_2mortal(newSViv((IV)v->prev)) );
-  	PUTBACK;
-  	foo = call_pv( "Flux::Vertex::new_from_ptr", G_SCALAR );
-	SPAGAIN;
-
-  	if(foo==1)
-	    RETVAL = POPs;
-	else {
-	    croak("Big trouble in Flux::Vertex::new_from_ptr call from Vertex->prev()...");
-	}
-  
-  	SvREFCNT_inc(RETVAL);
-  
-  	PUTBACK;
-  	FREETMPS;
-  	LEAVE; 
- } else {
-  RETVAL = &PL_sv_undef;
- }
+ v = SvVertex(vrt,"Flux::Vertex::prev",1);
+ w = SvWorld(vrt,"Flux::Vertex::prev",1);
+ RETVAL = 
+	(v->prev ?
+	FLUX->new_sv_from_ptr(w, FT_VERTEX, v->prev->label) :
+	&PL_sv_undef
+	);
 OUTPUT:
  RETVAL
 
@@ -230,6 +174,8 @@ SV *svrt
 IV nearby
 PREINIT:
  VERTEX *v;
+ WORLD *w;
+ AV *av;
  DUMBLIST *dl;
  int i;
  SV *sv;
@@ -238,7 +184,8 @@ PREINIT:
  * vertex. 
  */
 CODE:
- v = SvVertex(svrt,"Flux::Vertex::_adjacent");
+ v = SvVertex(svrt,"Flux::Vertex::_adjacent",1);
+ w = SvWorld(svrt, "Flux::Vertex::_adjacent",1);
 
  if(nearby)
   dl = &(v->nearby);
@@ -246,45 +193,17 @@ CODE:
   dl = &(v->neighbors);
  
 
- RETVAL = newAV(); /* initialize array */
- av_clear(RETVAL);
- av_extend(RETVAL,dl->n);
+ av = newAV(); /* initialize array */
+ av_clear(av);
+ av_extend(av, dl->n);
  for(i=0; i<dl->n; i++) {
    VERTEX *v = (VERTEX *)(dl->stuff[i]);
-   {
-   	I32 foo;
-
-   	ENTER;
-  	SAVETMPS;
-
-  	PUSHMARK(SP);
-  	XPUSHs( sv_2mortal(newSVpv( "Flux::Vertex", 0)) );
-  	XPUSHs( sv_2mortal(newSViv((IV)((VERTEX *)(dl->stuff[i])))) );
-  	PUTBACK;
-  	foo = call_pv( "Flux::Vertex::new_from_ptr", G_SCALAR );
-	SPAGAIN;
-
-  	if(foo==1)
-	    sv = POPs;
-	else {
-	    croak("Big trouble in Flux::Vertex::new_from_ptr call from Vertex->prev()...");
-	}
-  
-  	SvREFCNT_inc(sv);
-  
-  	PUTBACK;
-  	FREETMPS;
-  	LEAVE; 
-   }
-   if( ! ( av_store(RETVAL,i,sv) ) ) {
-	SvREFCNT_dec(sv);
-	fprintf(stderr,"Warning: problems with array in _adjacent...\n");
-   }
-	sv_2mortal(sv);
+   sv = FLUX->new_sv_from_ptr(w, FT_VERTEX, v->label);
+   av_store(av, i, sv);
  }
+ RETVAL = av;
 OUTPUT:
  RETVAL
-
 
 SV *
 add_vertex_after(vsv, locsv)
@@ -295,7 +214,8 @@ PREINIT:
  VERTEX *nv;
  pdl *loc;
 CODE:
- v = SvVertex(vsv,"Flux::Vertex::add_vertex_after");
+ v = SvVertex(vsv,"Flux::Vertex::add_vertex_after",1);
+	
  loc = SvPDLV(locsv);
  if(!loc || loc->ndims<1 || loc->dims[0] != 3) 
 	croak("Flux::Vertex::add_vertex_after- requires a 3-PDL location");
@@ -308,28 +228,7 @@ CODE:
 	v->line
 	);
  FLUX->add_vertex_after(v->line, v, nv);
- {
- 	I32 foo;	
-	ENTER;
-	SAVETMPS;
-	PUSHMARK(SP);
-	XPUSHs( sv_2mortal(newSVpv( "Flux::Vertex", 0)) );
-	XPUSHs( sv_2mortal(newSViv((IV)nv)) );
-	PUTBACK;
-	foo = call_pv( "Flux::Vertex::new_from_ptr", G_SCALAR );
-	SPAGAIN;
-	
-	if(foo==1) 
-		RETVAL = POPs;
-	else {
-		croak("Big trouble in Flux::Vertex::add_vertex_after");
-	}
-
-	SvREFCNT_inc(RETVAL);
-	PUTBACK;
-	FREETMPS;
-	LEAVE;
- }
+ RETVAL = FLUX->new_sv_from_ptr(v->line->fc0->world, FT_VERTEX, nv->label);
 OUTPUT:
  RETVAL
  
@@ -348,7 +247,7 @@ CODE:
  /*********************************************
   * hull - return the Voronoi hull of a vertex
   */
- v = SvVertex(svrt,"Flux::Vertex::hull");
+ v = SvVertex(svrt,"Flux::Vertex::hull",1);
  hull_verts = FLUX->vertex_update_neighbors(v, global);
  
  /* Now stuff the hull vertices into the first PDL. */
@@ -387,7 +286,7 @@ PREINIT:
  NUM x0[3],x1[3];
  NUM mat[9];
 CODE: 
- v = SvVertex(svrt,"Flux::Vertex::projmatrix");
+ v = SvVertex(svrt,"Flux::Vertex::projmatrix",1);
  
  if( ! v->next ) {
 	RETVAL = &PL_sv_undef;
@@ -431,7 +330,7 @@ PREINIT:
  int i;
  PDL_Double *d;
 CODE:
- v = SvVertex(svrt,"Flux::Vertex::proj_neighbors");
+ v = SvVertex(svrt,"Flux::Vertex::proj_neighbors",1);
 
  if(global) {
   dl = FLUX->gather_neighbor_candidates(v,1);
@@ -469,8 +368,8 @@ PREINIT:
  VERTEX *v1, *v2;
  long passno;
 CODE:
- v1 = SvVertex(svv1, "Flux::Vertex::reconnect");
- v2 = SvVertex(svv2, "Flux::vertex::reconnect");
+ v1 = SvVertex(svv1, "Flux::Vertex::reconnect",1);
+ v2 = SvVertex(svv2, "Flux::vertex::reconnect",1);
  if(SvROK(svpassno)) 
 	croak("Flux::Vertex::reconnect: Can't take a PDL or reference as a passno");
 if(svpassno == &PL_sv_undef) 
@@ -491,7 +390,7 @@ PREINIT:
  VERTEX *v;
  PDL_Long dims[1];
 CODE:
- v = SvVertex(svrt,"Flux::Vertex::x");
+ v = SvVertex(svrt,"Flux::Vertex::x",1);
  p = PDL->create(PDL_PERM);
  dims[0] = 3;
  PDL->setdims(p,dims,1);
@@ -504,36 +403,6 @@ CODE:
  PDL->SetSV_PDL(RETVAL,p);
 OUTPUT:
  RETVAL
-
-void
-_inc_world_refct(svv)
-SV *svv
-PREINIT:
- VERTEX *v;
-CODE:
- v=SvVertex(svv, "Flux::Vertex::_inc_world_refct");
- if(v->line) {
-	 v->line->fc0->world->refct ++;
- }
- if(v->line && v->line->fc0->world->verbosity) 
-	printf("Vertex:  world refct++ (now %d) (pointer is 0x%x)\n",v->line->fc0->world->refct,v);
-
-
-void
-_dec_refct_destroy_world(svrt)
-SV *svrt
-PREINIT:
- VERTEX *v;
-CODE:
- v = SvVertex(svrt, "Flux::Vertex::_dec_refct_destroy_world");
- if(v->line) {
-	v->line->fc0->world->refct--;
- }
- if(v->line && v->line->fc0->world->verbosity)
-	printf("Flux::Vertex::_dec_refct_destroy_world - world refcount is now %d (pointer is 0x%x)\n",v->line->fc0->world->refct,v);
- if(v->line && v->line->fc0->world->refct <= 0)
-	free_world(v->line->fc0->world);
-	
 
 BOOT:
 /**********************************************************************

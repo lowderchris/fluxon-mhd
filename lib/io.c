@@ -1,18 +1,10 @@
 /**********************************************************************
- * io.c -- I/O routines for FLEM
+ * io.c -- I/O routines for FLUX
  *
- * Mostly text I/O; now has graphics output for extra cheesy flavor!
- * OpenGL output is implemented, well, oddly.  The model is one of
- * building a display list and then, well, displaying it.  You send
- * stuff to an output file and then ask for it to be displayed.  The 
- * current implementation just writes a perl script that uses the OpenGL
- * glue to display the list you want.  Then when you close/display the
- * visual, it closes the file and executes the script. 
- *
- *
+ * Mostly text I/O.
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) Southwest Research Institute, 2004
+ * Copyright (c) Southwest Research Institute, 2004-2007
  * 
  * You may modify and/or distribute this software under the terms of
  * the Gnu Public License, version 2.  You should have received a copy
@@ -27,7 +19,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
- * This is io.c version 1.1 - part of the FLUX 1.1 release.
+ * This file is part of the FLUX 2.0 release (31-Oct-2007).
  */
 
 #include <stdio.h>
@@ -187,11 +179,6 @@ int footpoint_action(WORLD *world, char *s) {
 	FLUX_CONCENTRATION *fc;
 
 	fc = new_flux_concentration( world,x0[0],x0[1],x0[2],flux0, l0 );
-	world->concentrations = 
-	  tree_binsert( world->concentrations
-			,  fc 
-			, fc_lab_of, fc_ln_of );
-
 
       } else if(toupper(*s)=='M') {
 	
@@ -275,7 +262,7 @@ int footpoint_action(WORLD *world, char *s) {
       FLUX_CONCENTRATION *fc0, *fc1;
 	  fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
 	  fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
-	  printf("line %d: fc %d (%x) - fc %d (%x)\n",fl0,l0,fc0,l1,fc1);
+	  //printf("line %d: fc %d (%x) - fc %d (%x)\n",fl0,l0,fc0,l1,fc1);
 	if(!fc0 || !fc1) {
 	char *badbuf = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
 	sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,fc0,fc1,BUFSIZ);
@@ -311,13 +298,6 @@ int footpoint_action(WORLD *world, char *s) {
 	    
 	    /* Manufacture the new fluxon */
 	    f0 = new_fluxon(fabs(flux0),fc0,fc1,fl0,0);
-
-	    /* Link it in (three ways!) */
-	    /* This works because each flux concentration can only be the */
-	    /* beginning of all its lines, or the end of all its lines! */
-	    fc0->lines = tree_binsert(fc0->lines, f0, fl_lab_of, fl_start_ln_of);
-	    fc1->lines = tree_binsert(fc1->lines, f0, fl_lab_of, fl_end_ln_of);
-	    world->lines   = tree_binsert(world->lines,   f0, fl_lab_of, fl_all_ln_of);
 
 	    if(fc0->label==-3 && fc1->label==-4) {
 	      f0->plasmoid = 1;
@@ -601,16 +581,16 @@ int footpoint_action(WORLD *world, char *s) {
 	    sscanf(s+off,"%d",&i) || (badstr="couldn't parse F_OVER_B state");
 	    
 	    if(i==0) {
-	      fprintf(stderr,"\t(setting b_power=0,d_power=2,s_power=1, ds_power=0)\n");
+	      fprintf(stderr,"\t(setting b_power=0,d_power=2,s_power=0, ds_power=0)\n");
 	      world->step_scale.b_power = 0;
 	      world->step_scale.d_power = 2;
-	      world->step_scale.s_power = 1;
+	      world->step_scale.s_power = 0;
 	      world->step_scale.ds_power = 0;
 	    } else {
-	      fprintf(stderr,"\t(setting b_power=1,d_power=2,s_power=1, ds_power=0)\n");
+	      fprintf(stderr,"\t(setting b_power=1,d_power=2,s_power=0, ds_power=0)\n");
 	      world->step_scale.b_power = 1;
 	      world->step_scale.d_power = 2;
-	      world->step_scale.s_power = 1;
+	      world->step_scale.s_power = 0;
 	      world->step_scale.ds_power = 0;
 	    }
 
@@ -765,7 +745,6 @@ WORLD *read_world(FILE *file, WORLD *a) {
   do{
     if( a == NULL ) {
       a = new_world();
-      printf("read_world: new_world refct is %d\n",a->refct);
     }
 
     if(s = next_line(file)) {
@@ -899,7 +878,7 @@ void fprint_tree(FILE *file, void *tree, int label_offset, int link_offset, int 
   LINKS *node_links = (LINKS *)(tree+link_offset);
 
   if(tree == NULL) {
-    printf("<<NO TREE>>\n");fflush(stdout);
+    //    printf("<<NO TREE>>\n");fflush(stdout);
     return;
   }
 

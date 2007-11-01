@@ -18,7 +18,7 @@ the top of the loop, and the Z axis is perpendicular to the loop).
 
 VERSION
 
-This is version 1.0 of place_loop_vertex - part of the 1.0 FLUX release.
+This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 

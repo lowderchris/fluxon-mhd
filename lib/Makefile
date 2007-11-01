@@ -1,6 +1,6 @@
 ######################################################################
 # This file is part of FLUX, the Field Line Universal relaXer.
-# Copyright (c) Craig DeForest 2004
+# Copyright (c) Craig DeForest 2004-2007
 #
 # You may modify and/or distribute this software under the terms of
 # the Gnu Public License, version 2.  You should have received a copy
@@ -23,7 +23,7 @@ CFLAGS = -I$(INCLUDE_DIR) -g -fPIC
 LIBS = -lm
 
 
-HEADERS = $(ID)/data.h $(ID)/io.h $(ID)/geometry.h $(ID)/model.h $(ID)/physics.h
+HEADERS = $(ID)/data.h $(ID)/io.h $(ID)/geometry.h $(ID)/model.h $(ID)/physics.h $(ID)/fluxperl.h
 
 SOURCES = data.c io.c geometry.c model.c physics.c
 MODULES = data.o io.o geometry.o model.o physics.o

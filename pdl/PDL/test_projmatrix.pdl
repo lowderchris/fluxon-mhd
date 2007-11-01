@@ -1,3 +1,15 @@
+=head2 test_projmatrix - test the projmatrix and mat_vmult_3d functions
+
+=for ref
+
+This is a way of exporting to Perl the functionality of the geometry.c
+projmatrix and mat_vmult_3d functions, to test that they are functioning 
+properly.
+
+This file is part of FLUX 2.0, released 31-Oct-2007.
+
+=cut
+
 use Flux;
 
 $a0 = zeroes(3);

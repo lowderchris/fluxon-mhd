@@ -3,12 +3,12 @@
  * in perl.
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) 2004 Craig DeForest.  You may distribute this
+ * Copyright (c) 2004-2007 Craig DeForest.  You may distribute this
  * file under the terms of the Gnu Public License (GPL), version 2.
  * You should have received a copy of the GPL with this file.
  * If not, you may retrieve it from "http://www.gnu.org".
  *
- * This is version 1.1 of World.xs - part of the FLUX 1.1 release.
+ * This file is part of the FLUX 2.0 release, 31-Oct-2007
  *
  * Routines in here:
  *   PERL INTERFACE  FLUX SUBROUTINE / FUNCTION
@@ -17,11 +17,13 @@
  *   write_world       	write_world (io.c)
  *
  *   fix_proximity     	global_fix_proximity (model.c)
- *   fix_curvature     	global_fix_curvature (model.c)
+ *   _fix_curvature     global_fix_curvature (model.c); accessed mainly by
+ *                        fix_curvature from World.pm.
  *  
  *   update_neighbors  	world_update_neighbors (model.c)
  *   update_force       world_update_forces    (model.c)
- * 
+ *   relax_step         world_relax_step       (model.c)
+ *
  *   verbosity         	NA (sets verbosity of the world; obviated by tied-hash interface)
  * 
  *   step_scales	Sets the scaling powers for step law.  Obviated by tied-hash interface.
@@ -29,16 +31,26 @@
  *   _fluxon_ids        Returns a perl list of all fluxon labels in the world
  *   _vertex_ids        Returns a perl list of all vertex labels in the world
  * 
+ *   concentration      Returns a perl Flux::Concentration tied hash associated with the given id/label
  *   fluxon             Returns a perl Flux::Fluxon tied hash associated with the given id/label
  *   vertex  		Returns a perl Flux::Vertex tied hash associated with the given id/label
  *
+ *   _new_concentration new_flux_concentration (data.c)
+ *
  *   _forces		Returns the force list for the world as a set of identifier strings
+ * 			  (obviated by the tied-hash interface)
  *   _set_force         Tries to interpret a string as a force and set the appropriate force pointer to it.
+ *			  (obviated by teh tied-hash interface)
+ *
+ *   _rcfuncs           Retrieve the reconnection criteria (obviated by the tied-hash interface)
+ *   _set_rc            Set the reconnection criteria (obviated by the tied-hash interface)
+ *   reconnect          global_recon_check (model.c)
  * 
  *   _b_flag            Legacy routine simply throws an error.
  *   _set_b_flag        Legacy routine simply throws an error.
  * 
  *   _photosphere       Sets the photospheric plane from a perl array
+ *			  (obviated by the tied-hash interface, but don't delete: _wphot calls it!)
  *
  *   _stats             Collects force statistics over the whole world
  *
@@ -49,8 +61,6 @@
  *   _vec_mmult_3d      test harness for vec_mmult_3d in geometry.c
  *   _hull_points       test harness for hull_2d in geometry.c
  * 
- *
- *
  */
 #include "EXTERN.h"
 #include "perl.h"
@@ -100,6 +110,7 @@ static long vertices_helper(void *tree, int lab_of, int ln_of, int depth) {
 }
 
 
+
 /**********************************************************************
  **********************************************************************
  ***
@@ -122,35 +133,25 @@ CODE:
 	    croak("Couldn't open file '%s' to read a Flux::World",s);
 
 	w = FLUX->read_world(f,(WORLD *)0);
-	printf("read_world: world refct is %d\n",w->refct);
 	fclose(f);
-	
+
 	if(w) {
-	 	I32 foo;	
-		
-		ENTER;
-		SAVETMPS;
-		
-		PUSHMARK(SP);
-		XPUSHs(sv_2mortal(newSVpv("Flux::World",0)));
-		XPUSHs(sv_2mortal(newSViv((IV)w)));
-		PUTBACK;
-		foo = call_pv("Flux::World::new_from_ptr",G_SCALAR);
-		SPAGAIN;
-		
-		if(foo==1)
-			RETVAL = POPs;
-		else
-			croak("Big trouble calling Flux::World::new_from_ptr");
-	
-		SvREFCNT_inc(RETVAL);
-		
-		PUTBACK;
-		FREETMPS;
-		LEAVE;
+		printf("Read '%s': %d vertices, %d fluxons, %d concentrations\n", 
+			s,
+			w->vertices->world_links.n,
+			w->lines->all_links.n,
+			w->concentrations->links.n
+			);
+	} else {
+		printf("Error reading '%s'\n",s);
 	}
+
+	RETVAL = (w ? 
+		FLUX->new_sv_from_ptr(w, FT_WORLD, 0) :
+		&PL_sv_undef
+	);
 OUTPUT:
-	RETVAL
+  RETVAL
 
 
 void
@@ -165,7 +166,7 @@ PREINIT:
 /* write_world glue */
 /**/
 CODE:
-  w = SvWorld(wsv,"write_world");
+  w = SvWorld(wsv,"write_world",1);
   if( !(f=fopen(s,"w")) ) 
     croak("Couldn't open file '%s' to write a Flux::World",s);
   FLUX->fprint_world(f,w,"");
@@ -182,7 +183,7 @@ PREINIT:
 /* fix_proximity glue */
 /**/
 CODE:
-  w = SvWorld(wsv,"fix_proximity");
+  w = SvWorld(wsv,"fix_proximity",1);
   RETVAL = FLUX->global_fix_proximity(w,alpha);
 OUTPUT:
   RETVAL
@@ -198,7 +199,7 @@ PREINIT:
 /* fix_curvature glue */
 /**/
 CODE:
-  w = SvWorld(wsv,"fix_curvature");
+  w = SvWorld(wsv,"fix_curvature",1);
   RETVAL = FLUX->global_fix_curvature(w,alpha,beta);
 OUTPUT:
   RETVAL
@@ -213,8 +214,37 @@ PREINIT:
  * update_neighbors glue
  */
 CODE:
-  w = SvWorld(wsv,"update_neighbors");
+  w = SvWorld(wsv,"update_neighbors",1);
   FLUX->world_update_neighbors(w,globalflag);
+
+
+NV
+update_force(wsv,global=0)
+SV *wsv
+IV global
+PREINIT:
+ WORLD *w;
+ NUM *minmax;
+/**********************************************************************
+ * update_force
+ * Updates the forces everywhere in the model.
+ */
+CODE:
+ w = SvWorld(wsv,"Flux::World::update_force",1);
+ minmax = FLUX->world_update_mag(w,global);
+ RETVAL = minmax[1];
+OUTPUT:
+ RETVAL
+
+void
+relax_step(wsv,time)
+SV *wsv
+NV time
+PREINIT:
+ WORLD *w;
+CODE:
+ w = SvWorld(wsv,"Flux::World::relax_step",1);
+ FLUX->world_relax_step(w,time);
 
 
 IV
@@ -228,7 +258,7 @@ PREINIT:
  * verbosity glue - set the verbosity of activity with this World
  */
 CODE:
-  w = SvWorld(wsv,"verbosity");
+  w = SvWorld(wsv,"verbosity",1);
   if(items>1)
     w->verbosity = verbosity;
   RETVAL = w->verbosity;
@@ -248,7 +278,7 @@ PREINIT:
  * step_scales - import/export scaling laws
  */
 CODE:
- w = SvWorld(wsv,"step_scales");
+ w = SvWorld(wsv,"step_scales",1);
  if(items>1 && SvROK(href) && SvTYPE(SvRV(href))==SVt_PVHV) {
    /* Copy hash ref into WORLD */
    hash = (HV *)SvRV(href);
@@ -295,7 +325,7 @@ PREINIT:
  * with the perl stack...
  */
 CODE:
- w = SvWorld(wsv,"Flux::World::_fluxon_ids");
+ w = SvWorld(wsv,"Flux::World::_fluxon_ids",1);
  RETVAL = fluxons_av = newAV();  /* fluxons_av is static, at top */
  av_clear(RETVAL);
  if(w->lines) {
@@ -318,7 +348,7 @@ PREINIT:
  * with the perl stack...
  */
 CODE:
- w = SvWorld(wsv,"Flux::World::_vertex_ids");
+ w = SvWorld(wsv,"Flux::World::_vertex_ids",1);
  RETVAL = vertices_av = newAV(); /* vertices_av is static, at top */
  av_clear(RETVAL);
  if(w->vertices) {
@@ -341,30 +371,12 @@ PREINIT:
  * associated with the given id
  */
 CODE:
- w = SvWorld(wsv,"Flux::World::concentration");
+ w = SvWorld(wsv,"Flux::World::concentration",1);
  fc = (FLUX_CONCENTRATION *)(FLUX->tree_find(w->concentrations,id,fc_lab_of, fc_ln_of));
- if(fc) {
-	I32 foo;
-	ENTER;
-	SAVETMPS;
-	PUSHMARK(SP);
-	XPUSHs(sv_2mortal(newSVpv("Flux::Concentration",0)));
-	XPUSHs(sv_2mortal(newSViv((IV)fc)));
-	PUTBACK;
-	foo = call_pv("Flux::Concentration::new_from_ptr",G_SCALAR);
-	SPAGAIN;
-	
-	if(foo != 1)
-		croak("Big trouble in Flux::World::concentration!");
-	
-	RETVAL = POPs;
-	SvREFCNT_inc(RETVAL); /* Inc ref count so that XS can decrement it */
-	PUTBACK;
-	FREETMPS;
-	LEAVE;
- } else {
-	RETVAL = &PL_sv_undef;
- }
+ RETVAL = (fc ?
+	FLUX->new_sv_from_ptr(w, FT_CONC, fc->label) :
+	&PL_sv_undef
+	);
 OUTPUT:
  RETVAL
 
@@ -381,32 +393,12 @@ PREINIT:
  * with the given id
  */
 CODE:
-  w = SvWorld(wsv,"Flux::World::fluxon");
+  w = SvWorld(wsv,"Flux::World::fluxon",1);
   f = (FLUXON *)(FLUX->tree_find(w->lines,id,fl_lab_of,fl_all_ln_of));
-  if(f) {
-	I32 foo;
-	ENTER;
-	SAVETMPS;
-	PUSHMARK(SP);
-	XPUSHs(sv_2mortal(newSVpv("Flux::Fluxon",0)));
-	XPUSHs(sv_2mortal(newSViv((IV)f)));
-	PUTBACK;
-	foo = call_pv("Flux::Fluxon::new_from_ptr",G_SCALAR);
-	SPAGAIN;
-	
-	if(foo != 1) 
-		croak("Big trouble in World::fluxon!");
-	
-	RETVAL = POPs;
-
-	SvREFCNT_inc(RETVAL); /* Increment ref count so that XS can autodecrement it */
-
-	PUTBACK;
-	FREETMPS;
-	LEAVE;
-  } else {
-     RETVAL = &PL_sv_undef;
-  }
+  RETVAL = (f ? 
+	FLUX->new_sv_from_ptr(w, FT_FLUXON, f->label) :
+	&PL_sv_undef
+	);
 OUTPUT:
   RETVAL
 
@@ -424,48 +416,15 @@ PREINIT:
  * with the given id
  */
 CODE:
-  w = SvWorld(wsv,"Flux::World::vertex");
+  w = SvWorld(wsv,"Flux::World::vertex",1);
   v = (VERTEX *)(FLUX->tree_find((void *)(w->vertices),id,v_lab_of,v_ln_of));
-  if(v) {
-     	I32 foo;
- 
-     	ENTER;
-	SAVETMPS;
-	
-	PUSHMARK(SP);
-	XPUSHs(sv_2mortal(newSVpv("Flux::Vertex",0)));
-	XPUSHs(sv_2mortal(newSViv((IV)v)));
-	PUTBACK;
-	foo = call_pv("Flux::Vertex::new_from_ptr",G_SCALAR);
-	SPAGAIN;
-
-	if(foo != 1) 
-		croak("Big trouble in Flux::World::vertex");
-	RETVAL = POPs;
-	
-	SvREFCNT_inc(RETVAL); // increment to prepare for XS autodecrement
-	
-	PUTBACK;
-	FREETMPS;
-	LEAVE;
-  } else {
-     RETVAL = &PL_sv_undef;
-  }
+  RETVAL = (v ?
+	FLUX->new_sv_from_ptr(w, FT_VERTEX, v->label) :
+	&PL_sv_undef
+	);
 OUTPUT:
   RETVAL
 
-void
-_dec_refct_destroy(svw)
-SV *svw
-PREINIT:
- WORLD *w;
-CODE:
- w = SvWorld(svw, "Flux::World::_dec_refct_destroy");
- w->refct--;
- if(w->verbosity)
-	printf("Flux::World::_dec_refct_destroy - world refcount is now %d\n",w->refct);
- if(w->refct <= 0) 
-   free_world(w); 
 	
 SV *
 _new_concentration( wsv, xsv, flux, label, endsv );
@@ -479,7 +438,7 @@ PREINIT:
  pdl *x;
  FLUX_CONCENTRATION *fc;
 CODE:
- w = SvWorld(wsv, "Flux::World::new_concentration");
+ w = SvWorld(wsv, "Flux::World::new_concentration",1);
  x = PDL->SvPDLV(xsv);
  if(!x || x->ndims != 1 || x->dims[0] != 3) {
 	croak("Flux::World::new_concentration requires a 3-PDL location!");
@@ -493,28 +452,7 @@ CODE:
 	flux,
 	label
 	);
- w->concentrations = FLUX->tree_binsert(w->concentrations, fc, fc_lab_of, fc_ln_of);
- {
-	I32 foo;
-	ENTER;
-	SAVETMPS;
-	PUSHMARK(SP);
-	XPUSHs(sv_2mortal(newSVpv("Flux::Concentration",0)));
-	XPUSHs(sv_2mortal(newSViv((IV)(fc))));
-	PUTBACK;
-	foo = call_pv("Flux::Concentration::new_from_ptr",G_SCALAR);
-	SPAGAIN;
-
-	if(foo==1)
-	 	RETVAL = POPs;
-	else
-		croak("Big trouble in Flux::World::new_concentration!");
-	
-	SvREFCNT_inc(RETVAL);
-	PUTBACK;
-	FREETMPS;
-	LEAVE;
- }
+ RETVAL = FLUX->new_sv_from_ptr(w, FT_CONC, fc->label);
 
  // Set the boundary, if specified...
  if(endsv && endsv != &PL_sv_undef && *(SvPV_nolen(endsv))) {
@@ -550,7 +488,7 @@ PREINIT:
  * conversion array defined at the top of physics.c
  */
 CODE:
- w=SvWorld(wsv,"Flux::World::forces");
+ w=SvWorld(wsv,"Flux::World::forces",1);
 
  av_clear(RETVAL = newAV());
 
@@ -589,7 +527,7 @@ PREINIT:
  * force pointer to it.  Returns true on success, or false on failure
  */
 CODE:
- w = SvWorld(wsv,"Flux::World::_set_force");
+ w = SvWorld(wsv,"Flux::World::_set_force",1);
  if(where >= N_FORCE_FUNCS-1)
    croak("force index %d not allowed 0<i<%d\n",where,N_FORCE_FUNCS-1);
 
@@ -634,7 +572,7 @@ PREINIT:
  */
 CODE:
 
-  w=SvWorld(wsv,"Flux::World::_rcfuncs");
+  w=SvWorld(wsv,"Flux::World::_rcfuncs",1);
 	
   if(w->verbosity) {
 	printf("_rcfuncs...\n");
@@ -681,7 +619,7 @@ PREINIT:
 	AV *av;
 	int i,j;
 CODE:
-	w = SvWorld(wsv, "Flux::World::_set_rc");
+	w = SvWorld(wsv, "Flux::World::_set_rc",1);
 	/******************************
 	* _set_rc 
 	* Try to interpret a string as a reconnection criterion name 
@@ -732,7 +670,7 @@ SV *wsv
 PREINIT:
 	WORLD *w;
 CODE:
-	w = SvWorld(wsv, "Flux::World::reconnect");
+	w = SvWorld(wsv, "Flux::World::reconnect",1);
 	RETVAL = FLUX->global_recon_check(w);
 OUTPUT:
  RETVAL
@@ -748,7 +686,7 @@ PREINIT:
  * throw an error (legacy from 1.0)
  */
 CODE:
- w=SvWorld(wsv,"Flux::World::forces");
+ w=SvWorld(wsv,"Flux::World::forces",1);
  fprintf(stderr,"WARNING: the b_flag method is no longer useful; use step_scales instead\n");
  RETVAL = -1;
 OUTPUT:
@@ -786,7 +724,7 @@ PREINIT:
  * dump it into a perl array.
  */
 CODE:
- w = SvWorld(wsv,"Flux::World::_set_plane");
+ w = SvWorld(wsv,"Flux::World::_set_plane",1);
  av_clear(RETVAL = newAV());
  if(!plane || plane==&PL_sv_undef) {
    /* dump */
@@ -833,34 +771,6 @@ CODE:
 OUTPUT:
  RETVAL
 
-NV
-update_force(wsv,global=0)
-SV *wsv
-IV global
-PREINIT:
- WORLD *w;
- NUM *minmax;
-/**********************************************************************
- * update_force
- * Updates the forces everywhere in the model.
- */
-CODE:
- w = SvWorld(wsv,"Flux::World::update_force");
- minmax = FLUX->world_update_mag(w,global);
- RETVAL = minmax[1];
-OUTPUT:
- RETVAL
-
-void
-relax_step(wsv,time)
-SV *wsv
-NV time
-PREINIT:
- WORLD *w;
-CODE:
- w = SvWorld(wsv,"Flux::World::relax_step");
- FLUX->world_relax_step(w,time);
-
 
 HV *
 _stats(wsv)
@@ -869,7 +779,7 @@ PREINIT:
  WORLD *w;
  struct VERTEX_STATS *st;
 CODE:
- w = SvWorld(wsv,"Flux::World::stats");
+ w = SvWorld(wsv,"Flux::World::stats",1);
  st = FLUX->world_collect_stats(w);	
  RETVAL = newHV();
  hv_store(RETVAL, "n",    1, newSViv(st->n),0);
@@ -1198,6 +1108,8 @@ for(i=0;i<horde->n;i++) {
  _hull_exit: ;
 OUTPUT:
  RETVAL 
+
+
 
 BOOT:
 /**********************************************************************

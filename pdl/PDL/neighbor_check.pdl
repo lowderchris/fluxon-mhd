@@ -6,7 +6,9 @@ You feed in a World; it combs through the neighbor lists and makes sure that eac
 source vertex as a nearby element; likewise that each nearby element has the source vertex as a 
 neighbor.
 
-You get back a list of violations.
+You get back a list of violations.  Nominally, there shouldn't be any.
+
+This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 

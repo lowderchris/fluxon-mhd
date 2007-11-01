@@ -33,6 +33,8 @@ If you want to augment an old colormap to accomodate new fluxons, supply the old
 
 =back
 
+This file is part of FLUX 2.0, released 31-Oct-2007.
+
 =cut
 
 use PDL::NiceSlice;

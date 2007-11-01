@@ -2,11 +2,9 @@
  *
  * Basic data manipulation routines and definitions for FLUX -- how to 
  * handle VERTEXs and FLUXONs etc.
- *
- *
  * 
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) Southwest Research Institute, 2004
+ * Copyright (c) Southwest Research Institute, 2004-2007
  * 
  * You may modify and/or distribute this software under the terms of
  * the Gnu Public License, version 2.  You should have received a copy
@@ -20,8 +18,6 @@
  * 
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
- *
- *
  *
  * Functions:
  *  barf - debugging function to find possible problem function(s)
@@ -70,7 +66,7 @@
  *  flux_perl_malloc - 
  *  flux_padded_malloc - 
  *  
- * This is data.c version 1.2 - part of the FLUX 1.2 release.
+ * This file is part of FLUX 2.0 (31-Oct-2007).
  *
  */
 #include "data.h"
@@ -183,6 +179,27 @@ FLUXON *new_fluxon(      NUM flux,
 {
   int f_no = 0;
   struct FLUXON *nf;			/* new fluxon, nf, allocate memory */
+
+  if(c1 == NULL) {
+    fprintf(stderr,"new_fluxon:  no starting flux conc.!  I refuse...\n");
+    return NULL;
+  } 
+  if(c2 == NULL) {
+    fprintf(stderr,"new_fluxon: no ending flux conc.!  I refuse...\n");
+    return NULL;
+  }
+  if(c1==c2) {
+    fprintf(stderr,"new_fluxon: can't start and end at the same flux concentration!\n");
+    return NULL;
+  }
+  if(c1->lines && c1->lines->fc1==c1) {
+    fprintf(stderr,"new_fluxon: can't start at a sink flux concentration!\n");
+    return NULL;
+  }
+  if(c2->lines && c2->lines->fc0==c2) {
+    fprintf(stderr,"new_fluxon: can't end at a source flux concentration!\n");
+    return NULL;
+  }
   
   nf = (struct FLUXON *)localmalloc(sizeof(struct FLUXON),MALLOC_FLUXON);
 
@@ -197,24 +214,22 @@ FLUXON *new_fluxon(      NUM flux,
   clear_links(&(nf->all_links));	/* new fluxon not connected to others */
   nf->all_links.sum = nf->flux;
   
-  if(c1 == NULL) {
-    fprintf(stderr,"new_fluxon:  no starting flux conc.!  Proceeding anyway...\n");
 
-  } 
   clear_links(&(nf->start_links));
   nf->start_links.sum = nf->flux;
   nf->fc0 = c1;				/* start concentration */
 
 
-  if(c2 == NULL) {
-    fprintf(stderr,"new_fluxon: no ending flux conc.!  Proceeding anyway...\n");
-  }
 
   clear_links(&(nf->end_links));
   nf->end_links.sum = nf->flux;
   nf->fc1 = c2;				/* end concentration */
 
   nf->plasmoid = 0;
+
+  nf->fc0->world->lines = tree_binsert(nf->fc0->world->lines, nf, fl_lab_of, fl_all_ln_of);
+  nf->fc0->lines = tree_binsert(nf->fc0->lines, nf, fl_lab_of, fl_start_ln_of);
+  nf->fc1->lines = tree_binsert(nf->fc1->lines, nf, fl_lab_of, fl_end_ln_of);
 
   return nf;
 }
@@ -229,7 +244,14 @@ FLUXON *new_fluxon(      NUM flux,
 
 VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) { 
   VERTEX *tp;				/* new vertex name */
+  WORLD *w;
   int i;
+
+  if(!fluxon || !fluxon->fc0 || !fluxon->fc0->world) {
+    fprintf(stderr,"new_vertex: got a bad fluxon, flux concentration, or world! No new vertex for you!\n");
+    return 0;
+  }
+  w = fluxon->fc0->world;
 
   tp = (VERTEX *)localmalloc(sizeof(VERTEX),MALLOC_VERTEX);
 
@@ -247,13 +269,14 @@ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   dumblist_init( &(tp->neighbors) );
   dumblist_init( &(tp->nearby) );
   
-
   tp->b_mag = 0;
   tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
 
   tp->label = new_vertex_label(label);
 
   clear_links(&(tp->world_links));
+
+  w->vertices = tree_binsert( w->vertices, tp, v_lab_of, v_ln_of );
 
   return tp;
 }
@@ -289,6 +312,9 @@ FLUX_CONCENTRATION *new_flux_concentration(
 
   clear_links(&(fc->links));
   fc->links.sum = fc->flux;
+
+  world->concentrations = tree_binsert(world->concentrations, fc, fc_lab_of, fc_ln_of);
+
   return fc;
 }
 
@@ -304,7 +330,6 @@ WORLD *new_world() {
   a->frame_number = 0;
   a->state = WORLD_STATE_NEW;
   a->refct = 0;
-  printf("new_world - set refct to %d\n",a->refct);
 
   a->default_bound = NULL;
 
@@ -315,12 +340,6 @@ WORLD *new_world() {
   a->photosphere.type = 0;
   a->photosphere.plane = NULL;
 
-  /* Initialize the two dummy vertices for the mirroring */
-  /* if you need to check if a vertex is a dummy, use the macro V_ISDUMMY... */
-  a->image = new_vertex(1,0,0,0,NULL);
-  a->image2 = new_vertex(2,0,0,0,NULL);
-  a->image->next = a->image2;
-  a->image2->prev = a->image;
 
   a->verbosity = 0;  /* No verbose printouts by default */
 
@@ -350,23 +369,31 @@ WORLD *new_world() {
   a->fc_ob->label = -1;
   a->fc_ob->bound = fl_b_start_open;
   a->fc_ob->locale_radius = 0;
-  a->concentrations = tree_binsert(a->concentrations, a->fc_ob, fc_lab_of, fc_ln_of);
   
   a->fc_oe = new_flux_concentration(a,0,0,0,-1,-2);
   a->fc_oe->label = -2;
   a->fc_oe->bound = fl_b_end_open;
   a->fc_oe->locale_radius = 0;
-  a->concentrations = tree_binsert(a->concentrations, a->fc_oe, fc_lab_of, fc_ln_of);
   
   a->fc_pb = new_flux_concentration(a,0,0,0,1,-3);
   a->fc_pb->label = -3;
   a->fc_pb->bound = fl_b_start_plasmoid;
-  a->concentrations = tree_binsert(a->concentrations, a->fc_pb, fc_lab_of, fc_ln_of);
   
   a->fc_pe = new_flux_concentration(a,0,0,0,-1,-4);
   a->fc_pe->label = -4;
   a->fc_pe->bound = fl_b_end_plasmoid;
-  a->concentrations = tree_binsert(a->concentrations, a->fc_pe, fc_lab_of, fc_ln_of);
+
+  /* Initialize the two dummy vertices for the mirroring */
+  /* if you need to check if a vertex is a dummy, use the macro V_ISDUMMY... */
+  a->fc_im0 = new_flux_concentration(a,0,0,0,0,-8);
+  a->fc_im1 = new_flux_concentration(a,0,0,0,0,-9);
+  a->fl_im = new_fluxon(0,a->fc_im0, a->fc_im1, -9, 0);
+  a->image = new_vertex(-1,0,0,0,a->fl_im);
+  a->image2 = new_vertex(-2,0,0,0,a->fl_im);
+  a->image->next = a->image2;
+  a->image2->prev = a->image;
+  a->fl_im->start = a->image;
+  a->fl_im->end = a->image2;
 
   a->passno = 0;
   a->handle_skew = 0; // by default don't skew...
@@ -406,7 +433,8 @@ void delete_fluxon ( FLUXON *f ) {
     int v = f->fc0->world->verbosity;
     if(v>=3)
       printf("freeing the fluxon (%d)...\n",f->label);
-    localfree(f);
+    if(f->label >= 0 || f->label <= -10)
+      localfree(f);
     if(v>=3)
       printf("ok\n");
   }
@@ -430,7 +458,8 @@ void delete_flux_concentration ( FLUX_CONCENTRATION *fc ) {
   if(w->verbosity>=2)
     printf("...\n");
 
-  localfree(fc);
+  if(fc->label >= 0 || fc->label <= -10) 
+    localfree(fc);
 
   if(w->verbosity)
     printf("delete_flux_concentration: done...\n");
@@ -448,45 +477,9 @@ void free_world( WORLD *w ) {
 
 
   /////// Delete everything in the main fc tree...
+  // this trickles down to all vertices etc. 
   while(w->concentrations) {
     delete_flux_concentration(w->concentrations);
-  }
-
-  /////// This is not necessary because the pseudos are in the main fc tree...
-  //  delete_flux_concentration(w->fc_ob);
-  //  delete_flux_concentration(w->fc_oe);
-  //  delete_flux_concentration(w->fc_pb);
-  //  delete_flux_concentration(w->fc_pe);
-
-
-  /////// Clean up the image vertices
-
-  if(w->image) {
-    if(w->image->neighbors.stuff)
-      localfree(w->image->neighbors.stuff);
-    w->image->neighbors.stuff=0;
-
-    if(w->image->nearby.stuff) 
-      localfree(w->image->nearby.stuff);
-    w->image->nearby.stuff=0;
-
-    localfree(w->image);
-    w->image=0;
-
-  }
-
-  if(w->image2) {
-    if(w->image2->neighbors.stuff)
-      localfree(w->image2->neighbors.stuff);
-    w->image2->neighbors.stuff = 0;
-
-    if(w->image2->nearby.stuff)
-      localfree(w->image2->nearby.stuff);
-    w->image2->nearby.stuff = 0;
-
-    localfree(w->image2);
-    w->image2 = 0;
-
   }
 
   ///////// Free the world...
@@ -695,6 +688,7 @@ void unlink_vertex(VERTEX *v) {
     for(root=w->vertices;
 	root && ((LINKS *)(root+v_ln_of))->up; 
 	root=((LINKS *)(root+v_ln_of))->up)
+      printf("WHOA!  Normalizing world root in unlink_vertex -- looks crazy from here!\n");
       ;
     v->line->fc0->world->vertices = root;
     
@@ -711,11 +705,6 @@ void unlink_vertex(VERTEX *v) {
 	printf("no unlinking here... (derived root is %d; actual root is %d)\n",root?((VERTEX *)root)->label:0,v->line->fc0->world->vertices?v->line->fc0->world->vertices->label:0);
     }
 
-    for(root=w->vertices;
-	root && ((LINKS *)(root+v_ln_of))->up; 
-	root=((LINKS *)(root+v_ln_of))->up)
-      ;
-    w->vertices = root;
     if(w->verbosity>=4){
       printf("Finished unlinking vertex\n");
     }
@@ -792,7 +781,6 @@ int add_vertex_pos(FLUXON *f, long pos, VERTEX *v) {
       f->v_ct = 1;
       v->next = 0;
       v->prev = 0;
-      f->fc0->world->vertices = tree_binsert(f->fc0->world->vertices, v, v_lab_of, v_ln_of);	/* insert v into world vertice tree and balance */
       return 0;
     } else {
       fprintf(stderr, "Encountered a fluxon with at START but no END, or vice versa!\n");
@@ -910,9 +898,6 @@ int add_vertex_after(FLUXON *f, VERTEX *lucy, VERTEX *v) {
     }
   }
 
-  /* insert v into world, balance world vertices */
-  f->fc0->world->vertices = tree_binsert(f->fc0->world->vertices, v, v_lab_of, v_ln_of);
-
   return 0;
 }
 
@@ -1010,13 +995,17 @@ void *tree_find(void *tree, long label, int label_offset, int link_offset){
 
   if(tree==NULL) return NULL;	/* if no tree */
   node_label = *((long *)(tree+label_offset));
-  if(node_label == label) return tree;
+  if(node_label == label) {
+    return tree;
+  }
 
   links = (LINKS *)((void *)tree + link_offset);
 
   /* go left if desired label is bigger than current one, call tree_find */
   if( node_label > label) {
-    if( links->left == NULL ) return NULL;
+    if( links->left == NULL ) 
+      return NULL;
+
     return tree_find( links->left,
 		      label,
 		      label_offset, 
@@ -1024,7 +1013,9 @@ void *tree_find(void *tree, long label, int label_offset, int link_offset){
 		      );
   } 
 
-  if( links->right == NULL ) return NULL; /* if it isn't on the tree */
+  if( links->right == NULL ) 
+    return NULL; /* if it isn't on the tree */
+
 
   /* go right if desired label is smaller than current one, call tree_find */
   return tree_find( links->right,
@@ -1074,7 +1065,7 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
       (item_links->right != NULL) ||
       (item_links->up != NULL) ||
       (item_links->n > 1)) {
-    fprintf(stderr,"HEY!  tree_insert got item #%ld, which is a tree! I refuse to insert this.\n");
+       fprintf(stderr,"HEY!  tree_insert got item #%ld, which is a tree! I refuse to insert this.\n");
     return root;
   }
   
@@ -1138,9 +1129,11 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
 	break;
       } else {
 	if( ((LINKS *)(foo_links->left+link_offset))->up != foo) {
-	  NUM a,b;
-	  printf("Left link's up doesn't link back!  Killing myself with an arithmetic exception...\n");
-	  a=1;  b=0;  a/=b;
+	  NUM *a = 0;
+	  NUM b;
+	  printf("Left link's up doesn't link back!  Killing myself...\n");
+	  b = *a;
+	  printf("%g",b);
 	}
 	foo = foo_links->left;
       }
@@ -1167,6 +1160,15 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
   /* Increment tree-size figures and set imbalance flags for the branch */
   for(; foo; foo = ((LINKS *)(foo+link_offset))->up) {
     LINKS *fool = (LINKS *)(foo+link_offset);
+    if( fool->up && 
+       ((LINKS *)( fool->up + link_offset))->left != foo && 
+       ((LINKS *)( fool->up + link_offset))->right != foo) {
+      NUM *a = 0;
+      NUM b;
+      printf("Hey: tree_insert - big trouble in insertion!  Killing myself.\n");
+      b = *a;
+      printf("%g",b);
+    }
     (fool->n)++;
     (fool->sum) += *((NUM *)item);
     tree_balance_check(foo,link_offset);

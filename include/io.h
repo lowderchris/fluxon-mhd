@@ -1,9 +1,8 @@
 /**********************************************************************
- * io.h -- I/O routine headers for FLEM
- *
+ * io.h -- I/O routine headers for FLUX
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) Southwest Research Institute, 2004
+ * Copyright (c) Southwest Research Institute, 2004-2007
  * 
  * You may modify and/or distribute this software under the temrs of
  * the Gnu Public License, version 2.  You should have received a copy
@@ -18,7 +17,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  * 
- * This is io.h version 1.1 - part of the FLUX 1.1 release.
+ * This file is part of FLUX 2.0 (31-Oct-2007).
  */
 
 #ifndef FLEM_IO

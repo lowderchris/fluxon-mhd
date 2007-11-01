@@ -82,12 +82,13 @@ rendered.
 
 =back
 
-Note that simple_relaxer is really a demonstation kludge -- it is not
-production code, really.  Caveat user.
+Note that simple_relaxer is really a demonstation kludge -- it started
+as a simple demo code but has grown and morphed into the main relaxation
+engine control loop.
 
 VERSION
 
-This is version 1.0 of simple_relaxer - part of the 1.0 FLUX release.
+This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 

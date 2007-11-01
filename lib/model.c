@@ -6,7 +6,7 @@
  * vertex neighbor location and trimming.
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) Southwest Research Institute, 2004
+ * Copyright (c) Craig DeForest, 2004-2007
  * 
  * You may modify and/or distribute this software under the temrs of
  * the Gnu Public License, version 2.  You should have received a copy
@@ -21,7 +21,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
- * This is model.c version 1.2 - part of the FLUX 1.2 release.
+ * This file is part of the FLUX 2.0 release (31-Oct-2007).
  * 
  */
 #include "model.h"
@@ -467,11 +467,6 @@ void fluxon_auto_open(FLUXON *f) {
 	      n=0;
 	      for(vv=f->start; vv; vv=vv->next) n++;
 	      f->v_ct = n;
-	      //printf("setting end of %d to %d (%d)",f->label, f->end, (f->end?f->end->label:0));
-	      // Give the new fluxon the old endpoint and an open start
-	      w->fc_ob->lines = tree_binsert(w->fc_ob->lines, Fnew, fl_lab_of, fl_start_ln_of);
-	      Fnew->fc1->lines = tree_binsert(Fnew->fc1->lines, Fnew, fl_lab_of, fl_end_ln_of);
-	      w->lines = tree_insert( w->lines, Fnew, fl_lab_of, fl_all_ln_of);
 
 	      // Set up the vertices...
 	      n=0;
@@ -2120,21 +2115,16 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
 			       0
 		      );
     Fnew->plasmoid = 1;
-    w->fc_pb->lines = tree_binsert( w->fc_pb->lines, Fnew, fl_lab_of, fl_start_ln_of );
-    w->fc_pe->lines = tree_binsert( w->fc_pe->lines, Fnew, fl_lab_of, fl_end_ln_of );
-    w->lines = tree_binsert( w->lines, Fnew, fl_lab_of, fl_all_ln_of );
     
 
     /* Create the new plasmoid's end vertices and link them into the world */
     Fnew->start = new_vertex(0, 
 			     0,0,0,
 			     Fnew);
-    w->vertices = tree_binsert( w->vertices, Fnew->start, v_lab_of, v_ln_of );
 
     Fnew->end = new_vertex(0,
 			   0,0,0,
 			   Fnew);
-    w->vertices = tree_binsert( w->vertices, Fnew->end, v_lab_of, v_ln_of );
 
     
     /* Now cut the plasmoid out of the original fluxon... */

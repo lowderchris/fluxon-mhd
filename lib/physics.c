@@ -18,7 +18,7 @@
  *
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) Southwest Research Institute, 2004
+ * Copyright (c) Craig DeForest, 2004-2007.
  * 
  * You may modify and/or distribute this software under the terms of
  * the Gnu Public License, version 2.  You should have received a copy
@@ -33,7 +33,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
- * This is version 1.1 of physics.c - part of the FLUX 1.1 release.
+ * This file is part of the FLUX 2.0 release (31-Oct-2007).
  * 
  */
 
@@ -42,7 +42,6 @@
 #include "geometry.h"
 
 char *code_info_physics="%%%FILE%%%";
-
 
 /* global force name table */
 struct FLUX_FORCES FLUX_FORCES[] = {
@@ -73,7 +72,8 @@ struct FLUX_FORCES FLUX_FORCES[] = {
 
 /* global reconnection-condition calculator table */
 struct FLUX_RECON FLUX_RECON[] = {
-  {"rc_a_ad2","Threshold angle per d^2 (J proxy avoids explicit B calc)", rc_a_ad2, "(min. angle), (min A/D^2 [or 0 for none])"}
+  {"rc_a_ad2","Threshold angle per d^2 (J proxy avoids explicit B calc)", rc_a_ad2, "(min. angle), (min A/D^2 [or 0 for none])"},
+  {"","",0,""}
 };
 
 /* fluxon physics routines get called like this:

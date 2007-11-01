@@ -1,3 +1,13 @@
+=head2 _test_proj_ - a projmatrix test routine
+
+=for ref
+
+Intended for testing the projmatrix function in geometry.c.
+
+This file is part of FLUX 2.0, released 31-Oct-2007.
+
+=cut
+
 sub _test_proj_ {
 	$v = shift;
 	$pm = Flux::World::_projmatrix(0,0,0,$v->list); 

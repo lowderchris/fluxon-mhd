@@ -1,4 +1,4 @@
-This is FLUX, the Field Line Universal Relaxer, v. 1.1 
+This is FLUX, the Field Line Universal Relaxer, v. 2.0
 
 FLUX is a prototype MHD solver that is currently able to find
 nonlinear force-free fields with an exactly specified topology in a
@@ -18,8 +18,9 @@ system, you can get it for free from http://pdl.perl.org.  PDL
 compiles "out of the box" on most UNIX systems, and a "native" 
 version exists for Microsoft Windows.
 
-The author gratefully acknowledges support from NASA's Living With A
-Star and Solar/Heliospheric Physics programs.
+The authors gratefully acknowledge support from NASA's Living With A
+Star and Solar/Heliospheric Physics programs, and from the Southwest
+Research Institute.
 
 All source files are copyright (C) 2004-2006 Craig DeForest
 unless otherwise marked.  You may modify and/or make copies of this
@@ -32,19 +33,42 @@ MA 0211-1307 USA.
 
 THIS SOFTWARE COMES WITH NO WARRANTY OF ANY KIND.
 
-Author: Craig DeForest
-        deforest@boulder.swri.edu
+Authors:
+	Craig DeForest	 	deforest@boulder.swri.edu
+	Charles Kankelborg 	kankel@solar.physics.montana.edu
+	Laurel Rachmeler	laurel@boulder.swri.edu
 
 
 This is the FLUX top-level directory.
 
 Subdirectories include:
         lib -- the central libflux.a core simulation library
+		    (this gets installed into /usr/local/lib/)
 
-	doc -- some design documents
+	doc -- some docs (deprecated; see http://flux.boulder.swri.edu 
+		for more up-to-date information.)
 
 	include -- 'c' header files 
 	           (these get installed into /usr/local/include/flux/)
 	
         pdl -- PDL glue code and perl modules
+
+	pdl/PDL -- PDL autoload subroutines
+
+RELEASE NOTES FOR v2.0:
+
+  - Now includes reconnection via the "reconnect" Flux::World method
+  - Updated and validated force laws
+  - Full plasmoid support
+  - Full open-field boundary support, including omega and U loop
+	interactions with the boundary
+  - Includes a Floyd-Steinberg ditherer for footpoint placement
+  - Includes techniques ("ductions") for moving footpoints in 
+	time-dependent simulations
+  - Better control over relaxation parameters
+  - Emergence/cancellation support
+  - Better interaction with Perl:
+	- Support for all fields via the Perl hash interface
+	- No memory leaks (I think)
+	- No stale pointers (I think)
 

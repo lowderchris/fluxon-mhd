@@ -14,7 +14,7 @@ Flux::Vertex - fluxon vertex / fluxel
 
 =head2 VERSION
 
-This is version 1.1 of Vertex.pm, part of the 1.1 release of Flux
+This file is part of the FLUX 2.0 release (31-Oct-2007).
 
 =head1 Methods
 
@@ -36,33 +36,6 @@ package Flux::Vertex;
 
 use overload '""' => \&stringify;
 
-=pod
- 
-=head2 new - constructor
-
-=for usage
-
- $vertex = new Flux::Vertex($ptr)
-
-=for ref
-
-The main reason to call this rather than just blessing a scalar ref is that it
-ties a hash ref to the vertex for simple access to the fields.  Ptr is a scalar containing
-the pointer value in memory.  You get back a tied hash ref that is itself blessed into
-the Vertex class, and whose fields are the fields in the C struct.
-
-=cut
-
-sub new_from_ptr {
-    my $class = shift;
-    my $ptr = shift;
-
-    my %hash;
-    tie %hash,"Flux::Vertex",$ptr;
-    my $me = bless(\%hash , $class);
-    _inc_world_refct($me);
-    $me;
-}
 
 =pod
 
@@ -276,29 +249,24 @@ Returns the location vector of the vertex, as a 3-pdl.
 # implemented in Vertex.xs
 
 sub DESTROY {
-    eval ' my $a = ${$_[0]}; $a; ';
-    if($@){
-#	print "VERTEX: DESTROY - hash\n";
-#	_dec_refct_destroy_world( tied %{$_[0]} );
-	return;
-#    } else {
-#	print "VERTEX: DESTROY - scalar ref\n";
-    }
-    _dec_refct_destroy_world( $_[0] );
+    Flux::destroy_sv( $_[0] );
 }
 
 ######################################################################
 # TIED INTERFACE
 # Mostly relies on the general utility functions in Flux....
 
+# TIEHASH not used much - the C side uses FLUX->sv_from_ptr to do the tying.
 sub TIEHASH {
     my $class = shift;
-    my $ptr = shift;
-    die "Vertex::TIEHASH -- pointer is not a scalar!" if(ref $ptr);
-    my $me = \$ptr;
+    my $me = shift;
     bless($me,$class);
-#    _inc_world_refct($me);
     return $me;
+}
+
+sub EXISTS {
+    my ($me, $field)=@_;
+    return ($FLUX::codes->{vertex}->{$field});
 }
 
 sub FETCH {

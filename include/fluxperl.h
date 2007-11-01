@@ -7,7 +7,7 @@
  * 
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) Southwest Research Institute, 2004
+ * Copyright (c) Craig DeForest, 2004-2007
  * 
  * You may modify and/or distribute this software under the temrs of
  * the Gnu Public License, version 2.  You should have received a copy
@@ -22,11 +22,11 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  * 
- * This is version 1.1 of fluxperl.h - part of the FLUX 1.1 release.
+ * This file is part of FLUX 2.0 (31-Oct-2007).
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 4
+#define FLUX_CORE_VERSION 6
 
 typedef struct FluxCore {
 
@@ -207,42 +207,14 @@ typedef struct FluxCore {
   struct FLUX_RECON *FLUX_RECON;
   struct FLUX_FORCES *FLUX_FORCES;
 
+
+  /***********  functions in Core.xs */
+  void *(*SvFluxPtr) (SV *sv, char *name, char *tstr, char wlflag, char croak_on_null);
+  long (*SvLabel)    (SV *sv, char *name, char *tstr);
+  SV *(*new_sv_from_ptr) (WORLD *wptr, int type, long label);
+  void (*destroy_sv)  (SV *sv);
 } FluxCore;
 
-
-/******************************
- * SvFluxPtr(wsv, name, type) 
- *
- * wsv: an SV containing a reference to one of the FLUX types.  
- *   It should be a blessed reference pointing to either a scalar
- *   or a tied has that is tied to a scalar ref.
- *   The underlying scalar should contain the pointer.
- * name: a string containing caller info (in case of failure)
- * type: a string containing the class name needed for the dereference
- *
- * Returns: a (void *) with the same numeric value as the IV in the scalar
- */
-static void *SvFluxPtr( SV *sv, char *name, char *tstr ) {
-  MAGIC *m;
-
-  if(SvROK(sv) && sv_derived_from(sv,tstr)) {
-    sv = SvRV(sv);
-  } else {
-    char buf[1024];
-    sprintf(buf,"%s requires a %s.\n",name,tstr);
-    croak(buf);
-  }
-
-  /* Notice if this is a magical tied hash */
-  if(  SvTYPE(sv)==SVt_PVHV  &&  (m=mg_find(sv,'P'))){  // assignment in second term
-    /* It's a magical tied hash - dereference the underlying scalar ref instead */
-    sv=m->mg_obj;
-    if(SvROK(sv))
-      sv=SvRV(sv);
-  }
-
-  return (void *)SvIV(sv);
-}
   
 /******************************
  * SvVertex
@@ -251,11 +223,35 @@ static void *SvFluxPtr( SV *sv, char *name, char *tstr ) {
  * SvWorld
  *
  * Each macro calls SvFluxPtr to pull out the underlying pointer, and casts it correctly.
+ * Requires that the FLUX core has been initialized in the current source file.
  */
 
-#define SvVertex(sv,name) ( (VERTEX *)            (SvFluxPtr((sv),(name),"Flux::Vertex")       ) )
-#define SvConc(sv,name)   ( (FLUX_CONCENTRATION *)(SvFluxPtr((sv),(name),"Flux::Concentration")) )
-#define SvFluxon(sv,name) ( (FLUXON *)            (SvFluxPtr((sv),(name),"Flux::Fluxon")       ) )
-#define SvWorld(sv,name)  ( (WORLD *)             (SvFluxPtr((sv),(name),"Flux::World")        ) )
+#define SvVertex(sv,name,croak) ( (VERTEX *)            (FLUX->SvFluxPtr((sv),(name),"Flux::Vertex",0,(croak))))
+#define SvConc(sv,name,croak)   ( (FLUX_CONCENTRATION *)(FLUX->SvFluxPtr((sv),(name),"Flux::Concentration",0,(croak))))
+#define SvFluxon(sv,name,croak) ( (FLUXON *)            (FLUX->SvFluxPtr((sv),(name),"Flux::Fluxon",0,(croak))))
+#define SvWorld(sv,name,croak)  ( (WORLD *)             (FLUX->SvFluxPtr((sv),(name),"Flux",1,(croak))))
 
+/******************************
+ * Type definitions...
+ * These should be synchronized with the $typecodes hash in Flux.pm.
+ * Also check the class names in Flux.xs.
+ */
+#define FT_LINKS  1
+#define FT_VERTEX 2
+#define FT_FLUXON 3
+#define FT_WORLD  4
+#define FT_CONC   5
 
+#define MIN_FT 2
+#define MAX_FT 5
+
+static char *classnames[] = {
+  "",
+  "",
+  "Flux::Vertex",
+  "Flux::Fluxon",
+  "Flux::World",
+  "Flux::Concentration"
+};
+
+			 

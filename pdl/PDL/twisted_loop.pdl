@@ -24,7 +24,7 @@ the flux concentrations and fluxons/vertices.  If specified, C<$topvec>
 contains the direction of "up" in the loop (defaults to (0,0,1) - the unit
 vector in the Z direction).
 
-Last updated 2-Sep-2004
+This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 

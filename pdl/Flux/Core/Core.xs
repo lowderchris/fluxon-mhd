@@ -1,13 +1,13 @@
-/* Vertex.xs - glue code for the Flux::Vertex object
- * in perl.
+/* Core.xs - utility routines and dynamic linker for the FLUX
+ * C - Perl interface.
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) 2004 Craig DeForest.  You may distribute this
+ * Copyright (c) 2004-2007 Craig DeForest.  You may distribute this
  * file under the terms of the Gnu Public License (GPL), version 2.
  * You should have received a copy of the GPL with this file.
  * If not, you may retrieve it from "http://www.gnu.org".
  *
- * This is Core.xs version 1.0.
+ * This file is part of FLUX 2.0 (31-Oct-2007).
  */
 
 #include "EXTERN.h"
@@ -34,6 +34,213 @@ static SV* CoreSV;/* gets perl var holding the core structures */
 static FluxCore FLUX_MASTER;
 static FluxCore *FLUX;
 static SV* FluxCoreSV;
+
+/**********************************************************************
+ * SvFluxPtr - given a FLUX object and a type code, return 
+ * a pointer to the underlying object.  Involves doing a search 
+ * through the WORLD for the object.  Returns NULL if no such
+ * object exists, or croaks, depending on the value of the 
+ * croak_on_null flag.
+ */
+void *SvFluxPtr( SV *sv, char *name, char *tstr, char wflag, char croak_on_null ) {
+  char errbuf[160];
+  MAGIC *m;
+  WORLD *w;
+  long type;
+  long label;
+
+  if( SvROK(sv) && sv_derived_from(sv, tstr)) {
+    sv = SvRV(sv);
+  } else {
+    sprintf(errbuf,"%s requires a %s.\n",name,tstr);
+    croak(errbuf);
+  }
+
+  // Unpack tied hashes
+  if( SvTYPE(sv)==SVt_PVHV && (m=mg_find(sv,'P'))) // assignment in second term
+    sv = m->mg_obj;
+
+  // Underlying object should now be a list ref.  Dereference it.	
+  if(SvROK(sv))
+   sv = SvRV(sv);
+ 
+  // Now we should have an AV.  
+  if( SvTYPE(sv) == SVt_PVAV ) {
+    SV **svp;
+    void *out;
+
+    w     = (WORLD *)( (svp = av_fetch((AV *)sv, 0, 0)) ? SvIV(*svp) : 0 );
+ 
+    if( !w ) {
+	if(croak_on_null) {
+		sprintf(errbuf, "SvFluxPtr (%s): got a null WORLD!",name);
+		croak(errbuf);
+	} else {
+		return (void *)0;
+	}
+    }
+
+    if(wflag)
+	return w;
+
+    type  =          ( (svp = av_fetch((AV *)sv, 1, 0)) ? SvIV(*svp) : 0 );
+    label =          ( (svp = av_fetch((AV *)sv, 2, 0)) ? SvIV(*svp) : 0 );
+
+    switch(type) {
+	case FT_VERTEX: 
+		out = tree_find( w->vertices, label, v_lab_of,  v_ln_of ); break;
+	case FT_FLUXON:
+		out = tree_find( w->lines,    label, fl_lab_of, fl_all_ln_of ); break;
+	case FT_WORLD:
+		out = w; break;
+	case FT_CONC:
+		out = tree_find( w->concentrations, label, fc_lab_of, fc_ln_of ); break;
+	default:
+		sprintf(errbuf,"SvFluxPtr (%s): unknown type code %d!",name,type);
+		croak(errbuf);
+		break;
+    }
+  
+    if(!out && croak_on_null) {
+	sprintf(errbuf,"SvFluxPtr (%s): Failed to find a %s (type %d) with label %d!",name,classnames[type],type,label);
+	croak(errbuf);
+    }
+    return out;
+  } else {
+    sprintf(errbuf,"SvFluxPtr (%s): big trouble - couldn't find the expected deep list ref!",name);
+    croak(errbuf);
+  }
+}
+
+/**********************************************************************
+ * SvLabel - return the label field of a FLUX object
+ */
+long SvLabel( SV *sv, char *name, char *tstr ) {
+  char errbuf[160];
+  MAGIC *m;
+  long label;
+
+  if( SvROK(sv) && sv_derived_from(sv, tstr)) {
+    sv = SvRV(sv);
+  } else {
+    sprintf(errbuf,"%s requires a %s.\n",name,tstr);
+    croak(errbuf);
+  }
+
+  // Unpack tied hashes
+  if( SvTYPE(sv)==SVt_PVHV && (m=mg_find(sv,'P'))) // assignment in second term
+    sv = m->mg_obj;
+
+  // Underlying object should now be a list ref.  Dereference it.	
+  if(SvROK(sv))
+   sv = SvRV(sv);
+ 
+  // Now we should have an AV.  
+  if( SvTYPE(sv) == SVt_PVAV ) {
+    SV **svp;
+    void *out;
+
+    label =          ( (svp = av_fetch((AV *)sv, 2, 0)) ? SvIV(*svp) : 0 );
+    return label;
+
+  } else {
+    sprintf(errbuf,"SvLabel (%s): big trouble - couldn't find the expected deep list ref!",name);
+    croak(errbuf);
+  }
+}
+
+/**********************************************************************
+ * new_sv_from_ptr - construct a generic FLUX object from a world pointer, 
+ * type code, and label.
+ * 
+ * This generates an AV containing the relevant information, blesses it into
+ * the appropriate class, and then ties it to a hash.  The final return value
+ * is a ref to the tied hash, blessed into the same class.
+ *
+ * The WORLD's refcount is incremented along the way.
+ */
+SV *new_sv_from_ptr( WORLD *wptr, int type, long label ) {
+  SV *out;
+  SV *rv;
+  AV *av;
+  HV *hv;
+  HV *stash;
+  char errbuf[80];
+
+  if(type < MIN_FT || type > MAX_FT) {
+	croak("new_sv_from_ptr: unknown type %d\n",type);
+  }
+
+  av = newAV();
+  av_extend(av,2);
+  av_store( av, 0, newSViv( (IV)wptr ));
+  av_store( av, 1, newSViv(  type    ));
+  av_store( av, 2, newSViv(  label   ));
+  
+  rv = newRV_noinc((SV *)av);
+  stash = gv_stashpv( classnames[type], TRUE );
+  sv_bless((SV *)rv, stash);
+  
+  hv = newHV();
+  hv_magic(hv, (GV*)rv, PERL_MAGIC_tied);
+
+  out = newRV_noinc(hv);
+  sv_bless(out,stash);
+  wptr->refct++;
+  
+  return out;
+}
+
+/**********************************************************************
+ * destroy_sv - destroy an SV created by new_sv_from_ptr.
+ * 
+ * The WORLD's refcount is decremented, and if it reaches zero the 
+ * WORLD gets deallocated.
+ * 
+ * Tying the inner list ref to the hash generates an additional reference,
+ * so we decrement the reference count to that ref; that should make it
+ * evaporate. 
+ *
+ * We get called twice - once with the hash and once with the inner list ref - 
+ * so we ignore the list ref call.
+ */
+void destroy_sv(SV *sv) {
+ MAGIC *m;
+ WORLD *w;
+ SV *av;
+ SV *rv;
+
+ // Only do anything if we get a valid FLUX object to unwrap: a hash ref
+ // whose hash is tied to a list ref.  Then decrement the WORLD refcount,
+ // unmagick the hash, and decrement the refcount on the underlying list ref.
+ if( SvROK(sv)                          &&
+     (sv = SvRV(sv))             	&& // assignment
+     (SvTYPE(sv)==SVt_PVHV)       	&& // test
+     (m = mg_find(sv, PERL_MAGIC_tied)) && // assignment
+     (rv = m->mg_obj )           	&& // assignment
+     (SvROK(rv))                   	&&	
+     (av=SvRV(rv))                 	&& // assignment
+     (SvTYPE(av)==SVt_PVAV)    	  ) 	   // test
+    {
+        SV **svp;
+
+	// Fetch the world and decrement its refcount.
+	w = (WORLD *)( (svp = av_fetch((AV *)av, 0, 0)) ? SvIV(*svp) : 0 );
+	if( w ) {
+	  w->refct--;
+	  if(!w->refct)
+	    free_world(w);
+	}
+	
+	// Unmagick the tied hash and decrement the refcount 
+	// on the underlying list ref.  (This will result in 
+ 	// us being invoked again with the list ref, but the 
+  	// initial if() will fall through.)
+	sv_unmagic(sv, PERL_MAGIC_tied);
+	SvREFCNT_dec(rv);
+   }
+}
+
 
 MODULE = Flux::Core      PACKAGE = Flux::Core
 
@@ -186,6 +393,10 @@ FLUX->code_info_data            = code_info_data;
 FLUX->F_B_NAMES                 = F_B_NAMES;
 FLUX->FLUX_RECON		= FLUX_RECON;
 FLUX->FLUX_FORCES		= FLUX_FORCES;
+FLUX->SvFluxPtr			= SvFluxPtr;
+FLUX->SvLabel			= SvLabel;
+FLUX->new_sv_from_ptr		= new_sv_from_ptr;
+FLUX->destroy_sv		= destroy_sv;
 sv_setiv(perl_get_sv("Flux::Core::FLUX",TRUE), PTR2IV(FLUX));
 
 

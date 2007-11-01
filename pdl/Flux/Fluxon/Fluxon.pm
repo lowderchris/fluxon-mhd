@@ -19,7 +19,7 @@ as flexible as possible.
 
 VERSION
 
-This is Fluxon.pm version 1.1, part of the FLUX 1.1 release.
+This file is part of the FLUX 2.0 release (31-Oct-2007).
 
 =head1 METHODS
 
@@ -40,22 +40,6 @@ bootstrap Flux::Fluxon;
 package Flux::Fluxon;
 use overload '""' => \&stringify;
 
-
-=pod
-
-=head2 new_from_ptr 
-
-=cut
-
-sub new_from_ptr {
-    my $class = shift;
-    my $ptr = shift;
-    my %hash;
-    tie %hash,"Flux::Fluxon",$ptr;
-    my $me= bless(\%hash,$class);
-    _inc_world_refct($me);
-    $me;
-}
 
 =pod
 
@@ -116,8 +100,10 @@ Generate a string summary of a fluxon; overloaded with "".
 
 =cut
 
+# XS function doesn't get called right if not wrapped up...
 sub stringify {
-    &_stringify(shift);
+    my $f = shift;
+    &_stringify($f);
 }
 
 
@@ -233,28 +219,24 @@ Returns a xN PDL containing, in each row:
 # Implemented in Fluxon.xs
 
 sub DESTROY {
-
-  # DESTROY gets called twice -- once for the tied hash and once for the underlying object
-  # (which is a scalar ref, not a hash ref). Ignore the destruction for the tied hash.
-
-  eval ' my $a = ${$_[0]}; $a; ';
-  return if($@);
-  
-  _dec_refct_destroy_world( $_[0] );
-
+    Flux::destroy_sv( $_[0] );
 }
 
 ######################################################################
 # TIED INTERFACE
 # Mostly relies on the general utility functions in Flux....
 
+# TIEHASH not used much - the C side uses FLUX->sv_from_ptr to do the tying.
 sub TIEHASH {
     my $class = shift;
-    my $ptr = shift;
-    my $me = \$ptr;
+    my $me = shift;
     bless($me,$class);
-#    _inc_world_refct($me);  
     return $me;
+}
+
+sub EXISTS {
+    my ($me, $field)=@_;
+    return ($FLUX::codes->{fluxon}->{$field});
 }
 
 sub FETCH {

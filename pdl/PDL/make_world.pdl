@@ -6,6 +6,8 @@ You feed in a list of pdls, one pdl per fluxon.  You get back a world
 with default characteristics and two flux concentrations per fluxon (north
 at the beginning, south at the end).
 
+This file is part of FLUX 2.0, released 31-Oct-2007.
+
 =cut
 
 sub make_world {

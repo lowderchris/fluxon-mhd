@@ -24,7 +24,7 @@ accounting-of-flux purposes, but the location data are invalid.
 
 VERSION 
 
-This is version 1.1 of Concentration.pm.
+This file is part of the FLUX 2.0 release (31-Oct-2007).
 
 =head1 FUNCTIONS
 
@@ -70,32 +70,6 @@ sub _stringify {
 		    );
     return $s;
 }
-
-=pod
-
-=head2 new_from_ptr
-
-=for usage
-
-$fc = new_from_ptr Flux::Concentration($ptr);
-
-=for ref
-
-Constructor of the perl object -- you must feed in a long-int pointer to the underlying
-structure in the C arena.
-
-=cut
-
-sub new_from_ptr {
-    my $class = shift;
-    my $ptr = shift;
-    my %hash;
-    tie %hash,"Flux::Concentration",$ptr;
-    my $me = bless(\%hash,$class);
-    _inc_world_refct($me);
-    return bless(\%hash,$class);
-}
-
 
 =pod
 
@@ -190,8 +164,6 @@ sub new_fluxon {
     $flux = 1.0 unless(defined $flux);
     
     ## Actual constructor is in Flux::Fluxon...
-
-
     
     print "Concentration::new_fluxon: world refct is $w->{refct}\n" if($w->{verbosity});
     my $fl = Flux::Fluxon::new($w, $fc0, $fc1, $flux, $label, $verts);
@@ -229,27 +201,25 @@ source file.  This is just an XS hook to that function.
 ### implemented in Concentration.xs.
 
 
+
 sub DESTROY {
-
-  # DESTROY gets called twice -- once for the tied hash and once for the underlying object
-  # (which is a scalar ref, not a hash ref). Ignore the destruction for the tied hash.
-
-  eval ' my $a = ${$_[0]}; $a; ';
-  return if($@);
-  
-  _dec_world_refct( $_[0] );
-
+    Flux::destroy_sv( $_[0] );
 }
 
 ######################################################################
 # TIED INTERFACE
 # Mostly relies on the general utility functions in Flux....
 
+# TIEHASH not used much - the C side uses FLUX->sv_from_ptr to do the tying.
 sub TIEHASH {
     my $class = shift;
-    my $ptr = shift;
-    my $me = \$ptr;
+    my $me = shift;
     return bless($me,$class);
+}
+
+sub EXISTS {
+    my ($me, $field)=@_;
+    return ($FLUX::codes->{concentration}->{$field});
 }
 
 sub FETCH {

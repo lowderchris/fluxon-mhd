@@ -15,8 +15,9 @@
  *  polyline            returns the locations of all the vertices in the fluxon as a 3xN PDL
  *  bfield              returns locations and B-field values of all vertices as a 6xN PDL
  *  dump_vecs           dumps a 17xN PDL containing a bunch of stuff (see Fluxon.pm).
+ *  _new 		interface to new_fluxon in data.c, with vertex population
  * 
- * This is version 1.1 of Fluxon.xs - part of the FLUX 1.1 release.
+ * This file is part of the FLUX 2.0 release (31-Oct-2007).
  */
 #include "EXTERN.h"
 #include "perl.h"
@@ -55,8 +56,13 @@ PREINIT:
  * _stringify - generate a summary string about a fluxon. 
  */
 CODE: 
-  f = SvFluxon(flx,"Flux::Fluxon::_stringify");
-  sprintf(str,"Fluxon %5.5d: start-fc %d, end-fc %d   %d vertices\n",f->label,f->fc0->label,f->fc1->label,f->v_ct);
+  f = SvFluxon(flx,"Flux::Fluxon::_stringify",1);
+  if(f) {
+	  sprintf(str,"Fluxon %5.5d: start-fc %d, end-fc %d   %d vertices\n",f->label,f->fc0->label,f->fc1->label,f->v_ct);
+  } else {
+	  long label = FLUX->SvLabel(flx, "Flux::Fluxon::_stringify", "Flux::Fluxon");
+	  sprintf(str,"Fluxon %d not found - stale Perl link?\n",label);
+  }
   RETVAL = str;
 OUTPUT:
   RETVAL
@@ -75,39 +81,15 @@ PREINIT:
  * pointing to it.
  */
 CODE:
-  f = SvFluxon(flx,"Flux::Fluxon::vertex");
+  f = SvFluxon(flx,"Flux::Fluxon::vertex",1);
   v = (VERTEX *)0;
   if(vno >= 0) 
     for(i=0, v=f->start; i<vno && v; i++, v=v->next)
       ;
-  if(v) {
-	/* What a mess!  Just calls the vertex constructor... */
-      I32 foo;
-
-      ENTER;
-      SAVETMPS;
-
-      PUSHMARK(SP);
-      XPUSHs(sv_2mortal(newSVpv("Flux::Vertex",0)));
-      XPUSHs(sv_2mortal(newSViv((IV)v)));
-      PUTBACK;
-      foo = call_pv("Flux::Vertex::new_from_ptr",G_SCALAR);
-      SPAGAIN;
-
-      if(foo==1) 
-	RETVAL = POPs;
-      else 
-	croak("Big trouble - Vertex::new_from_ptr gave bad return value on stack");
-
-      SvREFCNT_inc(RETVAL);
-
-      PUTBACK;
-      FREETMPS;
-      LEAVE;
-
-  } else {
-      RETVAL = &PL_sv_undef;
-  }
+  RETVAL = ( v ? 
+             FLUX->new_sv_from_ptr(f->fc0->world, FT_VERTEX, v->label) :
+	     &PL_sv_undef
+	  );
 OUTPUT:
   RETVAL
 
@@ -127,7 +109,7 @@ PREINIT:
  * VERTEX in the fluxon.  Useful for rendering.
  */
 CODE:
- f = SvFluxon(flx,"Flux::Fluxon::polyline");
+ f = SvFluxon(flx,"Flux::Fluxon::polyline",1);
 
  /* Create the PDL and allocate its data */
  dims[0] = 3;
@@ -169,7 +151,7 @@ PREINIT:
  * location.
  */
 CODE:
- f = SvFluxon(flx,"Flux::Fluxon::bfield");
+ f = SvFluxon(flx,"Flux::Fluxon::bfield",1);
  /* Create the PDL and allocate its data */
  dims[0] = 6;
  dims[1] = f->v_ct;
@@ -214,7 +196,7 @@ PREINIT:
  * location and forces.
  */
 CODE:
- f = SvFluxon(flx,"Flux::Fluxon::dump_vecs");
+ f = SvFluxon(flx,"Flux::Fluxon::dump_vecs",1);
  /* Create the PDL and allocate its data */
  dims[0] = 17;
  dims[1] = f->v_ct;
@@ -280,9 +262,9 @@ PREINIT:
   * Returns a perl structure pointing to the new fluxon.
   */
 CODE:
-  w   = SvWorld(wsv,  "Flux::Fluxon::_new - world");
-  fc0 = SvConc (fc0sv,"Flux::Fluxon::_new - fc0");
-  fc1 = SvConc (fc1sv,"Flux::Fluxon::_new - fc1");
+  w   = SvWorld(wsv,  "Flux::Fluxon::_new - world",1);
+  fc0 = SvConc (fc0sv,"Flux::Fluxon::_new - fc0",1);
+  fc1 = SvConc (fc1sv,"Flux::Fluxon::_new - fc1",1);
 
   if(!vertssv || vertssv == &PL_sv_undef || !(*(SvPV_nolen(vertssv)))) {
  	verts = 0;
@@ -307,9 +289,6 @@ CODE:
  label = SvIV(labelsv);
  f = FLUX->new_fluxon(1.0, fc0, fc1, label, 0);
 
- fc0->lines  = FLUX->tree_binsert(fc0->lines, f, fl_lab_of, fl_start_ln_of);
- fc1->lines  = FLUX->tree_binsert(fc1->lines, f, fl_lab_of, fl_end_ln_of);
- w->lines    = FLUX->tree_binsert(w->lines,   f, fl_lab_of, fl_all_ln_of);
  f->start = FLUX->new_vertex( -(f->label*2),   fc0->x[0], fc0->x[1], fc0->x[2], f );
  f->end   = FLUX->new_vertex( -(f->label*2)+1, fc1->x[0], fc1->x[1], fc1->x[2], f );
  f->start->next = f->end;
@@ -332,54 +311,10 @@ CODE:
 		vlast = vlast->next;
  	}
  }
- {
-  I32 foo;
-  ENTER;
-  SAVETMPS;
-  PUSHMARK(SP);
-  XPUSHs(sv_2mortal(newSVpv("Flux::Fluxon",0)));
-  XPUSHs(sv_2mortal(newSViv((IV)(f))));
-  PUTBACK;
-  foo = call_pv("Flux::Fluxon::new_from_ptr",G_SCALAR);
-  SPAGAIN;
-  if(foo==1) 
- 	RETVAL=POPs;
-  else
- 	croak("Big trouble in Flux::Fluxon::_new!");
-  SvREFCNT_inc(RETVAL);
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
- }
+ RETVAL = FLUX->new_sv_from_ptr(w, FT_FLUXON, f->label);
 OUTPUT:
 	 RETVAL		
   
-
-void 
-_inc_world_refct(svfl)
-SV *svfl
-PREINIT:
- FLUXON *f;
-CODE:
- f = SvFluxon(svfl, "Flux::Fluxon::_inc_world_refct");
- f->fc0->world->refct++;  
- if(f->fc0->world->verbosity) 
-	printf("Fluxon: world refct++ (now %d)\n",f->fc0->world->refct);
-
-
-void
-_dec_refct_destroy_world(svfl)
-SV *svfl
-PREINIT:
- FLUXON *f;
-CODE:
- f = SvFluxon(svfl, "Flux::Fluxon::_dec_refct_destroy_world");
- f->fc0->world->refct--;
- if(f->fc0->world->verbosity)
-	printf("Flux::Fluxon::_dec_refct_destroy_world - world refcount is now %d\n",f->fc0->world->refct);
- if(f->fc0->world->refct <= 0) 
-	free_world(f->fc0->world);
-
 BOOT:
 /**********************************************************************
  **********************************************************************

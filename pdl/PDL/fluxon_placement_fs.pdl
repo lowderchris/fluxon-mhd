@@ -25,7 +25,7 @@ Each row consists of (x,y,sign).  The minus field is -1 for south end
 of fluxons, +1 for north ends of fluxons.  The x and y are floating
 point, but are quantized to the selected grid size.
 
-
+This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
@@ -66,10 +66,9 @@ sub fluxon_placement_fs {
 
   my ($x,$y,$xx);
 
-  print "expanded dims are ",join(",",$expanded->dims),"\n";
-
   for($y=0;$y<$expanded->dim(1)-2; $y+=2){
       for $x(1..$expanded->dim(0)-2) {
+	  print ".";
 	  my $exrgn = $expanded->($x-1:$x+1,$y:$y+1);
 	  my $exp = $expanded->($x,$y);
 	  my $dth = $dithered->($x,$y);
@@ -82,6 +81,7 @@ sub fluxon_placement_fs {
       
       $y++;
       for $xx(1..$expanded->dim(0)-2) {
+	  print "+";
 	  $x = $expanded->dim(0)-1-$xx;
 	  my $exrgn = $expanded->($x+1:$x-1:-1,$y:$y+1);
 	  my $exp = $expanded->($x,$y);

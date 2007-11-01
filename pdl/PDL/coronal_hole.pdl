@@ -5,6 +5,11 @@
 Makes a whole Sun covered with randomly placed open and closed field lines
 and returns it.
 
+This is a one-off code used to generate the full-sun demonstration
+relaxation in 2006; that model was later evolved using ductions.
+It's included in FLUX as a demonstration of a simple spherical layout.
+
+This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 

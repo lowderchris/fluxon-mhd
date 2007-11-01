@@ -1,4 +1,8 @@
 #!/usr/bin/perl
+##############################
+# subst_filename - helper utility for the libflux.a makefile
+# This file is part of FLUX 2.0 (31-Oct-2007).
+
 $from = shift @ARGV;
 $to = shift @ARGV;
 
