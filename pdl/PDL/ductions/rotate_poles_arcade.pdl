@@ -1,0 +1,59 @@
+use PDL::Transform;
+use PDL::NiceSlice;
+
+=head2 rotate_poles - Q&D routine to rotate two footpoints
+
+=for ref
+
+You feed in a world, a center, and an angle for the north pole and
+then a center, and an angle for the south pole. And all poles (fluxon
+starts and ends) in the world get rotated by the correct angle about
+the given center.  The rotation is in the (X,Y) plane only.
+
+This file is part of FLUX 2.0, released 31-Oct-2007.
+
+=cut
+
+
+sub rotate_poles_arcade {
+ my $world = shift;
+ my $center_north = shift;
+ my $angle_north = shift;
+ my $center_south = shift;
+ my $angle_south = shift;
+ my $thresh = shift;
+ 
+ my $t_n = t_linear(pre=>-$center_north,post=>$center_north,matrix=>pdl([cos($angle_north),sin($angle_north),0],[-sin($angle_north),cos($angle_north),0],[0,0,1]));  ##north
+
+ my $t_s = t_linear(pre=>-$center_south,post=>$center_south,matrix=>pdl([cos($angle_south),sin($angle_south),0],[-sin($angle_south),cos($angle_south),0],[0,0,1]));  ##south
+
+ @keepers=grep( $_ ->{label} <$thresh, $world->fluxons);
+ 
+ p @keepers;
+
+ @starts = map { $_->vertex(0) } @keepers; ##north
+ @ends = map { $_->{end} } @keepers;  ##south
+
+ $duction_n = pdl(map { $_->{x} } @starts)->(:,*2,:)->copy; ##north
+ $duction_n->(:,(1),:) .= $duction_n->(:,(0),:)->apply($t_n);
+ 
+ $duction_s = pdl(map { $_->{x} } @ends)->(:,*2,:)->copy; ##south
+ $duction_s->(:,(1),:) .= $duction_s->(:,(0),:)->apply($t_s);
+ 
+ $duction=$duction_n->glue(2,$duction_s);
+
+ for $v($world->vertices) {
+   $v->{x} = interp_duction($duction,$v->{x});
+ }
+
+ for $c($world->concentrations) {
+   $c->{x} = interp_duction($duction,$c->{x});
+ }
+
+}
+
+1;
+
+
+
+

@@ -1,0 +1,37 @@
+use PDL::Transform;
+use PDL::NiceSlice;
+
+=head2 rotate_starts - Q&D routine to rotate a footpoint
+
+=for ref
+
+You feed in a world, a center, and an angle, and all north poles
+(fluxon starts) in the world get rotated by that angle about the given
+center.  The rotation is in the (X,Y) plane only.
+
+This file is part of FLUX 2.0, released 31-Oct-2007.
+
+=cut
+
+
+sub rotate_starts {
+ my $world = shift;
+ my $center = shift;
+ my $angle = shift;
+ 
+ $t = t_linear(pre=>-$center,post=>$center,matrix=>pdl([cos($angle),sin($angle),0],[-sin($angle),cos($angle),0],[0,0,1]));
+ 
+ @starts = map { $_->vertex(0) } $world->fluxons;
+ $duction = pdl(map { $_->{x} } @starts)->(:,*2,:)->copy;
+ $duction->(:,(1),:) .= $duction->(:,(0),:)->apply($t);
+ 
+ for $v($world->vertices) {
+   $v->{x} = interp_duction($duction,$v->{x});
+ }
+}
+
+1;
+
+
+
+

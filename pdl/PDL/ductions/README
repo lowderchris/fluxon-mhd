@@ -1,0 +1,6 @@
+# This directory ('duction') contains routines that help move fluxons
+# around given some pieces of a flow field, for time-domain updates.
+# Much of this code will eventually be migrated to the fluxon tree itself.
+# 
+# CED 11-11-2005
+

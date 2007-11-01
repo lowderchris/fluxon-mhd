@@ -1,0 +1,46 @@
+=head2 interp_duction - interpolate motion from a list of known displacements
+
+=for usage 
+
+$new_coords = interp_duction($ducts, $locations);
+
+=for ref
+
+You feed in a list of known displacements of particular points and a
+point somewhere else in space.  You get back an interpolated
+displacement.  The final resulting displacement is the 1/r^2 weighted
+average of all the displacements in the specification.
+
+The $ducts parameter is a 3x2xn array of displacements.  The 0th dim
+runs across spatial dimension, the 1st dim runs across before/after,
+and the 2nd dim runs across displaced tiepoint.
+
+The $locations parameter is a 3xm array of points to displace, and the output is also
+3xm.
+
+This file is part of FLUX 2.0, released 31-Oct-2007.
+
+
+=cut
+
+sub interp_duction {
+  my ($ducts,$locations) = @_;
+  
+  my $duct_anchors = $ducts->(:,(0),:);             # 3 x n
+  my $duct_vects = (pdl(-1,1) * $ducts->mv(1,0))->sumover; # 3 x n
+  p ".";
+  my $lvecs = $locations->(:,*1) - $duct_anchors;  # 3 x n x m
+  p "|";
+  $over_r2 = 1.0/(1e-9+(($lvecs * $lvecs)->sumover));     # n x m
+  p ",";
+  $wgt = $over_r2->sumover;                        # m 
+  my $vects = ($duct_vects * $over_r2->(*1))       # 3 x n x m
+                ->mv(1,0)                          # n x 3 x m
+		->sumover;                         # 3 x m
+  $vects /= $wgt->(*1);
+
+
+  return $vects + $locations;
+}
+
+
