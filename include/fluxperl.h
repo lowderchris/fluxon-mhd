@@ -5,7 +5,6 @@
  * SV to a WORLD *, FLUXON *, FLUX_CONCENTRATION *, or VERTEX * as 
  * appropriate.  
  * 
- *
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Craig DeForest, 2004-2007
  * 
