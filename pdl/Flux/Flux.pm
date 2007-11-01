@@ -4,6 +4,9 @@ use Flux::Fluxon;
 use Flux::Vertex;
 use Flux::Concentration;
 
+package Flux;
+use PDL;
+
 BEGIN {
     package Flux;
     require DynaLoader;
@@ -165,9 +168,6 @@ accessing FLUX data structures; you do not want to use them unless you
 Really Know What You're Doing.
 
 =cut
-
-package Flux;
-
 
 ##############################
 # Global structure-definition variables:
@@ -452,8 +452,10 @@ sub _rphot {
     my $type = shift;
     my $field = shift;
 
-    PDL::barf("_rphot requires a Flux::World") if(ref $me ne 'Flux::World');
-    my $p = $me->photosphere;
+
+    barf("_rphot requires a Flux::World") if(ref $me ne 'Flux::World');
+    my $p = [$me->photosphere];
+
     my $hash = {
 	type=>$p->[6]
 	};
@@ -470,15 +472,16 @@ sub _wphot {
     my $field = shift;
     my $val = shift;
 
-    PDL::barf("_wphot requires a Flux::World") 
+    barf("_wphot requires a Flux::World\n") 
 	unless(ref $me eq 'Flux::World');
 
-    PDL::barf("_wphot requires a hash ref with a type field")
+
+    barf("_wphot requires a hash ref with a type field\n")
 	unless( ref $val eq 'HASH' and 
 		exists $val->{type}
 		);
 
-    PDL::barf("_wphot: origin and normal fields must each be 3-PDLs")
+    barf("_wphot: origin and normal fields must each be 3-PDLs\n")
 	unless( !$val->{type} or (
 				  ref $val->{origin} eq 'PDL' and 
 				  ref $val->{normal} eq 'PDL' and
