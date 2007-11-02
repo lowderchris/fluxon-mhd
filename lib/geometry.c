@@ -1994,7 +1994,6 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	  horde->stuff[i] == central_v->prev ||                           // skip the following segment if present
 	  horde->stuff[i] == central_v->next ||                           // skip the previous segment if present
 	  !( ((VERTEX *)(horde->stuff[i]))->next ) ||                     // skip endpoint vertices if present
-	  !( ((VERTEX *)(horde->stuff[i]))->line) ||                      // skip image vertices
 	  plasmoid_conjugate( (VERTEX *)(horde->stuff[i]), central_v )
 	  );
       i++) 
@@ -2031,12 +2030,13 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	   plasmoid_conjugate( v, central_v)
 	   )
 	 )
-       ) {     // end of conditional
-
+       ) {   
+      // Skip (do nothing normally)
  #if DEBUG_HULL
       if(verbosity >= 5)
 	printf("vertex %d has already been inspected (or is the same as %d), or has no next field (0x%x) - skipping...\n",v->label, central_v->label, v->next);
 #endif
+
     } else {
       v->passno = passno; // Mark it processed (avoid duplicated effort)
       
@@ -2055,13 +2055,15 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
       }
 #endif
 
-      /* FIXME: Binary search later -- linear search now */
+      /* Linear searches are slow, but not so bad -- there are generally under 10 */
+      /* elements in ws, so binary search probably isn't worth the effort.        */
       for(next_idx = 0; 
 	  next_idx < ws->n && 
 	    (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
 	  next_idx++ 
 	  )
 	;
+
 
 #ifdef DEBUG_HULL
       if(verbosity >= 5)
