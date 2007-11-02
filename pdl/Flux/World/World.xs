@@ -675,39 +675,6 @@ CODE:
 OUTPUT:
  RETVAL
 	
-IV
-_b_flag(wsv)
- SV *wsv
-PREINIT:
- WORLD *w;
-/**********************************************************************
- * _b_flag
- * No longer retrieve the state of the B normalization flag -- instead 
- * throw an error (legacy from 1.0)
- */
-CODE:
- w=SvWorld(wsv,"Flux::World::forces",1);
- fprintf(stderr,"WARNING: the b_flag method is no longer useful; use step_scales instead\n");
- RETVAL = -1;
-OUTPUT:
- RETVAL
-
-
-void
-_set_b_flag(wsv,flag)
-SV *wsv
-IV flag
-PREINIT:
- WORLD *w;
-/**********************************************************************
- * _set_b_flag
- * Set the state of the B normalization flag -- no longer useful.  Throw an error.
- */
-CODE:
- fprintf(stderr,"WARNING: the b_flag method is no longer useful; use step_scales instead to tweak scaling\n");
-
-
-
 AV *
 _photosphere(wsv,plane=0,type=0)
 SV *wsv
