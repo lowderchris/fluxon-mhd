@@ -1,6 +1,25 @@
-=head2 fluxon_placement_fs - use the Floyd-Steinberg dithering algorithm to place fluxons
+=head2 fluxon_placement_fs - place fluxons via Floyd-Steinberg dithering
+
+=for usage
+
+$points = fluxon_placement_fs( $magnetogram, $count );
+$points = fluxon_placement_fs( $magnetogram, -$flux );
 
 =for ref  
+
+Generates a (3xN) set of placements, in magnetogram pixels, adjusting the
+flux per fluxon either to place approximately $count fluxons or to the 
+value set (if the second argument is negative).    It uses Floyd-Steinberg
+dithering.  The alternate routine, fluxon_placment_hilbert, is a drop-in
+replacement and seems to work better for most cases.  fluxon_placement_fs is
+retained for general interest and historical reasons.
+
+Each row of the output $points is a 2-vector on the magnetogram,
+followed by either 1 or -1 depending on the sign of the placed fluxon.
+
+Placement is not particularly good, in the sense that much flux
+appears to be lost to the diffusive elements: you typically get about
+half of the number of fluxons you asked for.
 
 Floyd-Steinberg dithering is a common brightness-diffusion algorithm
 used for dithering grayscale images.  Here, we adapt it to place
@@ -10,7 +29,7 @@ problem, as it decides only whether to turn on or off pixels that are
 placed on a regular grid, rather than where to place pixels in a
 floating-point sense.
 
-We adapt it by selecitng a grid size that is dense enough so that the
+We adapt it by selecting a grid size that is dense enough so that the
 densest part of the image can support all the fluxons within it, on a
 regular grid.
 
@@ -57,58 +76,125 @@ sub fluxon_placement_fs {
   $fluxon_count= $smooth->abs->sum / $flux;
   print "grids per pixel is $gridsperpixel; estimated total count is $fluxon_count\n";
 
-  $dithered = zeroes(short, $gridsperpixel * $bgram->dim(0), $gridsperpixel * $bgram->dim(1));
-  $expanded = (float $bgram)->match($dithered) / $gridsperpixel / $gridsperpixel;
+  $expanded = $bgram->double->match([$gridsperpixel * $bgram->dim(0), $gridsperpixel * $bgram->dim(1)]);
+  $expanded *= $fluxon_count / $sm_us_sum / $gridsperpixel / $gridsperpixel;
+  $exp = $expanded->copy->(:,-1:0:-1);
 
-  my $fs_matrix = pdl([0,0,7],[3,5,1])/16;
+  $xl=[];
+  $yl=[];
 
-  my $thresh = $flux/2;
+  PDL::_fl_pl_fs_helper($expanded, $xl, $yl);
 
-  my ($x,$y,$xx);
+  $xl2=[];
+  $yl2=[];
+  PDL::_fl_pl_fs_helper($exp, $xl2, $yl2);
+  $o2 = pdl($xl2,$yl2)->transpose;
+  $o2 = $o2->glue(0,ones(1,$o2->dim(1)));
+  $wn = which( ($o2->((1))<0) | ($o2->((0))<0));
+  $o2->(:,$wn) *= -1;
+  $o2->((1)) *= -1;
+  $o2->((1)) += $exp->dim(1)-1;
 
-  for($y=0;$y<$expanded->dim(1)-2; $y+=2){
-      for $x(1..$expanded->dim(0)-2) {
-	  print ".";
-	  my $exrgn = $expanded->($x-1:$x+1,$y:$y+1);
-	  my $exp = $expanded->($x,$y);
-	  my $dth = $dithered->($x,$y);
+  $out = pdl($xl, $yl)->transpose;
+  $out /= $gridsperpixel;
+  $out = $out->glue(0,ones(1,$out->dim(1)));
+  $wn= which(($out->((1))<0) | ($out->((0))<0));
+  $out->(:,$wn) *= -1;
 
+  $out = $out->glue(1,$o2);
 
-
-	  $dth .= ($exp > $thresh) ? 1: ($exp < -$thresh) ? -1 : 0;
-	  $exrgn += $fs_matrix * ($exp - $flux * $dth);
-      }
-      
-      $y++;
-      for $xx(1..$expanded->dim(0)-2) {
-	  print "+";
-	  $x = $expanded->dim(0)-1-$xx;
-	  my $exrgn = $expanded->($x+1:$x-1:-1,$y:$y+1);
-	  my $exp = $expanded->($x,$y);
-	  my $dth = $dithered->($x,$y);
-	  $dth .= ($exp > $thresh) ? 1: ($exp < -$thresh) ? -1 : 0;	  
-	  $exrgn += $fs_matrix * ($exp - $flux * $dth);
-      }
-      print "$y....";
-      $y--;
-  }
-
-  my $pos = whichND($dithered==1) / $gridsperpixel;
-  my $neg = whichND($dithered==-1) / $gridsperpixel;
-
-  my $out =  $pos->glue(0,ones(1,$pos->dim(1))) ->glue(1, 
-						   $neg->glue(0, -1 * ones(1, $neg->dim(1)))
-						   );
-
-  if (wantarray) {
-      return ($out, $flux, $fluxon_count, $pos->dim(1), $neg->dim(1));
-  } else {
-      return $out;
-  }
+  return $out;
   
 }
 
+no PDL::NiceSlice;
+use Inline Pdlpp => <<'EOF';
+pp_def('_fl_pl_fs_helper',
+       Pars=>'im(n,m)[o];',
+       GenericTypes=>[D],
+       OtherPars=>'SV *xlsv; SV *ylsv',
+       Code=> q{
+	   AV *xl;
+	   AV *yl;
+	   int x,y;
+	   int hh=$SIZE(m);
+	   int ww=$SIZE(n);
+	   double res;
 
-      
-	
-	
+	   xl = (AV *)SvRV($COMP(xlsv));
+	   yl = (AV *)SvRV($COMP(ylsv));
+	   av_clear(xl);
+	   av_clear(yl);
+	   for(y=0; y < hh; y++) {
+	       for(x=0; x < ww; x++) {
+
+		   if( ($im( n=>x, m=>y )) > 0.6 ) {
+		       av_push( xl, newSViv(x));
+		       av_push( yl, newSViv(y));
+		       ($im( n=>x,  m=>y ))--;
+		   } else if(($im( n=>x, m=>y ))<-0.6) {
+		       av_push( xl, newSViv(-x) );
+		       av_push( yl, newSViv(-y) );
+		       ($im( n=>x, m=>y ))++;
+		   }
+
+		   res = ($im( n=>x, m=>y ))/16;
+		   if(x<ww-1){
+		       ($im( n=>x+1, m=>y )) += 7 * res;
+		       if(y<hh-1){
+			   ($im( n=>x+1, m=>y+1 )) += res;
+		       } 
+		   } else {
+		       if(y<hh-1){
+			   ($im( n=>x, m=>y+1 )) += 8*res;
+		       }
+		   }
+		   if(y<hh-1){
+		       if(x>0) 
+			   ($im( n=>x-1, m=>y+1 )) += 3 * res;
+		       else
+			   ($im( n=>x, m=>y+1 )) += 3*res;
+		       ($im( n=>x, m=>y+1 )) += 5 * res;
+		   }
+	       }
+	       
+	       y++;
+	       if(y<hh) {
+		   for(x=ww-1; x>=0 ; x--) {
+		       
+		       if( ($im( n=>x, m=>y )) > 0.6 ) {
+			   av_push( xl, newSViv(x));
+			   av_push( yl, newSViv(y));
+			   ($im( n=>x,  m=>y ))--;
+		       } else if(($im( n=>x, m=>y ))<-0.6) {
+			   av_push( xl, newSViv(-x) );
+			   av_push( yl, newSViv(-y) );
+			   ($im( n=>x, m=>y ))++;
+		       }
+		       
+		       res = ($im( n=>x, m=>y ))/16;
+		       
+		       if(x>0){
+			   ($im( n=>x-1, m=>y )) += 7 * res;
+			   if(y<hh-1){
+			       ($im( n=>x-1, m=>y+1 )) += res;
+			   } 
+		       } else {
+			   if(y<hh-1){
+			       ($im( n=>x, m=>y+1 )) += 8*res;
+			   }
+		       }
+		       if(y<hh-1){
+			   if(x<ww-1) 
+			       ($im( n=>x+1, m=>y+1 )) += 3 * res;
+			   else
+			       ($im( n=>x, m=>y+1 )) += 3*res;
+			   ($im( n=>x, m=>y+1 )) += 5 * res;
+		       }
+		   }
+	       }
+	   }
+       }
+   );
+EOF
+ 
