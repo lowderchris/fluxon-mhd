@@ -46,6 +46,18 @@ static SV* CoreSV; /* gets perl var holding the core structures */
 
 MODULE = Flux::Fluxon      PACKAGE = Flux::Fluxon
 
+
+void
+auto_open(fsv)
+ SV *fsv
+PREINIT:
+ FLUXON *f;
+CODE:
+ f = SvFluxon(fsv,"Flux::Fluxon::Vertex",1);
+ FLUX->fluxon_auto_open(f);
+
+
+
 char *
 _stringify(flx)
  SV *flx

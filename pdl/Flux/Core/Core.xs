@@ -335,6 +335,7 @@ FLUX->fluxon_recon_check	= fluxon_recon_check;
 FLUX->global_recon_check	= global_recon_check;
 FLUX->fc_cancel                 = fc_cancel;
 FLUX->world_collect_stats	= world_collect_stats;
+FLUX->fluxon_auto_open		= fluxon_auto_open;
 FLUX->fluxon_collect_stats	= fluxon_collect_stats;
 FLUX->norm_2d			= norm_2d;
 FLUX->norm_3d			= norm_3d;

@@ -94,7 +94,7 @@ void fluxon_update_ends(FLUXON *f) {
 
 
 /**********************************************************************
- * check_auto_open - given a FLUXON, check whether any of its vertices
+ * fluxon_auto_open - given a FLUXON, check whether any of its vertices
  * need to be opened (are outside the open-field boundary).
  *
  * If so, do so.

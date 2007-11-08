@@ -137,6 +137,8 @@ typedef struct FluxCore {
   VERTEX_STATS *(*world_collect_stats)(WORLD *a);
   void (*fluxon_collect_stats)(FLUXON *fl, VERTEX_STATS *st);
 
+  void (*fluxon_auto_open)(FLUXON *f);
+
   /************  routines from geometry.h */
   NUM (*norm_2d)(NUM *x);
   NUM (*norm_3d)(NUM *x);

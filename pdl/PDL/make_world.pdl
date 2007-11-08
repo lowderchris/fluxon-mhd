@@ -20,9 +20,8 @@ sub make_world {
 
   my @out = "";
 
-  push(@out, "GLOBAL FORCES f_pressure_equi f_curvature f_vertex");
-  push(@out, "GLOBAL BFLAG 0");
-#  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 0.999");
+  push(@out, "GLOBAL FORCES f_pressure_equi2b f_curvature f_vertex4");
+  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 1");
   push(@out, "GLOBAL OPEN 0 0 0 ".($opt->{rmax}+1)) if($opt->{rmax});
   push(@out,"");
 
@@ -34,6 +33,27 @@ sub make_world {
 
     $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
     $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
+
+    if($rstart < 1) {
+	my $rn = sqrt(sum($line->(:,(1))*$line->(:,(1))));
+	if($rn > 1) {
+	    my $alpha = (1 - $rstart) / ($rn - $rstart);
+	    my $newv = $line->(:,(0)) * (1-$alpha) + $line->(:,(1)) * $alpha;
+	    $line->(:,(0)) .= $newv;
+	}
+	# above uses planar photosphere, not quite right.   Fudge the last bit.
+	$line->(:,(0)) /= sqrt(sum($line->(:,(0))*$line->(:,(0))));
+    }
+    
+    if($rend < 1) {
+	my $rp = sqrt(sum($line->(:,(-2))*$line->(:,(-2))));
+	if($rp > 1) {
+	    my $alpha = (1 - $rend) / ($rp - $rend);
+	    my $newv = $line->(:,(-1)) * (1-$alpha) + $line->(:,(-2)) * $alpha;
+	    $line->(:,(-1)) .= $newv;
+	}
+	$line->(:,(-1)) /= sqrt(sum($line->(:,(-1))*$line->(:,(-1))));
+    }
 
     $open_start = ($opt->{rmax} && $rstart >= $opt->{rmax});
     $open_end   = ($opt->{rmax} && $rend   >= $opt->{rmax});

@@ -59,7 +59,15 @@ sub fluxon_placement_hilbert {
     $fluxon_count= $smooth->abs->sum / $flux;
     
     $siz = pdl($bgram->dims)->(0:1)->maximum;
-    $siz = 2 ** (( log($siz)/log(2) )->ceil->at(0)) ;
+
+    $density_mult = 2 * ($sm_max / ($sm_us_sum/$smooth->nelem)) * ($fluxon_count / $smooth->nelem);
+    $density_mult = 1 unless($density_mult > 1);
+    $density_mult = sqrt($density_mult);
+    print "density_mult is $density_mult\n";
+
+
+    $siz = 2 ** (( log($siz * $density_mult)/log(2) )->ceil->at(0)) ;
+	print "siz is $siz\n";
     
     $path = hilbert($siz,$siz);
     $path->((0)) *= $bgram->dim(0)/$siz;

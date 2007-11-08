@@ -15,7 +15,8 @@ Useful options are:
 
 =item hr
 
-The "hue range" (hues go from 0 to 1) around the color wheel (default: 0-1)
+The "hue range" (hues go from 0 to 1) around the color wheel (default: 0-1)  If you specify 
+"red", "green", or "blue" you get an appropriate region of the hue wheel.
 
 =item sr
 
@@ -46,7 +47,7 @@ sub random_colors {
     $opt = {} unless defined($opt);
     $opt->{old} = {} unless defined($opt->{old});
 
-    for my $f(map { $_->{label} } $a->fluxons) {
+    for my $f(map { $_->{label} } $world->fluxons) {
 	if( exists $opt->{old}->{$f} ) {
 	    $rgb_out->{$f} = $opt->{old}->{$f}->copy;
 	} else {
@@ -54,7 +55,14 @@ sub random_colors {
 	}
     }
 
-    my $hr = $opt->{hr} || [0,1.0];
+    $hr_lookup = {
+	red=>[0.33,0.43],
+	blue=>[0,0.1],
+	green=>[0.8,0.9]
+	};
+
+    my $hr = $hr_lookup->{$opt->{hr}} || $opt->{hr} || [0,1.0];
+
     my $sr = $opt->{sr} || [0,1.0];
     my $vr = $opt->{vr} || [0.5,1.0];
 
