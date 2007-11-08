@@ -282,10 +282,10 @@ Really Know What You're Doing.
 	    scale_ds_power=>    [19,'num'],
 	    refct=>             [20,'long'],
 	    rc_funcs=>          [21,'RCFuncs'],
-	    max_angle=>         [22,num],
-            mean_angle=>        [23,num],
-            dtau=>              [24,num],
-            rel_step=>          [25,long],
+	    max_angle=>         [22,'num'],
+            mean_angle=>        [23,'num'],
+            dtau=>              [24,'num'],
+            rel_step=>          [25,'long'],
             coeffs=>            [26,'Coeffs'],
             n_coeffs=>          [27,'long'],
             maxn_coeffs=>       [28,'long'],
@@ -359,6 +359,7 @@ sub r_val {
     my $reader;
 
     if(ref $type) {
+	print "type is $type, ref type is ".(ref $type)."...\n";
 	die "r_val: Can't handle ref types yet\n";
     } else {
 	$reader = $Flux::methods->{$type}->[0];
