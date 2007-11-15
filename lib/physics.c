@@ -1347,7 +1347,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
        the ith is the last */
 
     if(!left->open && !right->open) {
-      A = 0.5*cross_2d(left->p,right->p);
+      A = 0.5 * cross_2d(left->p,right->p);
       angle = -atan2(left->p[1],left->p[0]) + atan2(right->p[1],right->p[0]);
       /*fprintf(stderr,"angle=%g deg, \n",angle*180./PI);*/
 

@@ -6,11 +6,11 @@
 
 =for ref
 
-Generate a nonphysical twisted loop to seed a fluxon relaxation.  
-The rectangular-cross-section twisted loop is returned as a string
-suitable for loading with Flux::World::read_world or whatever.  (This
-is not ideal but better interface will have to await better glue code
-in the Flux module tree).
+Generate a nonphysical twisted loop to seed a fluxon relaxation, and
+return it as a string fragment of an ASCII fluxon-definition file,
+suitable for loading with Flux::World::str2world() or
+Flux::World::read_world(). (This is not ideal but better interface
+will have to await better glue code in the Flux module tree).
 
 The C<$from> and C<$to> parameters are 3-PDLs containing the
 coordinates of the footpoint centers.  C<$steps> is the number of

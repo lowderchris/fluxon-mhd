@@ -259,68 +259,71 @@ int footpoint_action(WORLD *world, char *s) {
     }
 
     if(n != 0) {
-      FLUX_CONCENTRATION *fc0, *fc1;
-	  fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
-	  fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
-	  //printf("line %d: fc %d (%x) - fc %d (%x)\n",fl0,l0,fc0,l1,fc1);
+
+      if(fl0 <= -10 || fl0 >0) {
+	FLUX_CONCENTRATION *fc0, *fc1;
+	fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
+	fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
+	//printf("line %d: fc %d (%x) - fc %d (%x)\n",fl0,l0,fc0,l1,fc1);
 	if(!fc0 || !fc1) {
-	char *badbuf = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-	sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,fc0,fc1,BUFSIZ);
-	badstr = badbuf;
-
-      } else if(fc0->flux * fc1->flux >= 0) {
-	badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-	sprintf(badstr,"This fluxon connects two flux concentrations of the same sign flux, or\none of its flux tubes has zero flux. Line %ld; concentrations %ld (%g) and %ld (%g)\n",fl0, flux0, l0, fc0->flux, l1, fc1->flux);
-	break;
-      }	else {
-	/* Check if the field line exists in either of the two 
-	   concentrations' local lists */
-	FLUXON *f;
-	
-	if((f = tree_find(world->lines,fl0,fl_lab_of,fl_all_ln_of)) &&
-	   (f->fc0 != fc0 || f->fc1 != fc1)
-	   ) {
+	  char *badbuf = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
+	  sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,fc0,fc1,BUFSIZ);
+	  badstr = badbuf;
+	  
+	} else if(fc0->flux * fc1->flux >= 0) {
 	  badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-	  sprintf(badstr,"Hey!  fluxon %ld already exists (from conc. %ld - %ld)\n"); 
-	} else {
-	  FLUXON *f0;
-
-	  if(f) {
-	    f->flux = fabs(flux0);
+	  sprintf(badstr,"This fluxon connects two flux concentrations of the same sign flux, or\none of its flux tubes has zero flux. Line %ld; concentrations %ld (%g) and %ld (%g)\n",fl0, flux0, l0, fc0->flux, l1, fc1->flux);
+	  break;
+	}	else {
+	  /* Check if the field line exists in either of the two 
+	     concentrations' local lists */
+	  FLUXON *f;
+	  
+	  if((f = tree_find(world->lines,fl0,fl_lab_of,fl_all_ln_of)) &&
+	     (f->fc0 != fc0 || f->fc1 != fc1)
+	     ) {
+	    badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
+	    sprintf(badstr,"Hey!  fluxon %ld already exists (from conc. %ld - %ld)\n"); 
 	  } else {
-	    /* Regularize fluxon order */
-	    if(fc0->flux < 0) {  /* Yes, I know about the triple-^= trick. */
-	      FLUX_CONCENTRATION *a;    
-	      a=fc1;
-	      fc1=fc0;
-	      fc0=a;
-	    }
+	    FLUXON *f0;
 	    
-	    /* Manufacture the new fluxon */
-	    f0 = new_fluxon(fabs(flux0),fc0,fc1,fl0,0);
-
-	    if(fc0->label==-3 && fc1->label==-4) {
-	      f0->plasmoid = 1;
-	    } else if(fc0->label==-3 || fc1->label==-4) {
-	      badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-	      sprintf(badstr,"Fluxon %ld uses one (but not both) of the reserved plasmoid FC's (-3 and -4)! Not allowed.",f->label);
-	    }
-
-	    if(!badstr) {
-	      /* Make sure it has at least the two end vertices */
-	      VERTEX *v0, *v1;
-	      if(vl0==0) 
-		vl0 = -(f0->label*2);
-	      if(vl1==0) 
-		vl1 = -(f0->label*2)+1;
+	    if(f) {
+	      f->flux = fabs(flux0);
+	    } else {
+	      /* Regularize fluxon order */
+	      if(fc0->flux < 0) {  /* Yes, I know about the triple-^= trick. */
+		FLUX_CONCENTRATION *a;    
+		a=fc1;
+		fc1=fc0;
+		fc0=a;
+	      }
 	      
-	      v0 = new_vertex( vl0, fc0->x[0],fc0->x[1],fc0->x[2],f0);
-	      v1 = new_vertex( vl1, fc1->x[0],fc1->x[1],fc1->x[2],f0);
-	      if(!v0 || !v1) {
-		badstr = "Couldn't make trivial vertices for fluxon!\n";
-	      } else {
-		if( add_vertex_pos(f0,0,v0) || add_vertex_pos(f0,-1,v1) ) 
-		  badstr = "Problems with trivial vertex addition\n";
+	      /* Manufacture the new fluxon */
+	      f0 = new_fluxon(fabs(flux0),fc0,fc1,fl0,0);
+	      
+	      if(fc0->label==-3 && fc1->label==-4) {
+		f0->plasmoid = 1;
+	      } else if(fc0->label==-3 || fc1->label==-4) {
+		badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
+		sprintf(badstr,"Fluxon %ld uses one (but not both) of the reserved plasmoid FC's (-3 and -4)! Not allowed.",f->label);
+	      }
+	      
+	      if(!badstr) {
+		/* Make sure it has at least the two end vertices */
+		VERTEX *v0, *v1;
+		if(vl0==0) 
+		  vl0 = -(f0->label*2);
+		if(vl1==0) 
+		  vl1 = -(f0->label*2)+1;
+		
+		v0 = new_vertex( vl0, fc0->x[0],fc0->x[1],fc0->x[2],f0);
+		v1 = new_vertex( vl1, fc1->x[0],fc1->x[1],fc1->x[2],f0);
+		if(!v0 || !v1) {
+		  badstr = "Couldn't make trivial vertices for fluxon!\n";
+		} else {
+		  if( add_vertex_pos(f0,0,v0) || add_vertex_pos(f0,-1,v1) ) 
+		    badstr = "Problems with trivial vertex addition\n";
+		}
 	      }
 	    }
 	  }
@@ -861,6 +864,18 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   fprint_tree(file, world->vertices, v_lab_of, v_ln_of, 0, fprint_v_nbors);
 }    
     
+/**********************************************************************
+ **********************************************************************
+ ** FREEZING ROUTINES --
+ ** 
+ ** These generate snippets of Perl code that reconstitute the 
+ ** World in its current state.
+ ** (FIXME: write this stuff!)
+ **    char *freeze_vertex
+ **    char *freeze_fluxon
+ **    char *freeze_fc
+ **    char *freeze_world
+ **/
 
     
 /**********************************************************************

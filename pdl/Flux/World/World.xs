@@ -1076,6 +1076,92 @@ for(i=0;i<horde->n;i++) {
 OUTPUT:
  RETVAL 
 
+double
+mutual_helicity(fsv1, fsv2)
+ SV *fsv1
+ SV *fsv2
+PREINIT:
+ WORLD *w;
+ FLUXON *f1;
+ FLUXON *f2;
+ VERTEX *v1;
+ VERTEX *v2;
+ FLUX_CONCENTRATION *fc1b;
+ FLUX_CONCENTRATION *fc1e;
+ FLUX_CONCENTRATION *fc2b;
+ FLUX_CONCENTRATION *fc2e;
+ char open1b;
+ char open1e;
+ char open2b;
+ char open2e;
+ VERTEX *v;
+ NUM mat[9];
+ static NUM rotzx[9] = {0, 0, 1,
+			0, 1, 0,
+			-1,0, 0};
+ static NUM origin[3] = {0,0,0};
+ NUM scr[9],rmat[9];
+CODE:
+ f1 = SvFluxon(fsv1,"Flux::World::mutual_helicity",1);
+ f2 = SvFluxon(fsv2,"Flux::World::mutual_helicity",1);
+ fc1b = f1->fc0;
+ fc1e = f1->fc1;
+ fc2b = f2->fc0;
+ fc2e = f2->fc1;
+ w = fc1b->world;
+
+ /* If we are using a spherical photosphere, convert everything to radius and
+  * oblique Mercator projection.  Otherwise, just copy it.
+  */
+ if(w->photosphere.type == PHOT_PLANE) {
+   for(v=f1->start; v; v=v->next)
+     FLUX->cp_3d(v->scr, v->x);
+   for(v=f2->start; v; v=v->next)
+     FLUX->cp_3d(v->scr, v->x);
+ } else if(w->photosphere.type == PHOT_SPHERE) {
+    /* Find a matrix that places the origin at the intersection 
+     * of the lines between the footpoints.
+     */
+   NUM x[3];
+   FLUX->sum_3d(x, f1->start->x, f1->end->next);
+   FLUX->sum_3d(x, x, f2->start->x);
+   FLUX->sum_3d(x, x, f2->end->x);
+   FLUX->scale_3d(x,x,0.25);
+   FLUX->projmatrix(scr, origin, x);
+   //FLUX->mat_mult_3x3(rmat, scr, rotzx);
+
+   /* Now rmat rotates the "X-cross" to the X axis, which 
+    * will become the spherical coordinate origin 
+    */
+
+   /* Loop over both fluxons.  The kludgey dual loop just
+      keeps us from having to declare another subroutine.
+    */
+   for(v=f1->start; v; v= (v->next ? 
+			   v->next : 
+			   (v->line==f1 ? f2->start : 0))) {
+     NUM vec;
+     NUM scr[3];
+     NUM *merc = v->scr;
+ 
+     /* Perform the rotation */
+     //FLUX->mat_vmult_3d(vec, rmat, v->x);
+
+     /* Convert to spherical coordinates */
+     //scr[2] = FLUX->norm_3d(vec);
+     //scr[1] = asin(vec[2]/r);
+     //scr[0] = atan2(vec[1],vec[0]);
+     
+     /* Convert to Mercator coordinates */
+     merc[0] = scr[0];
+   }
+ }
+printf("Not working yet.\n");
+ RETVAL = 0;
+OUTPUT:
+ RETVAL
+ 
+
 
 
 BOOT:

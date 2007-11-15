@@ -197,18 +197,18 @@ typedef struct WORLD {
 
   PHOTOSPHERE photosphere;
 
-  VERTEX *image, *image2;
-  FLUXON *fl_im;
   FLUX_CONCENTRATION *fc_im0,*fc_im1;
+  FLUXON *fl_im;
+  VERTEX *image, *image2;
 
   NUM locale_radius;        /* Default radius for concentrations' neighborhoods */
 
   long auto_open;             // Flag indicating whether a full-auto open boundary is being maintained
   
-  FLUX_CONCENTRATION *fc_ob; /* bogus flux concentration to store open fluxons     */
-  FLUX_CONCENTRATION *fc_oe; /* bogus flux concentration to store open fluxons     */
-  FLUX_CONCENTRATION *fc_pb; /* bogus flux concentration to store plasmoid fluxons */
-  FLUX_CONCENTRATION *fc_pe; /* bogus flux concentration to store plasmoid fluxons */
+  FLUX_CONCENTRATION *fc_ob; /* bogus flux conc. to store open fluxons     */
+  FLUX_CONCENTRATION *fc_oe; /* bogus flux conc. to store open fluxons     */
+  FLUX_CONCENTRATION *fc_pb; /* bogus flux conc. to store plasmoid fluxons */
+  FLUX_CONCENTRATION *fc_pe; /* bogus flux conc. to store plasmoid fluxons */
 
   void (*default_bound)(VERTEX *v);  /* Boundary condition routine */
 

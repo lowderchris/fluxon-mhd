@@ -1,3 +1,8 @@
+14-Nove-2007 [cd]
+ - added _wdumblist (Flux.xs)
+ - Combined _start and _end conditions for the plasmodi and open boundaries (model.c)
+ - Made dumblists slightly less profligate in their memory usage (data.c)
+ - Cleaned up new_world (data.c)
 31-Oct-2007 [cd]
  - Perl interface more standardized; seems to avoid memory leaks 
  - Perl objects always work in through the World and tree_find; this

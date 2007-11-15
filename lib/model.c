@@ -2491,14 +2491,12 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
  */
 
 struct F_B_NAMES F_B_NAMES[] = {
-  {fl_b_tied_inject, "fl_b_tied_inject"},
-  {fl_b_tied_force,  "fl_b_tied_force"},
-  {fl_b_start_open,  "fl_b_start_open"},
-  {fl_b_end_open,   "fl_b_end_open"},
-  {fl_b_start_plasmoid, "fl_b_start_plasmoid"},
-  {fl_b_end_plasmoid, "fl_b_end_plasmoid"},
+  {fl_b_tied_inject, "fl_b_tied_inject", "Auto-inject new vertices to maintain one near the FC"},
+  {fl_b_tied_force,  "fl_b_tied_force",  "Force the closest vertex to be near the FC"},
+  {fl_b_open,        "fl_b_open",        "Enforce open (source surface) condition" },
+  {fl_b_plasmoid,    "fl_b_plasmoid",    "Enforce plasmoid (ourobouros) condition" }, 
   {0, 0},
-  {0,0}
+  {0, 0}
 };
 
 void fl_b_tied_inject(VERTEX *v) {
@@ -2669,74 +2667,72 @@ void fl_b_tied_force(VERTEX *v) {
 }
 
 
-void fl_b_start_open(VERTEX *v) {
-  POINT3D a;
-  if(!v->next) {
-    fprintf(stderr,"HEY! fl_b_start_open got an end vertex!  Doing nothing...\n");
-    return;
-  }
-  if(v->prev) {
-    fprintf(stderr,"HEY! fl_b_start_open got a middle vertex!  Doing nothing...\n");
-    return;
-  } 
- 
-  if(v->line->fc0->locale_radius > 0) {
-    diff_3d( a,    v->next->x, v->line->fc0->x );
-    scale_3d(a,    a,          v->line->fc0->locale_radius / norm_3d(a) );
-    sum_3d(  v->x, a,          v->line->fc0->x );
-  }
-}
-
-void fl_b_end_open(VERTEX *v) {
+void fl_b_open(VERTEX *v) {
   POINT3D a;
   if(!v->prev) {
-    fprintf(stderr,"HEY! fl_b_end_open got a beginning vertex! Doing nothing...\n");
-    return;
-  }
-  if(v->next) {
-    fprintf(stderr,"HEY! fl_b_end_open got a middle vertex!  Doing nothing...\n");
-    return;
-  }
-  
-  if(v->line->fc1->locale_radius > 0) {
-    diff_3d( a,     v->prev->x,   v->line->fc1->x );
-    scale_3d(a,     a,            v->line->fc1->locale_radius / norm_3d(a) );
-    sum_3d(  v->x,  a,            v->line->fc1->x );
-  }
-} 
 
+    /** Check for loner vertex **/
+    if(!v->next) {
+      fprintf(stderr,"HEY! fl_b_tied got a loner vertex! Ignoring...\n");
+      return;
+    }
+    
+    /** Start vertex **/
+    if(v->line->fc0->locale_radius > 0) {
+      diff_3d( a,    v->next->x, v->line->fc0->x );
+      scale_3d(a,    a,          v->line->fc0->locale_radius / norm_3d(a) );
+      sum_3d(  v->x, a,          v->line->fc0->x );
+    }
+    return;
 
-void fl_b_start_plasmoid(VERTEX *v) {
+  }
+
+  /** End vertex **/
   if(!v->next) {
-    fprintf(stderr,"HEY! fl_b_start_plasmoid got an end vertex! Doing nothing...\n");
-    return;
-  }
-  if(v->prev) {
-    fprintf(stderr,"HEY! fl_b_start_plasmoid got a middle vertex! Doing nothing...\n");
-    return;
-  }
-  if(!v->next->next) {
-    fprintf(stderr,"HEY! plasmoid conditions require more than one middle vertex! Doing nothing...\n");
-    return;
-  }
-  
-  cp_3d( v->x, v->line->end->prev->x );
-}
 
-void fl_b_end_plasmoid(VERTEX *v) {
+    if(v->line->fc1->locale_radius > 0) {
+      diff_3d( a,     v->prev->x,   v->line->fc1->x );
+      scale_3d(a,     a,            v->line->fc1->locale_radius / norm_3d(a) );
+      sum_3d(  v->x,  a,            v->line->fc1->x );
+    }
+    return;
+
+  }
+
+  /** Shouldn't get here (normally) **/
+  fprintf(stderr,"HEY! fl_b_open got a middle vertex! Doing nothing...\n");
+}    
+
+void fl_b_plasmoid(VERTEX *v) {
   if(!v->prev) {
-    fprintf(stderr,"HEY! fl_b_end_plasmoid got a start vertex! Doing nothing...\n");
-    return;
-  }
-  if(v->next) {
-    fprintf(stderr,"HEY! fl_b_end_plasmoid got a middle vertex! Doing nothing...\n");
-    return;
-  }
-  if(!v->prev->prev) {
-    fprintf(stderr,"HEY! plasmoid conditions require real fluxons, you git!...\n");
-    return;
-  }
-  
-  cp_3d( v->x, v->line->start->next->x );
-}
 
+    /** Check for loner vertex **/
+    if(!v->next) {
+      fprintf(stderr,"HEY! fl_b_plasmoid got a loner vertex! Ignoring....\n");
+      return;
+    }
+    
+    /** Start vertex **/
+
+    if(!v->next->next)
+      return;
+    
+    cp_3d( v->x, v->line->end->prev->x );
+    return;
+
+  }
+
+  if(!v->next) {
+    
+    /** End vertex **/
+
+    if(!v->prev->prev)
+      return;
+    
+    cp_3d( v->x, v->line->start->next->x );
+    return;
+  }
+
+  fprintf(stderr,"HEY! fl_b_plasmoid got a middle vertex! Doing nothing...\n");
+  
+}

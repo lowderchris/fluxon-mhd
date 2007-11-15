@@ -1074,7 +1074,9 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
  * Given two points in 3-space, return a rotation matrix that 
  * rotates the vector connecting them into the Z axis (for projecting
  * stuff down to the plane perpendicular to the given line segment).
- * 
+ * The returned matrix has a determinant of unity, by construction, so
+ * distances are preserved.
+ *
  * You supply the output location, pre-allocated with 9 NUMs.
  * 
  * The product of two rotation matrices is hand-assembled here:

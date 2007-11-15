@@ -999,6 +999,69 @@ OUTPUT:
  RETVAL		
 
 SV *
+_wdumblist(type, sv, typeno, fieldno, val)
+ IV type
+ SV *sv
+ long typeno
+ long fieldno
+ SV *val
+PREINIT:
+ void *ptr;
+ DUMBLIST *dl;
+ void **array;
+ AV *av;
+ WORLD *w;
+CODE:
+ {
+   I32 i,n;
+   static DUMBLIST *dlcache = 0;
+
+   if(type < MIN_FT || type > MAX_FT) 
+     croak("_wdumblist: unknown type code!");
+
+   ptr = (void *)( FLUX->SvFluxPtr(sv,"_wdumblist","Flux",0,1));
+   w   = (WORLD *)(FLUX->SvFluxPtr(sv,"_wdumblist","Flux",1,1));
+   dl = (DUMBLIST *)fieldptr(ptr, typeno, fieldno);
+   array = dl->stuff;
+
+   if( !val || val==&PL_sv_undef) {
+     dl->n = 0;
+     RETVAL = &PL_sv_undef;
+   } else {
+     if( !SvROK(val) || SvTYPE(SvRV(val)) != SVt_PVAV )
+       croak("_wdumblist: requires an array ref or undef\n");
+     av = (AV *)SvRV(val);
+     n = av_len(av);
+
+     if(!dlcache) {
+       dlcache = FLUX->new_dumblist();
+     }
+     dlcache->n = 0;
+     if(dlcache->size <= n) {
+       FLUX->dumblist_grow(dlcache, n+1);
+     }
+
+     for(i=0;i<=n;i++) {
+       SV **svp = av_fetch(av, i, 0);
+       if(svp) {
+	 ptr = FLUX->SvFluxPtr(*svp, "_wdumblist (array element)", classnames[type],0,0);
+	 if(!ptr) 
+	   croak("_wdumblist: one or more elements was not found in the World!");
+	 dumblist_quickadd(dlcache, ptr);
+       } else {
+	 croak("_wdumblist: missing an element!");
+       }
+     }
+     
+     dl->n = 0;
+     dumblist_snarf(dl, dlcache);
+   }
+   RETVAL = val;
+ }
+OUTPUT:
+ RETVAL
+
+SV *
 file_versions()
 PREINIT:
  char buf[1024];

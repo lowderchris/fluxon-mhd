@@ -331,15 +331,52 @@ WORLD *new_world() {
   a->state = WORLD_STATE_NEW;
   a->refct = 0;
 
-  a->default_bound = NULL;
-
   a->concentrations = NULL;	/* nothing in the world yet */
-  a->vertices = NULL;
   a->lines = NULL;
+  a->vertices = NULL;
 
   a->photosphere.type = 0;
   a->photosphere.plane = NULL;
 
+  /*** Initialize the two dummy vertices for the mirroring;            ***/
+  /*   this requires two dummy vertices connected onto a dummy fluxon.   */
+  a->fc_im0 = new_flux_concentration(a,0,0,0,0,-8);
+  a->fc_im1 = new_flux_concentration(a,0,0,0,0,-9);
+  a->fl_im = new_fluxon(0,a->fc_im0, a->fc_im1, -9, 0);
+  a->image =  new_vertex(-1,0,0,0,a->fl_im);
+  a->image2 = new_vertex(-2,0,0,0,a->fl_im);
+  a->image->next = a->image2;
+  a->image2->prev = a->image;
+  a->fl_im->start = a->image;
+  a->fl_im->end = a->image2;
+
+  /*** By default, don't handle automatically open field lines ***/
+  a->locale_radius = 0;
+  a->auto_open = 0;
+
+  /*** Init. the open-field and plasmoid pseudo flux concentrations ***/
+  a->fc_ob = new_flux_concentration(a,0,0,0,1,-1);
+  a->fc_ob->label = -1;
+  a->fc_ob->bound = fl_b_open;
+  a->fc_ob->locale_radius = 0;
+
+  a->fc_oe = new_flux_concentration(a,0,0,0,-1,-2);
+  a->fc_oe->label = -2;
+  a->fc_oe->bound = fl_b_open;
+  a->fc_oe->locale_radius = 0;
+  
+  a->fc_pb = new_flux_concentration(a,0,0,0,1,-3);
+  a->fc_pb->label = -3;
+  a->fc_pb->bound = fl_b_plasmoid;
+  a->fc_pb->locale_radius = 0;
+  
+  a->fc_pe = new_flux_concentration(a,0,0,0,-1,-4);
+  a->fc_pe->label = -4;
+  a->fc_pe->bound = fl_b_plasmoid;
+  a->fc_pe->locale_radius = 0;
+
+  /*** By default, maintain tied boundaries by injecting vertices */
+  a->default_bound = fl_b_tied_inject;
 
   a->verbosity = 0;  /* No verbose printouts by default */
 
@@ -348,61 +385,28 @@ WORLD *new_world() {
   a->f_funcs[1] = f_curvature;
   a->f_funcs[2] = f_vertex4;
   a->f_funcs[3] = 0;
-  a->f_funcs[4] = 0;
 
   /* Put in a blank reconnection list (physics.c) */
   a->rc_funcs[0] = 0;
 
-  /* initialize scaling law.  Default scaling is for b-normalized
+  /* initialize scaling laws.  Default scaling is for b-normalized
    * forces, no acceleration
    */
   a->step_scale.b_power = 0;
   a->step_scale.d_power = 2;
-  a->step_scale.s_power = 1;
+  a->step_scale.s_power = 0;
   a->step_scale.ds_power = 0;
-  
-  /* By default, don't handle automatically open field lines */
-  a->auto_open = 0;
 
-  /* Initialize the open-field and plasmoid pseudo flux concentrations */
-  a->fc_ob = new_flux_concentration(a,0,0,0,1,-1);
-  a->fc_ob->label = -1;
-  a->fc_ob->bound = fl_b_start_open;
-  a->fc_ob->locale_radius = 0;
-  
-  a->fc_oe = new_flux_concentration(a,0,0,0,-1,-2);
-  a->fc_oe->label = -2;
-  a->fc_oe->bound = fl_b_end_open;
-  a->fc_oe->locale_radius = 0;
-  
-  a->fc_pb = new_flux_concentration(a,0,0,0,1,-3);
-  a->fc_pb->label = -3;
-  a->fc_pb->bound = fl_b_start_plasmoid;
-  
-  a->fc_pe = new_flux_concentration(a,0,0,0,-1,-4);
-  a->fc_pe->label = -4;
-  a->fc_pe->bound = fl_b_end_plasmoid;
-
-  /* Initialize the two dummy vertices for the mirroring */
-  /* if you need to check if a vertex is a dummy, use the macro V_ISDUMMY... */
-  a->fc_im0 = new_flux_concentration(a,0,0,0,0,-8);
-  a->fc_im1 = new_flux_concentration(a,0,0,0,0,-9);
-  a->fl_im = new_fluxon(0,a->fc_im0, a->fc_im1, -9, 0);
-  a->image = new_vertex(-1,0,0,0,a->fl_im);
-  a->image2 = new_vertex(-2,0,0,0,a->fl_im);
-  a->image->next = a->image2;
-  a->image2->prev = a->image;
-  a->fl_im->start = a->image;
-  a->fl_im->end = a->image2;
-
-  a->passno = 0;
+  a->passno = 0;      // initialize anticollision indicator
   a->handle_skew = 0; // by default don't skew...
 
-  // ARD added 
-  a->rel_step = 0;
-  a->dtau = 0.1;
-  // ARD initialize coeffs 
-  a->coeffs[0] = 1.0;
+  a->max_angle = 0;   // calculated value - initialize to 0
+  a->mean_angle = 0;  // ditto
+
+  a->dtau = 0.1;   // Reasonable default
+  a->rel_step = 0; // No steps so far
+
+  a->coeffs[0] = 1.0; // By default, just step naturally
   a->n_coeffs = 1;
   a->maxn_coeffs = MAXNUMCOEFFS;
 
@@ -1512,7 +1516,7 @@ void dumblist_quickadd(DUMBLIST *dl, void *a) {
   }
 
   if(dl->n >= dl->size)		                /* note that if n>size, you have bigger problems */
-    dumblist_grow(dl, dl->size * 1.5 + 10);	/* grows to more or less (3/2)*size */
+    dumblist_grow(dl, dl->size + 10);    	/* grows to more or less (3/2)*size */
   
   dl->stuff[dl->n] = a;
   dl->n++;
@@ -1548,7 +1552,7 @@ void dumblist_add(DUMBLIST *dl, void *a) {
   
   /* OK, a isn't in the list -- add it on the end, increase size by a few. */
   if(dl->n >= dl->size)
-    dumblist_grow(dl,1.5 * dl->size  + 10);
+    dumblist_grow(dl,dl->size  + 10);
 
   dl->stuff[dl->n] = a;
   dl->n++;

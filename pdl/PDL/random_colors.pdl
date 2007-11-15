@@ -97,7 +97,7 @@ sub random_colors {
     my $rgb = $vvec + $s_scale->(*1) * $hsv->(1) * $hhat;
 
     for my $i(0..$#$fluxons) {
-	$rgb_out->{$fluxons->[$i]}=$rgb->(:,($i))->copy;
+	$rgb_out->{$fluxons->[$i]}= floor(0.5 + 1000 * $rgb->(:,($i))+0.5)/1000;
     }
     return $rgb_out;
 }
