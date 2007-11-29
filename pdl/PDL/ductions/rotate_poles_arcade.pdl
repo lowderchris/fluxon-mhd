@@ -8,7 +8,8 @@ use PDL::NiceSlice;
 You feed in a world, a center, and an angle for the north pole and
 then a center, and an angle for the south pole. And all poles (fluxon
 starts and ends) in the world get rotated by the correct angle about
-the given center.  The rotation is in the (X,Y) plane only.
+the given center.  The rotation is in the (X,Y) plane only. It
+includes zero-movement tie points for fluxons that are not rotating.
 
 This file is part of FLUX 2.0, released 31-Oct-2007.
 
@@ -23,24 +24,40 @@ sub rotate_poles_arcade {
  my $angle_south = shift;
  my $thresh = shift;
  
+ 
+##rotating ends
+
  my $t_n = t_linear(pre=>-$center_north,post=>$center_north,matrix=>pdl([cos($angle_north),sin($angle_north),0],[-sin($angle_north),cos($angle_north),0],[0,0,1]));  ##north
 
  my $t_s = t_linear(pre=>-$center_south,post=>$center_south,matrix=>pdl([cos($angle_south),sin($angle_south),0],[-sin($angle_south),cos($angle_south),0],[0,0,1]));  ##south
 
- @keepers=grep( $_ ->{label} <$thresh, $world->fluxons);
- 
+ @keepers=grep( $_ ->{label} < $thresh, $world->fluxons);
  p @keepers;
 
- @starts = map { $_->vertex(0) } @keepers; ##north
- @ends = map { $_->{end} } @keepers;  ##south
+ @starts_rot = map { $_->vertex(0) } @keepers; ##north
+ @ends_rot = map { $_->{end} } @keepers;  ##south
 
- $duction_n = pdl(map { $_->{x} } @starts)->(:,*2,:)->copy; ##north
- $duction_n->(:,(1),:) .= $duction_n->(:,(0),:)->apply($t_n);
+ $duction_n_rot = pdl(map { $_->{x} } @starts_rot)->(:,*2,:)->copy; ##north
+ $duction_n_rot->(:,(1),:) .= $duction_n_rot->(:,(0),:)->apply($t_n);
  
- $duction_s = pdl(map { $_->{x} } @ends)->(:,*2,:)->copy; ##south
- $duction_s->(:,(1),:) .= $duction_s->(:,(0),:)->apply($t_s);
- 
- $duction=$duction_n->glue(2,$duction_s);
+ $duction_s_rot = pdl(map { $_->{x} } @ends_rot)->(:,*2,:)->copy; ##south
+ $duction_s_rot->(:,(1),:) .= $duction_s_rot->(:,(0),:)->apply($t_s);
+
+ $duction=$duction_n_rot->glue(2,$duction_s_rot);
+
+##stationary ends
+ my $stat = t_linear(pre=>-$center_north,post=>$center_north,matrix=>pdl([1,0,0],[0,1,0],[0,0,1]));
+
+ @others=grep( $_ ->{label} > $thresh, $world->fluxons);
+
+ @ends_stat = map { $_->vertex(0) } @others;
+ push @ends_stat, (map { $_->{end} } @others);
+
+ $duction_stat = pdl(map { $_->{x} } @ends_stat)->(:,*2,:)->copy;
+ $duction_stat->(:,(1),:) .= $duction_stat->(:,(0),:)->apply($stat);
+
+
+ $duction=$duction->glue(2,$duction_stat);
 
  for $v($world->vertices) {
    $v->{x} = interp_duction($duction,$v->{x});
