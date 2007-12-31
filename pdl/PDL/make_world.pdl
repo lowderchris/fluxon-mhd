@@ -15,7 +15,13 @@ sub make_world {
   if(ref $_[0] eq 'HASH') {
     $opt = shift;
   }
-
+  
+  my $phot=$opt->{photosphere};
+  ##$phot=(1,2,3,4,5,6,7) 
+  ##1-type:0,none;1,plane;2,sphere
+  ##2,3,4:origin of the plane or sphere
+  ##5,6,7:normal to origin for a plane or radius,0,0 for a sphere
+  
   my @lines = @_;
 
   my @out = "";
@@ -27,33 +33,42 @@ sub make_world {
 
   my $j=100;
   my $ln=0;
+  ##define $radius
 
   foreach $line(@lines) {
     my $fc0, $fc1, $fl;
 
+    ##photosphere is a plane
+    if ($phot->((0)) == 1) {
+	my $origin=$phot->((1:3));
+			       
+    
+
     $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
     $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
 
-    if($rstart < 1) {
-	my $rn = sqrt(sum($line->(:,(1))*$line->(:,(1))));
-	if($rn > 1) {
-	    my $alpha = (1 - $rstart) / ($rn - $rstart);
-	    my $newv = $line->(:,(0)) * (1-$alpha) + $line->(:,(1)) * $alpha;
-	    $line->(:,(0)) .= $newv;
-	}
-	# above uses planar photosphere, not quite right.   Fudge the last bit.
-	$line->(:,(0)) /= sqrt(sum($line->(:,(0))*$line->(:,(0))));
-    }
     
-    if($rend < 1) {
-	my $rp = sqrt(sum($line->(:,(-2))*$line->(:,(-2))));
-	if($rp > 1) {
-	    my $alpha = (1 - $rend) / ($rp - $rend);
-	    my $newv = $line->(:,(-1)) * (1-$alpha) + $line->(:,(-2)) * $alpha;
-	    $line->(:,(-1)) .= $newv;
-	}
-	$line->(:,(-1)) /= sqrt(sum($line->(:,(-1))*$line->(:,(-1))));
-    }
+
+##    if($rstart < 1) {
+##	my $rn = sqrt(sum($line->(:,(1))*$line->(:,(1))));
+##	if($rn > 1) {
+##	    my $alpha = (1 - $rstart) / ($rn - $rstart);
+##	    my $newv = $line->(:,(0)) * (1-$alpha) + $line->(:,(1)) * $alpha;
+##	    $line->(:,(0)) .= $newv;
+##	}
+##	# above uses planar photosphere, not quite right.   Fudge the last bit.
+##	$line->(:,(0)) /= sqrt(sum($line->(:,(0))*$line->(:,(0))));
+##    }
+    
+##    if($rend < 1) {
+##	my $rp = sqrt(sum($line->(:,(-2))*$line->(:,(-2))));
+##	if($rp > 1) {
+##	    my $alpha = (1 - $rend) / ($rp - $rend);
+##	    my $newv = $line->(:,(-1)) * (1-$alpha) + $line->(:,(-2)) * $alpha;
+##	    $line->(:,(-1)) .= $newv;
+##	}
+##	$line->(:,(-1)) /= sqrt(sum($line->(:,(-1))*$line->(:,(-1))));
+##    }
 
     $open_start = ($opt->{rmax} && $rstart >= $opt->{rmax});
     $open_end   = ($opt->{rmax} && $rend   >= $opt->{rmax});
