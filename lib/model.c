@@ -1079,6 +1079,11 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
   if(!workspace) 
     workspace = new_dumblist(); 
 
+  if(!v) {
+    fprintf(stderr,"WARNING: fluxon_relax_step called with a fluxon (%d) that has no start vertex!\n",f->label);
+    return;
+  }
+    
   for(v=v->next; v && v->next; v=v->next) {
 
     // ARD - Add in standard step - scaled in case we do something strange!
@@ -1179,7 +1184,8 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
       }
     } else {
       //      if(verbosity >= 3) 
-	printf("NON_FINITE OFFSET! f_s=(%g,%g,%g), f_v=(%g,%g,%g), f_t=(%g,%g,%g)",v->f_s[0],v->f_s[1],v->f_s[2],v->f_v[0],v->f_v[1],v->f_v[2],v->f_t[0],v->f_t[1],v->f_t[2]);
+      //printf("NON_FINITE OFFSET! f_s=(%g,%g,%g), f_v=(%g,%g,%g), f_t=(%g,%g,%g)",v->f_s[0],v->f_s[1],v->f_s[2],v->f_v[0],v->f_v[1],v->f_v[2],v->f_t[0],v->f_t[1],v->f_t[2]);
+	printf("NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%g ",v->f_t[0],v->f_t[1],v->f_t[2],v->label);
     }
 
     if(verbosity >= 3)    

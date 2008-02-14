@@ -610,22 +610,22 @@ void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts) {
  * Magnetic pressure `force' : - \del_perp(|B|) / |B|
  * Corrects for the factor-of-two error in f_pressure_equi
  *
- * Magnetic pressure force, using the equipartition method 
- * which distributes a given fluxon's flux equally by delta-phi.
- * This method distributes current throughout each fluxon's cross-section.
+ * Magnetic pressure force, using the equipartition method which
+ * distributes a given fluxon's flux equally by delta-phi.  This
+ * method distributes current throughout each fluxon's cross-section.
  * 
- * This uses the Kankelborg/DeForest discretization:
- * del_perp(|B|) / |B| ~ \sum_i ( n^_i delta\phi_i / (pi r_i) )
- * where n^_i is the vector from the current point to the ith neighbor,
- * delta\phi is the angular extent of the ith line segment in the 
- * Voronoi hull, and r_i is the radius to the closest approach of the
- * ith line segment (see DeForest notebook V, pp. 69-70)
+ * This uses the Kankelborg/DeForest discretization: del_perp(|B|) /
+ * |B| ~ \sum_i ( n^_i delta\phi_i / (pi r_i) ) where n^_i is the
+ * vector from the current point to the ith neighbor, delta\phi is the
+ * angular extent of the ith line segment in the Voronoi hull, and r_i
+ * is the radius to the closest approach of the ith line segment (see
+ * DeForest notebook V, pp. 69-70)
  *
- * This version applies the force from the median angle of the cell wall,
- * rather than from the normal.
+ * This version applies the force from the median angle of the cell
+ * wall, rather than from the normal.
  * 
- * In this version only the normal wall force, and not the parallel wall
- * force, is doubled.
+ * In this version only the normal wall force, and not the parallel
+ * wall force, is doubled.
  */
 
 void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
@@ -641,12 +641,14 @@ void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
   if(!V->next) 
     return;
 
-  /* Get the perpendicular-plane projection matrix */
-  /* (This is wasteful -- it's already generated in geometry.c.  Is
-     there an easy way to send it back?) */
+  /* Get the perpendicular-plane projection matrix (This is wasteful
+     -- it's already generated in geometry.c.  Is there an easy way to
+     send it back?) */
+
   projmatrix(pmatrix, V->x, V->next->x);
 
-  /*printf("f_pressure_equi:  V%4d,  n=%d\n",V->label, V->neighbors.n);*/
+  /*printf("f_pressure_equi: V%4d, n=%d\n",V->label,
+    V->neighbors.n);*/
 
   for(i=0;i<V->neighbors.n;i++) {
     NUM f_i[3];
@@ -661,14 +663,14 @@ void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
     
     deltaphi = left->a_l - right->a_r;
 
-    TRIM_ANGLE(deltaphi);
+    TRIM_ANGLE(deltaphi); //normalize to between -PI and PI
     
     if(deltaphi < -EPSILON) {
       fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi (%18.12g deg; vertex %d; neighbor %d); correcting to %18.12g\n",deltaphi*180/M_PI,V->label,((VERTEX *)(V->neighbors.stuff[i]))->label,deltaphi*180/M_PI + 360);
       deltaphi += M_PI+M_PI;
     }
     
-    fn = 2 * deltaphi / (M_PI * N->r);
+    fn = 2 * deltaphi / (M_PI * N->r); //N->r is radius to neighbor
     fp = (cos(right->a_r - N->a) - cos(left->a_l - N->a)) / (M_PI * N->r);
     {
       NUM r = norm_2d(N->scr);
@@ -686,7 +688,8 @@ void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
 
   sum_3d(V->f_s,V->f_s,force);
 
-  /*printf("f_pressure_equi -- force is (%8g,%8g,%8g), total is (%8g,%8g,%8g)\n\n",force[0],force[1],force[2],V->f_s[0],V->f_s[1],V->f_s[2]);*/
+  /*printf("f_pressure_equi -- force is (%8g,%8g,%8g), total is
+    (%8g,%8g,%8g)\n\n",force[0],force[1],force[2],V->f_s[0],V->f_s[1],V->f_s[2]);*/
 
   {
     NUM r;
@@ -700,8 +703,9 @@ void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
       if(r<0 || a<r)
 	r = a;
     }
-    V->r =  r / 2;  /* If all fluxons have the same amount of flux, then the min.
-		       radius is always half of the closest neighbor's distance. */
+    V->r =  r / 2;  /* If all fluxons have the same amount of flux,
+		       then the min.  radius is always half of the
+		       closest neighbor's distance. */
   }
   
   return;
@@ -1078,7 +1082,7 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
     alpha_p = M_PI - acos( (inner_3d(dpp, d1)) / (l1 * lpp) );
     alpha_n = M_PI - acos( (inner_3d(dnn, d2)) / (l2 * lnn) );
     
-    fn3 = 1 * (alpha_p - alpha_n);
+    fn3 = 1.0 * (alpha_p - alpha_n);
     V->f_v_tot += fabs(fn3);
      
     //fn3 *= 0.5;
