@@ -1,4 +1,12 @@
-14-Nove-2007 [cd]
+1-Mar-2008 [lr]
+ - made a new version of tree_walker (safe_tree_walker) that makes 
+   a copy if the tree and then walks. this avoids any problems that 
+   are caused when the function alters the tree itself as it is 
+   walking along the tree. so far it is only applied to fluxon_update_ends.
+27-Feb-2008 [lr]
+ - added world_fluxon_length_check which makes sure that there aren't any fluxons of length 3.
+ - added safe_tree_walker so that the tree can't change midway though the walk.
+14-Nov-2007 [cd]
  - added _wdumblist (Flux.xs)
  - Combined _start and _end conditions for the plasmodi and open boundaries (model.c)
  - Made dumblists slightly less profligate in their memory usage (data.c)

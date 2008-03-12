@@ -50,6 +50,7 @@ enum neighbor_global {
 void world_update_neighbors(WORLD *a, char global);
 NUM *world_update_mag(WORLD *a, char global);
 void world_relax_step(WORLD *a, NUM t);
+void world_fluxon_length_check(WORLD *a, char global);
 
 void fluxon_update_neighbors(FLUXON *fl, char global);
 NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minmax);

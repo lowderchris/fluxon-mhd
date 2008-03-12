@@ -25,7 +25,7 @@
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 6
+#define FLUX_CORE_VERSION 7
 
 typedef struct FluxCore {
 
@@ -55,6 +55,9 @@ typedef struct FluxCore {
 
   long (*tree_walk)  (void *tree, int lab_of, int ln_of, long ((*func)()));
   long (*tree_walker)(void *tree, int lab_of, int ln_of, long ((*func)()),int depth);
+
+  long (*stw_helper)(void *node, int lab, int link, int depth);
+  long (*safe_tree_walker)(void *tree, int lab_of, int ln_of, long ((*func)()),int depth);
 
   DUMBLIST *(*new_dumblist)();
   void (*free_dumblist)     (DUMBLIST *dl);
@@ -102,6 +105,7 @@ typedef struct FluxCore {
   
   void (*world_update_neighbors) (WORLD *a, char global);
   NUM *(*world_update_mag)       (WORLD *a, char global);
+  void (*world_fluxon_length_check) (WORLD *a, char global);  
   void (*world_relax_step)       (WORLD *a, NUM t);
 
   void (*fluxon_update_neighbors)(FLUXON *fl, char gl);

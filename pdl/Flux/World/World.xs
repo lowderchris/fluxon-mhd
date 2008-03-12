@@ -21,6 +21,7 @@
  *                        fix_curvature from World.pm.
  *  
  *   update_neighbors  	world_update_neighbors (model.c)
+ *   f_length_check	world_fluxon_length_check (model.c)
  *   update_force       world_update_forces    (model.c)
  *   relax_step         world_relax_step       (model.c)
  *
@@ -217,6 +218,18 @@ CODE:
   w = SvWorld(wsv,"update_neighbors",1);
   FLUX->world_update_neighbors(w,globalflag);
 
+void
+f_length_check(wsv, globalflag)
+ SV *wsv
+ IV globalflag
+PREINIT:
+ WORLD *w;
+/**********************************************************************
+ * update_neighbors glue
+ */
+CODE:
+  w = SvWorld(wsv,"f_length_check",1);
+  FLUX->world_fluxon_length_check(w,globalflag);
 
 NV
 update_force(wsv,global=0)

@@ -53,12 +53,14 @@ char *code_info_model="%%%FILE%%%";
  */
 static long w_u_e_springboard(FLUXON *fl, int lab, int link, int depth) {
   fluxon_update_ends(fl);
+  //if(fl->fc0->world->verbosity)
+  //  printf("world_update_ends - fluxon %d\n",fl->label);
   return 0;
 }
 
 void world_update_ends(WORLD *a) {
-
-  tree_walker(a->lines,fl_lab_of, fl_all_ln_of, w_u_e_springboard,0);
+  safe_tree_walker(a->lines,fl_lab_of, fl_all_ln_of, w_u_e_springboard,0);
+  //tree_walker(a->lines,fl_lab_of, fl_all_ln_of, w_u_e_springboard,0);
 }
 
 /**********************************************************************
@@ -128,7 +130,7 @@ void fluxon_auto_open(FLUXON *f) {
     // It's a U-loop...
 
     // Trivial U-loops...
-    if(f->v_ct < 3) {
+    if(f->v_ct < 4) {
       printf(" Fluxon %d is a trivial U-loop.  Deleting...\n",f->label);
       delete_fluxon(f);
       return;
@@ -300,11 +302,14 @@ void fluxon_auto_open(FLUXON *f) {
 	// then we simply open the fluxon at the current point.
 	{
 	  int inside = 0;
-	  for(Vnext = v->next; Vnext && !inside; Vnext = Vnext->next) {
+	  for(Vnext = v->next; Vnext && !inside;) {
 	    NUM x2[3];
 	    diff_3d(x2, Vnext->x, w->fc_oe->x);
 	    rn_n = norm_3d(x2)/w->fc_oe->locale_radius;
 	    inside = (rn_n < 1);
+	    if (!inside) {
+	      Vnext = Vnext->next;
+	    }
 	  }
 	}
 	
@@ -378,17 +383,19 @@ void fluxon_auto_open(FLUXON *f) {
 	    
 	    
 	  }  else /* Previous vertex is inside */ {
-	    // Vprev is inside, so we cut.
-	    
-	    // Now v (and possible next links) is outside, Vprev is inside, and Vnext is inside.
-	    // We need exactly two vertices between Vnext and Vprev.  If there is only one, add one.
-	    // If there is more than one, excise 'em.
+
+	    /*Vprev is inside, so we cut.
+	     * Now v (and possible next links) is outside, Vprev is
+	     * inside, and Vnext is inside.  We need exactly two
+	     * vertices between Vnext and Vprev.  If there is only
+	     * one, add one.  If there is more than one, excise
+	     * 'em. */
 	    
 	    if(Vprev->next == Vnext->prev) {
 
 	      // Add an extra vertex, colocated.  
 
-	      VERTEX *Vnew = new_vertex(0, v->x[0],v->x[1],v->x[2], 0);
+	      VERTEX *Vnew = new_vertex(0, v->x[0],v->x[1],v->x[2], f);
 	      add_vertex_after(f, v, Vnew);
 
 	      {
@@ -414,7 +421,8 @@ void fluxon_auto_open(FLUXON *f) {
 	    printf("Vprev is %d; next is %d; next is %d; next is %d; Vnext is %d\n",
 	       Vprev->label, Vprev->next->label, Vprev->next->next->label, Vprev->next->next->next->label, Vnext->label);
 	    
-	    // Now reposition the intermediate vertices approximately on the sphere, by truncating their respective segments.
+	    /* Now reposition the intermediate vertices approximately
+	       on the sphere, by truncating their respective segments. */
 	    {
 	      NUM ra_n, rb_n;
 	      NUM alpha_a, alpha_b;
@@ -436,11 +444,12 @@ void fluxon_auto_open(FLUXON *f) {
 	      diff_3d(xx, Vnext->prev->x, Vnext->x);
 	      scale_3d(xx, xx, alpha_b);
 	      sum_3d(Vnext->prev->x, xx, Vnext->x);
+	      xx[0] = xx[0] * 1;
 	    }
 	    
-	    // Finally, create a new fluxon and cut the old one between the two 
-	    // intermediate vertices.
-	    // Convenience block...
+	    /* Finally, create a new fluxon and cut the old one
+	     * between the two intermediate vertices.  Convenience
+	     * block...*/
 	    {
 	      int n;
 	      VERTEX *vv;
@@ -537,6 +546,34 @@ NUM *world_update_mag(WORLD *a, char global) {
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_m_springboard, 0);
   return gl_minmax;
 }
+
+
+/**********************************************************************
+ * world_fluxon_length_check makes sure that there are at least
+ * 4 vertices in any fluxon. We don't care about fluxons that only 
+ * have 2 vertices and there aren't any that only have 1.
+ */
+static long check_fluxon_length(FLUXON *f, int lab, int link, int depth){
+  //printf("in the function upper\n");
+    //printf("fluxon %d, count is %d\n",f->label,f->v_ct);
+    fflush(stdout);
+  if (f->v_ct == 3) { //fix_curvature on the middle vertex
+    fix_curvature(f->start->next,1e-9,1e-10);
+    //printf("in the function lower\n");
+    fflush(stdout);
+  }
+  return 0;
+}
+
+void world_fluxon_length_check(WORLD *w, char global){
+  gl_a = w;
+  gl_gl = global;  
+  //printf("in world_fluxon_length_check\n");
+  fflush(stdout);
+  //tree_walker(tree, label offset, link offset, function, depth)
+  tree_walker(w->lines, fl_lab_of, fl_all_ln_of, check_fluxon_length,0);
+}
+
 
 /**********************************************************************
  * world_collect_stats
@@ -1185,7 +1222,7 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
     } else {
       //      if(verbosity >= 3) 
       //printf("NON_FINITE OFFSET! f_s=(%g,%g,%g), f_v=(%g,%g,%g), f_t=(%g,%g,%g)",v->f_s[0],v->f_s[1],v->f_s[2],v->f_v[0],v->f_v[1],v->f_v[2],v->f_t[0],v->f_t[1],v->f_t[2]);
-	printf("NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%g ",v->f_t[0],v->f_t[1],v->f_t[2],v->label);
+	printf("NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%d\n",v->f_t[0],v->f_t[1],v->f_t[2],v->label);
     }
 
     if(verbosity >= 3)    

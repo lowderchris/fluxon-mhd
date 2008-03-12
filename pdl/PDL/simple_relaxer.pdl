@@ -141,6 +141,9 @@ sub simple_relaxer {
 
     while(!$final_step || $step<$final_step) {
 
+	if ($w->{auto_open}){
+	    $w->f_length_check($global);
+	}
 	$fmax = $w->update_force($global);
 	$w->relax_step($dt);
 	$t += $dt;
