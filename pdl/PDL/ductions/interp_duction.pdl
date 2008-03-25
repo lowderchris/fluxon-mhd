@@ -28,17 +28,17 @@ sub interp_duction {
   
   my $duct_anchors = $ducts->(:,(0),:);             # 3 x n
   my $duct_vects = (pdl(-1,1) * $ducts->mv(1,0))->sumover; # 3 x n
-  p ".";
+  ##p ".";
   my $lvecs = $locations->(:,*1) - $duct_anchors;  # 3 x n x m
-  p "|";
+  ##p "|";
   $over_r2 = 1.0/(1e-9+(($lvecs * $lvecs)->sumover));     # n x m
-  p ",";
+  ##p ",";
   $wgt = $over_r2->sumover;                        # m 
   my $vects = ($duct_vects * $over_r2->(*1))       # 3 x n x m
                 ->mv(1,0)                          # n x 3 x m
 		->sumover;                         # 3 x m
   $vects /= $wgt->(*1);
-
+  ##p "ROTATION COMPLETE\n";
 
   return $vects + $locations;
 }
