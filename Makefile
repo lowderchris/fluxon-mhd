@@ -5,18 +5,32 @@
 # to figure it out -- CED 18-Aug-2004
 
 all: libinstall
-	pushd pdl; perl Makefile.PL; make all; popd
+	cd pdl
+	perl Makefile.PL
+	make all
+	cd ..
 
 install: libinstall pdlinstall
 
 libinstall:
-	pushd lib; make install; popd;
+	cd lib
+	make install
+	cd ..
 
-pdlinstall:
-	pushd pdl; perl Makefile.PL; make all; popd
-	pushd pdl/PDL; make install; popd
+pdlinstall: 
+	cd pdl
+	perl Makefile.PL
+	make all
+	cd ..
+	cd pdl
+	make install
+	cd ..
 
 clean:
 	rm -f *~ \#* 
-	cd lib; make clean
-	cd pdl; make clean
+	cd lib
+	make clean
+	cd ..
+	cd pdl
+	make clean
+	cd ..

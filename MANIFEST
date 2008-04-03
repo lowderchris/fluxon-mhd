@@ -1,6 +1,7 @@
 .
 ./COPYING
 ./Changes
+./INSTALL
 ./MANIFEST
 ./Makefile
 ./README
@@ -74,7 +75,10 @@
 ./pdl/PDL/ductions/rotate_poles_arcade.pdl
 ./pdl/PDL/ductions/rotate_starts.pdl
 ./pdl/PDL/fluxon_placement_fs.pdl
+./pdl/PDL/fluxon_placement_hilbert.pdl
+./pdl/PDL/hilbert.pdl
 ./pdl/PDL/make_world.pdl
+./pdl/PDL/make_world_spiro.pdl
 ./pdl/PDL/neighbor_check.pdl
 ./pdl/PDL/place_loop_vertex.pdl
 ./pdl/PDL/random_carpet.pdl
