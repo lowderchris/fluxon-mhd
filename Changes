@@ -1,4 +1,6 @@
-25-ar-2008 [lr]
+3-Apr-2008 [cd]
+  - removed inline references	 
+25-Mar-2008 [lr]
  - fixed rotation_spiro and modified duction to not print out the "./;"
 1-Mar-2008 [lr]
  - made a new version of tree_walker (safe_tree_walker) that makes 

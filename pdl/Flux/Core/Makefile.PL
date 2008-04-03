@@ -17,6 +17,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile( NAME => 'Flux::Core',
 	       INC=>join(" ",map { "-I$_"} @inc),
+	       CCFLAGS=> '-no-inline',
 	       OBJECT => '$(BASEEXT)$(OBJ_EXT) /usr/local/lib/libflux.a'
 	       );
 

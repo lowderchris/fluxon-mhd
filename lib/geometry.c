@@ -101,7 +101,7 @@ NUM cross_2d(NUM *p0, NUM *p1) {
 }
 
 /* cross_3d is defined to cross in geometry.h */
-inline void cross(NUM *out, NUM *p0, NUM *p1) {
+ void cross(NUM *out, NUM *p0, NUM *p1) {
   *(out++) = p0[1]*p1[2]-p0[2]*p1[1];
   *(out++) = p0[2]*p1[0]-p0[0]*p1[2];
   *out     = p0[0]*p1[1]-p0[1]*p1[0];
@@ -1399,7 +1399,7 @@ void sort_by_angle_2d(DUMBLIST *horde) {
 /**********************************************************************
  * hv_cp - copy a HULL_VERTEX 
  */
-inline void hv_cp(HULL_VERTEX *to, HULL_VERTEX *from) {
+ void hv_cp(HULL_VERTEX *to, HULL_VERTEX *from) {
   to->p[0] = from->p[0];
   to->p[1] = from->p[1];
   to->a_l = from->a_l;

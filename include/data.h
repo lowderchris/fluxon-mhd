@@ -278,24 +278,24 @@ static const v_neighbor_of = (long)&(v__samp.neighbors) - (long)&(v__samp);
 static const v_nearby_of = (long)&(v__samp.nearby) - (long)&(v__samp);
 static const v_ln_of = (long)&(v__samp.world_links) - (long)&(v__samp);
 static const v_lab_of = (long)&(v__samp.label) - (long)&(v__samp);
-inline FLUXON *new_fluxon(NUM flux,  
+ FLUXON *new_fluxon(NUM flux,  
 			 FLUX_CONCENTRATION *c0,
 			 FLUX_CONCENTRATION *c1,
 			 long label,
 			 char plasmoid
 			 );
 
-inline VERTEX *new_vertex(long label, NUM x, NUM y, NUM z,
+ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z,
 			      FLUXON *fluxon);
 
-inline VERTEX *spawn_new_vertex(NUM x, NUM y, NUM z, VERTEX *parent);
+ VERTEX *spawn_new_vertex(NUM x, NUM y, NUM z, VERTEX *parent);
 
        int add_vertex_pos     (FLUXON *fl, long pos,  VERTEX *v);
-inline int add_vertex_after   (FLUXON *fl, VERTEX *nbr,  VERTEX *v);
+ int add_vertex_after   (FLUXON *fl, VERTEX *nbr,  VERTEX *v);
 
 
 
-inline FLUX_CONCENTRATION *new_flux_concentration(WORLD *, NUM x, NUM y, NUM z,
+ FLUX_CONCENTRATION *new_flux_concentration(WORLD *, NUM x, NUM y, NUM z,
 						  NUM flux,
 						  long label
 						  );
@@ -309,16 +309,16 @@ void delete_vertex();
 
 #define MAX_TREE_DEPTH 1000000
 void clear_links(LINKS *links);
-inline void *tree_top(void *tree, int link_offset);
-inline void *tree_find(void *tree, long label, int label_offset, int link_offset);
-inline void *tree_insert(void *root, void *item, int label_offset, int link_offset);
-inline void *tree_binsert(void *root, void *item, int label_offset, int link_offset);
-inline void *tree_unlink(void *data, int label_offset, int link_offset);
-inline void *tree_bunlink(void *data, int label_offset, int link_offset);
-inline void *tree_balance(void *tree, int label_offset, int link_offset);
-inline char tree_balance_check(void *tree, int link_offset);
+ void *tree_top(void *tree, int link_offset);
+ void *tree_find(void *tree, long label, int label_offset, int link_offset);
+ void *tree_insert(void *root, void *item, int label_offset, int link_offset);
+ void *tree_binsert(void *root, void *item, int label_offset, int link_offset);
+ void *tree_unlink(void *data, int label_offset, int link_offset);
+ void *tree_bunlink(void *data, int label_offset, int link_offset);
+ void *tree_balance(void *tree, int label_offset, int link_offset);
+ char tree_balance_check(void *tree, int link_offset);
 
-inline long tree_walk(void *tree, int label_ofset, int link_offset, long ((*func)()));
+ long tree_walk(void *tree, int label_ofset, int link_offset, long ((*func)()));
 long tree_walker(void *tree, int label_ofset, int link_offset, long ((*func)()),int depth);
 
 inline long stw_helper(void *node, int lab, int link, int depth);
@@ -327,18 +327,18 @@ long safe_tree_walker(void *tree, int label_offset, int link_offset, long((*func
 
 DUMBLIST *new_dumblist();
 void free_dumblist(DUMBLIST *dl);
-inline void dumblist_init(DUMBLIST *foo);
-inline void dumblist_add(DUMBLIST *dl, void *a);
-inline void dumblist_delete(DUMBLIST *dl, void *a);
-inline void dumblist_rm(DUMBLIST *dl, int i);
-inline void dumblist_sort(DUMBLIST *dl, int((*compare)(void *a, void *b)));
-inline void dumblist_snarf(DUMBLIST *dl, DUMBLIST *source);
-inline void dumblist_grow(DUMBLIST *dl, int size);
-inline void dumblist_clear(DUMBLIST *dl);
-inline void dumblist_crunch(DUMBLIST *dl);
+ void dumblist_init(DUMBLIST *foo);
+ void dumblist_add(DUMBLIST *dl, void *a);
+ void dumblist_delete(DUMBLIST *dl, void *a);
+ void dumblist_rm(DUMBLIST *dl, int i);
+ void dumblist_sort(DUMBLIST *dl, int((*compare)(void *a, void *b)));
+ void dumblist_snarf(DUMBLIST *dl, DUMBLIST *source);
+ void dumblist_grow(DUMBLIST *dl, int size);
+ void dumblist_clear(DUMBLIST *dl);
+ void dumblist_crunch(DUMBLIST *dl);
 
 
-inline char fl_eq(NUM a, NUM b);
+ char fl_eq(NUM a, NUM b);
 
 
 /* defines for debugging malloc wrapper in data.c */
