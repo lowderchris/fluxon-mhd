@@ -321,7 +321,7 @@ void clear_links(LINKS *links);
  long tree_walk(void *tree, int label_ofset, int link_offset, long ((*func)()));
 long tree_walker(void *tree, int label_ofset, int link_offset, long ((*func)()),int depth);
 
-inline long stw_helper(void *node, int lab, int link, int depth);
+long stw_helper(void *node, int lab, int link, int depth);
 long safe_tree_walker(void *tree, int label_offset, int link_offset, long((*func)()), int depth);
 
 
