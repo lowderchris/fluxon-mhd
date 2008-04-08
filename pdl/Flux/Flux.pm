@@ -294,6 +294,7 @@ Really Know What You're Doing.
 	    handle_skew=>       [29,'long'],
 	    auto_open=>         [30,'long'],
             default_bound =>    [31,'Bound']
+	    photosphere2 =>     [32,'Photosphere'],
 	},
 	concentration => {
 	    world=>		 [1,'World'],

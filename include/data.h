@@ -196,6 +196,7 @@ typedef struct WORLD {
   VERTEX *vertices;
 
   PHOTOSPHERE photosphere;
+  PHOTOSPHERE photosphere2;
 
   FLUX_CONCENTRATION *fc_im0,*fc_im1;
   FLUXON *fl_im;

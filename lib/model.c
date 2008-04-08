@@ -1215,7 +1215,45 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	  sum_3d(v->x, v->x, step);
 	}
 
-      } else {
+      } else if (world->photosphere2.type==PHOT_PLANE){
+	/* Check for and eliminate photospheric plane crossings one
+	   2nd photosphere*/
+	NUM x1[3];
+	NUM x1z;
+	diff_3d(x1,v->x,world->photosphere2.plane->origin);
+	sum_3d(x1,x1,step);
+
+	x1z = inner_3d(x1,world->photosphere2.plane->normal);
+	if(x1z < 0) {
+	  NUM delta[3];
+	  scale_3d(delta, world->photosphere2.plane->normal, - (x1z * 1.001) / norm2_3d(world->photosphere2.plane->normal));
+	  sum_3d(x1,x1,delta);
+	  sum_3d(v->x, x1, world->photosphere2.plane->origin);
+
+	  // Add some new vertices so that we hopefully don't have this problem next time.
+	  add_vertex_after( v->line, v, 
+			    new_vertex(0, 
+				       0.5 * (v->x[0] + v->next->x[0]),
+				       0.5 * (v->x[1] + v->next->x[1]),
+				       0.5 * (v->x[2] + v->next->x[2]),
+				       v->line
+				       )
+			    );
+	  if(v->prev) {
+	    add_vertex_after( v->line, v->prev,
+			      new_vertex(0,
+					 0.5 * (v->prev->x[0] + v->x[0]),
+					 0.5 * (v->prev->x[1] + v->x[1]),
+					 0.5 * (v->prev->x[2] + v->x[2]),
+					 v->line
+					 )
+			      );
+	  }
+	} else {
+	  sum_3d(v->x, v->x, step);
+	}
+
+      }else {
 	/* Otherwise just step */
 	sum_3d(v->x,v->x,step);	     
       }
@@ -1557,6 +1595,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   /* For line-tied conditions, we don't let the last segment interact with the  */
   /* photosphere, since it generally intersects the photosphere.  Plasmoids     */
   /* do interact with the photosphere, since they generally don't intersect it. */
+
   if(v->next && 
      v->prev &&
      (v->next->next || v->line->plasmoid)
@@ -1565,79 +1604,19 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     PHOTOSPHERE *phot;
     PLANE *p;
     NUM a;
+
     if(v->line->fc0->world->photosphere.type) { /* assignment */
-      /* Generate image and stuff it into the image point in the world
-	 space */
-      
-      if(verbosity >= 4){
-	printf("using photosphere (type is %d)...",v->line->fc0->world->photosphere.type);
-	fflush(stdout);
-      }
       phot = &(v->line->fc0->world->photosphere);
       p = phot->plane;
-      switch(phot->type) {
-	PLANE pl;
-	POINT3D pt;
-      case PHOT_CYL:
-	/* Special case: mirror segment is reflected through a cylinder, radius p[0],
-	 * aligned along the z axis.
-	 */
-	a = norm_2d(v->x);
-	
-	pl.origin[0] = v->x[0] * p->origin[0] / a;
-	pl.origin[1] = v->x[1] * p->origin[0] / a;
-	pl.origin[2] = 0;
-	pl.normal[0] = v->x[0];
-	pl.normal[1] = v->x[1];
-	pl.normal[2] = 0;
-	scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
-	reflect(v->line->fc0->world->image->x, v->x, &pl);
-	
-	a = norm_2d(v->next->x);
-	pl.origin[0] = v->next->x[0] * p->origin[0] / a;
-	pl.origin[1] = v->next->x[1] * p->origin[0] / a;
-	pl.origin[2] = 0;
-	pl.normal[0] = v->next->x[0];
-	pl.normal[1] = v->next->x[1];
-	pl.normal[2] = 0;
-	scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
-	reflect(v->line->fc0->world->image->next->x, v->next->x, &pl);
-	
-	dumblist_quickadd(workspace, v->line->fc0->world->image);
-
-	break;
-      case PHOT_SPHERE:
-	/***********
-         * Spherical photosphere - sphere is located at the origin in the 
-         * photospheric plane structuure; radius is normal[0]. */
-	
-	/* Construct the sub-vertex point on the sphere */
-	diff_3d(&(pt[0]),      v->x, &(p->origin[0]));                 /* pt gets (x - origin) */
-	scale_3d(&(pt[0]), &(pt[0]), p->normal[0]/norm_3d(&(pt[0])));  /* Scale to be on the sphere */
-	sum_3d(&(pt[0]), &(pt[0]), p->origin);                    /* Put in real space */
-	scale_3d(&(pt[0]), &(pt[0]), 2.0);                             
-	diff_3d(v->line->fc0->world->image->x, &(pt[0]), v->x); /* Put reflection in image */
-
-	/***** Do for the other point too *****/
-	diff_3d(&(pt[0]), v->next->x, p->origin);
-	scale_3d(&(pt[0]), &(pt[0]), p->normal[0]/norm_3d(&(pt[0])));
-	sum_3d(&(pt[0]),&(pt[0]),p->origin);
-	scale_3d(&(pt[0]), &(pt[0]), 2.0);
-	diff_3d(v->line->fc0->world->image->next->x, &(pt[0]), v->x); 
-	 
-	dumblist_quickadd(workspace, v->line->fc0->world->image);
-
-	break;
-	  
-      case PHOT_PLANE:
-	reflect(v->line->fc0->world->image->x, v->x, p);
-	reflect(v->line->fc0->world->image->next->x, v->next->x, p);
-	dumblist_quickadd(workspace, v->line->fc0->world->image);
-	break;
-      default:
-	fprintf(stderr,"Illegal photosphere type %d!\n",phot->type);
-	exit(13);
-      }
+      image = &(v->line->fc0->world->image);
+      image_find(phot,p,image); /*helper routine found below*/
+    }
+    
+    if(v->line->fc0->world->photosphere2.type) { /* assignment */
+      phot = &(v->line->fc0->world->photosphere2);
+      p = phot->plane;
+      image = &(v->line->fc0->world->image2);
+      image_find(phot,p,image);
     }
   }
 
@@ -1645,6 +1624,80 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 
   return workspace;
 }
+
+void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image) {
+  /* helper routine to generate the image point and stuff it into
+   * the image point in the world.*/
+  NUM a;
+  
+  if(verbosity >= 4){
+    printf("using photosphere (type is %d)...",phot.type);
+    fflush(stdout);
+  }
+  switch(phot->type) {
+    PLANE pl;
+    POINT3D pt;
+  case PHOT_CYL:
+    /* Special case: mirror segment is reflected through a cylinder, radius p[0],
+     * aligned along the z axis.
+     */
+    a = norm_2d(v->x);
+    
+    pl.origin[0] = v->x[0] * p->origin[0] / a;
+    pl.origin[1] = v->x[1] * p->origin[0] / a;
+    pl.origin[2] = 0;
+    pl.normal[0] = v->x[0];
+    pl.normal[1] = v->x[1];
+    pl.normal[2] = 0;
+    scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
+    reflect(image->x, v->x, &pl);
+    
+    a = norm_2d(v->next->x);
+    pl.origin[0] = v->next->x[0] * p->origin[0] / a;
+    pl.origin[1] = v->next->x[1] * p->origin[0] / a;
+    pl.origin[2] = 0;
+    pl.normal[0] = v->next->x[0];
+    pl.normal[1] = v->next->x[1];
+    pl.normal[2] = 0;
+    scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
+    reflect(image->next->x, v->next->x, &pl);
+    
+    dumblist_quickadd(workspace, image);
+    
+    break;
+  case PHOT_SPHERE:
+    /***********
+     * Spherical photosphere - sphere is located at the origin in the 
+     * photospheric plane structuure; radius is normal[0]. */
+    
+    /* Construct the sub-vertex point on the sphere */
+    diff_3d(&(pt[0]),      v->x, &(p->origin[0]));  /* pt gets (x - origin) */
+    scale_3d(&(pt[0]), &(pt[0]), p->normal[0]/norm_3d(&(pt[0])));  /* Scale to be on the sphere */
+    sum_3d(&(pt[0]), &(pt[0]), p->origin);   /* Put in real space */
+    scale_3d(&(pt[0]), &(pt[0]), 2.0);                             
+    diff_3d(image->x, &(pt[0]), v->x);  /* Put reflection in image */
+    
+    /***** Do for the other point too *****/
+    diff_3d(&(pt[0]), v->next->x, p->origin);
+    scale_3d(&(pt[0]), &(pt[0]), p->normal[0]/norm_3d(&(pt[0])));
+    sum_3d(&(pt[0]),&(pt[0]),p->origin);
+    scale_3d(&(pt[0]), &(pt[0]), 2.0);
+    diff_3d(image->next->x, &(pt[0]), v->x); 
+    
+    dumblist_quickadd(workspace, image);
+    
+    break;
+    
+  case PHOT_PLANE:
+    reflect(image->x, v->x, p);
+    reflect(image->next->x, v->next->x, p);
+    dumblist_quickadd(workspace, image);
+    break;
+  default:
+    fprintf(stderr,"Illegal photosphere type %d!\n",phot->type);
+    exit(13);
+  }
+} /*end of image_find subroutine*/
 
 
 /**********************************************************************
