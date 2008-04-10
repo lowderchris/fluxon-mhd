@@ -29,6 +29,7 @@ sub make_world_spiro {
 
   my $radius=$opt->{radius};
   ##print "$radius \n";
+  my $height=$opt->{height};
 
   my @out = "";
 
@@ -50,8 +51,13 @@ sub make_world_spiro {
 ##vectors are parameters used to specify the surface. The type is as
 ##follows:
 
+##sphere: x is the center of the sphere; n1 is its radius. n2 and n3
+##are ignored.  
+##cyl: x is the center of the cylinder; n1 is its radius
+
 ##  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 1");
   push(@out, "GLOBAL BOUNDARY PLANE 0 0 0 0 0 1");
+ ## push(@out, "GLOBAL B2 CYL 0 0 0 ".$radius." 0 0");
 
 ##GLOBAL OPEN x1 x2 x3 r auto
 ##Sets the source surface for a spherical open boundary condition:
@@ -61,7 +67,7 @@ sub make_world_spiro {
 ##or 0 for no automatic opening.
 
 ##  push(@out, "GLOBAL OPEN 0 0 0 ".($opt->{rmax}+1)) if($opt->{rmax});
-  push(@out, "GLOBAL OPEN 0 0 0 ".$radius." 1");
+  push(@out, "GLOBAL OPEN 0 0 0 ".$height." 1");
   push(@out,"");
 
   my $j=100;
@@ -99,15 +105,15 @@ sub make_world_spiro {
     
 
 
-    if ($rend >= ($radius-$epsilon)){
+    if ($rend >= ($height-$epsilon)){
 	##the outer point is beyond the open surface
-	    while (sqrt(sum($line->(:,(-2)) * $line->(:,(-2)))) >= ($radius-$epsilon)){
+	    while (sqrt(sum($line->(:,(-2)) * $line->(:,(-2)))) >= ($height-$epsilon)){
 		$line=$line(:,0:-2);
 		##print sqrt(sum($line->(:,(-1))**2))."\n"; 
                ##chop off last vertex
 	    }
 	    ##print sqrt(sum($line->(:,(-1))**2))."    ";
-	    $line->(:,(-1))*=($radius-.01)/$rend;
+	    $line->(:,(-1))*=($height-.01)/$rend;
 	    ##print sqrt(sum($line->(:,(-1)) * $line->(:,(-1)))),$line->(:,(-1)), $i."\n";	    
 	    ##print "here   ".sqrt(sum($line->(:,(-1))**2))."\n";
 	    ##print "sqrt(sum($line->(:,(-1)) * $line->(:,(-1)))) \n";
@@ -149,8 +155,8 @@ sub make_world_spiro {
 ##implicitly and don't need to be declared. The first nontrivial
 ##vertex is at position 1.
 
-    $open_start = ($rstart >= $radius-$epsilon);
-    $open_end   = ($rend   >= $radius-$epsilon);
+    $open_start = ($rstart >= $height-$epsilon);
+    $open_end   = ($rend   >= $height-$epsilon);
     ##print "$open_start, $open_end\n";
 
 

@@ -1603,20 +1603,29 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   {
     PHOTOSPHERE *phot;
     PLANE *p;
+    VERTEX *image;
     NUM a;
 
     if(v->line->fc0->world->photosphere.type) { /* assignment */
       phot = &(v->line->fc0->world->photosphere);
       p = phot->plane;
-      image = &(v->line->fc0->world->image);
-      image_find(phot,p,image); /*helper routine found below*/
+      image = (v->line->fc0->world->image);
+      if(verbosity >= 4){
+	printf("using photosphere (type is %d)...",v->line->fc0->world->photosphere.type);
+	fflush(stdout);
+      }
+      image_find(phot,p,image,v); /*helper routine found below*/
     }
     
     if(v->line->fc0->world->photosphere2.type) { /* assignment */
       phot = &(v->line->fc0->world->photosphere2);
       p = phot->plane;
-      image = &(v->line->fc0->world->image2);
-      image_find(phot,p,image);
+      image = (v->line->fc0->world->image2);
+      if(verbosity >= 4){
+	printf("using photosphere2 (type is %d)...",v->line->fc0->world->photosphere2.type);
+	fflush(stdout);
+      }
+      image_find(phot,p,image,v);
     }
   }
 
@@ -1625,15 +1634,12 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   return workspace;
 }
 
-void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image) {
+void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image, VERTEX *v) {
   /* helper routine to generate the image point and stuff it into
    * the image point in the world.*/
   NUM a;
-  
-  if(verbosity >= 4){
-    printf("using photosphere (type is %d)...",phot.type);
-    fflush(stdout);
-  }
+  static DUMBLIST *workspace =0;
+
   switch(phot->type) {
     PLANE pl;
     POINT3D pt;

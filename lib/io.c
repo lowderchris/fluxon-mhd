@@ -576,9 +576,10 @@ int footpoint_action(WORLD *world, char *s) {
 	    }
 
             /* end of GLOBAL BOUNDARY case */
- 	  } else if (gcmd[1] == '2' ) { 
+ 	  } else if(gcmd[1] == '2') { 
 
 	    /* GLOBAL B2, second boundary */
+	    fprintf(stderr,"WARNING: second photosphere detected...\n");
 	    int n;
 	    int type_code;
 	    PLANE *p = (PLANE *)localmalloc(sizeof(PLANE),MALLOC_PLANE);
@@ -913,15 +914,15 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   }
 
   {
-    PLANE *p = world->photosphere2.plane;
+    PLANE *p2 = world->photosphere2.plane;
     /* photosphere2 - **need to make this *p2? how soes that change the fprintf?*/
     char fmt[80];
     sprintf(fmt,"%%s %%s %%%sg %%%sg %%%sg %%%sg %%%sg %%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
     fprintf(file,fmt
 	    , "GLOBAL B2 "
 	    , BOUNDARY_NAMES[ world->photosphere2.type ]
-	    , p?p->origin[0]:0, p?p->origin[1]:0, p?p->origin[2]:0
-	    , p?p->normal[0]:0, p?p->normal[1]:0, p?p->normal[2]:0
+	    , p2?p2->origin[0]:0, p2?p2->origin[1]:0, p2?p2->origin[2]:0
+	    , p2?p2->normal[0]:0, p2?p2->normal[1]:0, p2?p2->normal[2]:0
 	    );
   }
 

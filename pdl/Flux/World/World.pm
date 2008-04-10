@@ -177,12 +177,14 @@ sub _stringify {
 		   ,sub {"Cylinder (at origin, axis along Z); radius: $_[0]"}
 		   );
     my @ph = $me->photosphere;
+    my @ph2 = $me->photosphere2;
     $btype = $ph[6];
 
     my $scalehash = $me->step_scales();
 
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n"
 	."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
+	."\tGlobal b2: ".&{$bounds[$btype]}(@ph2)."\n"
 	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash))."\n\n"
 	;
 
