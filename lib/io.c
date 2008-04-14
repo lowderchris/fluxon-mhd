@@ -535,15 +535,20 @@ int footpoint_action(WORLD *world, char *s) {
 	    case PHOT_CYL+'0':
 	    case 'C':
 	      /* Cylinder */
-	      sprintf(phscan,"%%*s %%%sf",NUMCHAR);
-	      if(1 > sscanf(s+off,phscan,
-			    &(p->origin[0])
+	      sprintf(phscan,"%%*s %%%sf %%%sf %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+	      if(6 > sscanf(s+off,phscan,
+			    &(p->origin[0]),
+			    &(p->origin[1]),
+			    &(p->origin[2]),
+			    &(p->normal[0]),
+			    &(p->normal[1]),
+			    &(p->normal[2])
 			    )
 		 ) {
-		badstr = "Couldn't parse cylindrical radius for GLOBAL BOUNDARY CYLINDER";
+		badstr = "Couldn't parse cylindrical radius for GLOBAL B2 CYLINDER";
 		printf("s+off: %s\nphscan: %s\n",s+off,phscan);
 	      }
-	      p->origin[1] = p->origin[2] = p->normal[0] = p->normal[1] = p->normal[2] = 0;
+	      p->origin[0] = p->origin[1] = p->origin[2] = p->normal[1] = p->normal[2] = 0; /*origin at zero, n[0] is the radius*/
 	      type_code = PHOT_CYL;
 	      break;
 
@@ -625,15 +630,20 @@ int footpoint_action(WORLD *world, char *s) {
 	    case PHOT_CYL+'0':
 	    case 'C':
 	      /* Cylinder */
-	      sprintf(phscan,"%%*s %%%sf",NUMCHAR);
-	      if(1 > sscanf(s+off,phscan,
-			    &(p->origin[0])
+	      sprintf(phscan,"%%*s %%%sf %%%sf %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+	      if(6 > sscanf(s+off,phscan,
+			    &(p->origin[0]),
+			    &(p->origin[1]),
+			    &(p->origin[2]),
+			    &(p->normal[0]),
+			    &(p->normal[1]),
+			    &(p->normal[2])
 			    )
 		 ) {
 		badstr = "Couldn't parse cylindrical radius for GLOBAL B2 CYLINDER";
 		printf("s+off: %s\nphscan: %s\n",s+off,phscan);
 	      }
-	      p->origin[1] = p->origin[2] = p->normal[0] = p->normal[1] = p->normal[2] = 0;
+	      p->origin[0] = p->origin[1] = p->origin[2] = p->normal[1] = p->normal[2] = 0; /*origin at zero, n[0] is the radius*/
 	      type_code = PHOT_CYL;
 	      break;
 

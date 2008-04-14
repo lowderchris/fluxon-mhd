@@ -174,17 +174,18 @@ sub _stringify {
     my @bounds = ( sub {"None. "}
 		   ,sub {"Plane; origin: $_[0],$_[1],$_[2]; normal: $_[3],$_[4],$_[5]";}
 		   ,sub {"Sphere; origin: $_[0],$_[1],$_[2]; radius: $_[3]"}
-		   ,sub {"Cylinder (at origin, axis along Z); radius: $_[0]"}
+		   ,sub {"Cylinder (at origin, axis along Z); radius: $_[3]"}
 		   );
     my @ph = $me->photosphere;
     my @ph2 = $me->photosphere2;
     $btype = $ph[6];
+    $btype2 = $ph2[6];
 
     my $scalehash = $me->step_scales();
 
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n"
 	."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
-	."\tGlobal b2: ".&{$bounds[$btype]}(@ph2)."\n"
+	."\tGlobal b2: ".&{$bounds[$btype2]}(@ph2)."\n"
 	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash))."\n\n"
 	;
 

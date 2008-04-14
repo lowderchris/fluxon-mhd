@@ -53,11 +53,11 @@ sub make_world_spiro {
 
 ##sphere: x is the center of the sphere; n1 is its radius. n2 and n3
 ##are ignored.  
-##cyl: x is the center of the cylinder; n1 is its radius
+##cyl: x is the center of the cylinder(always 0,0,0); n1 is its radius
 
 ##  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 1");
   push(@out, "GLOBAL BOUNDARY PLANE 0 0 0 0 0 1");
- ## push(@out, "GLOBAL B2 CYL 0 0 0 ".$radius." 0 0");
+  push(@out, "GLOBAL B2 CYL 0 0 0 ".$radius." 0 0");
 
 ##GLOBAL OPEN x1 x2 x3 r auto
 ##Sets the source surface for a spherical open boundary condition:
