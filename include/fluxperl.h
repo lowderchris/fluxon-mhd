@@ -25,7 +25,7 @@
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 8
+#define FLUX_CORE_VERSION 7
 
 typedef struct FluxCore {
 

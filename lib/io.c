@@ -579,7 +579,7 @@ int footpoint_action(WORLD *world, char *s) {
  	  } else if(gcmd[1] == '2') { 
 
 	    /* GLOBAL B2, second boundary */
-	    fprintf(stderr,"WARNING: second photosphere detected...\n");
+	    fprintf(stderr,"second photosphere detected\n");
 	    int n;
 	    int type_code;
 	    PLANE *p = (PLANE *)localmalloc(sizeof(PLANE),MALLOC_PLANE);
@@ -600,7 +600,7 @@ int footpoint_action(WORLD *world, char *s) {
 			    &(p->normal[2])
 			    )
 		 )
-		badstr = "Couldn't parse six values from GLOBAL BOUNDARY PLANE";
+		badstr = "Couldn't parse six values from GLOBAL B2 PLANE";
 	      type_code = PHOT_PLANE;
 	      
 	      break;
@@ -616,7 +616,7 @@ int footpoint_action(WORLD *world, char *s) {
 			    &(p->normal[0])
 			    )
 		 )
-		badstr = "Couldn't parse four values from GLOBAL BOUNDARY SPHERE";
+		badstr = "Couldn't parse four values from GLOBAL B2 SPHERE";
 	      p->normal[1] = 0;
 	      p->normal[2] = 0;
 	      type_code = PHOT_SPHERE;
@@ -630,7 +630,7 @@ int footpoint_action(WORLD *world, char *s) {
 			    &(p->origin[0])
 			    )
 		 ) {
-		badstr = "Couldn't parse cylindrical radius for GLOBAL BOUNDARY CYLINDER";
+		badstr = "Couldn't parse cylindrical radius for GLOBAL B2 CYLINDER";
 		printf("s+off: %s\nphscan: %s\n",s+off,phscan);
 	      }
 	      p->origin[1] = p->origin[2] = p->normal[0] = p->normal[1] = p->normal[2] = 0;
@@ -915,7 +915,7 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
 
   {
     PLANE *p2 = world->photosphere2.plane;
-    /* photosphere2 - **need to make this *p2? how soes that change the fprintf?*/
+    /* photosphere2 */
     char fmt[80];
     sprintf(fmt,"%%s %%s %%%sg %%%sg %%%sg %%%sg %%%sg %%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
     fprintf(file,fmt
