@@ -323,6 +323,7 @@ FLUX->fluxon_calc_step		= fluxon_calc_step;
 FLUX->fluxon_relax_step		= fluxon_relax_step;
 FLUX->vertex_update_neighbors	= vertex_update_neighbors;
 FLUX->gather_neighbor_candidates= gather_neighbor_candidates;
+FLUX->image_find		= image_find;
 FLUX->winnow_cmp_1		= winnow_cmp_1;
 FLUX->winnow_neighbor_candidates= winnow_neighbor_candidates;
 FLUX->hull_neighbors		= hull_neighbors;

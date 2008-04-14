@@ -1110,6 +1110,81 @@ OUTPUT:
 	RETVAL
 
 
+
+AV *
+_photosphere(wsv,plane=0,type=0,field=6)
+SV *wsv
+SV *plane
+SV *type
+IV field
+PREINIT:
+ WORLD *w;
+ SV *sv;
+ AV *av;
+ int i;
+ PHOTOSPHERE *ph;
+/**********************************************************************
+ * _photosphere
+ * Set the location of the photospheric plane from a perl array, or
+ * dump it into a perl array. (default value of the "field" parameter
+ * is 6, the code in flux.xs for the normal photosphere -- so legacy
+ * code continues to work.  Ugly...
+ * 
+ * (This access method is old-style and should be fixed by splitting
+ * into two: _rphotosphere and _wphotosphere! Currently _rphot and 
+ * _wphot are perl wrappers and live in Flux.pm...)
+ */
+CODE:
+ w = SvWorld(wsv,"Flux::World::_set_plane",1);
+ av_clear(RETVAL = newAV());
+ ph = fieldptr(w, FT_WORLD, field);
+
+ if(!plane || plane==&PL_sv_undef) {
+   /* dump */
+   if(ph->plane) {
+     PLANE *p;
+     av_extend(RETVAL,6);
+     p = ph->plane;
+     sv=newSVnv(p->origin[0]); av_store(RETVAL,0,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->origin[1]); av_store(RETVAL,1,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->origin[2]); av_store(RETVAL,2,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->normal[0]); av_store(RETVAL,3,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->normal[1]); av_store(RETVAL,4,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->normal[2]); av_store(RETVAL,5,sv) || svREFCNT_dec(sv);
+     sv=newSViv(ph->type); av_store(RETVAL,6,sv) || svREFCNT_dec(sv);
+   }
+ } else {
+  PLANE *newp;
+  /* set */
+  if(!SvROK(plane) || SvTYPE(SvRV(plane))!= SVt_PVAV) 
+    croak("Flux::World::_set_plane: 2nd arg must be undef or array ref");
+  av = (AV *)SvRV(plane);
+  if(av_len(av)<0) {
+    newp = 0;
+  } else {
+    SV **s1;
+    (newp = (PLANE *)malloc(sizeof(PLANE))) || (croak("malloc failed"),(PLANE *)0);
+    s1 = av_fetch(av,0,0); newp->origin[0] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,1,0); newp->origin[1] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,2,0); newp->origin[2] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,3,0); newp->normal[0] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,4,0); newp->normal[1] = SvNV(s1?*s1:&PL_sv_undef);
+    s1 = av_fetch(av,5,0); newp->normal[2] = SvNV(s1?*s1:&PL_sv_undef);
+  }
+  if(ph->plane) {
+    free(ph->plane);
+  }
+  ph->plane = newp;
+	
+  if(!type || type==&PL_sv_undef) {
+	  ph->type= (newp ? PHOT_PLANE : PHOT_NONE);
+  } else {
+          ph->type = SvIV(type);
+  }
+}
+OUTPUT:
+ RETVAL
+
 	
 BOOT:
 /**********************************************************************

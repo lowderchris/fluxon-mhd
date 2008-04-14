@@ -361,7 +361,7 @@ void fluxon_auto_open(FLUXON *f) {
 	     * inside vertices, then we need to open the beginning...
              *
              *
-             *  **** CASE: whole first hlaf is outside the boundary ****
+             *  **** CASE: whole first half is outside the boundary ****
              */
 	    if(Vnext) {
 	      while(Vnext->prev) {
@@ -1606,7 +1606,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     VERTEX *image;
     NUM a;
 
-    if(v->line->fc0->world->photosphere.type) { /* assignment */
+    if(v->line->fc0->world->photosphere.type) { /* assignment, photosphere1 */
       phot = &(v->line->fc0->world->photosphere);
       p = phot->plane;
       image = (v->line->fc0->world->image);
@@ -1615,9 +1615,10 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 	fflush(stdout);
       }
       image_find(phot,p,image,v); /*helper routine found below*/
+      dumblist_quickadd(workspace, image);
     }
     
-    if(v->line->fc0->world->photosphere2.type) { /* assignment */
+    if(v->line->fc0->world->photosphere2.type) { /* assignment, photosphere2 */
       phot = &(v->line->fc0->world->photosphere2);
       p = phot->plane;
       image = (v->line->fc0->world->image2);
@@ -1626,6 +1627,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 	fflush(stdout);
       }
       image_find(phot,p,image,v);
+      dumblist_quickadd(workspace, image);
     }
   }
 
@@ -1636,9 +1638,8 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 
 void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image, VERTEX *v) {
   /* helper routine to generate the image point and stuff it into
-   * the image point in the world.*/
+   * the correct image point in the world.*/
   NUM a;
-  static DUMBLIST *workspace =0;
 
   switch(phot->type) {
     PLANE pl;
@@ -1668,8 +1669,6 @@ void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image, VERTEX *v) {
     scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
     reflect(image->next->x, v->next->x, &pl);
     
-    dumblist_quickadd(workspace, image);
-    
     break;
   case PHOT_SPHERE:
     /***********
@@ -1690,14 +1689,11 @@ void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image, VERTEX *v) {
     scale_3d(&(pt[0]), &(pt[0]), 2.0);
     diff_3d(image->next->x, &(pt[0]), v->x); 
     
-    dumblist_quickadd(workspace, image);
-    
     break;
     
   case PHOT_PLANE:
     reflect(image->x, v->x, p);
     reflect(image->next->x, v->next->x, p);
-    dumblist_quickadd(workspace, image);
     break;
   default:
     fprintf(stderr,"Illegal photosphere type %d!\n",phot->type);

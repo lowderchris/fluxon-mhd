@@ -340,6 +340,8 @@ WORLD *new_world() {
 
   a->photosphere.type = 0;
   a->photosphere.plane = NULL;
+  a->photosphere2.type = 0;
+  a->photosphere2.plane = NULL;
 
   /*** Initialize the two dummy vertices for the mirroring;            ***/
   /*   this requires two dummy vertices connected onto a dummy fluxon.   */

@@ -796,10 +796,13 @@ be in here (as in the force law parameters).
 =cut
 
 sub boundary { 
-  return @{_photosphere(@_)};
+  return @{Flux::_photosphere(@_)};
 }
 sub photosphere {
-    return @{_photosphere(@_)};
+    return @{Flux::_photosphere(@_)};
+}
+sub photosphere2 {
+    return @{Flux::_photosphere(@_[0],@_[1]||undef,@_[2]||undef,32)};
 }
 
 

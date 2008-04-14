@@ -458,7 +458,7 @@ sub _rphot {
 
 
     barf("_rphot requires a Flux::World") if(ref $me ne 'Flux::World');
-    my $p = [$me->photosphere];
+    my $p = [$me->photosphere(undef,undef,$field)];
 
     my $hash = {
 	type=>$p->[6]
@@ -496,9 +496,9 @@ sub _wphot {
 				  )
 		);
     if($val->{type}) {
-	$me->photosphere([$val->{origin}->list, $val->{normal}->list, $val->{type}]);
+	$me->photosphere([$val->{origin}->list, $val->{normal}->list],$val->{type},$field);
     } else {
-	$me->photosphere([0,0,0,0,0,0,0]);
+	$me->photosphere([0,0,0,0,0,0],0,$field);
     }
 }
 
