@@ -1,3 +1,11 @@
+18-Apr-2008 [lr]
+  - Second photosphere isnow working. Added a 2nd image fluxon and 
+    2 more image charges to handle the image correctly.
+  - Fixed a bug that had been alluding us for a while. When a new 
+    vertex is created because the old one wanted to step through the 
+    photosphere, the new vertex didn't have the step initialized, 
+    so it would move to garbage-land. I fixed that such that any 
+    new vertices aren't moved until the next time step.
 14-Apr-2008 [lr]
   - fixed the cylindrical boundary so that the origin is 0,0,0 and the
     normal is radius,0,0, like the documentation says it should be. 

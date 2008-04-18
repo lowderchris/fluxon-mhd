@@ -1045,8 +1045,8 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
   NUM l1, l2, l_fac;
   NUM dpp[3], dnn[3];
   NUM alpha_p, alpha_n, lnn, lpp, i1; 
-  /* Exclude endpoints */
-  if(!V->next || !V->prev)
+  /* Exclude endpoints and image charges */
+  if(!V->next || !V->prev || V->label < 0)
     return;
 
 
@@ -1079,8 +1079,8 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
     diff_3d(dpp,V->prev->x,V->prev->prev->x);
     lpp = norm_3d(dpp);
 
-    alpha_p = M_PI - acos( (inner_3d(dpp, d1)) / (l1 * lpp) );
-    alpha_n = M_PI - acos( (inner_3d(dnn, d2)) / (l2 * lnn) );
+    alpha_p = M_PI - acos( (1-1e-6) * (inner_3d(dpp, d1)) / (l1 * lpp) );
+    alpha_n = M_PI - acos( (1-1e-6) * (inner_3d(dnn, d2)) / (l2 * lnn) );
     
     fn3 = 1.0 * (alpha_p - alpha_n);
     V->f_v_tot += fabs(fn3);
@@ -1100,6 +1100,16 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
   scale_3d(force, force, (fn1 + fn3) / norm_3d(force) / (l1+l2) / 2);
 
   /* Stick the force where it belongs in the VERTEX's force vector.*/
+
+  if (!finite(norm_3d(force))) {
+    // printf("somethign is wrong with the forces on vertex %d, fn1=, fn3=%g, force=(%g,%g,%g) \n", V->label, fn1,fn3,force[0],force[1],force[2]);
+    //printf("somethign is wrong with the forces on vertex %d, l1=%g,l2=%g,d1n=%g,d2n=%g,fn1=%g,fn3=%g,force=(%g,%g,%g) \n",V->label, l1,l2,d1nr,d2nr, fn1,fn3,force[0],force[1],force[2]);
+    //printf("somethign is wrong with the forces on vertex %d, lnn=%g,lpp=%g,acos_p=%g, acos_n=%g,alpha_p=%g,alpha_n=%g,fn1=%g,fn3=%g,force=(%g,%g,%g) \n",V->label, lnn,lpp,acos( (inner_3d(dpp, d1)) / (l1 * lpp) ),acos( (inner_3d(dnn, d2)) / (l2 * lnn) ),alpha_p,alpha_n, fn1,fn3,force[0],force[1],force[2]);
+    //printf("somethign is wrong with the forces on vertex %d, l1=%g,l2=%g,lnn=%g,lpp=%g,inner_n=%g,inner_p=%ginside_cos_p=%g, inside_cos_n=%g,acos_p=%g, acos_n=%g,alpha_p=%g,alpha_n=%g,fn3=%g \n",V->label, l1,l2,lnn,lpp,inner_3d(dnn, d2),inner_3d(dpp, d1),(inner_3d(dpp, d1)/(l1 * lpp)),(inner_3d(dnn, d2)/(l2 * lnn)), acos( (inner_3d(dpp, d1)) / (l1 * lpp) ),acos( (inner_3d(dnn, d2)) / (l2 * lnn) ),alpha_p,alpha_n,fn3);
+
+    printf("somethign is wrong with the forces on vertex %d on fl%d, ln is %d on %d, nn is %d on %d, l1=%g,l2=%g,lnn=%g,lpp=%g,x=(%g,%g,%g),xn=(%g,%g,%g),xnn=(%g,%g,%g)\n",V->label,V->line->label,V->next->label,V->next->line->label, V->next->next->label,V->next->next->line->label,l1,l2,lnn,lpp,V->x[0],V->x[1],V->x[2],V->next->x[0],V->next->x[1],V->next->x[2],V->next->next->x[0],V->next->next->x[1],V->next->next->x[2]);
+      }
+
 
   sum_3d(V->f_v, V->f_v, force);
   V->f_v_tot+= norm_3d(force);

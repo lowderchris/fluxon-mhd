@@ -343,17 +343,31 @@ WORLD *new_world() {
   a->photosphere2.type = 0;
   a->photosphere2.plane = NULL;
 
-  /*** Initialize the two dummy vertices for the mirroring;            ***/
-  /*   this requires two dummy vertices connected onto a dummy fluxon.   */
-  a->fc_im0 = new_flux_concentration(a,0,0,0,0,-8);
-  a->fc_im1 = new_flux_concentration(a,0,0,0,0,-9);
-  a->fl_im = new_fluxon(0,a->fc_im0, a->fc_im1, -9, 0);
+  /* Initialize the two dummy vertices for the mirroring for each
+   * photosphere this requires two(4) dummy vertices connected onto a
+   * dummy fluxon.  */
+
+  a->fc_im10 = new_flux_concentration(a,0,0,0,0,-8);
+  a->fc_im11 = new_flux_concentration(a,0,0,0,0,-9);
+  a->fc_im20 = new_flux_concentration(a,0,0,0,0,-10);
+  a->fc_im21 = new_flux_concentration(a,0,0,0,0,-11);
+  a->fl_im = new_fluxon(0,a->fc_im10, a->fc_im11, -9, 0);
+  a->fl_im2 = new_fluxon(0,a->fc_im20, a->fc_im21, -10, 0);
   a->image =  new_vertex(-1,0,0,0,a->fl_im);
   a->image2 = new_vertex(-2,0,0,0,a->fl_im);
+  a->image3 = new_vertex(-3,0,0,0,a->fl_im2);
+  a->image4 = new_vertex(-4,0,0,0,a->fl_im2);
+
   a->image->next = a->image2;
   a->image2->prev = a->image;
+
+  a->image3->next = a->image4;
+  a->image4->prev = a->image3;
+  
   a->fl_im->start = a->image;
   a->fl_im->end = a->image2;
+  a->fl_im2->start = a->image3;
+  a->fl_im2->end = a->image4;
 
   /*** By default, don't handle automatically open field lines ***/
   a->locale_radius = 0;

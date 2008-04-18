@@ -1103,6 +1103,7 @@ void expand_via_neighbors(DUMBLIST *workspace, int start_idx, long passno) {
 
 void fluxon_relax_step(FLUXON *f, NUM dt) {
   VERTEX *v = f->start;
+  VERTEX *vtmp;
   NUM total[3];
   static DUMBLIST *workspace =0;
   long passno;
@@ -1121,7 +1122,13 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
     return;
   }
     
-  for(v=v->next; v && v->next; v=v->next) {
+  for(v=v->next; v && v->next; v=vtmp) {
+    vtmp = v->next;
+    /* vtmp is an assignment. This is here because sometimes the code
+     * adds vertices because of the photopsheres. Those new vertices
+     * don't have v->plan_step initialized so when those new vertices
+     * get stepped they go to garbage-land. This way, the next vertex
+     * you go to will always be one that was already initialized. */
 
     // ARD - Add in standard step - scaled in case we do something strange!
 
@@ -1606,6 +1613,15 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     VERTEX *image;
     NUM a;
 
+    /* Here, we find the image location via a helper routine below
+     * called image_find. Use the correct photosphere and the vertices
+     * image and image->next to get the two image positions. Then
+     * stuff those image positions into the workspace which is the
+     * list of possible neighbor candidates. Can use the same image
+     * and image->next for both photspheres because in the neighbor
+     * search, it doesn't care about the bit of memory called image,
+     * it just cares about the neighbor list.*/
+
     if(v->line->fc0->world->photosphere.type) { /* assignment, photosphere1 */
       phot = &(v->line->fc0->world->photosphere);
       p = phot->plane;
@@ -1621,7 +1637,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     if(v->line->fc0->world->photosphere2.type) { /* assignment, photosphere2 */
       phot = &(v->line->fc0->world->photosphere2);
       p = phot->plane;
-      image = (v->line->fc0->world->image2);
+      image = (v->line->fc0->world->image3);
       if(verbosity >= 4){
 	printf("using photosphere2 (type is %d)...",v->line->fc0->world->photosphere2.type);
 	fflush(stdout);

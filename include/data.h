@@ -198,9 +198,9 @@ typedef struct WORLD {
   PHOTOSPHERE photosphere;
   PHOTOSPHERE photosphere2;
 
-  FLUX_CONCENTRATION *fc_im0,*fc_im1;
-  FLUXON *fl_im;
-  VERTEX *image, *image2;
+  FLUX_CONCENTRATION *fc_im10,*fc_im11,*fc_im20,*fc_im21;
+  FLUXON *fl_im,*fl_im2;
+  VERTEX *image, *image2,*image3 ,*image4;
 
   NUM locale_radius;        /* Default radius for concentrations' neighborhoods */
 
