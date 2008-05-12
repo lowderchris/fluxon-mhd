@@ -141,22 +141,28 @@ sub simple_relaxer {
 
     while(!$final_step || $step<$final_step) {
 
+
 	if ($w->{auto_open}){
 	    $w->f_length_check($global);
 	}
 	$fmax = $w->update_force($global);
+
 	$w->relax_step($dt);
 	$t += $dt;
 
 	$h = $w->stats;
-	
+
 #	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},$h->{n_av}, $w->{max_angle} * $conv, $w->{mean_angle} * $conv);
 
-	printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av}, acos(($w->{max_angle}/abs($w->{max_angle}))*(sqrt(abs($w->{max_angle}))))*$conv, acos(($w->{mean_angle}/abs($w->{mean_angle}))*(sqrt(abs($w->{mean_angle}))))*$conv);
+#	printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av}, acos(($w->{max_angle}/abs($w->{max_angle}))*(sqrt(abs($w->{max_angle}))))*$conv, acos(($w->{mean_angle}/abs($w->{mean_angle}))*(sqrt(abs($w->{mean_angle}))))*$conv);
+
+	printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av},$w->{max_angle}, $w->{mean_angle});
 
 	printf LOG " time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},
       $h->{n_av} if($opt->{log});
-      
+	
+	if($@) { print "printf err:", $@; $@='';}
+
 	push(@f_av,$h->{f_av});
 	push(@fs_av,$h->{fs_av});
 	
@@ -176,8 +182,10 @@ sub simple_relaxer {
 	      print "wrote $fname...\n";
 	    }
 	}
+;
 
 	$step++;
+;
 	
     }
 # ARD Update world

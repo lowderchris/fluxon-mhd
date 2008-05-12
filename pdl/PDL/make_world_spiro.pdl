@@ -21,6 +21,7 @@ sub make_world_spiro {
   ##push it back onto @lines if it isn't a hash
 
   my $photo=$opt->{photosphere1};
+  my $photo2=$opt->{photosphere2}; ##MUST BE CYL
   ##$phot=(1,2,3,4,5,6,7) 
   ##1-type:0,none;1,plane;2,sphere
   ##2,3,4:origin of the plane or sphere
@@ -57,7 +58,10 @@ sub make_world_spiro {
 
 ##  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 1");
   push(@out, "GLOBAL BOUNDARY PLANE 0 0 0 0 0 1");
-  push(@out, "GLOBAL B2 CYL 0 0 0 ".$radius." 0 0");
+  push(@out, "GLOBAL B2 CYL ".$photo2->((0))." ".$photo2->((1))." ".$photo2->((2))." ".$photo2->((3))." ".$photo2->((4))." ".$photo2->((5)) );
+
+  print $photo2 ;
+  ##print "\n @out";
 
 ##GLOBAL OPEN x1 x2 x3 r auto
 ##Sets the source surface for a spherical open boundary condition:

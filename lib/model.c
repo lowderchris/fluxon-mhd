@@ -1598,10 +1598,11 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 
   }
 
-  /* If there's a photosphere, add the dummy photospheric mirror image          */
-  /* For line-tied conditions, we don't let the last segment interact with the  */
-  /* photosphere, since it generally intersects the photosphere.  Plasmoids     */
-  /* do interact with the photosphere, since they generally don't intersect it. */
+  /* If there's a photosphere, add the dummy photospheric mirror
+   * image. For line-tied conditions, we don't let the last segment
+   * interact with the photosphere, since it generally intersects the
+   * photosphere.  Plasmoids do interact with the photosphere, since
+   * they generally don't intersect it. */
 
   if(v->next && 
      v->prev &&
@@ -1660,30 +1661,51 @@ void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image, VERTEX *v) {
   switch(phot->type) {
     PLANE pl;
     POINT3D pt;
+    NUM radius;
+    NUM M[9]; /*don't need * b/c it is a ptr to the first elem*/
+    POINT3D vec2,xd,xrot,irot;
+    
   case PHOT_CYL:
-    /* Special case: mirror segment is reflected through a cylinder, radius p->normal[0],
-     * aligned along the z axis
+    /* arbitrary normal and origin. length of normal is the
+     * radius. there are a number of steps involved in this. 1 - find
+     * the projection matrix M that rotates the normal to the z-axis,
+     * 2 - rotate v->x, 3 - find image charge, 4 - de-rotate image
+     * position.  radius norm_3d(p->normal)
      */
-    a = norm_2d(v->x);
-    
-    pl.origin[0] = v->x[0] * p->normal[0] / a;
-    pl.origin[1] = v->x[1] * p->normal[0] / a;
+
+    radius = norm_3d(p->normal);   
+    sum_3d(vec2,p->origin,p->normal);
+    projmatrix(M,p->origin,vec2);
+
+    diff_3d(xd,v->x,p->origin);
+    mat_vmult_3d(xrot,M,xd);
+    a = norm_2d(xrot);
+
+    pl.origin[0] = xrot[0] * radius / a;
+    pl.origin[1] = xrot[1] * radius / a;
     pl.origin[2] = 0;
-    pl.normal[0] = v->x[0];
-    pl.normal[1] = v->x[1];
+    pl.normal[0] = xrot[0];
+    pl.normal[1] = xrot[1];
     pl.normal[2] = 0;
     scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
-    reflect(image->x, v->x, &pl);
+    reflect(irot, xrot, &pl);
+    vec_mmult_3d(image->x,M,irot);
+    sum_3d(image->x,image->x,p->origin);
     
-    a = norm_2d(v->next->x);
-    pl.origin[0] = v->next->x[0] * p->normal[0] / a;
-    pl.origin[1] = v->next->x[1] * p->normal[0] / a;
+    diff_3d(xd,v->next->x,p->origin);
+    mat_vmult_3d(xrot,M,xd);
+    a = norm_2d(xrot);
+
+    pl.origin[0] = xrot[0] * radius / a;
+    pl.origin[1] = xrot[1] * radius / a;
     pl.origin[2] = 0;
-    pl.normal[0] = v->next->x[0];
-    pl.normal[1] = v->next->x[1];
+    pl.normal[0] = xrot[0];
+    pl.normal[1] = xrot[1];
     pl.normal[2] = 0;
     scale_3d(pl.normal, pl.normal, 1.0/norm_3d(pl.normal));
-    reflect(image->next->x, v->next->x, &pl);
+    reflect(irot, xrot, &pl);
+    vec_mmult_3d(image->next->x,M,irot);
+    sum_3d(image->next->x,image->next->x,p->origin);
     
     break;
   case PHOT_SPHERE:

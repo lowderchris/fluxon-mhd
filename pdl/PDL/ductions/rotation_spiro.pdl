@@ -75,7 +75,7 @@ sub rotation_spiro {
     my $bl = 0.1;
     my $br = 13;
     my $v0 = 3.7e-5;
-    my $kb = 1.3807e-16; ##boltzman constant (?)
+    my $kb = 15; ##boltzman constant (?) (I did use 1.3807e-16 and multiplied vperp by 1e19. change to 15 to correspond to etienne's.
     my $factor=$mu_not * $m_not / 4. * PI;
 
     ## list of the vertices to move (all red/final polarities on the
@@ -115,8 +115,7 @@ sub rotation_spiro {
 	my $v_perp = $v0 * .5 * (1. - cos(2.* PI * ($t - $tl) / ($tr - $tl) ) )
 	    * ( ($br - $bl) / $bz )
 	    * tanh($kb * ($bz - $bl) / ($br - $bl)) 
-	    * $cross 
-	    * 1e19;
+	    * $cross;
 
 	my $x_f = $x + $v_perp * $dt; ##this line was my idea. Craig
 				      ##suggested rk4 as an alternate

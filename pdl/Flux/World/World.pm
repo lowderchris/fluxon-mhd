@@ -167,14 +167,14 @@ a World to an ASCII string whenever it is used in string context.
 sub _stringify {
     my $me = shift;
     my $s="";
-
+ 
     my @s = $me->string;
     my @lines = grep(m/^\s*LINE/,@s);
     my @vertices = grep(m/^\s*VERTEX/,@s);
     my @bounds = ( sub {"None. "}
 		   ,sub {"Plane; origin: $_[0],$_[1],$_[2]; normal: $_[3],$_[4],$_[5]";}
 		   ,sub {"Sphere; origin: $_[0],$_[1],$_[2]; radius: $_[3]"}
-		   ,sub {"Cylinder (at origin, axis along Z); radius: $_[3]"}
+		   ,sub {"Cylinder origin: $_[0],$_[1],$_[2], normal: $_[3],$_[4],$_[5], radius:".sqrt($_[3]**2+$_[4]**2+$_[5]**2)}
 		   );
     my @ph = $me->photosphere;
     my @ph2 = $me->photosphere2;

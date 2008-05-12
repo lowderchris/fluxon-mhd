@@ -260,7 +260,7 @@ int footpoint_action(WORLD *world, char *s) {
 
     if(n != 0) {
 
-      if(fl0 <= -10 || fl0 >0) {
+      if(fl0 <= -11 || fl0 >0) {
 	FLUX_CONCENTRATION *fc0, *fc1;
 	fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
 	fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
@@ -534,7 +534,7 @@ int footpoint_action(WORLD *world, char *s) {
 	      
 	    case PHOT_CYL+'0':
 	    case 'C':
-	      /* Cylinder */
+	      /* Cylinder, radius is length of normal */
 	      sprintf(phscan,"%%*s %%%sf %%%sf %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
 	      if(6 > sscanf(s+off,phscan,
 			    &(p->origin[0]),
@@ -548,7 +548,6 @@ int footpoint_action(WORLD *world, char *s) {
 		badstr = "Couldn't parse cylindrical radius for GLOBAL B2 CYLINDER";
 		printf("s+off: %s\nphscan: %s\n",s+off,phscan);
 	      }
-	      p->origin[0] = p->origin[1] = p->origin[2] = p->normal[1] = p->normal[2] = 0; /*origin at zero, n[0] is the radius*/
 	      type_code = PHOT_CYL;
 	      break;
 
@@ -643,7 +642,6 @@ int footpoint_action(WORLD *world, char *s) {
 		badstr = "Couldn't parse cylindrical radius for GLOBAL B2 CYLINDER";
 		printf("s+off: %s\nphscan: %s\n",s+off,phscan);
 	      }
-	      p->origin[0] = p->origin[1] = p->origin[2] = p->normal[1] = p->normal[2] = 0; /*origin at zero, n[0] is the radius*/
 	      type_code = PHOT_CYL;
 	      break;
 
