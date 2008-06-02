@@ -58,9 +58,11 @@ sub make_world_spiro {
 
 ##  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 1");
   push(@out, "GLOBAL BOUNDARY PLANE 0 0 0 0 0 1");
-  push(@out, "GLOBAL B2 CYL ".$photo2->((0))." ".$photo2->((1))." ".$photo2->((2))." ".$photo2->((3))." ".$photo2->((4))." ".$photo2->((5)) );
 
-  print $photo2 ;
+  if (dims($photo2)){
+  push(@out, "GLOBAL B2 CYL ".$photo2->((0))." ".$photo2->((1))." ".$photo2->((2))." ".$photo2->((3))." ".$photo2->((4))." ".$photo2->((5)) );
+  }
+  ##print $photo2 ;
   ##print "\n @out";
 
 ##GLOBAL OPEN x1 x2 x3 r auto

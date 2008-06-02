@@ -1,13 +1,17 @@
 use PDL::Transform;
 use PDL::NiceSlice;
 use Flux;
+use strict;
+use warnings;
+use PDL;
+
 =head2 rotation_spiro - rotation profile for monopole
 
 =for usage
 
 To use this code, the input looks like this"
 
-rotation_spiro($world,$t,$delta_t,$B_z);
+rotation_spiro($world,$t,$delta_t,$B_z[,\%options]);
 
 =item $world
 
@@ -54,7 +58,7 @@ the before/after positions (3x2) and one for each vertex that is moved
 (n). It also feeds in all of the vertices to interp_duction so that it
 can determine where the vertices above the photosphere need to move.
 
-This file was created by Laurel Rachmeler Jan-10-2007 as part of FLUX
+This file was created by Laurel Rachmeler Jan-10-2008 as part of FLUX
 2.0
 
 =cut
@@ -68,6 +72,8 @@ sub rotation_spiro {
     my $t = shift;
     my $dt = shift;
     my $b_z = shift;
+    if (!$b_z) {print "no bz given to rotation_spiro!"; return 0;}
+    my $opt = shift;
 
     ##constants
     my $tl = 100;
@@ -76,29 +82,49 @@ sub rotation_spiro {
     my $br = 13;
     my $v0 = 3.7e-5;
     my $kb = 15; ##boltzman constant (?) (I did use 1.3807e-16 and multiplied vperp by 1e19. change to 15 to correspond to etienne's.
-    my $factor=$mu_not * $m_not / 4. * PI;
+
+    my $mu_not = $opt->{mu0} || 4*PI;
+    my $m_not = $opt->{m0} || 25;
+    my $z_not = $opt->{z0} || -1.5;
+
+    my $factor=$mu_not * $m_not / (4. * PI);
 
     ## list of the vertices to move (all red/final polarities on the
     ## photosphere) spot fluxons are the ones associated with the
     ## opposite polarity spot, and don't ever connect to the open
     ## boundary
 
-    @valid_fluxons = grep( $_ ->{label} > 0, $world->fluxons);
-    @spot_fluxons = grep ($_->{end}->{x}->(2) <= 0.01, @valid_fluxons);
+    my @valid_fluxons = grep( $_ ->{label} > 0, $world->fluxons);
+    my @spot_fluxons = grep ($_->{end}->{x}->(2) <= 0.01, @valid_fluxons);
 ##    print @spot_fluxons;
-    @rotating = map { $_->{end} } @spot_fluxons;
+    my @rotating = map { $_->{end} } @spot_fluxons;
 ##    print @rotating;
-    @stationary = map {$_->vertex(0)} @valid_fluxons;
+    my @stationary = map {$_->vertex(0)} @valid_fluxons;
 ##    print @stationary;
 
     my @xi;
     my @xf;
 
-    foreach $v(@rotating){
+    foreach my $v(@rotating){
 
 	## the velocity
-	my $bz = &$b_z($v->{x});
-	my $x = $v->{x};
+        my $bz = &$b_z($v->{x});
+        my $x = $v->{x};
+
+
+        my $z = ($x((2))-$z_not)**2;
+        my $x2y2 = $x((0))**2 + $x((1))**2;
+        my $denom = $x2y2 + $z;
+
+        my $cross =$factor *
+            pdl((5 * $x((1)) * (2*$z - $x2y2 )) / ($denom**(7/2)) + 
+                2*$x((1)) / ($denom**(5/2)),
+                -((5 * $x((0)) * (2*$z - $x2y2)) / ($denom**(7/2)) + 
+                  2*$x((0)) / ($denom**(5/2)) ),
+                0);
+	
+=pod
+
 	my $cross = pdl([$factor * (
 			     (5 * $x((1)) * (2*($x((2))-$z_not)**2 - $x((0))**2 - $x((1))**2)) / 
 			     (($x((0))**2 + $x((1))**2 + ($x((2))-$z_not)**2)**(7/2)) + 
@@ -108,16 +134,14 @@ sub rotation_spiro {
 			     (($x((0))**2 + $x((1))**2 + ($x((2))-$z_not)**2)**(7/2)) + 
 			     2*$x((0)) / (($x((0))**2 + $x((1))**2 + ($x((2))-$z_not)**2)**(5/2)) ),
 			 0]);
+=cut
 
-	##have to scale it by 1e19 so that we don't have the increment
-	##the step size so much.This way the increment is about 1 or
-	##.001;
-	my $v_perp = $v0 * .5 * (1. - cos(2.* PI * ($t - $tl) / ($tr - $tl) ) )
-	    * ( ($br - $bl) / $bz )
-	    * tanh($kb * ($bz - $bl) / ($br - $bl)) 
-	    * $cross;
+        my $v_perp = $v0 * .5 * (1. - cos(2.* PI * ($t-$tr) / ($tr-$tl) ) )
+            * $kb * ( ($br - $bl) / $bz )
+            * tanh($kb * ($bz - $bl) / ($br - $bl)) 
+            * $cross;
 
-	my $x_f = $x + $v_perp * $dt; ##this line was my idea. Craig
+        my $x_f = $x + $v_perp * $dt; ##this line was my idea. Craig
 				      ##suggested rk4 as an alternate
 				      ##and I agree that it would give
 				      ##more precise results; will try
@@ -135,23 +159,23 @@ sub rotation_spiro {
     ##dummy makes $xi from 3xn to a 3x1xn (same for $xf) then glue
     ##stickes them together along this dummy dimension with xi first
     ##followed by xf. In the end we want 3x2xn;
-    $duction_rot = pdl(@xi)->dummy(1)->glue(1,pdl(@xf)->dummy(1));
+    my $duction_rot = pdl(@xi)->dummy(1)->glue(1,pdl(@xf)->dummy(1));
 
    ## print $duction_rot;
 
-    $duction_stat = pdl( map{ $_->{x} } @stationary );
+    my $duction_stat = pdl( map{ $_->{x} } @stationary );
     $duction_stat = $duction_stat->dummy(1)->glue(1,$duction_stat->dummy(1));
 
-    $duction = $duction_rot->glue(2,$duction_stat);
+    my $duction = $duction_rot->glue(2,$duction_stat);
 
-    for $v($world->vertices){
+    for my $v($world->vertices){
 	$v->{x} = interp_duction($duction,$v->{x});
     }
 
-    for $c($world->concentrations){
+    for my $c($world->concentrations){
 	$c->{x} = interp_duction($duction,$c->{x});
     }
-    p "ROTATION COMPLETE\n";
+    print "ROTATION COMPLETE\n";
 }
 
-1; ##not sure what this 1 on the end does...
+
