@@ -138,7 +138,7 @@ sub rotation_spiro {
 			 0]);
 =cut
 
-        my $v_perp = $v0 * $dt
+        my $v_perp = $v0 * 0.08 $dt
             * $kb * ( ($br - $bl) / $bz )
             * tanh($kb * ($bz - $bl) / ($br - $bl)) 
             * $cross;
