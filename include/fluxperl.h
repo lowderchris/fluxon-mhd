@@ -25,7 +25,7 @@
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 7
+#define FLUX_CORE_VERSION 9
 
 typedef struct FluxCore {
 
@@ -73,6 +73,8 @@ typedef struct FluxCore {
 
   char (*fl_eq)(NUM a, NUM b);
 
+  VERTEX *(*find_vertex_by_location)(POINT3D x, WORLD *w, VERTEX *v, int global);
+  
 
   /************  functions from io.h  */
   char *(*next_line)(FILE *file);
