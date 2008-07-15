@@ -295,6 +295,7 @@ FLUX->dumblist_grow		= dumblist_grow;
 FLUX->dumblist_clear		= dumblist_clear;
 FLUX->dumblist_crunch		= dumblist_crunch;
 FLUX->fl_eq			= fl_eq;
+FLUX->find_vertex_by_location   = find_vertex_by_location;
 FLUX->next_line			= next_line;
 FLUX->footpoint_action		= footpoint_action;
 FLUX->fprint_tree		= fprint_tree;

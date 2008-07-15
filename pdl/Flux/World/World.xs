@@ -1072,7 +1072,7 @@ CODE:
      * of the lines between the footpoints.
      */
    NUM x[3];
-   FLUX->sum_3d(x, f1->start->x, f1->end->next);
+   FLUX->sum_3d(x, f1->start->x, f1->end->x);
    FLUX->sum_3d(x, x, f2->start->x);
    FLUX->sum_3d(x, x, f2->end->x);
    FLUX->scale_3d(x,x,0.25);
@@ -1111,6 +1111,39 @@ OUTPUT:
  RETVAL
  
 
+SV *
+closest_vertex(wsv, xsv, vsv, gsv)
+SV *wsv
+SV *xsv
+SV *vsv
+SV *gsv
+PREINIT:
+	WORLD *w;
+	VERTEX *v;
+	POINT3D x;
+	pdl *xpdl;
+	int global;
+CODE:
+  w = SvWorld(wsv, "closest_vertex",1);
+  v = (!vsv || vsv==&PL_sv_undef) ? 0 : SvVertex(vsv, "closest_vertex",0);
+  xpdl = PDL->SvPDLV(xsv);
+  PDL->converttype(&xpdl,PDL_D,1);
+  PDL->make_physical(xpdl);
+  if(xpdl->ndims != 1 || xpdl->dims[0] != 3) {
+	croak("closest_vertex: takes a 3-PDL only!\n");
+  }
+  x[0] = ((PDL_Double *)(xpdl->data))[0];
+  x[1] = ((PDL_Double *)(xpdl->data))[1];
+  x[2] = ((PDL_Double *)(xpdl->data))[2];
+  global = SvIV(gsv);
+  v = FLUX->find_vertex_by_location(x, w, v, global);
+  if(v) {
+    RETVAL = FLUX->new_sv_from_ptr(w, FT_VERTEX, v->label);
+  } else {
+    RETVAL = &PL_sv_undef;
+  }
+OUTPUT:
+  RETVAL
 
 
 BOOT:

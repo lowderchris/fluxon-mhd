@@ -312,9 +312,9 @@ int footpoint_action(WORLD *world, char *s) {
 		/* Make sure it has at least the two end vertices */
 		VERTEX *v0, *v1;
 		if(vl0==0) 
-		  vl0 = -(f0->label*2);
+		  vl0 = -(f0->label*2 + 100);
 		if(vl1==0) 
-		  vl1 = -(f0->label*2)+1;
+		  vl1 = -(f0->label*2 + 100)+1;
 		
 		v0 = new_vertex( vl0, fc0->x[0],fc0->x[1],fc0->x[2],f0);
 		v1 = new_vertex( vl1, fc1->x[0],fc1->x[1],fc1->x[2],f0);
