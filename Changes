@@ -1,3 +1,6 @@
+17-July-2008 [lr]
+  - changed f_vertex5 in physics.c to inclue all 3 forces: proximity attraction, vertex repulsion, and curvature attraction.
+  - added a new routine to put in straight fluxons that end on an open sphere: vertical_fluxons. 
 15-July-2008 [cd]
   (Missed a few changes?)
 	World.xs - relative helicity finder is in place

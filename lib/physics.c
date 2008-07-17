@@ -1037,6 +1037,17 @@ void f_vertex3(VERTEX *V, HULL_VERTEX *verts) {
 
   return;
 }
+ 
+
+/**********************************************************************
+ * f_vertex4 
+ *
+ * Use f_vertex4 with the newer forces ones. This force has units of
+ * 1/length. TThis one doesn't have a attraction to fluxon proximity
+ * of other fluxons force, but it does have repulsion from vertices
+ * (could stand to be a little stronger?) and attraction to curvature.
+ * 
+ */
 
 void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
   NUM force[3];
@@ -1117,34 +1128,44 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
   return;
 }
 
-
+/**********************************************************************
+ * f_vertex4 
+ *
+ * Similar to f_vertex3, it has vertex repulstion, curvature
+ * attraction, and attraction to close fluxons. It is modified
+ * slightly for more stability. (f_vertex3 has vertex flow)
+ *
+ */
 void f_vertex5(VERTEX *V, HULL_VERTEX *verts) {
   NUM force[3];
   NUM d1[3], d1n[3], d2[3], d2n[3];
   NUM l1, l2;
-  NUM d1nr,d2nr,fn2,fn3; /* fn's are scalers */
+  NUM d1nr,d2nr,fn1,fn2,fn3; /* fn's are scalers */
   NUM dpp[3], dnn[3];
   NUM lnn, lpp, i1; 
   NUM alpha_p, alpha_n;
+  NUM fn1_scale=.01,fn2_scale=2., fn3_scale=1.;
 
   /* Exclude endpoints */
-  if(!V->next || !V->prev)
+  if(!V->next || !V->prev || V->label < 0)
     return;
 
   // Find the normal vectors pointing along the previous and next segments,
   // and collect the lengths of the original vectors...
 
   diff_3d(d1,V->x,V->prev->x);
-  l1 = norm_3d(d1);
-  scale_3d(d1n, d1, 1.0 / l1); 
+  scale_3d(d1n, d1, (d1nr = 1.0 / (l1=norm_3d(d1)))); /* assignment */
 
   diff_3d(d2,V->next->x, V->x);
-  l2 = norm_3d(d2);
-  scale_3d(d2n, d2, 1.0 / l2 ); 
+  scale_3d(d2n, d2, (d2nr = 1.0 / (l2=norm_3d(d2)))); /* assignment */
+
+  /* Repulsive force from nearest neighbors.  
+   */
+  fn1 = (d1nr*d1nr-d2nr*d2nr) * ( (l1+l2)*0.5 ) * ( (l1+l2)*0.5 );
+  fn1 *= fn1_scale;
 
   /* Proximity-attractive force.  This attracts vertices toward places
-   * where field lines are interacting.  Again, normalized with l to scale 
-   * like 1.
+   * where field lines are interacting.  
    */
 
   if(V->prev && V->next) {
@@ -1157,6 +1178,7 @@ void f_vertex5(VERTEX *V, HULL_VERTEX *verts) {
     r_cln *= r_cln;
   
     fn2 = (r_cln - r_clp);
+    fn2 *= fn2_scale;
       
   } else {
 
@@ -1177,13 +1199,13 @@ void f_vertex5(VERTEX *V, HULL_VERTEX *verts) {
     diff_3d(dpp,V->prev->x,V->prev->prev->x);
     lpp = norm_3d(dpp);
 
-    alpha_p = M_PI - acos( 0.999999 * (inner_3d(dpp, d1)) / (l1 * lpp) );
-    alpha_n = M_PI - acos( 0.999999 * (inner_3d(dnn, d2)) / (l2 * lnn) );
+    alpha_p = M_PI - acos( (1-1e-6) * (inner_3d(dpp, d1)) / (l1 * lpp) );
+    alpha_n = M_PI - acos( (1-1e-6) * (inner_3d(dnn, d2)) / (l2 * lnn) );
     
-    fn3 = 1 * (alpha_p - alpha_n);
+    fn3 = 1. * (alpha_p - alpha_n);
      
-    fn3 *= 0.2;
-    //fn3 *= 0.5;
+    fn3 *= fn3_scale;
+  
   } else {
     alpha_p = 0; alpha_n=0;
     fn3 = 0.0;
@@ -1196,16 +1218,17 @@ void f_vertex5(VERTEX *V, HULL_VERTEX *verts) {
    */
 
   sum_3d(force,d1n, d2n);
-  i1 = 2/(1/l1 + 1/l2);
-  scale_3d(force, force, (fn2 + fn3 ) / norm_3d(force) / i1);
+  scale_3d(force, force, (fn1 + fn2 + fn3) / norm_3d(force) / (l1+l2) / 2);
 
-  if( !finite(fabs((fn2+fn3)/i1)) ) {
-    printf("vertex %d: vertex force was (%g,%g,%g); f_vertex5 is (%g,%g,%g) (total %g); i1 is %g\n",V->label,V->f_v[0],V->f_v[1],V->f_v[2],force[0],force[1],force[2],fabs((fn2+fn3)/i1),i1);
-    printf("\tfn2 is %g; fn3 is %g; V->prev->r_cl is %g; V->next->r_cl is %g; l1 is %g; l2 is %g; lpp is %g; lnn is %g; alpha_p is %g; alpha_n is %g; alpha_p arg is %g; alpha_n arg is %g\n",fn2, fn3, V->prev->r_cl, V->next->r_cl, l1, l2, lpp, lnn, alpha_p, alpha_n, (inner_3d(dpp,d1))/(l1*lpp),(inner_3d(dnn,d2))/(l2*lnn));
-  }
+  if( !finite(norm_3d(force)) ) {
+    //printf("vertex %d: vertex force was (%g,%g,%g); f_vertex5 is (%g,%g,%g) (total %g); i1 is %g\n",V->label,V->f_v[0],V->f_v[1],V->f_v[2],force[0],force[1],force[2],fabs((fn2+fn3)/i1),i1);
+    // printf("\tfn2 is %g; fn3 is %g; V->prev->r_cl is %g; V->next->r_cl is %g; l1 is %g; l2 is %g; lpp is %g; lnn is %g; alpha_p is %g; alpha_n is %g; alpha_p arg is %g; alpha_n arg is %g\n",fn2, fn3, V->prev->r_cl, V->next->r_cl, l1, l2, lpp, lnn, alpha_p, alpha_n, (inner_3d(dpp,d1))/(l1*lpp),(inner_3d(dnn,d2))/(l2*lnn));
+    printf("vertex %d: f_vertex5 is (%g,%g,%g) (total %g);fn1 is %g, fn2 is %g fn3 is %g \n",V->label,force[0],force[1],force[2],norm_3d(force), fn1,fn2,fn3);
+	   }
+  
     
-  V->f_v_tot += fabs( (fn2 + fn3) / i1 );
   sum_3d(V->f_v, V->f_v, force);
+  V->f_v_tot += norm_3d(force);
 
 
   return;

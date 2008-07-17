@@ -1,0 +1,85 @@
+=head2 vertical_fluxons
+
+=for usage
+
+ $s = vertical_fluxons($from, $radius, $steps, $lab)
+
+=for ref
+
+Generate a set of vertical fieldlines starting from postitions n
+positions: 3xn piddle, $from. They go up until a height of a
+hemisphere with $radius, and they each have $steps vertices (not
+including the first one). If necessary (i.e. if you have several parts
+to your final world), you can add beginning label number, $lab. The
+top is on an open boundary at $height.
+
+
+=cut
+sub vertical_fluxons {
+    print "in vertical_fluxons... \n";
+    my @args = @_;
+    my($from, $radius, $steps, $lab) =  map { pdl($_) } @args;
+ 
+    my $num=pdl($from->dims)->((1)); ##number of fluxons
+    print "num is $num\n";
+    my $l=$lab ? $lab : 100; ##label number
+    print "lab is $lab /n";
+
+    my @out = "";
+    push(@out, "GLOBAL FORCES f_pressure_equi2b f_curvature f_vertex5");
+    push(@out, "GLOBAL BOUNDARY PLANE 0 0 0 0 0 1"); ##xy plane
+    push(@out, "GLOBAL OPEN 0 0 0 ".$radius." 1"); ##open outer boundary
+    push(@out,"");
+    
+    
+    for ($i=0;$i<$num;$i++){ ## for each line
+	my $fc0, $fl;
+	my $line=yvals(3,$steps+2);
+	$line(0,:).=$from(0,$i);
+	$line(1,:).=$from(1,$i);
+	my $height=sqrt($radius**2+$line(0,0)**2+$line(1,0)**2)+1e-5;
+	my $step_size = $height / ($steps+1);
+	$line(2,:).=$line(2,:)*$step_size;
+	##print "whatis $line\n";
+	
+	##new flux concentration (open start->-1, open end->-2)
+	##NEW label x1 x2 x3 flux
+	push(@out,sprintf("NEW %d %9.3g %9.3g %9.3g 1",
+			  ($fc0=$l++->copy),
+			  $line->at(0,0), $line->at(1,0), $line->at(2,0)
+	     )
+	    );
+	print "NEW here, l=$l, fc0=$fc0\n";
+	##new fluxon
+	##LINE label fc1 fc2 flux
+	push(@out,sprintf("LINE %d %d %d 1",
+			  ($fl = $l++->copy),  
+			  ($fc0),   
+			  (-2)
+	     )
+	    );
+	print "  LINE here, l=$l, fc0=$fc0, fl=$fl \n";
+
+
+	##new vertex
+	##VERTEX fluxon label pos x1 x2 x3    
+	for $k(1..$steps-1) {
+	    ##print "k is $k\n";
+	    push(@out,sprintf("VERTEX %d %d %d %9.4g %9.4g %9.4g",
+			      $fl,
+			      $l++->copy,
+			      $k,
+			      $line->(:,($k))->list
+		 )
+		);
+	    ##print "    VERTEX here, l=$l\n";
+	}## end of for each vertex loop
+	
+	push(@out,"");
+     
+    }##end of for each line loop
+
+    return join("\n",@out);
+    ##print whatis @out;
+    ##return @out;
+}
