@@ -245,10 +245,10 @@ int footpoint_action(WORLD *world, char *s) {
       // Fall back to older form 
 
       if(!*lscan2) {
-	sprintf(lscan2,"%%*s %%ld %%ld %%ld %%%sf",NUMCHAR,NUMCHAR,NUMCHAR);
+	sprintf(lscan2,"%%*s %%ld %%ld %%ld %%%sf",NUMCHAR);
       }
       
-      n = sscanf(s,lscan, &fl0, &l0, &l1, &flux0);
+      n = sscanf(s,lscan2, &fl0, &l0, &l1, &flux0);
       
       if(n != 4) {
 	badstr = "Couldn't parse LINE line";

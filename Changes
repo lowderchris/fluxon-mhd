@@ -1,3 +1,6 @@
+29-July-2008 [cd]
+	io.c - fixed bug in reading that was scrozzling flux values for fluxons
+	(and hence screwing up magnetic field values).
 17-July-2008 [cd]
 	World.xs, Core.xs, fluxperl.h, geometry.h, geometry.c -
 	  installed closest_vertex and closest_simplex perl methods and
