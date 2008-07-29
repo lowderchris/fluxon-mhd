@@ -51,9 +51,11 @@ void *SvFluxPtr( SV *sv, char *name, char *tstr, char wflag, char croak_on_null 
 
   if( SvROK(sv) && sv_derived_from(sv, tstr)) {
     sv = SvRV(sv);
-  } else {
+  } else if(croak_on_null) {
     sprintf(errbuf,"%s requires a %s.\n",name,tstr);
     croak(errbuf);
+  } else {
+    return 0;
   }
 
   // Unpack tied hashes
@@ -295,7 +297,6 @@ FLUX->dumblist_grow		= dumblist_grow;
 FLUX->dumblist_clear		= dumblist_clear;
 FLUX->dumblist_crunch		= dumblist_crunch;
 FLUX->fl_eq			= fl_eq;
-FLUX->find_vertex_by_location   = find_vertex_by_location;
 FLUX->next_line			= next_line;
 FLUX->footpoint_action		= footpoint_action;
 FLUX->fprint_tree		= fprint_tree;
@@ -391,6 +392,13 @@ FLUX->intersection_2d		= intersection_2d;
 FLUX->project_n_fill            = project_n_fill;
 FLUX->hull_2d			= hull_2d;
 FLUX->hull_2d_us		= hull_2d_us;
+FLUX->in_simplex		= in_simplex;
+FLUX->above_plane               = above_plane;
+FLUX->find_vertex_by_location   = find_vertex_by_location;
+FLUX->find_simplex_by_location  = find_simplex_by_location;
+FLUX->interpolate_lin_3d	= interpolate_lin_3d;
+FLUX->interpolate_value_simplex = interpolate_value_simplex;
+FLUX->interpolate_value         = interpolate_value;
 FLUX->code_info_model           = code_info_model;
 FLUX->code_info_physics         = code_info_physics;
 FLUX->code_info_io  	        = code_info_io;

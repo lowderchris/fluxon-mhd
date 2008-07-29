@@ -1,3 +1,9 @@
+17-July-2008 [cd]
+	World.xs, Core.xs, fluxperl.h, geometry.h, geometry.c -
+	  installed closest_vertex and closest_simplex perl methods and
+	  their associated c counterparts find_vertex_by_location and 
+	  find_simplex_by_location -- these will hopefully come in handly
+	  later for interpolating values onto a grid!
 17-July-2008 [lr]
   - changed f_vertex5 in physics.c to inclue all 3 forces: proximity attraction, vertex repulsion, and curvature attraction.
   - added a new routine to put in straight fluxons that end on an open sphere: vertical_fluxons. 

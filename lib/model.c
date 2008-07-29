@@ -52,6 +52,10 @@ char *code_info_model="%%%FILE%%%";
  * Updates the ends of each fluxon in turn...
  */
 static long w_u_e_springboard(FLUXON *fl, int lab, int link, int depth) {
+  /* Skip magic boundary fluxons */
+  if(fl->label <= 0 && fl->label >= -10) 
+    return 0 ;
+
   fluxon_update_ends(fl);
   //if(fl->fc0->world->verbosity)
   //  printf("world_update_ends - fluxon %d\n",fl->label);
@@ -510,6 +514,10 @@ static void ((**gl_f_funcs)()); /* springboard functions list */
 static NUM *gl_minmax; /* Keeps track of minimum and maximum forces */
 
 static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
+  /* Skip magic boundary fluxons */
+  if(fl->label <= 0 && fl->label >= -10) 
+    return 0 ;
+
   if(fl->fc0->world->verbosity >= 5) dump_all_fluxon_tree(gl_a->lines);
   if(fl->fc0->world->verbosity) {
     printf(" %d",fl->label);
@@ -529,6 +537,10 @@ void world_update_neighbors(WORLD *a, char global) {
  * world_update_mag updates the magnetic forces for the whole world 
  */
 static long w_u_m_springboard(FLUXON *fl, int lab, int link, int depth) {
+  /* Skip magic boundary fluxons */
+  if(fl->label <= 0 && fl->label >= -10) 
+    return 0 ;
+
   gl_minmax = fluxon_update_mag(fl,gl_gl, gl_f_funcs, gl_minmax);
   return 0;
 }
@@ -585,6 +597,10 @@ void world_fluxon_length_check(WORLD *w, char global){
  */
 static struct VERTEX_STATS gl_st;
 static long w_c_s_springboard(FLUXON *fl, int lab, int link, int depth) {
+  /* Skip magic boundary fluxons */
+  if(fl->label <= 0 && fl->label >= -10) 
+    return 0 ;
+
   fluxon_collect_stats(fl,&gl_st);
   return 0;
 }
@@ -634,6 +650,10 @@ void fluxon_collect_stats(FLUXON *fl, VERTEX_STATS *st) {
 static NUM gl_t;
 
 static long w_ca_s_springboard(FLUXON *fl, int lab, int link, int depth) {
+  /* Skip magic boundary fluxons */
+  if(fl->label <= 0 && fl->label >= -10) 
+    return 0 ;
+
   // ARD created separate calculation and relaxation routines to accomodate new
   // schema for including influence of neighbor steps.
  
@@ -644,6 +664,10 @@ static long w_ca_s_springboard(FLUXON *fl, int lab, int link, int depth) {
 }
 
 static long w_r_s_springboard(FLUXON *fl, int lab, int link, int depth) {
+  /* Skip magic boundary fluxons */
+  if(fl->label <= 0 && fl->label >= -10) 
+    return 0 ;
+
   // ARD created separate calculation and relaxation routines to accomodate new
   // schema for including influence of neighbor steps.
  

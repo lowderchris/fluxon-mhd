@@ -312,6 +312,30 @@ void points2plane(PLANE *plane, NUM *p0, NUM *p1, NUM *p2) {
 }
 
 /**********************************************************************
+ * lp2plane - given a line segment P0-P1 and a third point P2, 
+ * return the plane that passes through P0 and P1, with normal
+ * through P2.
+ */
+void lp2plane(PLANE *plane, NUM *p0, NUM *p1, NUM *p2) {
+  NUM x1[3];
+  NUM x2[3];
+  NUM alpha;
+
+  diff_3d(x1,p1,p0);
+  diff_3d(x2,p2,p0);
+  
+  // offset plane origin to the point under the normal
+  alpha = inner_3d(x1,x2) / norm2_3d(x1);
+  scale_3d(plane->origin, x1, alpha );
+  sum_3d(plane->origin, plane->origin, p0);
+  
+  // copy the normal and, er, normalize it.
+  diff_3d(plane->normal, p2, plane->origin);
+  scale_3d(plane->normal, plane->normal, 1.0/norm_3d(plane->normal));
+}
+
+
+/**********************************************************************
  * p_l_intersection - given a plane and a line (specified by two points)
  * return the intersection between them.
  * Returns a flag indicating whether the intersection is between 
@@ -2378,3 +2402,439 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 }
 
 
+
+
+    
+/**********************************************************************
+ * find_vertex_by_location 
+ * 
+ * Given a location in 3-space, a world, and an (optional) VERTEX, 
+ * find the VERTEX closest to the point you want.
+ * 
+ * If you use the "global" flag then an explicit search is performed
+ * (slow); otherwise a simple minimization-by-step is performed.
+ *
+ */
+
+
+/* A helper routine for the tree walk in the explicit case */
+static VERTEX *fvbl_stash_v;
+static POINT3D fvbl_stash_x;
+static NUM fvbl_current_min;
+static long fvbl_helper( void *v, int depth) {
+  NUM dist;
+  dist = cart2_3d(fvbl_stash_x, ((VERTEX *)v)->x);
+  if(((VERTEX *)v)->label > 0 && 
+     (fvbl_current_min < 0 || dist < fvbl_current_min)) {
+    fvbl_stash_v = v;
+    fvbl_current_min = dist;
+  }
+  return 0;
+}
+  
+
+
+VERTEX *find_vertex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
+
+  if(!w){
+    fprintf(stderr,"FLUX find_vertex_by_location needs a WORLD!\n");
+    return 0;
+  }
+  if(!v){
+    v = w->vertices;
+    if(!v) {
+      fprintf(stderr,"This WORLD apparently has no vertices! Help!\n");
+      return 0;
+    }
+  }
+
+  /*** Global search -- explicitly walk through the whole sim ***/
+  if(global) {
+    cp_3d(fvbl_stash_x,x);
+    fvbl_current_min = -1;
+    fvbl_stash_v = 0;
+    tree_walker(w->vertices,v_lab_of, v_ln_of, fvbl_helper, 0);
+    return fvbl_stash_v;
+  }
+
+  /*** Local search -- minimize from the vertex ***/
+  else {
+    
+    NUM dist2 = cart2_3d(x,v->x);
+    int done = 0;
+
+    do {
+      NUM d2;
+
+
+      if( v->next && 
+	  ((d2 = cart2_3d(x, v->next->x)) < dist2)  /* assignment */
+	  ) {
+	/* walk forward */
+	v = v->next;
+	dist2 = d2;
+      } else if( v->prev && 
+		 ((d2 = cart2_3d(x, v->prev->x)) < dist2) /* assignment */
+		 ) {
+	/* walk backward */
+	v = v->prev;
+	dist2 = d2;
+      } else {
+	/* search neighbors & nearby */
+	int i;
+	VERTEX *v_candidate = 0;
+	NUM vcd2 = dist2;
+	for(i=0; i < v->neighbors.n; i++) {
+	  if( (d2 = cart2_3d(x, ((VERTEX **)(v->neighbors.stuff))[i]->x)) < vcd2 ) {
+	    v_candidate = ((VERTEX **)(v->neighbors.stuff))[i];
+	    vcd2 = d2;
+	  }
+	}
+	for(i=0; i<v->nearby.n; i++) {
+	  if( (d2 = cart2_3d(x, ((VERTEX **)(v->nearby.stuff))[i]->x)) < vcd2 ) {
+	    v_candidate = ((VERTEX **)(v->nearby.stuff))[i];
+	    vcd2 = d2;
+	  }
+	}
+	
+	if(v_candidate) {
+	  v = v_candidate;
+	  dist2 = vcd2;
+	} else 
+	  done = 1;
+      }
+    } while(!done);
+  }
+  return v;
+}
+
+/**********************************************************************
+ * above_plane
+ *
+ * Given three noncolinear points (which define an oriented plane)
+ * determine whether a 4th point is above or below the plane.  Returns
+ * 1 if the 4th point is above or on, 0 if it is  below.
+ */
+int above_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
+  POINT3D AB, AC, AX;
+  POINT3D ABxAC;
+  diff_3d(AB, B, A);
+  diff_3d(AC, C, A);
+  diff_3d(AX, X, A);
+  cross_3d(ABxAC, AC, AB);
+  return (  inner_3d(ABxAC, AX) >= 0  );
+}
+
+/**********************************************************************
+ * in_simplex 
+ * Given four noncoplanar points (which define a 3-D simplex), 
+ * determine whether a 5th point is inside or outside the simplex. 
+ */
+int in_simplex( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
+  POINT3D P01, P02, P03;
+
+  return ( ( !above_plane(P0,P1,P2,P3) ^ above_plane(P0,P1,P2,X) ) &&
+	   ( !above_plane(P1,P2,P3,P0) ^ above_plane(P1,P2,P3,X) ) &&
+	   ( !above_plane(P2,P3,P0,P1) ^ above_plane(P2,P3,P0,X) ) &&
+	   ( !above_plane(P3,P0,P1,P2) ^ above_plane(P3,P0,P1,X) )
+	   );
+}
+
+
+/**********************************************************************
+ * find_simplex_by_location
+ *
+ * Given a location in 3-space, build a minimal simplex (tetrahedron) of
+ * vertices around it.  Works by finding the nearest VERTEX, then attempting
+ * to find other nearby vertices.   If the point is outside the cloud of
+ * vertices, deliver only a plane.
+ * 
+ * Takes the same parameters as find_vertex_by_location; returns a DUMBLIST 
+ * containing the VERTEXes that were found.  The DUMBLIST is statically
+ * allocated and hence is only temporary storage.
+ */  
+  
+static DUMBLIST *fsbl_cache = 0;
+
+
+#define f_s_calc_stuff(vc, pc,ac,acl,v) do { (vc)=(v); (pc)=(v->x); diff_3d((ac),(pc),x); (acl)=norm_3d(ac); } while(0)
+#define f_s_copy_stuff(p,a,al,v,pc,ac,acl,vc) do { (p)=(pc); cp_3d((a),(ac)); (al)=(acl); (v)=(vc);} while(0)
+
+DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
+  VERTEX *vv;
+  static VERTEX *(simplex[3]);  // Gets the VERTEXes of the simplex
+  POINT3D a0, a1, a2, a3;       // These get the vectors relative to the desired point
+  static POINT3D origin = {0,0,0};
+  NUM *p0, *p1, *p2, *p3;       // These get the x vectors of the VERTEXes we're dealing with
+  NUM a0l, a1l, a2l, a3l;
+
+  simplex[0] = simplex[1] = simplex[2] = simplex[3] = 0;
+
+  if(!fsbl_cache) {
+    fsbl_cache = new_dumblist();
+  }
+  dumblist_clear(fsbl_cache);
+  
+  vv = find_vertex_by_location(x,w,v,global);
+  if(!vv) {
+    fprintf(stderr,"find_simplex_by_location: no vertices at all found for location (%g,%g,%g)!\n",x[0],x[1],x[2]);
+    return 0;
+  }
+
+  // Put the vertex in the simplex, and calculate its ancillary vectors
+  f_s_calc_stuff(simplex[0], p0, a0, a0l, vv);
+  dumblist_add(fsbl_cache,simplex[0]);
+  
+  /************
+   * Now search for the neighbor of P0 that has the highest angle relative to the P0 - x line
+   */
+  {
+    static DUMBLIST *cache = 0;
+    NUM costheta, l0l1sintheta;
+    NUM *pc;
+    POINT3D ac,scr;
+    NUM acl;
+    int i;
+    long passno;
+    NUM costheta_min = 2; /* impossibly large */
+    p1 = 0;
+
+    if( !cache ) {
+      cache = new_dumblist();
+    }
+    dumblist_clear(cache);
+    
+    passno = ++(vv->line->fc0->world->passno);
+    dumblist_add(cache, vv);
+    vv->passno = passno;
+    expand_lengthwise(cache, 0, passno);
+    expand_via_neighbors(cache, 0, passno);
+
+    for(i=1;i<cache->n;i++){ // skip simplex[0]
+      f_s_calc_stuff(  vv, pc, ac, acl, (  ((VERTEX **)(cache->stuff)) [i]   )  );
+      
+      if( (costheta = inner_3d(ac,a0)/a0l/acl) < costheta_min) { // assignment
+	f_s_copy_stuff( p1, a1, a1l, simplex[1], pc, ac, acl, vv );
+	costheta_min = costheta;
+      }
+    }
+
+    if(!p1) {
+      fprintf(stderr, "find_simplex_by_location: FAILED to find a second neighbor! (Should never happen...?\n");
+      return fsbl_cache;
+    }
+    dumblist_add(fsbl_cache,simplex[1]);
+    
+    /* Now we have two points (p0 and p1) and their ancillary info.  Search the neighbors of
+     * p0 and p1 to find the maximum angle out of the (x,p0,p1) plane.
+     */
+    
+    p2 = 0;
+    costheta_min = 2; /* impossibly large */
+
+    dumblist_clear(cache);
+
+    passno = ++(vv->line->fc0->world->passno);
+    dumblist_add(cache, simplex[0]);
+    dumblist_add(cache, simplex[1]);
+    simplex[0]->passno = simplex[1]->passno = passno;
+    expand_lengthwise(cache, 0, passno);
+    expand_via_neighbors(cache, 0, passno);
+
+    cross_3d(scr,a0,a1);
+    l0l1sintheta = norm_3d(scr);
+
+    for(i=2; i<cache->n; i++) { // skip simplex[0] and simplex[1]
+      POINT3D scr;
+      NUM triple;
+      f_s_calc_stuff(vv, pc, ac, acl, ( ((VERTEX **)(cache->stuff)) [i] ) );
+      
+      cross_3d(scr,a0,a1);
+      triple = inner_3d( ac, scr );
+      costheta = triple / l0l1sintheta / acl;
+      if( costheta < costheta_min ) {
+	f_s_copy_stuff( p2, a2, a2l, simplex[2], pc, ac, acl, vv );
+	costheta_min = costheta;
+      }
+    }
+    if(!p2) {
+      fprintf(stderr,"find_simplex_by_location: FAILED to find a third neighbor!\n");
+      return fsbl_cache;
+    }
+    dumblist_add(fsbl_cache,simplex[2]);
+
+
+    /* We've got three points that are hopefully noncoplanar with the original point.  
+     * Now try to find a fourth VERTEX that makes an enclosing simplex.
+     */
+
+    dumblist_clear(cache);
+
+    passno = ++(vv->line->fc0->world->passno);
+    dumblist_add(cache,simplex[0]);
+    dumblist_add(cache,simplex[1]);
+    dumblist_add(cache,simplex[2]);
+    expand_lengthwise(cache,0,passno);
+    expand_via_neighbors(cache,0,passno);
+    {
+      long n = cache->n;
+      expand_lengthwise(cache,n,passno);
+      expand_via_neighbors(cache,n,passno);
+    }
+    //    printf("Testing %d candidates for the final point of the simplex...\n",cache->n - 3);
+
+    for(i=3; i<cache->n; i++) {
+      int ok;
+      f_s_calc_stuff(vv, pc, ac, acl, ( ((VERTEX **)(cache->stuff)) [i] ) );
+      
+      ok =  in_simplex( a0, a1, a2, ac, origin );
+
+      /*
+	printf(" a0: %g\t%g\t%g\n a1: %g\t%g\t%g\n a2: %g\t%g\t%g\n ac: %g\t%g\t%g\n x: %g\t%g\t%g\n ok is %d; Vs: %d, %d, %d, %d\n\n",
+	       a0[0],a0[1],a0[2],
+	       a1[0],a1[1],a1[2],
+	       a2[0],a2[1],a2[2],
+	       ac[0],ac[1],ac[2],
+	       x[0],x[1],x[2],
+	       ok,
+	       simplex[0]->label,
+	       simplex[1]->label,
+	       simplex[2]->label,
+	       vv->label
+	       );
+      */
+
+      if( ok ) {
+	if(  (!simplex[3]) || (acl < a3l )  )
+	  f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
+      }
+    }
+    
+    if(!simplex[3]) {
+      //  fprintf(stderr,"find_simplex_by_location: FAILED to find a third neighbor!\n");
+      return fsbl_cache;
+    }
+     
+    dumblist_add(fsbl_cache,simplex[3]);
+   
+    /* Should we try to shrink the simplex here? */
+    
+  }
+  return fsbl_cache;
+}
+
+
+/**********************************************************************
+ * interpolate_lin_3d - given a set of 1-4 points in 3-space and a 
+ * location to which to interpolate, do so. 
+ * 
+ * Scrozzles the contents of the original arrays.
+ */
+NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
+  POINT3D xx;
+  POINT3D a, aa;
+  PLANE pl;
+  NUM alpha;
+  NUM wgt_acc = 1.0;
+  NUM acc = 0;
+  int i;
+    
+  switch(n) {
+  case 4:
+    // Full simplex: Find intersection of the line P3 -> X with the P0,P1,P2 plane,
+    // and reduce to the triangular (planar) case.
+    points2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
+    p_l_intersection(a, &pl, x, &p[3*3]);
+
+    // Find relative length
+    diff_3d(xx, x, &p[3*3]);
+    diff_3d(aa, a, &p[3*3]);
+    alpha = inner_3d(xx,aa) / norm2_3d(aa);
+
+    acc += wgt_acc * (1-alpha) * val[3];
+    wgt_acc *= alpha;
+
+    cp_3d(x,a); // Move X into the plane and fall through to planar case
+
+  case 3:
+    // Triangle (plane): Find the intersection of the line from P2->X with the 
+    // P0,P1 "line" (project everything down to the P0,P1,P2 plane), and reduce
+    // to the linear case.
+    lp2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
+    p_l_intersection(a, &pl, x, &p[2*3]);
+    
+    // find relative length
+    diff_3d(xx, x, &p[2*3]);
+    diff_3d(aa, a, &p[2*3]);
+    alpha = inner_3d(xx,aa) / norm2_3d(aa);
+    
+    acc += wgt_acc * (1-alpha) * val[2];
+    wgt_acc *= alpha;
+    
+    cp_3d(x,a); // Move X onto the P0-P1 line and fall through to the linear case
+    
+  case 2:
+    // Line: direct interpolation 
+    diff_3d(xx, x, &p[3*1]);
+    diff_3d(a,  &p[3*0], &p[3*1]);
+    
+    alpha = inner_3d( xx, a ) / norm2_3d(a);
+    
+    acc += wgt_acc * (1 - alpha) * val[1];
+    wgt_acc *= alpha;
+    
+  case 1:
+    
+    acc += wgt_acc * val[0];
+
+    break;
+  }
+  return acc;
+}
+
+
+/**********************************************************************
+ * interpolate_value_simplex
+ *
+ * Given a location and a simplex of VERTEXes that surround it, 
+ * interpolate the value of a NUM between the vertices.  Any NUM 
+ * stored in a VERTEX can be interpolated. 
+ *
+ */
+ 
+NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset) {
+  POINT3D scr;
+  NUM acc;
+  NUM wgt_acc;
+  NUM wgt;
+  int i;
+  NUM p[4*3];
+  NUM val[4];
+  acc = 0;
+  wgt_acc = 0;
+  
+
+  for(i=0;i<dl->n;i++) {
+    cp_3d( &p[i*3], ((VERTEX **)(dl->stuff))[i]->x );
+    val[i] = * ( (NUM *)(dl->stuff[i] + val_offset) );
+  }
+  cp_3d(scr, x);
+  return interpolate_lin_3d(scr, p, val, dl->n);
+}
+
+/**********************************************************************
+ * interpolate_value
+ * same as interpolate_value_simplex, but you don't supply the simplex -- 
+ * find_simplex_by_location gets called for you.
+ * 
+ * The calling parameters are the same as for find_simplex_by_location.
+ */
+
+NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset ) {
+  DUMBLIST *dl;
+  dl = find_simplex_by_location(x, w, v, global);
+  return interpolate_value_simplex(x, dl, val_offset);
+}
+
+  
+  

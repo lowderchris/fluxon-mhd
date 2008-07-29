@@ -1590,6 +1590,79 @@ sub dump_vecs {
 
 =pod
 
+=head2 closest_vertex
+
+=for usage
+
+$vertex = $world->closest_vertex(pdl($x,$y,$z), [$global, [$start_vertex]]);
+
+=for ref
+
+Return the closest vertex to a given spatial location.  At a minimum, you 
+supply a 3-PDL containing the location.  The <code>$global</code> flag 
+indicates whether a global search or a more direct linear search should
+be performed.
+
+The linear (non-global) search depends on the WORLD having a valid neighbor
+calculation in place.
+
+If a linear search is performed, it can be carried out on a previous vertex,
+which will probably increase speed (especially if the previous vertex is close
+to the desired location!).  If you feed in a <code>$start_vertex</code> and
+the <code>$global</code> flag is 0, then the search starts from the given
+start vertex.
+
+You can call _closest_vertex instead and gain a little speed, but then you 
+must include all arguments (even if they are simply undef).
+
+=cut
+
+sub closest_vertex {
+    my $w = shift;
+    my $x = shift;
+    my $global = shift || 0;
+    my $start_vertex = shift || undef;
+    return _closest_vertex($w,$x,$global,$start_vertex);
+}
+
+=pod
+
+=head2 closest_simplex
+
+=for usage
+
+@list = $world->closest_simplex(pdl($x,$y,$z), [$global, [$start_vertex]]);
+
+=for ref
+
+Return four vertices forming a tetrahedron that encloses the requested point.
+If that is not possible (e.g. point is outside the outermost fluxon) then return
+the nearest three.
+
+The vertices come back as a list.  The parameters are the same as closest_vertex.
+
+BEWARE: although the initial point is found by calling closest_vertex, subseqent 
+stages of the simplex construction require neighbor initialization, so you can't just
+set the global flag to 1 and expect everything to be OK on an unknown world -- it
+must have appropriate neighbors already calculated.
+
+=cut
+
+sub closest_simplex {
+    my $w = shift;
+    my $x = shift;
+    my $global = shift || 0;
+    my $start_vertex = shift || undef;
+    my $a = _closest_simplex($w,$x,$global,$start_vertex);
+    if(ref $a) {
+	return @$a;
+    } else {
+	return ();
+    }
+}
+
+=pod
+
 =head2 _hull_points
 
 =for usage

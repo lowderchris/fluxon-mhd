@@ -1030,6 +1030,13 @@ mutual_helicity(fsv1, fsv2)
  SV *fsv1
  SV *fsv2
 PREINIT:
+ /**********************************************************************
+  * mutual_helicity 
+  * 
+  * Calculate the mutual helicity of two fluxons.
+  * (Should this be implemented as a fluxon method?)
+  * Currently EXPERIMENTAL - spring 2008
+  */
  WORLD *w;
  FLUXON *f1;
  FLUXON *f2;
@@ -1068,7 +1075,7 @@ CODE:
    for(v=f2->start; v; v=v->next)
      FLUX->cp_3d(v->scr, v->x);
  } else if(w->photosphere.type == PHOT_SPHERE) {
-    /* Find a matrix that places the origin at the intersection 
+    /* Finnd a matrix that places the origin at the intersection 
      * of the lines between the footpoints.
      */
    NUM x[3];
@@ -1112,12 +1119,19 @@ OUTPUT:
  
 
 SV *
-closest_vertex(wsv, xsv, vsv, gsv)
+_closest_vertex(wsv, xsv, gsv, vsv)
 SV *wsv
 SV *xsv
 SV *vsv
 SV *gsv
 PREINIT:
+	/**************************************************
+	 * closest_vertex - Flux::World interface to the 
+	 * find_vertex_by_location routine in data.c.
+	 * Just parse arguments and hand them off.  
+         * This routine is internal because we want to be able
+	 * to omit unused arguments.
+	 */
 	WORLD *w;
 	VERTEX *v;
 	POINT3D x;
@@ -1125,6 +1139,7 @@ PREINIT:
 	int global;
 CODE:
   w = SvWorld(wsv, "closest_vertex",1);
+  printf("v is %d\n PL_sv_undef is %d\n",v,&PL_sv_undef);
   v = (!vsv || vsv==&PL_sv_undef) ? 0 : SvVertex(vsv, "closest_vertex",0);
   xpdl = PDL->SvPDLV(xsv);
   PDL->converttype(&xpdl,PDL_D,1);
@@ -1144,6 +1159,93 @@ CODE:
   }
 OUTPUT:
   RETVAL
+
+AV *
+_closest_simplex(wsv,xsv,gsv,vsv)
+ SV *wsv
+ SV *xsv
+ SV *gsv
+ SV *vsv
+PREINIT:
+ /**********************************************************************
+  * closest_simplex -- return a list of VERTEXes describing a simplex 
+  * close to the target point
+  */
+  WORLD *w;
+  VERTEX *v;
+  POINT3D x;
+  pdl *xpdl;
+  int global;
+  DUMBLIST *dl;
+  int i;
+CODE:
+  w = SvWorld(wsv,"closest_simplex",1);
+  
+  v = (!vsv || vsv==&PL_sv_undef)?0:SvVertex(vsv,"closest_vertex",0);
+  xpdl = PDL->SvPDLV(xsv);
+  PDL->converttype(&xpdl,PDL_D,1);
+  PDL->make_physical(xpdl);
+  if(xpdl->ndims != 1 || xpdl->dims[0] != 3) {
+	croak("closest_vertex: takes a 3-PDL only!\n");
+  }
+  x[0] = ((PDL_Double *)(xpdl->data))[0];  
+  x[1] = ((PDL_Double *)(xpdl->data))[1];  
+  x[2] = ((PDL_Double *)(xpdl->data))[2];  
+  
+  global = SvIV(gsv);
+  dl = FLUX->find_simplex_by_location(x, w, v, global);
+
+  RETVAL = newAV();
+  av_clear(RETVAL);
+  av_extend(RETVAL,dl->n);
+  for(i=0;i<dl->n;i++) {
+    SV *sv = FLUX->new_sv_from_ptr(w, FT_VERTEX, ((VERTEX **)(dl->stuff))[i]->label);
+    av_store(RETVAL, i, sv) || svREFCNT_dec(sv);
+  }
+OUTPUT:
+ RETVAL  
+
+NV
+_interpolate_value( wsv, xsv, gsv, vsv, offset ) 
+ SV *wsv
+ SV *xsv
+ SV *gsv
+ SV *vsv
+ IV offset
+PREINIT:
+ /***********************************************************************
+ * _interpolate_value - takes a location and such as needed by _closest_simplex,
+ * and a numerical offset to the NUM pointer you want to interpolate.  This
+ * is really a helper for interpolate_value, in World.pm, which has easier
+ * access to the Flux:_ptr_offset utility to convert between type codes and 
+ * pointer offsets.
+ */
+ WORLD *w;
+ VERTEX *v; 
+ pdl *xpdl;
+ POINT3D x;
+ int global;
+ DUMBLIST *dl;
+ int i;
+CODE:
+ w = SvWorld(wsv, "_interpolate_value",1);
+ v = (!vsv || vsv==&PL_sv_undef)?0:SvVertex(vsv, "closest_vertex",0);
+ xpdl = PDL->SvPDLV(xsv);
+ PDL->converttype(&xpdl, PDL_D, 1);
+ PDL->make_physical(xpdl);
+ if(xpdl->ndims != 1 || xpdl->dims[0] != 3) {
+    croak("closest_vertex: takes a 3-PDL only!\n");
+ }
+ global = SvIV(gsv);
+
+ x[0] = ((PDL_Double *)(xpdl->data))[0];
+ x[1] = ((PDL_Double *)(xpdl->data))[1];
+ x[2] = ((PDL_Double *)(xpdl->data))[2];
+
+ RETVAL = FLUX->interpolate_value(x, w, v, global, offset);
+OUTPUT:
+ RETVAL
+ 
 
 
 BOOT:

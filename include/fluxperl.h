@@ -6,7 +6,7 @@
  * appropriate.  
  * 
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) Craig DeForest, 2004-2007
+sv * Copyright (c) Craig DeForest, 2004-2007
  * 
  * You may modify and/or distribute this software under the temrs of
  * the Gnu Public License, version 2.  You should have received a copy
@@ -25,7 +25,7 @@
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 9
+#define FLUX_CORE_VERSION 12
 
 typedef struct FluxCore {
 
@@ -72,9 +72,6 @@ typedef struct FluxCore {
   void (*dumblist_crunch)   (DUMBLIST *dl);
 
   char (*fl_eq)(NUM a, NUM b);
-
-  VERTEX *(*find_vertex_by_location)(POINT3D x, WORLD *w, VERTEX *v, int global);
-  
 
   /************  functions from io.h  */
   char *(*next_line)(FILE *file);
@@ -200,6 +197,15 @@ typedef struct FluxCore {
   void (*project_n_fill)(VERTEX *v, DUMBLIST *horde);
   void (*hull_2d)(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects);
   void (*hull_2d_us)(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v);
+
+  int (*in_simplex)(POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X);
+  int (*above_plane)(POINT3D A, POINT3D B, POINT3D C, POINT3D X);
+  DUMBLIST *(*find_simplex_by_location)(POINT3D x, WORLD *w, VERTEX *v, int global);
+  VERTEX *(*find_vertex_by_location)(POINT3D x, WORLD *w, VERTEX *v, int global);
+
+  NUM (*interpolate_lin_3d)( POINT3D x, NUM p[12], NUM val[4], int n);
+  NUM (*interpolate_value_simplex)( POINT3D x, DUMBLIST *dl, int val_offset);
+  NUM (*interpolate_value)( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset);
 
   /************  globals from data.h */
   char *code_info_model;

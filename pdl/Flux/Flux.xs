@@ -271,6 +271,19 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 
 MODULE = Flux    PACKAGE = Flux
 
+IV
+_ptr_offset(type, field)
+ IV type
+ IV field
+PREINIT:
+ int foo;
+CODE:
+ void *bar = fieldptr((void *)&foo, type, field);
+ RETVAL = bar - (void *)&foo;
+OUTPUT:
+ RETVAL
+
+
 SV *
 _new_from_ptr(wptr, type, label)
  IV type
@@ -1109,6 +1122,121 @@ CODE:
 OUTPUT:
 	RETVAL
 
+NV
+above_plane(asv,bsv,csv,xsv)
+ SV *asv
+ SV *bsv
+ SV *csv
+ SV *xsv
+PREINIT:
+   /**********************************************************************
+    * above_plane - perl interface to C geometry routine
+    */
+   pdl *apdl, *bpdl, *cpdl, *xpdl;
+   POINT3D a,b,c,x;
+CODE:
+   apdl = PDL->SvPDLV(asv);
+   if(apdl->ndims != 1 || apdl->dims[0] != 3) 
+     croak("above_plane: four 3-PDLs required\n");	
+   PDL->converttype(&apdl, PDL_D, 1);
+   PDL->make_physical(apdl);
+   a[0] = ((PDL_Double *)(apdl->data))[0];
+   a[1] = ((PDL_Double *)(apdl->data))[1];
+   a[2] = ((PDL_Double *)(apdl->data))[2];
+
+   bpdl = PDL->SvPDLV(bsv);
+   if(bpdl->ndims != 1 || bpdl->dims[0] != 3) 
+     croak("above_plane: four 3-PDLs required\n");	
+   PDL->converttype(&bpdl, PDL_D, 1);
+   PDL->make_physical(bpdl);
+   b[0] = ((PDL_Double *)(bpdl->data))[0];
+   b[1] = ((PDL_Double *)(bpdl->data))[1];
+   b[2] = ((PDL_Double *)(bpdl->data))[2];
+
+   cpdl = PDL->SvPDLV(csv);
+   if(cpdl->ndims != 1 || cpdl->dims[0] != 3) 
+     croak("above_plane: four 3-PDLs required\n");	
+   PDL->converttype(&cpdl, PDL_D, 1);
+   PDL->make_physical(cpdl);
+   c[0] = ((PDL_Double *)(cpdl->data))[0];
+   c[1] = ((PDL_Double *)(cpdl->data))[1];
+   c[2] = ((PDL_Double *)(cpdl->data))[2];
+
+   xpdl = PDL->SvPDLV(xsv);
+   if(xpdl->ndims != 1 || xpdl->dims[0] != 3) 
+     croak("above_plane: four 3-PDLs required\n");	
+   PDL->converttype(&xpdl, PDL_D, 1);
+   PDL->make_physical(xpdl);
+   x[0] = ((PDL_Double *)(xpdl->data))[0];
+   x[1] = ((PDL_Double *)(xpdl->data))[1];
+   x[2] = ((PDL_Double *)(xpdl->data))[2];
+   
+   RETVAL = above_plane(a,b,c,x);
+OUTPUT:
+   RETVAL
+
+NV
+in_simplex(asv, bsv, csv, dsv, xsv)
+ SV *asv
+ SV *bsv
+ SV *csv
+ SV *dsv
+ SV *xsv
+PREINIT:
+ /**********************************************************************
+  * in_simplex - perl interface to C geometry routine
+  */
+  pdl *apdl, *bpdl, *cpdl, *dpdl, *xpdl;
+  POINT3D a,b,c,d,x;
+CODE:
+   apdl = PDL->SvPDLV(asv);
+   if(apdl->ndims != 1 || apdl->dims[0] != 3) 
+     croak("in_simplex: five 3-PDLs required\n");	
+   PDL->converttype(&apdl, PDL_D, 1);
+   PDL->make_physical(apdl);
+   a[0] = ((PDL_Double *)(apdl->data))[0];
+   a[1] = ((PDL_Double *)(apdl->data))[1];
+   a[2] = ((PDL_Double *)(apdl->data))[2];
+
+   bpdl = PDL->SvPDLV(bsv);
+   if(bpdl->ndims != 1 || bpdl->dims[0] != 3) 
+     croak("in_simplex: five 3-PDLs required\n");	
+   PDL->converttype(&bpdl, PDL_D, 1);
+   PDL->make_physical(bpdl);
+   b[0] = ((PDL_Double *)(bpdl->data))[0];
+   b[1] = ((PDL_Double *)(bpdl->data))[1];
+   b[2] = ((PDL_Double *)(bpdl->data))[2];
+
+   cpdl = PDL->SvPDLV(csv);
+   if(cpdl->ndims != 1 || cpdl->dims[0] != 3) 
+     croak("in_simplex: five 3-PDLs required\n");	
+   PDL->converttype(&cpdl, PDL_D, 1);
+   PDL->make_physical(cpdl);
+   c[0] = ((PDL_Double *)(cpdl->data))[0];
+   c[1] = ((PDL_Double *)(cpdl->data))[1];
+   c[2] = ((PDL_Double *)(cpdl->data))[2];
+
+   dpdl = PDL->SvPDLV(dsv);
+   if(dpdl->ndims != 1 || dpdl->dims[0] != 3) 
+     croak("in_simplex: five 3-PDLs required\n");	
+   PDL->converttype(&dpdl, PDL_D, 1);
+   PDL->make_physical(dpdl);
+   d[0] = ((PDL_Double *)(dpdl->data))[0];
+   d[1] = ((PDL_Double *)(dpdl->data))[1];
+   d[2] = ((PDL_Double *)(dpdl->data))[2];
+
+   xpdl = PDL->SvPDLV(xsv);
+   if(xpdl->ndims != 1 || xpdl->dims[0] != 3) 
+     croak("in_simplex: five 3-PDLs required\n");	
+   PDL->converttype(&xpdl, PDL_D, 1);
+   PDL->make_physical(xpdl);
+   x[0] = ((PDL_Double *)(xpdl->data))[0];
+   x[1] = ((PDL_Double *)(xpdl->data))[1];
+   x[2] = ((PDL_Double *)(xpdl->data))[2];
+
+   RETVAL = in_simplex(a,b,c,d,x);
+OUTPUT:
+   RETVAL
 
 
 AV *
@@ -1184,6 +1312,67 @@ CODE:
 }
 OUTPUT:
  RETVAL
+
+NV
+interpolate_lin_3d(xsv, psv, vsv)
+SV *xsv
+SV *psv
+SV *vsv
+PREINIT:
+pdl *xpdl, *ppdl, *vpdl;
+NUM *xd, *pd, *vd;
+NUM x[3],p[12],v[4];
+int i,j,n;
+CODE:
+	xpdl = PDL->SvPDLV(xsv);
+	ppdl = PDL->SvPDLV(psv);
+	vpdl = PDL->SvPDLV(vsv);
+	
+	PDL->converttype(&xpdl, PDL_D, 1);
+	PDL->converttype(&ppdl, PDL_D, 1);
+	PDL->converttype(&vpdl, PDL_D, 1);
+	
+	PDL->make_physical(xpdl);
+	PDL->make_physical(ppdl);
+	PDL->make_physical(vpdl);
+
+	if(xpdl->ndims != 1 || xpdl->dims[0] != 3) 
+	  croak("interpolate_lin_3d: x must be a 3-PDL");
+	if(vpdl->ndims != 1 || vpdl->dims[0] < 1 || vpdl->dims[0] > 4)
+	  croak("interpolate_lin_3d: val must be a 1-PDL to 4-PDL");
+	if(ppdl->ndims != 2 || ppdl->dims[0] != 3 || ppdl->dims[1] != vpdl->dims[0])
+	  croak("interpolate_lin_3d: P must be a 3xn pdl, matching val");
+
+	  n = vpdl->dims[0];
+	xd = xpdl->data;
+	pd = ppdl->data;
+	vd = vpdl->data;
+	
+        for(j=0;j<3;j++) {
+	  for(i=0; i<n; i++) {
+	    p[i*3+j] = pd[i*ppdl->dimincs[1] + j*ppdl->dimincs[0]];
+	  }
+	  x[j] = xd[j*ppdl->dimincs[0]];
+	}
+	for(i=0;i<4;i++) 
+	  v[i] = vd[i*vpdl->dimincs[0]];
+
+	printf("n=%d\n");
+	printf("coords:\n");
+	for(i=0;i<n;i++) {
+	 printf(" point %d:",i);
+	 for(j=0;j<3;j++) {
+	 		  printf(" %10g",p[i*3+j]);
+			  }
+	 printf(";   value is %10g\n",v[i]);
+        }
+
+	printf("calling interpolate_lin_3d...\n");
+	RETVAL = FLUX->interpolate_lin_3d(x, p, v, n);
+	printf("Got back %g\n",RETVAL);
+OUTPUT:
+	RETVAL
+
 
 	
 BOOT:
