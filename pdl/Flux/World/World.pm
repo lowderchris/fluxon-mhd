@@ -901,7 +901,21 @@ If present, specifies that all points should have this color (3-PDL)
 If this is set to a 3-PDL, then dips in the magnetic field are
 rendered in this color regardless of what color they would otherwise have.
 Dips are segments adjacent to a vertex that is lower than both its neighbors.
-  
+
+=item dip_detector2
+
+If this is set to a 3-PDL, then dips in the magnetic field are
+rendered in this color regardless of what color they would otherwise have.
+In this case, the entire dip is recorded out to the altitude of the lower
+"lip" of the dip, not just the segments adjacent to the bottom of the dip.
+
+=item no_dip
+
+If this is set, it should be a hash ref whose keys are the labels of
+particular fluxons that should *not* be dip-detected by the
+dip_detector or dip_detector2 options.  This is useful for masking out
+a particular locus of the sim that should be dip-detected.  
+
 =item rgb_fluxons
 
 If present, this should be a hash ref whose keys are fluxon id numbers or the string
@@ -1768,6 +1782,26 @@ sub _plot_hull {
 
     $win->release;
 }		
+
+
+=head2 check
+
+=for usage
+
+    print $w->check;
+
+=for ref
+
+Performs some consistency checks on the World, and executes minor fixes where possible.  Returns 0 if the World
+looked OK, 1 if it got fixed up, and -1 if it is damaged beyond simple repair.  
+
+This is actually just a jump point into the C routine "world_check", in model.c.
+
+=cut
+
+## implemented in World.xs
+
+
 
 sub DESTROY {
     Flux::destroy_sv( $_[0] );

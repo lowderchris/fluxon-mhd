@@ -1,3 +1,7 @@
+30-July-2008 [cd]
+        added world_check to model.h; perl interface in World.xs.  Updated docs
+	for render() in World.pm.  read_world now automatically calls world_check 
+	to fix up questionable incoming files.
 29-July-2008 [cd]
 	io.c - fixed bug in reading that was scrozzling flux values for fluxons
 	(and hence screwing up magnetic field values).

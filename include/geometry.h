@@ -161,7 +161,7 @@ NUM atan2_oct(NUM x, NUM y);
 #define PI 3.141592653589793238462643383279502
 #define DEG2RAD (PI/180.)
 #define RAD2DEG (180./PI)
-#define EPSILON 1e-12
+#define EPSILON 1e-6
 
 
 /* regularize an angle that is between -3PI and 3PI, to the range

@@ -48,6 +48,85 @@ char *code_info_model="%%%FILE%%%";
  */
 
 /**********************************************************************
+ * world_check
+ * 
+ * Performs some rudimentary consistency checks on the world, and enforces
+ * some trivial conditions.    Returns 0 if nothing was done, a positive
+ * number if the world was "fixed-up", and a negative number if a real 
+ * (unfixable) problem was found.
+ *
+ * In particular:
+ * 
+ *  No two adjacent vertices on a fluxon can occupy the same location -- 
+ *  if this is found, then one of them is deleted.
+ *
+ * This is intended to be a general cleanup pass for consistency checks
+ * after ingestion or, if necessary, after a timestep. 
+ * 
+ * Other checks that would be useful include:
+ *   - checks for invalid neighbors
+ *   - checks for crossing a photospheric boundary
+ * ...?
+ *
+ */
+static int world_check_code;
+
+static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
+  VERTEX *v;
+
+  /* skip magic boundary fluxons */
+  if(fl->label <= 0 && fl->label >= -10)
+    return 0;
+
+
+  /**********
+   * Check that either there are no vertices, or that both start and end are defined.
+   */
+  if( (fl->start == 0) ^ (fl->end == 0) ) {
+    fprintf(stderr, "world_check ERROR: fluxon %d has inconsistent start & end vertices (%d vs %d)!\n",fl->label, fl->start, fl->end);
+    world_check_code = -1;
+    return 0;
+  }
+
+  if( (fl->start != 0 && fl->start == fl->end) ) {
+    fprintf(stderr, "world_check ERROR: fluxon %d has only one VERTEX (%d) - start & end must be different.\n",fl->label, fl->start->label);
+    world_check_code = -1;
+    return 0;
+  }
+
+  /**********
+   * Check that no vertices are on top of one another.
+   * This is a correctible error -- delete the second of the two unless it's the end -- then 
+   * delete the first of the two.
+   */
+  for(v=fl->start; v && v->next && v != fl->end; v=v->next) {
+    if( sqrt(cart2_3d(v->x, v->next->x) / (norm2_3d(v->x)+norm2_3d(v->next->x))) < EPSILON ) {
+
+      if(!v->prev && !v->next->next) {
+	fprintf(stderr,"world_check ERROR: fluxon %d has only two verts (%d & %d) and they are at the same location!\n\tCan't delete either without invalidating the fluxon.\n",fl->label, v->label, v->next->label);
+	world_check_code = -1;
+	return 0;
+      }
+      
+      fprintf(stderr,"world_check WARNING: fluxon %4d: verts %4d (%s) & %4d (%s) are at the same location - deleted %4d...\n",fl->label, v->label, (v->prev ? "mid" : "beg"), v->next->label, (v->next->next ? "mid" : "end"), (v->next->next ? v->next->label : v->label));
+      delete_vertex( v->next->next ? v->next : v );
+      if(world_check_code == 0) 
+	world_check_code = 1;
+      return 0;
+    }
+  }
+  
+  return 0;
+}
+
+int world_check(WORLD *a) {
+  world_check_code = 0;
+  
+  safe_tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_c_springboard, 0);
+}
+
+
+/**********************************************************************
  * world_update_ends
  * Updates the ends of each fluxon in turn...
  */

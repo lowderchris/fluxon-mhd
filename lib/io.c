@@ -854,6 +854,9 @@ WORLD *read_world(FILE *file, WORLD *a) {
   } while (s && !error);
   
   world_update_ends(a);
+
+  world_check(a);
+
   return a;
 }    
 
