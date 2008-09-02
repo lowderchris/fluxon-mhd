@@ -1364,7 +1364,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
   NUM iflux = 0;
   NUM ds = 0;
   NUM angle = 0;
-  NUM psudo_energy =0;
+  NUM pseudo_energy =0;
   NUM Energy = 0;
   int n = V->neighbors.n;
   int i;
@@ -1394,19 +1394,19 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
 	}
 
       iflux = flux * ( angle / (2.*PI) );
-      psudo_energy += (iflux * iflux / A);
+      pseudo_energy += (iflux * iflux / A);
 
     }
   }
 
-  if(psudo_energy < 0) {
+  if(pseudo_energy < 0) {
     fprintf(stderr,"Hey!  energy is less than zero in e_simple2 (vertex %d!)\n",V->label);
     fflush(stderr);
-    psudo_energy = fabs (psudo_energy);
+    pseudo_energy = fabs (pseudo_energy);
   }
 
 
-  Energy= psudo_energy * (ds / (8. * PI) );
+  Energy= pseudo_energy * (ds / (8. * PI) );
   V->energy = Energy;
 
   return;
