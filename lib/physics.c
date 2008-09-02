@@ -1428,7 +1428,7 @@ void e_open (VERTEX *V, HULL_VERTEX *verts) {
   NUM ienergy =0;
   NUM pseudo_energy =0;
   NUM Energy = 0;
-  NUM factor=1.;
+  NUM factor=8.*PI;
   int n = V->neighbors.n;
   int i;
 
