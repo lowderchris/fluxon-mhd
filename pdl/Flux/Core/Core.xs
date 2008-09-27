@@ -152,6 +152,48 @@ long SvLabel( SV *sv, char *name, char *tstr ) {
 }
 
 /**********************************************************************
+ * SvChangeLabel - modify the label in a FLUX object, in place (this makes
+ * the FLUX object point to a different object in the C side string).
+ */
+void SvChangeLabel( SV *sv, long newlabel, char *tstr ) {
+   MAGIC *m;
+   char errbuf[160];
+   
+   if( SvROK(sv) && sv_derived_from(sv,tstr)) {
+     sv = SvRV(sv);
+   } else {
+     sprintf(errbuf,"SvChangeLabel failed looking for a %s.\n",tstr);
+     croak(errbuf);
+   }
+
+   // Unpack tied hashes
+   if( SvTYPE(sv)==SVt_PVHV && (m=mg_find(sv,'P'))) // assignment in second term
+     sv = m->mg_obj;
+   
+   // Underlying object should now be a list ref.  Dereference it.
+   if(SvROK(sv))
+     sv = SvRV(sv);
+   
+   // Now we should have an AV.
+   if(SvTYPE(sv) != SVt_PVAV) {
+     sprintf(errbuf,"SvChangeLabel: big trouble - couldn't find the expected deep list ref!");
+     croak(errbuf);
+   } else {
+     SV **svp;
+     SV *newsv;
+     av_delete((AV *)sv, 2, G_DISCARD);
+     newsv = newSViv(newlabel);
+     svp = av_store(sv, 2, newsv);
+     if(!svp) 
+       SvREFCNT_dec(newsv);
+   }
+}   
+	       
+     
+
+
+
+/**********************************************************************
  * new_sv_from_ptr - construct a generic FLUX object from a world pointer, 
  * type code, and label.
  * 
@@ -409,6 +451,7 @@ FLUX->FLUX_RECON		= FLUX_RECON;
 FLUX->FLUX_FORCES		= FLUX_FORCES;
 FLUX->SvFluxPtr			= SvFluxPtr;
 FLUX->SvLabel			= SvLabel;
+FLUX->SvChangeLabel             = SvChangeLabel;
 FLUX->new_sv_from_ptr		= new_sv_from_ptr;
 FLUX->destroy_sv		= destroy_sv;
 sv_setiv(perl_get_sv("Flux::Core::FLUX",TRUE), PTR2IV(FLUX));

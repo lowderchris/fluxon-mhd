@@ -1036,7 +1036,7 @@ OUTPUT:
  RETVAL 
 
 SV *
-_closest_vertex(wsv, xsv, gsv, vsv)
+_closest_vertex(wsv, xsv, gsv=&PL_sv_undef, vsv=&PL_sv_undef)
 SV *wsv
 SV *xsv
 SV *vsv
@@ -1078,7 +1078,7 @@ OUTPUT:
   RETVAL
 
 AV *
-_closest_simplex(wsv,xsv,gsv,vsv)
+_closest_simplex(wsv,xsv,gsv=&PL_sv_undef,vsv=&PL_sv_undef)
  SV *wsv
  SV *xsv
  SV *gsv

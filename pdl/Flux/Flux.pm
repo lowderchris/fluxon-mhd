@@ -189,6 +189,9 @@ Really Know What You're Doing.
     our $methods = {
 	num    =>        [\&_rnum,  \&_wnum  ],
 	long   =>        [\&_rlong, \&_wlong ],
+	vlab   =>        [\&_rlong, \&_wvlab ],
+	flab   =>        [\&_rlong, \&_wflab ],
+	fclab   =>        [\&_rlong, \&_wfclab ],
 	vector =>        [\&_rvec,  \&_wvec  ],
 	vec    =>        [\&_rvec,  \&_wvec  ],
 	Vertex =>        [\&_rvertex, undef  ],
@@ -228,7 +231,7 @@ Really Know What You're Doing.
 	    r_v=>        [17, 'num'],
 	    r_s=>        [18, 'num'],
 	    r_cl=>       [19, 'num'],
-	    label=>      [20, 'long'],
+	    label=>      [20, 'vlab'],
 	    links_sum=>  [21, 'num'],
 	    links_n=>    [22, 'long'],
 	    links_up=>   [23, 'Vertex'],
@@ -239,7 +242,7 @@ Really Know What You're Doing.
 	    },
 	fluxon => {
 	    flux=>	          [1,'num'],
-	    label=>               [2,'long'],
+	    label=>               [2,'flab'],
 	    start=>               [3,'Vertex'],
 	    end=>                 [4,'Vertex'],
 	    v_ct=>                [5,'long'],
@@ -294,12 +297,13 @@ Really Know What You're Doing.
 	    handle_skew=>       [29,'long'],
 	    auto_open=>         [30,'long'],
             default_bound =>    [31,'Bound'],
-	    photosphere2 =>     [32,'Photosphere']
+	    photosphere2 =>     [32,'Photosphere'],
+	    masslaw =>          [33,'Forces'],
 	},
 	concentration => {
 	    world=>		 [1,'World'],
 	    flux=>               [2,'num'],
-	    label=>              [3,'long'],
+	    label=>              [3,'fclab'],
 	    lines=>              [4,'Fluxon'],
 	    links_sum=>          [6,'num'],
 	    links_n=>            [7,'long'],

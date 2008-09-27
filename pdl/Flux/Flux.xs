@@ -45,6 +45,10 @@
  *
  * _rvertex	    Reads a vertex field into a newly-constructed Flux::Vertex object.
  * _wvertex 	    Writes a vertex pointer from a Flux::Vertex object.
+ *
+ * _wvlab           Writes a vertex label (and relinks the vertex)
+ * _wflab           Writes a fluxon label (and relinks the flxon)
+ * _wfclab          Writes a concentration label (and relinks the flux concentration)
  * 
  * _rfluxon	    Reads a fluxon field into a newly-constructed Flux::Fluxon object.
  * _wfluxon	    Writes a fluxon pointer from a Flux::Fluxon object.
@@ -227,6 +231,7 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 		case 30: return (void *)&(w->auto_open);                break;
 	        case 31: return (void *)&(w->default_bound);            break;
 		case 32: return (void *)&(w->photosphere2);		break;
+		case 33: return (void *)&(w->m_funcs);                  break;
 		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 				typeno, fieldno);		
 			 return (void *)0;
@@ -376,6 +381,72 @@ CODE:
 	else
 		croak("Flux::_wlong: fieldptr failed");
 	RETVAL = val;
+OUTPUT:
+	RETVAL
+
+IV
+_wvlab(sv,typeno,fieldno,val)
+ SV *sv
+ long typeno
+ long fieldno
+ IV val
+PREINIT:
+ void *v;
+ long *lp;
+CODE:
+	/* Specialized writer for VERTEX labels */
+	/* (Note that this could invalidate other FLUX objects floating about in perl space!) */	
+	v = (void *)(FLUX->SvFluxPtr(sv,"_wvlab","Flux::Vertex",0,1));
+	if(vertex_renumber(v,val)) {
+	    croak("Flux::_wvlab: vertex_renumber failed");
+	} else {
+	  RETVAL = val;
+	  FLUX->SvChangeLabel(sv, val, "Flux::Vertex");
+	}
+OUTPUT:
+	RETVAL
+
+IV
+_wflab(sv,typeno,fieldno,val)
+ SV *sv
+ long typeno
+ long fieldno
+ IV val
+PREINIT:
+ void *v;
+ long *lp;
+CODE:
+	/* Specialized writer for FLUXON labels */
+	/* (Note that this could invalidate other FLUX objects floating about in perl space!) */	
+	v = (void *)(FLUX->SvFluxPtr(sv,"_wvlab","Flux::Fluxon",0,1));
+	if(fluxon_renumber(v,val)) {
+	    croak("Flux::_wflab: fluxon_renumber failed");
+	} else {
+	  RETVAL = val;
+	  FLUX->SvChangeLabel(sv, val, "Flux::Fluxon");
+	}
+OUTPUT:
+	RETVAL
+
+IV
+_wfclab(sv,typeno,fieldno,val)
+ SV *sv
+ long typeno
+ long fieldno
+ IV val
+PREINIT:
+ void *v;
+ long *lp;
+CODE:
+	/* Specialized writer for FLUXON labels */
+	/* (Note that this could invalidate other FLUX objects floating about in perl space!) */	
+	v = (void *)(FLUX->SvFluxPtr(sv,"_wvlab","Flux::Concentration",0,1));
+	if(concentration_renumber(v,val)) {
+	    croak("Flux::_wfclab: concentration_renumber failed");
+	} else {
+	  RETVAL = val;
+	  FLUX->SvChangeLabel(sv, val, "Flux::Concentration");
+	}
 OUTPUT:
 	RETVAL
 
