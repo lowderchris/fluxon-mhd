@@ -67,6 +67,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_vertex4","Vertex distribution pseudo-force (r^2 repulsion)",f_vertex4},
   {"f_vertex5","Vertex distribution pseudo-force",f_vertex5},
   {"f_vert","Vertex distribution pseudo-force",f_vert},
+  //  {"m_hydrostatic","Quasi-hydrostatic mass loading with N_0 and T_0 from powers of B_base; requires a b_",m_hydrostatic},
   {0,0,0}
 };
 
@@ -1384,8 +1385,8 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
        the ith is the last */
 
     if(!left->open && !right->open) {
-      A = 0.5 * cross_2d(left->p,right->p);
-      angle = -atan2(left->p[1],left->p[0]) + atan2(right->p[1],right->p[0]);
+      A = 0.5 * cross_2d(left->p,right->p);              // |left->p| * |right->p| * sin(theta) (cross-sectional area)
+      angle = -atan2(left->p[1],left->p[0]) + atan2(right->p[1],right->p[0]); // theta
       /*fprintf(stderr,"angle=%g deg, \n",angle*180./PI);*/
 
       if (angle < -PI){
@@ -1393,8 +1394,9 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
 	angle += 2.*PI;
 	}
 
-      iflux = flux * ( angle / (2.*PI) );
-      pseudo_energy += (iflux * iflux / A);
+
+      iflux = flux * ( angle / (2.*PI) );  // Percentage of flux in this segment
+      pseudo_energy += (iflux * iflux / A);  // sum segments
 
     }
   }

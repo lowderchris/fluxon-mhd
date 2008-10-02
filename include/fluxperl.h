@@ -25,7 +25,7 @@ sv * Copyright (c) Craig DeForest, 2004-2007
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 12
+#define FLUX_CORE_VERSION 13
 
 typedef struct FluxCore {
 
@@ -225,6 +225,7 @@ typedef struct FluxCore {
   /***********  functions in Core.xs */
   void *(*SvFluxPtr) (SV *sv, char *name, char *tstr, char wlflag, char croak_on_null);
   long (*SvLabel)    (SV *sv, char *name, char *tstr);
+  void (*SvChangeLabel) (SV *sv, long newlabel, char *tstr);
   SV *(*new_sv_from_ptr) (WORLD *wptr, int type, long label);
   void (*destroy_sv)  (SV *sv);
 } FluxCore;

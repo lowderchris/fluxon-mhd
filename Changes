@@ -1,3 +1,5 @@
+26-Sep-2008 [cd]
+	Added vertex label-change interface to perl side...
 30-July-2008 [cd]
         added world_check to model.h; perl interface in World.xs.  Updated docs
 	for render() in World.pm.  read_world now automatically calls world_check 

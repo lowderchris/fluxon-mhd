@@ -32,6 +32,7 @@
  *  delete_vertex  - Unlink and delete a vertex. (unlinks neighbors too)
  *  add_vertex_pos - adds a vertex at a given position in a fluxon
  *  add_vertex_after - adds vertex after a given vertex in a fluxon
+ *  vertex_renumber - changes the label of a vertex, fixing trees appropriately.
  *  clear_links - Initialize a tree-link data structure.
  *  tree_top - Returns a pointer to the top node of a tree.
  *  tree_walk - calls tree_walker
@@ -408,6 +409,9 @@ WORLD *new_world() {
   a->f_funcs[1] = f_curvature;
   a->f_funcs[2] = f_vertex4;
   a->f_funcs[3] = 0;
+
+  /* Put in NO mass list (physics.c) */
+  a->m_funcs[0] = 0;
 
   /* Put in a blank reconnection list (physics.c) */
   a->rc_funcs[0] = 0;
@@ -927,6 +931,122 @@ int add_vertex_after(FLUXON *f, VERTEX *lucy, VERTEX *v) {
 
   return 0;
 }
+
+/**********************************************************************
+ * vertex_renumber - change the label of a vertex. 
+ * Returns 0 on success, 1 on failure (which happens if a duplicate 
+ * vertex is found).  If the newlab is 0, assigns a new label automatically.
+ */
+int vertex_renumber(VERTEX *v, long newlab) {
+  VERTEX *v2;
+  WORLD *w;
+
+  if(!v) {
+    fprintf(stderr,"vertex_renumber: needs a vertex!\n");
+    return 1;
+  }
+  if(!v->line) {
+    fprintf(stderr,"vertex_renumber: vertex %d has no fluxon!\n",v->label);
+    return 2;
+  }
+  if(!v->line->fc0) {
+    fprintf(stderr,"vertex_renumber: vertex %d's fluxon (%d) needs a flux concentration!\n",v->label,v->line->label);
+    return 3;
+  } 
+  if(!v->line->fc0->world) {
+    fprintf(stderr,"vertex_renumber: vertex %d (fluxon %d, fc %d) seems not to have a world!",v->label, v->line->label, v->line->fc0->label);
+    return 4;
+  }
+  w = v->line->fc0->world;
+
+  if(!newlab)
+    newlab = new_label(0);
+
+
+  v2 = (VERTEX *)(tree_find(w->vertices, newlab, v_lab_of, v_ln_of));
+  if(v2) {
+    fprintf(stderr,"vertex_renumber: %d -> %d no can do: vertex %d already exists!\n",v->label,newlab,newlab);
+    return -1;
+  }
+  
+  w->vertices = tree_unlink(v, v_lab_of, v_ln_of);
+  v->label = newlab;
+  w->vertices = tree_binsert(w->vertices, v, v_lab_of, v_ln_of);
+
+  return 0;
+}
+
+int fluxon_renumber(FLUXON *f, long newlab) {
+  FLUXON *f2;
+  WORLD *w;
+  FLUX_CONCENTRATION *fc0, *fc1;
+  if(!f) {
+    fprintf(stderr,"fluxon_renumber: needs a fluxon!\n");
+    return 1;
+  } 
+  if(!f->fc0) {
+    fprintf(stderr,"fluxon_renumber: fluxon %d needs a flux concentration!\n",f->label);
+    return 2;
+  }
+  if(!f->fc0->world) {
+    fprintf(stderr,"fluxon_renumber: fluxon %d (fc %d) seems not to have a world!",f->label, f->fc0->label);
+    return 3;
+  }
+  w = f->fc0->world;
+  fc0 = f->fc0;
+  fc1 = f->fc1;
+
+  if(!newlab) {
+    newlab = new_label(0);
+  }
+
+  f2 = (FLUXON *)(tree_find(w->lines, newlab, fl_lab_of, fl_all_ln_of));
+  if(f2) {
+    fprintf(stderr,"fluxon_renumber: %d->%d no can do: fluxon %d already exists!\n",f->label,newlab, newlab);
+    return -1;
+  }
+  
+  w->lines = tree_unlink(f, fl_lab_of, fl_all_ln_of);
+  fc0->lines = tree_unlink(f, fl_lab_of, fl_start_ln_of);
+  fc1->lines = tree_unlink(f, fl_lab_of, fl_end_ln_of);
+  f->label = newlab;
+  w->lines = tree_binsert(w->lines, f, fl_lab_of, fl_all_ln_of);
+  fc0->lines = tree_binsert(fc0->lines, f, fl_lab_of, fl_start_ln_of);
+  fc1->lines = tree_binsert(fc1->lines, f, fl_lab_of, fl_end_ln_of);
+  
+  return 0;
+}
+
+int concentration_renumber(FLUX_CONCENTRATION *fc, long newlab) {
+  FLUX_CONCENTRATION *fc2;
+  WORLD *w;
+  
+  if(!fc) {
+    fprintf(stderr,"concentration_renumber: needs a flux concentration!\n");
+    return 1;
+  }
+  if(!fc->world) {
+    fprintf(stderr,"concentration_renumber: fc %d seems to have no world!\n",fc->label);
+    return 2;
+  }
+  w = fc->world;
+  
+  fc2 = (FLUX_CONCENTRATION *)(tree_find(w->concentrations, newlab, fc_lab_of, fc_ln_of));
+  if(fc2) {
+    fprintf(stderr,"concentration_renumber: %d->%d no can do: concentration %d already exists!\n",fc->label, newlab, newlab);
+    return -1;
+  }
+  
+  w->concentrations = tree_unlink( fc, fc_lab_of, fc_ln_of );
+  fc->label = newlab;
+  w->concentrations = tree_binsert( w->concentrations, fc, fc_lab_of, fc_ln_of );
+  return 0;
+}
+
+  
+  
+
+  
 
 /**********************************************************************
  **********************************************************************

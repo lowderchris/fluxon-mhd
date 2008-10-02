@@ -184,6 +184,8 @@ typedef struct PHOTOSPHERE {
 #define N_RECON_FUNCS 5     /* Number of reconnection condition functions in the recon list */
 #define N_RECON_PARAMS 3    /* Number of world-global parameters to be stored for each reconnection function */
 
+#define N_M_PARAMS 5        /* Number of world-global parameters for a generic mass scaling function */
+
 typedef VERTEX *((RC_FUNC)(VERTEX *v, NUM *params));
 
 typedef struct WORLD {
@@ -215,9 +217,12 @@ typedef struct WORLD {
 
   long verbosity;           /* Verbose flag turns on/off debugging lines */
   
-  void ((*(f_funcs[N_FORCE_FUNCS]))());
-  RC_FUNC *rc_funcs[N_RECON_FUNCS];
-  NUM rc_params[N_RECON_FUNCS][N_RECON_PARAMS];
+  void ((*(f_funcs[N_FORCE_FUNCS]))());         /* force functions (incl. B field etc.) */
+  void ((*(m_funcs[N_FORCE_FUNCS]))());         /* mass calculation functions */
+  RC_FUNC *rc_funcs[N_RECON_FUNCS];             /* reconnection threshold detectors */
+  NUM rc_params[N_RECON_FUNCS][N_RECON_PARAMS]; /* reconnection threshold parameters */
+
+  NUM m_params[N_M_PARAMS];
   
   struct { 
     NUM b_power; 
@@ -307,6 +312,9 @@ void free_world();
 void delete_flux_concentration();
 void delete_fluxon();
 void delete_vertex();
+int vertex_renumber(VERTEX *v, long newlab);
+int fluxon_renumber(FLUXON *f, long newlab);
+int concentration_renumber(FLUX_CONCENTRATION *fc, long newlab);
 
 #define MAX_TREE_DEPTH 1000000
 void clear_links(LINKS *links);
