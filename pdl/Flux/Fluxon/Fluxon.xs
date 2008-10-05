@@ -81,6 +81,15 @@ CODE:
 OUTPUT:
   RETVAL
 
+void
+delete(flx)
+ SV *flx
+PREINIT:
+ FLUXON *f;
+CODE:
+ f = SvFluxon(flx,"Flux::Fluxon::delete",1);
+ FLUX->delete_fluxon(f);
+
 SV *
 vertex(flx,vno)
  SV *flx

@@ -88,6 +88,18 @@ sub new {
 
     return _new($world, $fc0, $fc1, $flux, $label, $verts);
 }
+
+=pod
+
+=head2 delete
+
+=for ref
+
+Delete the fluxon and all of its vertices.  
+
+=cut
+
+## Implemented in Fluxon.xs
 	    
 
 =pod
