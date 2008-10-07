@@ -97,7 +97,6 @@ vertex(flx,vno)
 PREINIT:
  FLUXON *f;
  VERTEX *v;
- SV *sv;
  long i;
 /**********************************************************************
  * vertex - given a vertex index location, return a Flux::Vertex object
@@ -338,6 +337,43 @@ CODE:
 OUTPUT:
 	 RETVAL		
 
+
+void
+reattach(flsv,fcsv)
+ SV *flsv
+ SV *fcsv
+PREINIT:
+ /**********************************************************************
+  * reattach
+  * 
+  * Reattaches a fluxon to a new flux concentration, without changing 
+  * the vertex geometry.
+  */
+  FLUX_CONCENTRATION *fc, *fc0;
+  FLUXON *fl;
+CODE:
+  fl = SvFluxon(flsv, "Flux::Fluxon::reattach",1);
+  fc = SvConc(fcsv,"Flux::Fluxon::reattach",1);
+  
+  if(fc->flux > 0) {
+    /* source term */
+    if(FLUX->tree_top(fl, fl_start_ln_of) != fl->fc0->lines) {
+       croak("Flux::Fluxon::reattach - arena is corrupted! I give up! (start tree root != fc0->lines");
+    }
+    fl->fc0->lines = FLUX->tree_unlink( fl, fl_lab_of, fl_start_ln_of );
+    fc->lines      = FLUX->tree_binsert( fc->lines, fl, fl_lab_of, fl_start_ln_of );
+    fl->fc0 = fc;  
+  } else if(fc->flux < 0) {
+    if(FLUX->tree_top(fl, fl_end_ln_of) != fl->fc1->lines) {
+       croak("Flux::Fluxon::reattach - arena is correupted! I give up! (end tree root != fc1->lines");
+    }
+    fl->fc1->lines = FLUX->tree_unlink( fl, fl_lab_of, fl_end_ln_of );
+    fc->lines      = FLUX->tree_binsert( fc->lines, fl, fl_lab_of, fl_end_ln_of )    ;
+    fl->fc1 = fc;
+  } else {
+    croak("Flux::Fluxon::reattach - destination concentration has zero flux, not sure what to do.  I give up.");
+  }
+    
 
 double
 mutual_helicity(fsv1, fsv2)

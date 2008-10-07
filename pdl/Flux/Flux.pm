@@ -198,6 +198,7 @@ Really Know What You're Doing.
 	Fluxon =>        [\&_rfluxon, undef  ],
 	FluxonList =>    [\&_rfluxonlist, undef],
 	Concentration => [ \&_rconcentration, undef ],
+	fluxon_conc   => [ \&_rconcentration, \&_wconc_line ],
 	World  =>        [ \&_rworld, undef ],
         Neighbors =>     [ sub{ _rdumblist( $typecodes->{vertex}, @_) }, 
 			   sub {_wdumblist( $typecodes->{vertex}, @_) }   ],
@@ -261,8 +262,8 @@ Really Know What You're Doing.
 	    end_links_up=>        [21,'Fluxon'],
 	    end_links_left=>      [22,'Fluxon'],
 	    end_links_right=>     [23,'Fluxon'],
-	    fc_start =>           [24,'Concentration'],
-	    fc_end =>             [25,'Concentration'],
+	    fc_start =>           [24,'fluxon_conc'],
+	    fc_end =>             [25,'fluxon_conc'],
             plasmoid =>           [26,'long']
 	    },
 	world => {

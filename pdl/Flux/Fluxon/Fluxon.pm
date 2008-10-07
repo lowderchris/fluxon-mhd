@@ -230,6 +230,24 @@ Returns a xN PDL containing, in each row:
 
 # Implemented in Fluxon.xs
 
+=pod
+
+=head2 reattach - connect the fluxon to a different flux concentration
+
+=for usage
+
+$fl->reattach($fc);
+
+=for ref
+
+Given a flux concentration, detaches the fluxon from one of its host
+flux concentrations and reattaches it to the given one.  Which end of the fluxon is reattached is determined by the sign of the flux in the new flux concentration: positive -> start, negative->end.
+
+=cut
+
+#implemented in Fluxon.xs
+	
+
 sub DESTROY {
     Flux::destroy_sv( $_[0] );
 }

@@ -326,6 +326,7 @@ FLUX_CONCENTRATION *new_flux_concentration(
   return fc;
 }
 
+
 /**********************************************************************
  * new_world
  * Creates a new world with sensible beginning parameters, forces etc.

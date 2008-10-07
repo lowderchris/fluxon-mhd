@@ -608,6 +608,40 @@ CODE:
 OUTPUT:
   	RETVAL
 
+SV *
+_wconc_line(sv, typeno, fieldno, val)
+ SV *sv
+ long typeno
+ long fieldno
+ SV *val
+PREINIT:
+ WORLD *world;
+ FLUX_CONCENTRATION *fc,**dest;
+ FLUXON *f;
+CODE:
+ f = (FLUXON *)(FLUX->SvFluxPtr(sv,"_wconc_line","Flux",0,1));
+ fc = (FLUX_CONCENTRATION *)(FLUX->SvFluxPtr(val,"_wconc_line","Flux::Concentration",0,1));
+ dest = (FLUX_CONCENTRATION **)(fieldptr(f,typeno,fieldno));
+
+ if(*dest) {
+     if(dest==&(f->fc0)) { 
+          (*dest)->lines = FLUX->tree_unlink( f, fl_lab_of, fl_start_ln_of );
+     } else if(dest==&(f->fc1)) {
+          (*dest)->lines = FLUX->tree_unlink( f, fl_lab_of, fl_end_ln_of );
+     }
+ }
+ *dest = fc;
+ if(dest==&(f->fc0)) {
+    fc->lines = FLUX->tree_binsert( fc->lines, f, fl_lab_of, fl_start_ln_of );
+ } else if(dest==&(f->fc1)) {
+    fc->lines = FLUX->tree_binsert( fc->lines, f, fl_lab_of, fl_end_ln_of );
+ } else {
+       	  fprintf(stderr,"Flux::_wconc_line: warning- I'm confused.\n");
+ }
+ SvREFCNT_inc(val);
+ RETVAL = val; 
+OUTPUT:
+ RETVAL
 
 SV *
 _rcoeffs(sv, typeno, fieldno)
@@ -1428,7 +1462,6 @@ CODE:
 	for(i=0;i<4;i++) 
 	  v[i] = vd[i*vpdl->dimincs[0]];
 
-	printf("n=%d\n");
 	printf("coords:\n");
 	for(i=0;i<n;i++) {
 	 printf(" point %d:",i);

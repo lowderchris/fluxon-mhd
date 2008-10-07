@@ -111,13 +111,14 @@ sub fluxons {
     my $fc = shift;
     my $w = $fc->{world};
     if(!@_){
-	push(@_,$fc->fluxon_ids);
+	@_ = $fc->fluxon_ids;
     }
     my $id;
-    my @fluxons;
+    my @fluxons = ();
     while(defined ($id=shift)) {
-	push(@fluxons, $world->fluxon($id));
+	push(@fluxons, $w->fluxon($id));
     }
+    return @fluxons;
 }
 
 =head2 new_fluxon
@@ -170,6 +171,75 @@ sub new_fluxon {
     print "Concentration::new_fluxon: world refct is $w->{refct}\n" if($w->{verbosity});
     return $fl;
 }
+
+=head2 delete
+ 
+=for usage
+    
+    $fc->delete;
+
+=for ref
+
+Deletes a flux concentration and all fluxons attached to it.  See also 
+cancel() and open(), below, which are other ways to get rid of unwanted 
+flux concentrations.
+
+=cut
+
+## Implemeneted in Concentration.xs
+
+
+sub abdicate {
+    my $me = shift;
+    my $dest = shift;
+    my $w = $me->{world};
+
+    die "Flux::Concentration::abdicate needs a flux concentration source" unless(UNIVERSAL::isa($me,"Flux::Concentration"));
+    die "Flux::Concentration::abdicate needs a flux concentration destination" unless(UNIVERSAL::isa($dest,"Flux::Concentration"));
+
+    die "Flux::Concentration::abdicate - FC $me->{label} can't abdicate to itself!" if($me->{label} == $dest->{label});
+
+    die "Flux::Concentration::abdicate - destination FC must have same sign as source" if($me->{flux} * $dest->{flux} <= 0);
+
+    for my $fl($me->fluxons) {
+	$fl->reattach( $dest );
+    }
+
+    $me->delete;
+}
+
+=head2 open
+
+=for usage
+
+    $fc->open
+
+=for ref
+
+Deletes a flux concentration, re-attaching all its fluxons to the open 
+flux concentration.  The fluxon geometry isn't changed -- only the 
+association at the endpoint.  If you have implemented open boundary
+conditions, then the fluxons will "snap" to the open sphere on the next
+update_neighbors call.
+
+This is a convenience call to abdicate(), which does the same thing, only
+to an arbitrary flux concentration.
+
+=cut
+
+sub open {
+    my $me = shift;
+    my $w = $me->{world};
+    
+    if($me->{flux} > 0) {
+	$me->abdicate($w->{fc_ob});
+    } elsif($me->{flux} < 0) {
+	$me->abdicate($w->{fc_oe});
+    } else {
+	die "Flux::Concentration::open - confused about the sign of FC $me->{label}: flux is 0";
+    }
+}
+
 
 =head2 cancel
 

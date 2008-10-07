@@ -80,6 +80,18 @@ CODE:
 OUTPUT:
  RETVAL
 
+void
+delete(fcsv)
+ SV *fcsv
+PREINIT:
+ FLUX_CONCENTRATION *fc;
+CODE:
+ fc = SvConc(fcsv,"Flux::Concentration::delete",1);
+ if(fc->label < 0) {
+   croak("Flux::Concentration::delete: I refuse to delete a negative numbered concentration, that is too dangerous.");
+ }
+ FLUX->delete_flux_concentration(fc);
+
 IV
 cancel(fc0sv, fc1sv)
  SV *fc0sv
