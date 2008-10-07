@@ -454,6 +454,9 @@ FLUX->SvLabel			= SvLabel;
 FLUX->SvChangeLabel             = SvChangeLabel;
 FLUX->new_sv_from_ptr		= new_sv_from_ptr;
 FLUX->destroy_sv		= destroy_sv;
+FLUX->vertex_renumber           = vertex_renumber;
+FLUX->fluxon_renumber           = fluxon_renumber;
+FLUX->concentration_renumber    = concentration_renumber;
 sv_setiv(perl_get_sv("Flux::Core::FLUX",TRUE), PTR2IV(FLUX));
 
 

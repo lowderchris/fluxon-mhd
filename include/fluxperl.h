@@ -25,7 +25,7 @@ sv * Copyright (c) Craig DeForest, 2004-2007
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 13
+#define FLUX_CORE_VERSION 14
 
 typedef struct FluxCore {
 
@@ -43,6 +43,10 @@ typedef struct FluxCore {
   void   (*delete_flux_concentration)();
   void   (*delete_fluxon)();
   void   (*delete_vertex)();
+  int    (*vertex_renumber)(VERTEX *v, long newlab);
+  int    (*fluxon_renumber)(FLUXON *f, long newlab);
+  int    (*concentration_renumber)(FLUX_CONCENTRATION *fc, long newlab);
+
 
   void (*clear_links)(LINKS *links);
   void *(*tree_top)          (void *tree, int link_offset);
@@ -72,6 +76,8 @@ typedef struct FluxCore {
   void (*dumblist_crunch)   (DUMBLIST *dl);
 
   char (*fl_eq)(NUM a, NUM b);
+
+  
 
   /************  functions from io.h  */
   char *(*next_line)(FILE *file);

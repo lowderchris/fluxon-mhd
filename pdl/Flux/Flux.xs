@@ -397,7 +397,7 @@ CODE:
 	/* Specialized writer for VERTEX labels */
 	/* (Note that this could invalidate other FLUX objects floating about in perl space!) */	
 	v = (void *)(FLUX->SvFluxPtr(sv,"_wvlab","Flux::Vertex",0,1));
-	if(vertex_renumber(v,val)) {
+	if(FLUX->vertex_renumber(v,val)) {
 	    croak("Flux::_wvlab: vertex_renumber failed");
 	} else {
 	  RETVAL = val;
@@ -419,7 +419,7 @@ CODE:
 	/* Specialized writer for FLUXON labels */
 	/* (Note that this could invalidate other FLUX objects floating about in perl space!) */	
 	v = (void *)(FLUX->SvFluxPtr(sv,"_wvlab","Flux::Fluxon",0,1));
-	if(fluxon_renumber(v,val)) {
+	if(FLUX->fluxon_renumber(v,val)) {
 	    croak("Flux::_wflab: fluxon_renumber failed");
 	} else {
 	  RETVAL = val;
@@ -441,7 +441,7 @@ CODE:
 	/* Specialized writer for FLUXON labels */
 	/* (Note that this could invalidate other FLUX objects floating about in perl space!) */	
 	v = (void *)(FLUX->SvFluxPtr(sv,"_wvlab","Flux::Concentration",0,1));
-	if(concentration_renumber(v,val)) {
+	if(FLUX->concentration_renumber(v,val)) {
 	    croak("Flux::_wfclab: concentration_renumber failed");
 	} else {
 	  RETVAL = val;
