@@ -30,15 +30,35 @@ sub make_flux_movie {
 
     my @f = eval "<$file_pattern>";
     
+    my @surf_files = ();
+    if($opt->{surface_pattern}) {
+      @surf_files = eval "<$opt->{surface_pattern}>";
+    }
+
+   
+
     my $a = read_world($f[$#f/2]);
     print "Adjust view and window; press 'q' in graphics window to continue...\n";
     $a->render(1,$range->copy,$opt);
 
+    my $coords = undef;
     for $i(0..$#f) {
 	print "Processing $i of $#f....\n";
 	$a = read_world($f[$i]);
 	$a->render(0,$range->copy,$opt);
 	hold3d();
+	if($surf_files[$i]) {
+	    my $surf = rim($surf_files[$i]);
+	    my $sf = (float $surf)/255;
+	    if(!defined($coords)) {
+		$coords = ndcoords($surf->dim(0),$surf->dim(1),1);
+		$coords *= 1.1*1.1;
+		$coords -= $range->(:,(1))*1.1*0.1;
+#		$coords->((2)) .= 0.1;
+	    }
+#	    imagrgb3d([$sf,$sf,$sf],{Points=>[[$coords->(:,(0),(0),(0))->dog],[$coords->(:,(-1),(0),(0))->dog],[$coords->(:,(-1),(-1),(0))->dog],[$coords->(:,(0),(-1),(0))->dog]]});
+	    imagrgb3d([$sf,$sf,$sf],{Points=>[[0.08,0.08,0.08],[0.92,0.08,0.08],[.92,.92,0.08],[0.08,0.92,0.08]]});
+	}
 	twiddle3d();
 	wpic(grabpic3d(), $f[$i].$suffix);
 	release3d;
