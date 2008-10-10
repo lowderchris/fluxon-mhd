@@ -62,7 +62,7 @@ void fluxon_relax_step(FLUXON *fl, NUM t);
 HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global);
 
 DUMBLIST *gather_neighbor_candidates(VERTEX *v,char global);
-void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image, VERTEX *v);
+void image_find(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v);
 
 int winnow_cmp_1(void *a, void *b);
 void winnow_neighbor_candidates(VERTEX *v, DUMBLIST *horde);
