@@ -1,0 +1,48 @@
+=head2 make_flux_movie - render a sequence of FLUX files
+
+=for usage
+
+make_flux_movie($file_pattern,$range,$opt);
+
+=for ref
+
+Loads each file that matches $file_pattern, and renders it using the 
+render options in $opt.  
+
+=cut
+
+use Flux;
+
+sub make_flux_movie {
+    my $file_pattern = shift;
+    my $range = shift;
+    my $opt = shift || {};
+    my $suffix = shift || ".png";
+
+    if(!defined $opt  and   ref($range) eq 'HASH') {
+	$opt = $range;
+	$range = undef;
+    }
+    
+    $opt->{points} = 0 unless defined($opt->{points});
+    $opt->{concentrations} = 0 unless defined($opt->{concentrations});
+    $opt->{linewidth} = 2 unless defined($opt->{linewidth});
+
+    my @f = eval "<$file_pattern>";
+    
+    my $a = read_world($f[$#f/2]);
+    print "Adjust view and window; press 'q' in graphics window to continue...\n";
+    $a->render(1,$range->copy,$opt);
+
+    for $i(0..$#f) {
+	print "Processing $i of $#f....\n";
+	$a = read_world($f[$i]);
+	$a->render(0,$range->copy,$opt);
+	hold3d();
+	twiddle3d();
+	wpic(grabpic3d(), $f[$i].$suffix);
+	release3d;
+    }
+}
+	
+    

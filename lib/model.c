@@ -1200,7 +1200,130 @@ void expand_via_neighbors(DUMBLIST *workspace, int start_idx, long passno) {
     }
   }
 }
+
+
+/*******************************
+ * vertex_enforce_photosphere 
+ * Force a vertex to obey photospheric boundaries.
+ * 
+ * You feed in a VERTEX and a PHOTOSPHERE, and 
+ * the VERTEX is forced into agreement with the PHOTOSPHERE.
+ * 
+ * There is no checking that the VERTEX agrees with all 
+ * photospheres -- it is only moved in the most expedient 
+ * way to agree with the current one.
+ * 
+ * Only planar and cylindrical photospheres are currently
+ * supported.
+ * 
+ * This is necessary because, while normal photospheric 
+ * neighborly action (image charges) usually works, occasional
+ * quirks of relaxation or other boundaries can bring a 
+ * point outside a defined PHOTOSPHERE.  This mops up those 
+ * glitches. 
+ *
+ */
+void vertex_enforce_photosphere(VERTEX *v, PHOTOSPHERE *p) {
+  if(!p->type)
+    return;
+
+  switch(p->type) {
+  case PHOT_PLANE: {
+    /* Check for and eliminate photospheric plane crossings */
+    NUM x1[3];
+    NUM x1z;
+    diff_3d(x1,v->x,p->plane->origin);
+    
+    x1z = inner_3d(x1,p->plane->normal);
+    if(x1z < 0) {
+      NUM delta[3];
+      scale_3d(delta, p->plane->normal, - (x1z * 1.001) / norm2_3d(p->plane->normal));
+      sum_3d(x1,x1,delta);
+      sum_3d(v->x, x1, p->plane->origin);
       
+      // Add some new vertices so that we hopefully don't have this problem next time.
+      //add_vertex_after( v->line, v, 
+      //		new_vertex(0, 
+      //				   0.5 * (v->x[0] + v->next->x[0]),
+      //				   0.5 * (v->x[1] + v->next->x[1]),
+      //				   0.5 * (v->x[2] + v->next->x[2]),
+      //				   v->line
+      //				   )
+      //			);
+      //if(v->prev) {
+      //add_vertex_after( v->line, v->prev,
+      //		  new_vertex(0,
+      //			     0.5 * (v->prev->x[0] + v->x[0]),
+      //			     0.5 * (v->prev->x[1] + v->x[1]),
+      //			     0.5 * (v->prev->x[2] + v->x[2]),
+      //			     v->line
+      //			     )
+      //		  );
+      //}
+    }
+  }
+    break;
+
+  case PHOT_CYL: {
+    /* Check for and eliminate crossings of the cylindrical boundary */
+    NUM x1[3];
+    NUM x1r2;
+    NUM M[9];
+    NUM xrot[3];
+    NUM r2;
+    r2 = norm2_3d(p->plane->normal);
+    
+    sum_3d(x1,p->plane->origin,p->plane->normal);
+
+    /* We can't be outside the cylinder unless we're outside the inscribed */
+    /* sphere -- which is much faster to check, so check that first */
+    if(norm2_3d(x1) > r2) { 
+      projmatrix(M,p->plane->origin,x1);
+      
+      /* Find the perpendicular-to-cylinder component of the vertex location */
+      diff_3d(x1, v->x, p->plane->origin);
+      mat_vmult_3d(xrot, M, x1);
+      x1r2 = norm2_2d(xrot);
+      
+      /* If it's outside the cylinder, move it perpendicular to the axis  */
+      /* (the Z axis in the rotated coordinates) until it's just inside the */
+      /* cylinder. */
+      if(x1r2 > r2) {
+	scale_2d(xrot, xrot, (1.0 - 1e-5) * sqrt(r2/x1r2));
+	vec_mmult_3d(x1, M, xrot);
+	sum_3d( v->x, x1, p->plane->origin);
+      }
+      
+    }
+  }
+    break;
+
+    case PHOT_SPHERE: {
+      NUM x1[3];
+      NUM x1r;
+      
+      /* sphere center is at p->origin; radius is p->plane->normal[0]; outer/inner flag is sign of p->plane->normal[1]. */
+      diff_3d(x1, v->x, p->plane->origin);
+      x1r = norm_3d(x1);
+
+      if( p->plane->normal[1] >= 0 ? (x1r < p->plane->normal[0]) : (x1r > p->plane->normal[0]) ) {
+	if(p->plane->normal[1] >= 0) {
+	  scale_3d(x1, x1, (1 + 1e-5) * p->plane->normal[0] / x1r);
+	} else {
+	  scale_3d(x1, x1, (1 - 1e-5) * p->plane->normal[0] / x1r);
+	}
+	sum_3d(v->x, x1, p->plane->origin);
+      }
+    }
+    break;
+	
+    default: break;
+      
+    } /* end of photospheric checking switch */
+}       
+			      
+
+
 // ARD - New fluxon_relax_step routine. Step calculation is now in 
 // fluxon_calc_step
 
@@ -1287,91 +1410,13 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
     //fflush(stdout);
     
     if(finite(step[0]) && finite(step[1]) &&finite(step[2])) {
-
-      if(world->photosphere.type==PHOT_PLANE) {
-	/* Check for and eliminate photospheric plane crossings */
-	NUM x1[3];
-	NUM x1z;
-	diff_3d(x1,v->x,world->photosphere.plane->origin);
-	sum_3d(x1,x1,step);
-
-	x1z = inner_3d(x1,world->photosphere.plane->normal);
-	if(x1z < 0) {
-	  NUM delta[3];
-	  scale_3d(delta, world->photosphere.plane->normal, - (x1z * 1.001) / norm2_3d(world->photosphere.plane->normal));
-	  sum_3d(x1,x1,delta);
-	  sum_3d(v->x, x1, world->photosphere.plane->origin);
-
-	  // Add some new vertices so that we hopefully don't have this problem next time.
-	  add_vertex_after( v->line, v, 
-			    new_vertex(0, 
-				       0.5 * (v->x[0] + v->next->x[0]),
-				       0.5 * (v->x[1] + v->next->x[1]),
-				       0.5 * (v->x[2] + v->next->x[2]),
-				       v->line
-				       )
-			    );
-	  if(v->prev) {
-	    add_vertex_after( v->line, v->prev,
-			      new_vertex(0,
-					 0.5 * (v->prev->x[0] + v->x[0]),
-					 0.5 * (v->prev->x[1] + v->x[1]),
-					 0.5 * (v->prev->x[2] + v->x[2]),
-					 v->line
-					 )
-			      );
-	  }
-	} else {
-	  sum_3d(v->x, v->x, step);
-	}
-
-      } else if (world->photosphere2.type==PHOT_PLANE){
-	/* Check for and eliminate photospheric plane crossings one
-	   2nd photosphere*/
-	NUM x1[3];
-	NUM x1z;
-	diff_3d(x1,v->x,world->photosphere2.plane->origin);
-	sum_3d(x1,x1,step);
-
-	x1z = inner_3d(x1,world->photosphere2.plane->normal);
-	if(x1z < 0) {
-	  NUM delta[3];
-	  scale_3d(delta, world->photosphere2.plane->normal, - (x1z * 1.001) / norm2_3d(world->photosphere2.plane->normal));
-	  sum_3d(x1,x1,delta);
-	  sum_3d(v->x, x1, world->photosphere2.plane->origin);
-
-	  // Add some new vertices so that we hopefully don't have this problem next time.
-	  add_vertex_after( v->line, v, 
-			    new_vertex(0, 
-				       0.5 * (v->x[0] + v->next->x[0]),
-				       0.5 * (v->x[1] + v->next->x[1]),
-				       0.5 * (v->x[2] + v->next->x[2]),
-				       v->line
-				       )
-			    );
-	  if(v->prev) {
-	    add_vertex_after( v->line, v->prev,
-			      new_vertex(0,
-					 0.5 * (v->prev->x[0] + v->x[0]),
-					 0.5 * (v->prev->x[1] + v->x[1]),
-					 0.5 * (v->prev->x[2] + v->x[2]),
-					 v->line
-					 )
-			      );
-	  }
-	} else {
-	  sum_3d(v->x, v->x, step);
-	}
-
-      }else {
-	/* Otherwise just step */
-	sum_3d(v->x,v->x,step);	     
-      }
+      sum_3d(v->x,v->x,step);
     } else {
-      //      if(verbosity >= 3) 
-      //printf("NON_FINITE OFFSET! f_s=(%g,%g,%g), f_v=(%g,%g,%g), f_t=(%g,%g,%g)",v->f_s[0],v->f_s[1],v->f_s[2],v->f_v[0],v->f_v[1],v->f_v[2],v->f_t[0],v->f_t[1],v->f_t[2]);
-	printf("NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%d\n",v->f_t[0],v->f_t[1],v->f_t[2],v->label);
+	printf("NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%d (ignoring)\n",v->f_t[0],v->f_t[1],v->f_t[2],v->label);
     }
+
+    vertex_enforce_photosphere( v, &(world->photosphere) );
+    vertex_enforce_photosphere( v, &(world->photosphere2) );
 
     if(verbosity >= 3)    
       printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
@@ -1713,7 +1758,6 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
      )
   {
     PHOTOSPHERE *phot;
-    PLANE *p;
     VERTEX *image;
     NUM a;
 
@@ -1728,25 +1772,23 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 
     if(v->line->fc0->world->photosphere.type) { /* assignment, photosphere1 */
       phot = &(v->line->fc0->world->photosphere);
-      p = phot->plane;
       image = (v->line->fc0->world->image);
       if(verbosity >= 4){
 	printf("using photosphere (type is %d)...",v->line->fc0->world->photosphere.type);
 	fflush(stdout);
       }
-      image_find(phot,p,image,v); /*helper routine found below*/
+      image_find(phot,image,v); /*helper routine found below*/
       dumblist_quickadd(workspace, image);
     }
     
     if(v->line->fc0->world->photosphere2.type) { /* assignment, photosphere2 */
       phot = &(v->line->fc0->world->photosphere2);
-      p = phot->plane;
       image = (v->line->fc0->world->image3);
       if(verbosity >= 4){
 	printf("using photosphere2 (type is %d)...",v->line->fc0->world->photosphere2.type);
 	fflush(stdout);
       }
-      image_find(phot,p,image,v);
+      image_find(phot,image,v);
       dumblist_quickadd(workspace, image);
     }
   }
@@ -1756,10 +1798,11 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   return workspace;
 }
 
-void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image, VERTEX *v) {
+void image_find(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v) {
   /* helper routine to generate the image point and stuff it into
    * the correct image point in the world.*/
   NUM a;
+  PLANE *p = &(phot->plane);
 
   switch(phot->type) {
     PLANE pl;
@@ -1814,7 +1857,10 @@ void image_find(PHOTOSPHERE *phot,PLANE *p, VERTEX *image, VERTEX *v) {
   case PHOT_SPHERE:
     /***********
      * Spherical photosphere - sphere is located at the origin in the 
-     * photospheric plane structuure; radius is normal[0]. */
+     * photospheric plane structure; radius is normal[0]. 
+     * For external spheres, set normal[1] >= 0.  For internal spheres,
+     * set normal[1] < 0.
+     */
     
     /* Construct the sub-vertex point on the sphere */
     diff_3d(&(pt[0]),      v->x, &(p->origin[0]));  /* pt gets (x - origin) */
