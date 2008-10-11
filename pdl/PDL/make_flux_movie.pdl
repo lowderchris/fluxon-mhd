@@ -32,7 +32,11 @@ sub make_flux_movie {
     
     my @surf_files = ();
     if($opt->{surface_pattern}) {
-      @surf_files = eval "<$opt->{surface_pattern}>";
+	if( ref $opt->{surface_pattern} eq 'ARRAY' ) {
+	    @surf_files = @{$opt->{surface_pattern}};
+	} else {
+	    @surf_files = eval "<$opt->{surface_pattern}>";
+	}
     }
 
    
@@ -57,7 +61,7 @@ sub make_flux_movie {
 #		$coords->((2)) .= 0.1;
 	    }
 #	    imagrgb3d([$sf,$sf,$sf],{Points=>[[$coords->(:,(0),(0),(0))->dog],[$coords->(:,(-1),(0),(0))->dog],[$coords->(:,(-1),(-1),(0))->dog],[$coords->(:,(0),(-1),(0))->dog]]});
-	    imagrgb3d([$sf,$sf,$sf],{Points=>[[0.08,0.08,0.08],[0.92,0.08,0.08],[.92,.92,0.08],[0.08,0.92,0.08]]});
+	    imagrgb3d([$sf,$sf,$sf],{Points=>[[0.085,0.085,0.085],[0.915,0.085,0.085],[.915,.915,0.085],[0.085,0.915,0.085]]});
 	}
 	twiddle3d();
 	wpic(grabpic3d(), $f[$i].$suffix);

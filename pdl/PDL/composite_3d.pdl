@@ -1,0 +1,16 @@
+sub composite_3d {
+    my $left = shift;
+    my $right = shift;
+
+    my $lav = $left->mv(-1,0)->average;
+    my $rav = $right->mv(-1,0)->average;
+
+    my $comp = $left->copy;
+    $comp->(:,:,(0)) .= $lav * 0.5 + $left->(:,:,(0))*0.5;
+    $comp->(:,:,(1)) .= $rav * 0.5 + $right->(:,:,(1))*0.5;
+    $comp->(:,:,(2)) .= $rav * 0.5 + $right->(:,:,(2))*0.5;
+
+    my $out = $comp->copy;
+    $out->range([25,0,0],pdl($lav->dims),'t') .= $comp->(:,:,(0));
+    return $out;
+}
