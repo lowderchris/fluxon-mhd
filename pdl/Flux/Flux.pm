@@ -300,6 +300,7 @@ Really Know What You're Doing.
             default_bound =>    [31,'Bound'],
 	    photosphere2 =>     [32,'Photosphere'],
 	    masslaw =>          [33,'Forces'],
+	    concurrency=>       [34,'long']
 	},
 	concentration => {
 	    world=>		 [1,'World'],

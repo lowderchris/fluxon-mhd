@@ -147,7 +147,12 @@ sub simple_relaxer {
 	}
 	$fmax = $w->update_force($global);
 
-	$w->relax_step($dt);
+	print "parallel...\n";
+	if($parallel) {
+	    $w->relax_step_parallel($dt);
+	} else {
+	    $w->relax_step($dt);
+	}
 	$t += $dt;
 
 	$h = $w->stats;

@@ -437,7 +437,7 @@ WORLD *new_world() {
   a->coeffs[0] = 1.0; // By default, just step naturally
   a->n_coeffs = 1;
   a->maxn_coeffs = MAXNUMCOEFFS;
-
+  a->concurrency = 1;
   return a;
 }
 
@@ -2494,4 +2494,3 @@ void flux_padded_free( void *foo ) {
 #endif
 #endif
 
-  

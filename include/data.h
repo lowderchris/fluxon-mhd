@@ -246,6 +246,9 @@ typedef struct WORLD {
   NUM coeffs[MAXNUMCOEFFS];
   long n_coeffs;
   long maxn_coeffs;
+
+  // CED - how many separate processes should be run at once when calculating forces?
+  long concurrency; 
 } WORLD;
 
 const char *world_state_name(WORLD *a);

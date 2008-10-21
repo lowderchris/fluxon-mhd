@@ -1,3 +1,10 @@
+21-Oct-2008 [cd]
+	    First cut at first-stage parallelization...
+20-Oct-2008 [cd]
+	Added several new utilities toward parallization:
+	      io.c: a binary-save-file infrastructure that uses machine order and encoding
+	      data.h, data.c: added a "concurrency" field to the WORLD structure
+	      perl side: added interface code for the concurrency field.
 7-Oct-2008 [cd]
 	Several utility additions to manipulate fluxon/concentration connections on the perl side...
 26-Sep-2008 [cd]

@@ -763,6 +763,176 @@ void world_relax_step(WORLD *a, NUM t) {
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_springboard, 0);
 }
 
+
+/**********************************************************************
+ * world_relax_step_parallel
+ *
+ * First-stage parallelization of world_relax-step.  Forks off the neighbor and 
+ * force calculation in roughly vertex-equal chunks.  Works by keeping a 
+ * DUMBLIST of the fluxons to be processed; when enough are accumulated, it 
+ * forks off a processor and starts the DUMBLIST over again.  Outstanding 
+ * processes are handled via another DUMBLIST, and their results are processed
+ * via the binary dump mechanism.
+ * 
+ */
+
+/******************************
+ * v_ct_springboard - counts up the total number of vertices in the sim.
+ */
+static long v_ct;
+static long v_thresh;
+static FLUXON *last_fluxon;  // Gets the last fluxon in the tree...
+
+static long v_ct_springboard(FLUXON *fl, int lab, int link, int depth) {
+  if(!(fl->label <= 0 && fl->label >= -10)) 
+    v_ct += fl->v_ct;
+  last_fluxon = fl;
+  return 0;
+}
+
+static DUMBLIST *fluxon_batch = 0;
+static DUMBLIST *pipes = 0;
+
+struct SUBPROC_DESC { 
+  long pid;
+  long pipe;
+};
+
+struct SUBPROC_DESC *sbd = 0;
+struct SUBPROC_DESC *sbdi;
+
+static long w_r_s_spawn_springboard(FLUXON *fl, int lab, int link, int depth) {
+
+  /* Skip magic boundary fluxons */
+  if(fl->label <= 0 && fl->label >= -10) 
+    return 0;
+
+  dumblist_add( fluxon_batch, fl );
+  v_ct += fl->v_ct;
+
+  if( v_ct > v_thresh+1 || fl==last_fluxon ) { // +1 ensures we run over, not under; last_fluxon check ensures we get the last one.
+    int p[2], pid;
+    if(pipe(p)) {
+      fprintf(stderr,"Pipe creation failed! Giving up!\n");
+      return 1;
+    }
+    
+    pid = fork();
+
+    if(pid) {
+      
+      /** parent process **/
+      close(p[1]);
+
+      if(fl->fc0->world->verbosity) {
+	printf("spawned %d...",pid);
+	fflush(stdout);
+      }
+      
+      /* Clear the batch list */
+      v_ct = 0;
+      dumblist_clear( fluxon_batch );
+      
+      /* Store the pid information */
+      sbdi->pid = pid;
+      sbdi->pipe = p[0];
+      sbdi++;
+      
+      return 0;
+
+    } else {
+      
+      /*** daughter process ***/
+      close(p[0]);
+
+      {
+	int i;
+	for(i=0; i<fluxon_batch->n; i++) {
+	  FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
+	  fluxon_calc_step( f, gl_t);
+	}
+
+	for(i=0; i<fluxon_batch->n; i++) {
+	  FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
+	  binary_dump_fluxon_pipe( p[1], f );
+	}
+
+	binary_dump_end( p[1] );
+	exit(0);
+      }
+    }
+
+    fprintf(stderr,"You should never see this!\n");
+    return 1;
+  }
+
+  /* Normal exit case - just iterate again and spawn another time */
+  return 0;
+}
+      
+
+
+/******************************
+ * world_relax_step_parallel actually starts here (helpers above)
+ */
+void world_relax_step_parallel(WORLD *a, NUM t) {
+  struct SUBPROC_DESC *sbdii;
+
+  gl_t = t;
+
+  /* Make sure our dumblists exist */
+  if(!fluxon_batch) 
+    fluxon_batch = new_dumblist();
+  if(!pipes)
+    pipes = new_dumblist();
+
+  /* If no concurrency, don't bother doing it in parallel */
+  if(a->concurrency < 1) {
+    world_relax_step(a, t);
+    return;
+  }
+
+  /* Accumulate the total number of vertices, to divide 'em up about equally */
+  v_ct = 0;
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, v_ct_springboard,0);
+
+  printf("v_ct is %d\n",v_ct);
+  v_thresh = v_ct / a->concurrency;
+
+  /* Now walk the tree again, accumulating fluxons to process.  When we've 
+   * gone over the v_ct threshold for a subprocess, spawn one and start 
+   * over.  The process info is stored in sbd[i]...
+   */
+  sbdi = sbd = (struct SUBPROC_DESC *)malloc(sizeof(struct SUBPROC_DESC) * a->concurrency);
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_spawn_springboard, 0);
+
+  /* Now we've forked off a bunch of copies, crunching away.  They will be 
+   * sending back their results via the pipes.  Snarf 'em up.
+   */
+  
+  for(sbdii=sbd; sbdii < sbdi; sbdii++) {
+    if(a->verbosity) {
+      printf("Reading dumpfile for pid %d...",sbdii->pipe);
+      fflush(stdout);
+    }
+    binary_read_dumpfile( sbdii->pipe, a );
+    close(sbdii->pipe);
+  }
+  if(a->verbosity) {
+    printf("\n");
+  }
+
+  /* Clean up the mess of the daughters... */
+  {
+    int stat_loc;
+    while(wait(&stat_loc) > 0) {}
+  }
+
+  /* Now advance the thing.... */
+  gl_t = t;
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_springboard, 0);
+}
+
 /**********************************************************************
  * fluxon_update_neighbors
  * 

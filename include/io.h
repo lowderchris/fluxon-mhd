@@ -92,6 +92,59 @@ void gl_2d_line (float x0, float y0, float x1, float y1, float colors[3]);
 void gl_2d_scr_poly(DUMBLIST *horde, float colors[3]);
 void gl_2d_scr_list(DUMBLIST *horde,float colors[3]);
 
+
+/**********************************************************************
+ **********************************************************************
+ * binary dump/restore stuff 
+ */
+
+// Some fences - unusual numbers with funny names 
+#define BD_FENCE         0xAB5C155A
+#define NEIGHBOR_FENCE   0xBED51DE0
+#define NEARBY_FENCE     0xBED51DE1
+#define VERTEX_END_FENCE 0x5AFEB055
+
+// Assign type codes sequentially, and set BD_MAX_TYPENO to the value of the highest one.
+#define BD_END                       1
+#define BD_FLUXON_PIPE               2
+#define BD_MAX_TYPENO                2
+
+// The read/write routines.  Note that some (the _pipe routines) are intended ONLY 
+// for returning state to a parent via a pipe -- they pass pointers directly!
+int binary_dump_field(int fd, long code, long len, char *buf);
+int binary_dump_end(int fd);
+int binary_dump_fluxon_pipe(int fd, FLUXON *f);
+
+int binary_read_dumpfile(int fd, WORLD *w);
+int binary_read_fluxon_pipe(long size, char *buf, WORLD *w);
+int binary_read_fluxon(int fd, FLUXON *f);
+
+
+// This structure, containing the fixed elements of a VERTEX,
+// is used for the fluxon_pipe routines (for parallelization)
+
+typedef struct VERTEX_PIPE_FIXED {
+  long label;
+  POINT3D x;
+  POINT3D scr;
+  POINT3D b_vec;
+  POINT3D f_v;
+  POINT3D f_s;
+  POINT3D f_t;
+  POINT3D plan_step;
+  NUM r;
+  NUM a;
+  NUM b_mag;
+  NUM energy;
+  NUM f_s_tot;
+  NUM f_v_tot;
+  NUM r_v, r_s;
+  NUM r_cl;
+  long neighbors_n;
+  long nearby_n;
+} VERTEX_PIPE_FIXED;
+
+
 #endif /* overall file include */
 
 

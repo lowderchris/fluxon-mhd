@@ -25,7 +25,7 @@ sv * Copyright (c) Craig DeForest, 2004-2007
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 14
+#define FLUX_CORE_VERSION 15
 
 typedef struct FluxCore {
 
@@ -112,6 +112,7 @@ typedef struct FluxCore {
   NUM *(*world_update_mag)       (WORLD *a, char global);
   void (*world_fluxon_length_check) (WORLD *a, char global);  
   void (*world_relax_step)       (WORLD *a, NUM t);
+  void (*world_relax_step_parallel) (WORLD *a, NUM t);
 
   void (*fluxon_update_neighbors)(FLUXON *fl, char gl);
   NUM *(*fluxon_update_mag)      (FLUXON *fl, char gl, void ((**f_funcs)()), NUM *minmax);

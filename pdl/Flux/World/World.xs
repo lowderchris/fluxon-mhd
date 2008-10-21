@@ -269,6 +269,16 @@ CODE:
  w = SvWorld(wsv,"Flux::World::relax_step",1);
  FLUX->world_relax_step(w,time);
 
+void
+relax_step_parallel(wsv,time)
+SV *wsv
+NV time
+PREINIT:
+ WORLD *w;
+CODE:
+ w = SvWorld(wsv,"Flux::World::relax_step",1);
+ FLUX->world_relax_step_parallel(w,time);
+
 
 IV
 verbosity(wsv,verbosity=0)
