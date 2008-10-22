@@ -825,7 +825,7 @@ static long w_r_s_spawn_springboard(FLUXON *fl, int lab, int link, int depth) {
       close(p[1]);
 
       if(fl->fc0->world->verbosity) {
-	printf("spawned %d...",pid);
+	printf("spawned %d at %d (thresh %d)...",pid,v_ct,v_thresh);
 	fflush(stdout);
       }
       
@@ -904,6 +904,7 @@ void world_relax_step_parallel(WORLD *a, NUM t) {
    * over.  The process info is stored in sbd[i]...
    */
   sbdi = sbd = (struct SUBPROC_DESC *)malloc(sizeof(struct SUBPROC_DESC) * a->concurrency);
+  v_ct = 0;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_spawn_springboard, 0);
 
   /* Now we've forked off a bunch of copies, crunching away.  They will be 
@@ -912,7 +913,7 @@ void world_relax_step_parallel(WORLD *a, NUM t) {
   
   for(sbdii=sbd; sbdii < sbdi; sbdii++) {
     if(a->verbosity) {
-      printf("Reading dumpfile for pid %d...",sbdii->pipe);
+      printf("Reading dumpfile for pid %d...",sbdii->pid);
       fflush(stdout);
     }
     binary_read_dumpfile( sbdii->pipe, a );

@@ -1699,13 +1699,12 @@ int binary_dump_end(int fd) {
  *
  *  [VERTEX_FORCE_DUMP]  force dump structure
  *  [void * x n]         neighbor pointers
- *  [void * x m]         nearby pointers
  *  [long]               trailing fence
  * 
  *  - fixed-length block (the VERTEX_FORCE_DUMP structure)
  *
  */
-#define MAX_AV_NEIGHBORS 200
+#define MAX_AV_NEIGHBORS 100
 int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
   int v_ct = f->v_ct;
   int i,j;
@@ -1726,7 +1725,7 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
   check_binary_buf( len );
   dex = binary_buffer;
   
-  *(long *)dex = 2;         // Version number of the fluxon force dump;
+  *(long *)dex = 3;         // Version number of the fluxon force dump;
   dex += sizeof(long);
   
   *(long *)dex = f->label;  // Label of the fluxon
@@ -1769,22 +1768,17 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
     vd->r_s     = v->r_s;
     vd->r_cl    = v->r_cl;
     vd->neighbors_n = v->neighbors.n;
-    vd->nearby_n    = v->nearby.n;
 
-    neighbors_found += v->neighbors.n + v->nearby.n;
+    neighbors_found += v->neighbors.n;
     if(neighbors_found > neighbors_allowed_for){
       fprintf(stderr,"binary_dump_fluxon_pipe: Whoa!  Never expected to see this.  Found %d neighbors along fluxon %d - that's over %d per vertex! I give up.\n",f->label, neighbors_found, MAX_AV_NEIGHBORS);
       fflush(stderr);
       return 2;
     }
 
-    // Now copy the neighbors and nearby...
+    // Now copy the neighbors...
     for(j=0; j<v->neighbors.n; j++) {
       *(void **)dex = v->neighbors.stuff[j];
-      dex += sizeof(void *);
-    }
-    for(j=0; j<v->nearby.n; j++) {
-      *(void **)dex = v->nearby.stuff[j];
       dex += sizeof(void *);
     }
     
@@ -1907,17 +1901,29 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
   FLUXON *f;
   VERTEX_PIPE_FIXED *vd;
   VERTEX *v;
-  int i,j;
+  int i,j,k;
   char *me = "FLUX I/O library: binary_read_fluxon_forces";
   char *dex = buf;
+  static DUMBLIST *dl = 0;
   
+  if(dl==0) {
+    dl = new_dumblist();
+  }
+
+  if(w->verbosity) {
+    printf("read_fluxon_pipe...");
+    fflush(stdout);
+  }
+
+
+
   if(size< 3*sizeof(long)) {
-    sprintf(buf, "%s: inconceivable packet size %d is too small!\n",me,size);
+    fprintf(stderr, "%s: inconceivable packet size %d is too small!\n",me,size);
     return 1;
   }
 
-  if( (*(long *)dex) != 2) { // Check version number
-    sprintf(buf, "%s: packet is the wrong version (%d, I am version %d)\n",me,*(long *)dex,1);
+  if( (*(long *)dex) != 3) { // Check version number
+    fprintf(stderr, "%s: packet is the wrong version (%d, I am version %d)\n",me,*(long *)dex,3);
     return 2;
   }
   dex+= sizeof(long);
@@ -1929,7 +1935,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
   dex += sizeof(FLUXON *);
   
   if(f->label != f_lab) {
-    sprintf(buf,"%s: found bogus fluxon pointer in dump! (expected fluxon %d, got %d)",me,f_lab, f->label);
+    fprintf(stderr,"%s: found bogus fluxon pointer in dump! (expected fluxon %d, got %d)",me,f_lab, f->label);
     return 3;
   }
 
@@ -1937,7 +1943,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
   dex += sizeof(long);
   
   if(f->v_ct != v_ct) {
-    sprintf(buf,"%s: vertex count doesn't agree in fluxon %d (expected %d from file, found %d in fluxon)\n",me,f_lab,v_ct, f->v_ct);
+    fprintf(stderr,"%s: vertex count doesn't agree in fluxon %d (expected %d from file, found %d in fluxon)\n",me,f_lab,v_ct, f->v_ct);
     return 4;
   }
 
@@ -1951,7 +1957,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     dex += sizeof(VERTEX_PIPE_FIXED);
 
     if(vd->label != v->label) {
-      sprintf(buf,"%s: vertex label mismatch in fluxon %d, pos %d - file expected %d, found %d\n",me,f_lab,i,vd->label,v->label);
+      fprintf(stderr,"%s: vertex label mismatch in fluxon %d, pos %d - file expected %d, found %d\n",me,f_lab,i,vd->label,v->label);
       return 5;
     }
 
@@ -1972,27 +1978,56 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     v->r_s      = vd->r_s;
     v->r_cl     = vd->r_cl;
 
-    if(v->neighbors.size < vd->neighbors_n)
-      dumblist_grow( &(v->neighbors), vd->neighbors_n );
-    if(v->nearby.size    < vd->nearby_n)
-      dumblist_grow( &(v->nearby),    vd->nearby_n );
-
-    for(j=0; j<vd->neighbors_n; j++){
-      v->neighbors.stuff[j] = *(void **)dex;
-      dex += sizeof(void *);
+    if(w->verbosity) {
+      printf("vertex %d: found %d neighbors...\n",v->label,vd->neighbors_n);
     }
-    v->neighbors.n = vd->neighbors_n;
 
-    for(j=0; j<vd->nearby_n; j++) {
-      v->nearby.stuff[j] = *(void **)dex;
+    // First - collect the neighbors in a local dumblist.
+    dl->n = 0;
+    for(j=0; j<vd->neighbors_n; j++) {
+      dumblist_add( dl, *(void **)dex );
       dex += sizeof(void *);
     }
 
+    // Next - check the fence!
     if( *(long *)dex != VERTEX_END_FENCE ) {
-      sprintf(buf,"%s: missed end fence while copying vertex %d (label %d) into fluxon %d - giving up!\n",me, i, v->label, f->label);
+      fprintf(stderr,"%s: missed end fence while copying vertex %d (label %d) into fluxon %d - giving up!\n",me, i, v->label, f->label);
       return 6;
     }
     dex += sizeof(long);
+
+    ////// Now - merge the neighbors with the local neighbor list. 
+
+    // Delete current vertex neighbors that aren't in the new list.
+    // This is complicated by the need to maintain back-links.
+    for(j=0; j<v->neighbors.n; j++) {
+      int found = 0;
+      for(k=0; k<dl->n && !found; k++) 
+	found = ( dl->stuff[k] == v->neighbors.stuff[j] );
+      if(!found) {
+	// Delete the back link first, then remove the item from the neighbor list.
+	dumblist_delete(  &( ((VERTEX *)(v->neighbors.stuff[j]))->nearby ), v );
+	dumblist_rm( &(v->neighbors), j );
+	// Decrement counter - last element moved to this slot, so we have to re-do the slot.
+	j--;
+      }
+    }
+    
+    // Finally - add any items from the new list that aren't already neighbors.
+    for(k=0; k<dl->n; k++) {
+      int found = 0;
+      for(j=0; j<v->neighbors.n && !found; j++) 
+	found = ( dl->stuff[k] == v->neighbors.stuff[j] );
+      if(!found) {
+	dumblist_add( &(v->neighbors), dl->stuff[k] );
+	dumblist_add( &( ((VERTEX *)(dl->stuff[k]))->nearby ), v );
+      }
+    }
+
+    if(w->verbosity) {
+      printf("after transfer: %d neighbors.      ",v->neighbors.n);
+    }
+
   }
 
   return 0;
