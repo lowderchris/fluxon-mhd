@@ -153,6 +153,7 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	case 25: return (void *)&(v->world_links.right);break;
 	case 26: return (void *)&(v->energy);           break;
 	case 27: return (void *)&(v->plan_step[0]);     break;
+	case 28: return (void *)&(v->f_n_tot);          break;
 	default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 	                 typeno,fieldno);
 	         return (void *)0;
@@ -233,6 +234,14 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 		case 32: return (void *)&(w->photosphere2);		break;
 		case 33: return (void *)&(w->m_funcs);                  break;
 		case 34: return (void *)&(w->concurrency);              break;
+		case 35: return (void *)&(w->f_min);                    break;
+		case 36: return (void *)&(w->f_max);                    break;
+		case 37: return (void *)&(w->fr_min);                   break;
+		case 38: return (void *)&(w->fr_max);                   break;
+		case 39: return (void *)&(w->ca_min);                   break;
+		case 40: return (void *)&(w->ca_max);                   break;
+		case 41: return (void *)&(w->ca_acc);                   break;
+		case 42: return (void *)&(w->ca_ct);                    break;
 		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 				typeno, fieldno);		
 			 return (void *)0;

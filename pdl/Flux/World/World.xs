@@ -247,15 +247,31 @@ SV *wsv
 IV global
 PREINIT:
  WORLD *w;
- NUM *minmax;
 /**********************************************************************
  * update_force
  * Updates the forces everywhere in the model.
  */
 CODE:
  w = SvWorld(wsv,"Flux::World::update_force",1);
- minmax = FLUX->world_update_mag(w,global);
- RETVAL = minmax[1];
+ FLUX->world_update_mag(w,global);
+ w->f_max;
+OUTPUT:
+ RETVAL
+
+NV
+update_force_parallel(wsv,global=0)
+SV *wsv
+IV global
+PREINIT:
+ WORLD *w;
+/**********************************************************************
+ * update_force
+ * Updates the forces everywhere in the model.
+ */
+CODE:
+ w = SvWorld(wsv,"Flux::World::update_force",1);
+ FLUX->world_update_mag_parallel(w,global);
+ RETVAL = w->f_max;
 OUTPUT:
  RETVAL
 

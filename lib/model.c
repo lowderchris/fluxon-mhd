@@ -590,7 +590,6 @@ void fluxon_auto_open(FLUXON *f) {
 static WORLD *gl_a;  /* springboard world parameter */
 static char gl_gl;   /* springboard global flag */
 static void ((**gl_f_funcs)()); /* springboard functions list */
-static NUM *gl_minmax; /* Keeps track of minimum and maximum forces */
 
 static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
@@ -602,8 +601,7 @@ static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
     printf(" %d",fl->label);
     fflush(stdout);
   }
-  fluxon_update_neighbors(fl, gl_gl);
-  return 0;
+  return fluxon_update_neighbors(fl, gl_gl);
 }
 
 void world_update_neighbors(WORLD *a, char global) {
@@ -620,22 +618,17 @@ static long w_u_m_springboard(FLUXON *fl, int lab, int link, int depth) {
   if(fl->label <= 0 && fl->label >= -10) 
     return 0 ;
 
-  gl_minmax = fluxon_update_mag(fl,gl_gl, gl_f_funcs, gl_minmax);
-  return 0;
+  return fluxon_update_mag(fl,gl_gl, gl_f_funcs);
 }
 
-NUM *world_update_mag(WORLD *a, char global) {
+int world_update_mag(WORLD *a, char global) {
   gl_a = a;
   gl_gl = global;
   gl_f_funcs = a->f_funcs;
-  gl_minmax = 0;
-  // ARD - Reset maxangle, meanangle and number of angles in world
-  a->max_angle = 1.0;
-  a->mean_angle = 0.0;
-  //  printf("Resetting  maxangle, meanangle\n");
-  //  fflush(stdout);
-  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_m_springboard, 0);
-  return gl_minmax;
+
+  init_minmax_accumulator(a);
+  return tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_m_springboard, 0);
+  finalize_minmax_accumulator(a);
 }
 
 
@@ -733,11 +726,6 @@ static long w_ca_s_springboard(FLUXON *fl, int lab, int link, int depth) {
   if(fl->label <= 0 && fl->label >= -10) 
     return 0 ;
 
-  // ARD created separate calculation and relaxation routines to accomodate new
-  // schema for including influence of neighbor steps.
- 
-  //  printf("Calling fluxon_calc_step\n");
-  //  fflush(stdout);
   fluxon_calc_step(fl, gl_t);
   return 0;
 }
@@ -747,11 +735,6 @@ static long w_r_s_springboard(FLUXON *fl, int lab, int link, int depth) {
   if(fl->label <= 0 && fl->label >= -10) 
     return 0 ;
 
-  // ARD created separate calculation and relaxation routines to accomodate new
-  // schema for including influence of neighbor steps.
- 
-  //  printf("Calling fluxon_relax_step\n");
-  //  fflush(stdout);
   fluxon_relax_step(fl, gl_t);
   return 0;
 }
@@ -760,178 +743,9 @@ void world_relax_step(WORLD *a, NUM t) {
   gl_t=t;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_ca_s_springboard, 0);
   gl_t=t;
+  init_minmax_accumulator(a);
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_springboard, 0);
-}
-
-
-/**********************************************************************
- * world_relax_step_parallel
- *
- * First-stage parallelization of world_relax-step.  Forks off the neighbor and 
- * force calculation in roughly vertex-equal chunks.  Works by keeping a 
- * DUMBLIST of the fluxons to be processed; when enough are accumulated, it 
- * forks off a processor and starts the DUMBLIST over again.  Outstanding 
- * processes are handled via another DUMBLIST, and their results are processed
- * via the binary dump mechanism.
- * 
- */
-
-/******************************
- * v_ct_springboard - counts up the total number of vertices in the sim.
- */
-static long v_ct;
-static long v_thresh;
-static FLUXON *last_fluxon;  // Gets the last fluxon in the tree...
-
-static long v_ct_springboard(FLUXON *fl, int lab, int link, int depth) {
-  if(!(fl->label <= 0 && fl->label >= -10)) 
-    v_ct += fl->v_ct;
-  last_fluxon = fl;
-  return 0;
-}
-
-static DUMBLIST *fluxon_batch = 0;
-static DUMBLIST *pipes = 0;
-
-struct SUBPROC_DESC { 
-  long pid;
-  long pipe;
-};
-
-struct SUBPROC_DESC *sbd = 0;
-struct SUBPROC_DESC *sbdi;
-
-static long w_r_s_spawn_springboard(FLUXON *fl, int lab, int link, int depth) {
-
-  /* Skip magic boundary fluxons */
-  if(fl->label <= 0 && fl->label >= -10) 
-    return 0;
-
-  dumblist_add( fluxon_batch, fl );
-  v_ct += fl->v_ct;
-
-  if( v_ct > v_thresh+1 || fl==last_fluxon ) { // +1 ensures we run over, not under; last_fluxon check ensures we get the last one.
-    int p[2], pid;
-    if(pipe(p)) {
-      fprintf(stderr,"Pipe creation failed! Giving up!\n");
-      return 1;
-    }
-    
-    pid = fork();
-
-    if(pid) {
-      
-      /** parent process **/
-      close(p[1]);
-
-      if(fl->fc0->world->verbosity) {
-	printf("spawned %d at %d (thresh %d)...",pid,v_ct,v_thresh);
-	fflush(stdout);
-      }
-      
-      /* Clear the batch list */
-      v_ct = 0;
-      dumblist_clear( fluxon_batch );
-      
-      /* Store the pid information */
-      sbdi->pid = pid;
-      sbdi->pipe = p[0];
-      sbdi++;
-      
-      return 0;
-
-    } else {
-      
-      /*** daughter process ***/
-      close(p[0]);
-
-      {
-	int i;
-	for(i=0; i<fluxon_batch->n; i++) {
-	  FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
-	  fluxon_calc_step( f, gl_t);
-	}
-
-	for(i=0; i<fluxon_batch->n; i++) {
-	  FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
-	  binary_dump_fluxon_pipe( p[1], f );
-	}
-
-	binary_dump_end( p[1] );
-	exit(0);
-      }
-    }
-
-    fprintf(stderr,"You should never see this!\n");
-    return 1;
-  }
-
-  /* Normal exit case - just iterate again and spawn another time */
-  return 0;
-}
-      
-
-
-/******************************
- * world_relax_step_parallel actually starts here (helpers above)
- */
-void world_relax_step_parallel(WORLD *a, NUM t) {
-  struct SUBPROC_DESC *sbdii;
-
-  gl_t = t;
-
-  /* Make sure our dumblists exist */
-  if(!fluxon_batch) 
-    fluxon_batch = new_dumblist();
-  if(!pipes)
-    pipes = new_dumblist();
-
-  /* If no concurrency, don't bother doing it in parallel */
-  if(a->concurrency < 1) {
-    world_relax_step(a, t);
-    return;
-  }
-
-  /* Accumulate the total number of vertices, to divide 'em up about equally */
-  v_ct = 0;
-  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, v_ct_springboard,0);
-
-  printf("v_ct is %d\n",v_ct);
-  v_thresh = v_ct / a->concurrency;
-
-  /* Now walk the tree again, accumulating fluxons to process.  When we've 
-   * gone over the v_ct threshold for a subprocess, spawn one and start 
-   * over.  The process info is stored in sbd[i]...
-   */
-  sbdi = sbd = (struct SUBPROC_DESC *)malloc(sizeof(struct SUBPROC_DESC) * a->concurrency);
-  v_ct = 0;
-  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_spawn_springboard, 0);
-
-  /* Now we've forked off a bunch of copies, crunching away.  They will be 
-   * sending back their results via the pipes.  Snarf 'em up.
-   */
-  
-  for(sbdii=sbd; sbdii < sbdi; sbdii++) {
-    if(a->verbosity) {
-      printf("Reading dumpfile for pid %d...",sbdii->pid);
-      fflush(stdout);
-    }
-    binary_read_dumpfile( sbdii->pipe, a );
-    close(sbdii->pipe);
-  }
-  if(a->verbosity) {
-    printf("\n");
-  }
-
-  /* Clean up the mess of the daughters... */
-  {
-    int stat_loc;
-    while(wait(&stat_loc) > 0) {}
-  }
-
-  /* Now advance the thing.... */
-  gl_t = t;
-  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_springboard, 0);
+  finalize_minmax_accumulator(a);
 }
 
 /**********************************************************************
@@ -942,7 +756,7 @@ void world_relax_step_parallel(WORLD *a, NUM t) {
  * from each cell.  Use fluxon_update_mag instead -- that handles
  * physics too.
  */
-void fluxon_update_neighbors(FLUXON *fl, char global) {
+int fluxon_update_neighbors(FLUXON *fl, char global) {
   int i=0;
   VERTEX *v = fl->start;
   int verbosity = fl->fc0->world->verbosity;
@@ -967,6 +781,7 @@ void fluxon_update_neighbors(FLUXON *fl, char global) {
     i++;
   }
 
+  return 0;
 }
 
 /**********************************************************************
@@ -982,27 +797,12 @@ void fluxon_update_neighbors(FLUXON *fl, char global) {
  * NUMs (useful for computing timesteps).
  */
 
-NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minmax) {
-  static NUM output[4];
-  NUM *f_min, *f_max, *fr_min, *fr_max;
+int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
   int i=0;
-  int verbosity = fl->fc0->world->verbosity;
+  WORLD *w = fl->fc0->world;
+  int verbosity = w->verbosity;
   VERTEX *v = fl->start;
-  NUM cangle;
-  NUM b1hat[3];
-  NUM b2hat[3];
 
-
-  if(!minmax) {
-    minmax = output;
-    minmax[0] = minmax[1] = minmax[2] = minmax[3] = -1;
-  }
-
-  f_min = &minmax[0];
-  f_max = &minmax[1];
-  fr_min = &minmax[2];
-  fr_max = &minmax[3];
-  
   if(verbosity >= 2)  printf("fluxon_update_mag (fluxon %d): %c",fl->label,(verbosity==2?' ':'\n'));
 
   /*
@@ -1060,6 +860,7 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
     if(fl->fc0->world->verbosity >= 3)
       printf("\n");
 
+
   }
   if(verbosity >= 3) printf("\n");
 
@@ -1070,71 +871,109 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
 
   for(v=fl->start;v->next;v=v->next) {
     NUM f[3], fns, fnv, fn;
-    NUM r = v->r_cl;
     NUM a;
   
     diff_3d(f,v->next->x,v->x);
     a = norm_3d(f);
-    if(a<r && a>0)
-      r=a;
+    if(a<v->r_cl && a>0)
+      v->r_cl=a;
     
     if(v->prev) {
       diff_3d(f, v->x, v->prev->x);
       a = norm_3d(f);
-      if(a<r && a>0)
-	r=a;
+      if(a<v->r_cl && a>0)
+	v->r_cl = a;
 
       sum_3d(f,v->prev->f_s,v->f_s);
       scale_3d(f,f,0.5);
     } else {
-      f[0] = v->f_s[0];
-      f[1] = v->f_s[1];
-      f[2] = v->f_s[2];
+      cp_3d(f,v->f_s);
     }
     
     fns = (v->r_s > 0) ? (norm_3d(f)) : 0;
     fnv = (v->r_v > 0) ? (norm_3d(v->f_v)) : 0;
     
     sum_3d(v->f_t,f,v->f_v);
+    v->f_n_tot = norm_3d(v->f_t);
 
-    fn = norm_3d(v->f_t);
+    /* Accumulate force and curvature data for the whole world.... */
+    vertex_accumulate_f_minmax(v,w);
 
-    /* Check max, min, etc. */
-    if(*f_min < 0 || fn < *f_min)
-      *f_min = fn;
-    if(*f_max < 0 || fn > *f_max)
-      *f_max = fn;
-    if(*fr_min < 0 || fn/r < *fr_min)
-      *fr_min = fn/r;
-    if(*fr_max < 0 || fn/r > *fr_max)
-      *fr_max = fn/r;
-
-    // ARD Update max_angle, mean_angle here
-     
-    if (v->prev) {
-      diff_3d(b1hat, v->x, v->prev->x);
-      diff_3d(b2hat, v->next->x, v->x);
-      cangle = inner_3d(b1hat, b2hat);
-      cangle *= fabs(cangle);
-      cangle /= (norm2_3d(b1hat) * norm2_3d(b2hat));
-      if (verbosity >= 4) {
-	printf("\nCangle: cangle %f\n", cangle);
-	fflush(stdout);
-      }
-
-      if (cangle < fl->fc0->world->max_angle) fl->fc0->world->max_angle = cangle;
-
-      fl->fc0->world->mean_angle += (cangle / fl->fc0->world->vertices->world_links.n);
-    }
-
-    if(verbosity >= 3){ printf("V%4d: r=%g, fmax=%g, frmax=%g ",v->label, r, *f_max, *fr_max); fflush(stdout);}    
   }
 
-  if(verbosity >= 3)  printf("\n");
-
-  return minmax;
+  return 0;
 }
 
+
+
+  
+/**********************************************************************
+ * init_minmax_accumulator, vertex_accumulate_f_minmax
+ *
+ * Accumulates global stats by vertex.  You can call 
+ * world_accumulate_minmax to get 'em all, or do it vertex-by-vertex
+ * if you are already iterating through the arena.
+ *
+ * fluxon_update_mag calls the accumulator on a vertex-by-vertex
+ * basis, which is currently a waste in the parallel case (because the 
+ * daughter processes' accumulators will be discarded).
+ *
+ */
+void init_minmax_accumulator(WORLD *w) {
+  w->f_min = -1;
+  w->f_max = -1;
+  w->fr_min = -1;
+  w->fr_max = -1;
+  w->ca_min = -1;
+  w->ca_max = -1;
+  w->ca_acc = 0;
+  w->ca_ct = 0;
+}
+
+void finalize_minmax_accumulator(WORLD *w) {
+  w->max_angle = RAD2DEG * acos(w->ca_min);
+  w->mean_angle = RAD2DEG * acos(w->ca_acc / w->ca_ct);
+}
+
+void vertex_accumulate_f_minmax(VERTEX *v, WORLD *w) {
+  NUM fr;
+  NUM cangle;
+  NUM b1hat[3];
+  NUM b2hat[3];
+
+  if(!w)
+    w = v->line->fc0->world;
+
+  /* Check max, min, etc. */
+  if(w->f_min < 0 || v->f_n_tot < w->f_min)
+    w->f_min = v->f_n_tot;
+  if(w->f_max < 0 || v->f_n_tot > w->f_max)
+    w->f_max = v->f_n_tot;
+  
+  fr = v->f_n_tot / v->r_cl;
+  if(w->fr_min < 0 || fr < w->fr_min)
+    w->fr_min = fr;
+  if(w->fr_max < 0 || fr > w->fr_max)
+      w->fr_max = fr;
+  
+  if (v->prev && v->next) {
+    diff_3d(b1hat, v->x, v->prev->x);
+    diff_3d(b2hat, v->next->x, v->x);
+    cangle = inner_3d(b1hat, b2hat);
+    cangle *= fabs(cangle);
+    cangle /= (norm2_3d(b1hat) * norm2_3d(b2hat));
+    
+    // Calculate using only the cosine of the 
+    // angle (faster than taking a gazillion acos's)
+    if (w->ca_min < 0 || cangle < w->ca_min )
+      w->ca_min = cangle;
+    if (w->ca_max < 0 || cangle > w->ca_max )
+      w->ca_max = cangle;
+    
+    w->ca_acc += cangle;
+    w->ca_ct++;
+  }
+}
 
 /**********************************************************************
  * fluxon_relax_step
@@ -1164,23 +1003,32 @@ NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minma
  */
 
 
-/*** fastpow is quite fast for small integer powers, slightly slower for fractional ***/
+/*** fastpow is quite fast for small integer powers, slightly slower for fractional. Acceleration 
+ *** fails for large negative powers.  Powers within 0.0001 of an integer get treated as integers.
+ ***/
 NUM fastpow( NUM num, NUM exponent ) {
   NUM out = 1.0;
   NUM recip;
-  
-  if(exponent<0) {
-    recip = 1.0/num;
-    while(exponent<=-0.9999) {  exponent++; out *= recip;  }
-  } else 
-    while(exponent>=0.9999) { exponent--; out *= num; }
+  int exp = (exponent + 100.0001) - 100;
 
-  if(exponent>0.0001 || exponent<-0.0001) { out *= pow(num,exponent);  }
-  return out;
+  if( exponent - exp < 0.0001 && exponent-exp > -0.0001) {
+    if(exponent<0) {
+      recip = 1.0/num;
+      while(exp<0) {  exp++; out *= recip;  }
+    } else 
+      while(exp>=0.999) { exp--; out *= num; }
+    return out;
+
+  } else {
+
+    return pow(num,exponent);
+
+  }
 }
     
 void fluxon_calc_step(FLUXON *f, NUM dt) {
   VERTEX *v = f->start;
+  WORLD *w = f->fc0->world;
   NUM a[3];
   NUM total[3];
   NUM force_factor, f_denom;
@@ -1320,6 +1168,9 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
     v->plan_step[0] = a[0];
     v->plan_step[1] = a[1];
     v->plan_step[2] = a[2];
+
+    // Finally, accumulate force and curvature info
+    vertex_accumulate_f_minmax(v, w);
   }
 }
 
@@ -1588,6 +1439,10 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 
     vertex_enforce_photosphere( v, &(world->photosphere) );
     vertex_enforce_photosphere( v, &(world->photosphere2) );
+
+    if(v->prev && v->prev->prev) {
+      vertex_accumulate_f_minmax(v->prev, world);
+    }
 
     if(verbosity >= 3)    
       printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
@@ -1973,7 +1828,7 @@ void image_find(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v) {
   /* helper routine to generate the image point and stuff it into
    * the correct image point in the world.*/
   NUM a;
-  PLANE *p = &(phot->plane);
+  PLANE *p = phot->plane;
 
   switch(phot->type) {
     PLANE pl;
@@ -3192,3 +3047,257 @@ void fl_b_plasmoid(VERTEX *v) {
   fprintf(stderr,"HEY! fl_b_plasmoid got a middle vertex! Doing nothing...\n");
   
 }
+
+/**********************************************************************
+ * First-stage parallelization stuff...
+ *
+ * First-stage parallelization of world_relax_step and
+ * world_update_mag.  Each one Forks off the detailed calculation in
+ * roughly vertex-equal chunks.  They work by keeping a DUMBLIST of
+ * the fluxons to be processed; when enough are accumulated, each forks
+ * off a processor and starts the DUMBLIST over again.  Outstanding
+ * processes are handled via another DUMBLIST, and their results are
+ * processed via the binary dump mechanism.
+ *
+ * 
+ * The parallel_prep and parallel_finish set up initial operations to get the 
+ * various globals set right.  
+ * 
+ */
+
+/******************************
+ * Globals for parallization bookkeeping
+ */
+static long v_ct;            // Number of vertices in current batch
+static long v_thresh;        // Threshold vertex count above which to spawn a worker process
+static FLUXON *last_fluxon;  // Gets the last fluxon in the tree (set in v_ct_springboard)
+
+static DUMBLIST *fluxon_batch = 0;  // Dumblist gets the current fluxon batch to be processed.
+
+typedef struct SUBPROC_DESC {   // Keeps track of what we spawned...
+  long pid;
+  long pipe;
+} SUBPROC_DESC;
+static SUBPROC_DESC *sbd, *sbdi;    // Used for bookkeeping subprocs.
+
+int (*work_springboard)(FLUXON *f); // Contains the actual action 
+
+
+/******************************
+ * v_ct_springboard - counts up the total number of vertices in the sim.
+ */
+static long v_ct_springboard(FLUXON *fl, int lab, int link, int depth) {
+  if(!(fl->label <= 0 && fl->label >= -10)) 
+    v_ct += fl->v_ct;
+  last_fluxon = fl;
+  return 0;
+}
+
+
+/******************************
+ * parallel_prep - call this to set up a parallelization run.
+ * Counts vertices and sets the v_thresh, and zeroes out the 
+ * subproc dumblist...
+ */
+void parallel_prep(WORLD *a) {
+  /* Make sure our dumblists exist */
+  if(!fluxon_batch)
+    fluxon_batch = new_dumblist();
+
+  sbdi = sbd = (SUBPROC_DESC *)malloc(sizeof(SUBPROC_DESC) * a->concurrency);
+  
+  /* Accumulate the total number of vertices, to divide 'em up about equally */
+  v_ct = 0;
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, v_ct_springboard,0);
+
+  printf("v_ct is %d\n",v_ct);
+  v_thresh = v_ct / a->concurrency;
+  
+  dumblist_clear(fluxon_batch);
+  v_ct = 0; // Zero the vertex count for comparison against v_thresh...
+}
+
+
+/******************************
+ * parallel_finish - call this to suck back in all the state
+ * from the daughter subprocesses...
+ */
+void parallel_finish(WORLD *a) {
+  SUBPROC_DESC *sbdii;
+  
+
+  init_minmax_accumulator(a);
+
+  for(sbdii=sbd; sbdii < sbdi; sbdii++) {
+    if(a->verbosity) {
+      printf("Reading dumpfile for pid %d...",sbdii->pid);
+      fflush(stdout);
+    }
+    binary_read_dumpfile( sbdii->pipe, a );
+    close(sbdii->pipe);
+
+    if(a->verbosity) {
+      printf("finished pid %d dump..\n",sbdii->pid);
+    }
+  }
+
+  finalize_minmax_accumulator(a);
+
+  /* Clean up the mess of the daughters... */
+  {
+    int stat_loc;
+    while(wait(&stat_loc) > 0) {}
+  }
+
+  dumblist_clear(fluxon_batch);
+  free(sbd);
+}
+
+/******************************
+ * parallel_fluxon_spawn_springboard - call this from tree_walker 
+ * to launch your task, parallelized by fluxon.  You determine the
+ * task by setting the global work_springboard, which is a 
+ * pointer to a function that accepts a FLUXON * and returns an
+ * int.  
+ */
+
+static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int depth) {
+
+  /* Skip magic boundary fluxons */
+  if(fl->label <= 0 && fl->label >= -10) 
+    return 0;
+
+  dumblist_add( fluxon_batch, fl );
+  v_ct += fl->v_ct;
+
+  if( v_ct > v_thresh+1 || fl==last_fluxon ) { // +1 ensures we run over, not under; last_fluxon check ensures we get the last one.
+    int p[2], pid;
+    if(pipe(p)) {
+      fprintf(stderr,"Pipe creation failed! Giving up!\n");
+      return 1;
+    }
+    
+    pid = fork();
+
+    if(pid) {
+      
+      /** parent process **/
+      close(p[1]);
+
+      if(fl->fc0->world->verbosity) {
+	printf("spawned %d at %d (thresh %d)...",pid,v_ct,v_thresh);
+	fflush(stdout);
+      }
+      
+      /* Clear the batch list */
+      v_ct = 0;
+      dumblist_clear( fluxon_batch );
+      
+      /* Store the pid information */
+      sbdi->pid = pid;
+      sbdi->pipe = p[0];
+      sbdi++;
+      
+      return 0;
+
+    } else {
+      
+      /*** daughter process ***/
+      close(p[0]);
+
+      {
+	int i;
+	for(i=0; i<fluxon_batch->n; i++) {
+	  FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
+	  if((*work_springboard)( f ))
+	    exit(1);
+	}
+
+	for(i=0; i<fluxon_batch->n; i++) {
+	  FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
+	  binary_dump_fluxon_pipe( p[1], f );
+	}
+
+	binary_dump_end( p[1] );
+	exit(0);
+      }
+    }
+
+    fprintf(stderr,"You should never see this!\n");
+    return 1;
+  }
+
+  /* Normal exit case - just iterate again and spawn another time */
+  return 0;
+}
+      
+
+/**********************************************************************
+ *
+ * Parallelized arena operations follow
+ *
+ */
+
+/******************************
+ * world_relax_step_parallel
+ */
+
+static int fluxon_calc_step_sb(FLUXON *f) {
+  fluxon_calc_step(f, gl_t);
+}
+
+void world_relax_step_parallel(WORLD *a, NUM t) {
+  gl_t = t;
+
+  /* If no concurrency, don't bother doing it in parallel */
+  if(a->concurrency < 1) {
+    world_relax_step(a, t);
+    return;
+  }
+
+  parallel_prep(a);                       // Get ready
+
+  gl_t = t;                               // Set up global dtau variable for springboarding                                 
+  work_springboard = fluxon_calc_step_sb; // This is the parallelized operation
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0); 
+
+  parallel_finish(a);     // Snarf up our state again
+
+  /* Now advance the thing (single threaded just yet -- fix?).... */
+  gl_t = t;
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_springboard, 0);
+
+}
+
+
+/******************************
+ * world_update_mag_parallel
+ */
+
+static int fluxon_update_mag_sb(FLUXON *f) {
+  return fluxon_update_mag(f, gl_gl, gl_f_funcs);
+}
+
+int world_update_mag_parallel(WORLD *a, char global) {
+
+
+  if(a->concurrency < 1) {
+    printf("Warning - using single threaded mag...\n");
+    return world_update_mag(a,global);
+  }
+
+  gl_a = a;
+  gl_gl = global;
+  gl_f_funcs = a->f_funcs;
+  a->max_angle = 1.0;
+  a->mean_angle = 0.0;
+
+  parallel_prep(a);
+
+  work_springboard = fluxon_update_mag_sb;
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0);
+  
+  parallel_finish(a);
+  return 0;
+}
+

@@ -438,6 +438,16 @@ WORLD *new_world() {
   a->n_coeffs = 1;
   a->maxn_coeffs = MAXNUMCOEFFS;
   a->concurrency = 1;
+
+  a->f_min = -1;
+  a->f_max = -1;
+  a->fr_min = -1;
+  a->fr_max = -1;
+  a->ca_min = -1;
+  a->ca_max = -1;
+  a->ca_acc = 0;
+  a->ca_ct = 0;
+
   return a;
 }
 

@@ -30,6 +30,7 @@
 
 #include "data.h"
 #include "io.h"
+#include "model.h" 
 #include "physics.h" /* for FORCES translation */
 
 char *code_info_io="%%%FILE%%%";
@@ -1768,6 +1769,7 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
     vd->r_s     = v->r_s;
     vd->r_cl    = v->r_cl;
     vd->neighbors_n = v->neighbors.n;
+    vd->f_n_tot = v->f_n_tot;
 
     neighbors_found += v->neighbors.n;
     if(neighbors_found > neighbors_allowed_for){
@@ -1853,7 +1855,7 @@ int binary_read_dumpfile ( int fd, WORLD *w ) {
 
     pos += len;
 
-    if(w->verbosity) {
+    if(w->verbosity>1) {
       printf("read_dumpfile: found fence; type=%d, len=%d\n",hdrbuf[1],hdrbuf[2]);
     }
     
@@ -1894,6 +1896,9 @@ int binary_read_dumpfile ( int fd, WORLD *w ) {
  *
  * Version number must match...
  *
+ * Also, we accumulate min/max force and angle info per vertex -
+ * this uses the vertex_accumulate_f_minmax routine in model.c.
+ *
  */
 int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
   long f_lab;
@@ -1910,7 +1915,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     dl = new_dumblist();
   }
 
-  if(w->verbosity) {
+  if(w->verbosity>1) {
     printf("read_fluxon_pipe...");
     fflush(stdout);
   }
@@ -1947,7 +1952,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     return 4;
   }
 
-  if(w->verbosity) {
+  if(w->verbosity>1) {
     printf(" r: f=%d,vct=%d    ",f->label,f->v_ct);
     fflush(stdout);
   }
@@ -1977,11 +1982,18 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     v->r_v      = vd->r_v;
     v->r_s      = vd->r_s;
     v->r_cl     = vd->r_cl;
+    v->f_n_tot  = vd->f_n_tot;
 
-    if(w->verbosity) {
+    if(w->verbosity>1) {
       printf("vertex %d: found %d neighbors...\n",v->label,vd->neighbors_n);
     }
 
+    /* Accumulate force and angle.  We lag by one vertex, to get the curvature right. */
+    if(v->prev && v->prev->prev) {
+      vertex_accumulate_f_minmax(v->prev,w); // in model.c
+    }
+
+    /////Handle neighbors...
     // First - collect the neighbors in a local dumblist.
     dl->n = 0;
     for(j=0; j<vd->neighbors_n; j++) {
@@ -2024,7 +2036,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
       }
     }
 
-    if(w->verbosity) {
+    if(w->verbosity>1) {
       printf("after transfer: %d neighbors.      ",v->neighbors.n);
     }
 

@@ -49,13 +49,18 @@ enum neighbor_global {
 
 int world_check(WORLD *a);  
 void world_update_neighbors(WORLD *a, char global);
-NUM *world_update_mag(WORLD *a, char global);
+int world_update_mag(WORLD *a, char global);
+int world_update_mag_parallel(WORLD *a, char global);
 void world_relax_step(WORLD *a, NUM t);
 void world_relax_step_parallel(WORLD *a, NUM t);
 void world_fluxon_length_check(WORLD *a, char global);
 
-void fluxon_update_neighbors(FLUXON *fl, char global);
-NUM *fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()), NUM *minmax);
+int fluxon_update_neighbors(FLUXON *fl, char global);
+int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()));
+
+void init_minmax_accumulator(WORLD *w);
+void vertex_accumulate_f_minmax(VERTEX *v, WORLD *w);
+void finalize_minmax_accumulator(WORLD *w);
 
 void fluxon_calc_step(FLUXON *fl, NUM t);
 void fluxon_relax_step(FLUXON *fl, NUM t);

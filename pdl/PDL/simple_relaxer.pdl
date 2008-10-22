@@ -107,12 +107,6 @@ sub simple_relaxer {
     my $conv = 180.0 / (atan2(1,1)*4.);
     $range=$range->copy if (defined $range);
 
-# LAR my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
-# OLD my $disp_n = $opt->{disp_n} || $movie_n || 10; can't set $disp_n to zero;
-
-# ARD $step = $w->{rel_step} || 0; $step now kept in world 	
-# OLD   $step=0 unless($n);
-
     $step = $w->{rel_step} || 0;	
     $final_step=$n;
     $final_step = $step + $n if $final_step <= $step; 
@@ -120,19 +114,9 @@ sub simple_relaxer {
 #    $w = read_world($w)
 #      unless(ref $w) ;
 
-    if($step==0) {
-      print "Initializing neighbors...";      
-      $w->update_neighbors(1);
-      print "ok\n";
-    }
-
     $w->render_lines unless($disp_n==0);
     
-# ARD $dt now kept in world
-
-    $dt = $w->{dtau} || 0.1;
-
-# OLD    $dt = 0.1 unless defined($dt);
+    my $dt = $w->{dtau} || 0.1;
     
     if($opt->{log}) {
       open LOG,">$opt->{log}";
@@ -145,21 +129,20 @@ sub simple_relaxer {
 	if ($w->{auto_open}){
 	    $w->f_length_check($global);
 	}
-	$fmax = $w->update_force($global);
 
-	print "parallel...\n";
-	if($parallel) {
+	if($a->{concurrency}) {
+	    print "parallel...\n";
+	    $fmax = $w->update_force_parallel($global || $w->{rel_step}==0);
 	    $w->relax_step_parallel($dt);
 	} else {
+	    $fmax = $w->update_force($global || $w->{rel_step}==0);
 	    $w->relax_step($dt);
 	}
 	$t += $dt;
+        $w->{rel_step}++;
 
 	$h = $w->stats;
 
-#	printf(" time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},$h->{n_av}, $w->{max_angle} * $conv, $w->{mean_angle} * $conv);
-
-#	printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av}, acos(($w->{max_angle}/abs($w->{max_angle}))*(sqrt(abs($w->{max_angle}))))*$conv, acos(($w->{mean_angle}/abs($w->{mean_angle}))*(sqrt(abs($w->{mean_angle}))))*$conv);
 
 	printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av},$w->{max_angle}, $w->{mean_angle});
 

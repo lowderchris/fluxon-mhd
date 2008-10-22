@@ -240,6 +240,7 @@ Really Know What You're Doing.
 	    links_right=>[25, 'Vertex'],
 	    energy=>     [26, 'num'],
 	    plan_step=>  [27, 'vec'],
+	    f_n_tot=>    [28, 'num']
 	    },
 	fluxon => {
 	    flux=>	          [1,'num'],
@@ -300,7 +301,15 @@ Really Know What You're Doing.
             default_bound =>    [31,'Bound'],
 	    photosphere2 =>     [32,'Photosphere'],
 	    masslaw =>          [33,'Forces'],
-	    concurrency=>       [34,'long']
+	    concurrency=>       [34,'long'],
+	    f_min=>             [35,'num'],
+	    f_max=>             [36,'num'],
+	    fr_min=>            [37,'num'],
+	    fr_max=>            [38,'num'],
+	    ca_min=>            [39,'num'],
+	    ca_max=>            [40,'num'],
+	    ca_acc=>            [41,'num'],
+	    ca_ct=>             [42,'num'],
 	},
 	concentration => {
 	    world=>		 [1,'World'],

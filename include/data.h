@@ -109,6 +109,7 @@ typedef struct VERTEX {
   POINT3D f_t;                  /* Stores total force */
   NUM f_s_tot;                  /* sum-of-magnitudes force on the segment (for help in auto-step-size)*/
   NUM f_v_tot;                  /* sum-of-magnitudes force on the vertex  (for help in auto-step-size)*/
+  NUM f_n_tot;                  /* norm of the total force */
 
 
   NUM r_v, r_s;                 /* Stores relevant lengthscale for vertex & segment forces */
@@ -249,6 +250,17 @@ typedef struct WORLD {
 
   // CED - how many separate processes should be run at once when calculating forces?
   long concurrency; 
+
+  // Force and angle accumulators for global statistics;
+  NUM f_min;
+  NUM f_max;
+  NUM fr_min;
+  NUM fr_max;
+  NUM ca_min;
+  NUM ca_max;
+  NUM ca_acc;
+  NUM ca_ct;
+
 } WORLD;
 
 const char *world_state_name(WORLD *a);

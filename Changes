@@ -1,3 +1,17 @@
+22-Oct-2008 [cd]
+    First-stage parallelization appears complete.  Control number of CPUs with the {concurrency} 
+    field of a Flux::World object.  Setting it to 0 uses no concurrency; setting it to 1 uses
+    the parallel code (with the piping penalty that implies) but only allows it to use one CPU.
+    Setting it to a large number (on an appropriately equipped workstation) appears to accelerate the code 
+    by a large factor.
+    
+    Other fixes:
+    	  -io.c: a protocol for binary file transfer (only the parts needed for parallelization are 
+	  	 finished)
+    	  -overhauled the force/curvature monitoring code: now there is an encapsulated accumulator in 
+	  	      model.c
+          -The maximum and mean diversion angle are now reported in degrees, not cos(theta).
+
 21-Oct-2008 [cd]
 	    First cut at first-stage parallelization...
 20-Oct-2008 [cd]

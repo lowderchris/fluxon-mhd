@@ -142,6 +142,7 @@ typedef struct VERTEX_PIPE_FIXED {
   NUM r_cl;
   long neighbors_n;
   long nearby_n;
+  NUM f_n_tot;
 } VERTEX_PIPE_FIXED;
 
 

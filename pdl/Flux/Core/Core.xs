@@ -359,6 +359,7 @@ FLUX->fprint_world		= fprint_world;
 FLUX->read_world		= read_world;
 FLUX->world_update_neighbors	= world_update_neighbors;
 FLUX->world_update_mag		= world_update_mag;
+FLUX->world_update_mag_parallel	= world_update_mag_parallel;
 FLUX->world_fluxon_length_check = world_fluxon_length_check;
 FLUX->world_relax_step		= world_relax_step;
 FLUX->world_relax_step_parallel = world_relax_step_parallel;
