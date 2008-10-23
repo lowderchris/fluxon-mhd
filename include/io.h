@@ -138,11 +138,12 @@ typedef struct VERTEX_PIPE_FIXED {
   NUM energy;
   NUM f_s_tot;
   NUM f_v_tot;
+  NUM f_n_tot;
   NUM r_v, r_s;
   NUM r_cl;
+  NUM r_ncl;
   long neighbors_n;
   long nearby_n;
-  NUM f_n_tot;
 } VERTEX_PIPE_FIXED;
 
 

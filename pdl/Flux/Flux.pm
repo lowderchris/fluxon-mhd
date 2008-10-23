@@ -240,7 +240,8 @@ Really Know What You're Doing.
 	    links_right=>[25, 'Vertex'],
 	    energy=>     [26, 'num'],
 	    plan_step=>  [27, 'vec'],
-	    f_n_tot=>    [28, 'num']
+	    f_n_tot=>    [28, 'num'],
+	    r_ncl=>      [29, 'num']
 	    },
 	fluxon => {
 	    flux=>	          [1,'num'],

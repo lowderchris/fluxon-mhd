@@ -154,6 +154,7 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	case 26: return (void *)&(v->energy);           break;
 	case 27: return (void *)&(v->plan_step[0]);     break;
 	case 28: return (void *)&(v->f_n_tot);          break;
+	case 29: return (void *)&(v->r_ncl);            break;
 	default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 	                 typeno,fieldno);
 	         return (void *)0;

@@ -847,6 +847,7 @@ int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
 	    )
 	  v->r_cl = (((VERTEX **)(v->neighbors.stuff))[i])->r;
     }
+    v->r_ncl = v->r_cl;
 
 
     if(fl->fc0->world->verbosity >= 3) 
@@ -2288,8 +2289,8 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
       
       dnext = cart_3d(V->x, V->next->x);
       dprev = cart_3d(V->x, V->prev->x);
-      if(dnext < V->r_cl / 2 &&
-	 dprev < V->prev->r_cl / 2) {
+      if(dnext < V->r_ncl / 2 &&
+	 dprev < V->prev->r_ncl / 2) {
       
 	/* Check maximum displacement of the fluxel if straightened */
 	NUM offset_dist;
@@ -2298,9 +2299,9 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
 	offset_dist = p_ls_dist(V->x,V->prev->x,V->next->x);
 	offset_dist *= 1.5;
 	if(offset_dist >= 0 && 
-	   offset_dist < V->prev->r_cl && 
+	   offset_dist < V->prev->r_ncl && 
 	   offset_dist < V->r_cl && 
-	   offset_dist < V->next->r_cl) {
+	   offset_dist < V->next->r_ncl) {
 	  if(V->line->fc0->world->verbosity > 3){
 	    printf("fix_curvature: unlinking %d from line %d\n",V->label,V->line->label);
 	  }

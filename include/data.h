@@ -113,7 +113,8 @@ typedef struct VERTEX {
 
 
   NUM r_v, r_s;                 /* Stores relevant lengthscale for vertex & segment forces */
-  NUM r_cl;                     /* Stores closest-neighbor-approach radius */
+  NUM r_cl;                     /* Stores closest-approach radius of any vertex */
+  NUM r_ncl;                    /* Stores closest-approach radius of neighbors */
 
   long label;                  
   LINKS world_links;      /* tree access to all the vertices in the world */

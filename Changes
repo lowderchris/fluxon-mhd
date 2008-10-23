@@ -1,3 +1,5 @@
+23-Oct-2008 [cd]
+    Updated fix_curvature issues (r_ncl now transmitted via io.c)
 22-Oct-2008 [cd]
     First-stage parallelization appears complete.  Control number of CPUs with the {concurrency} 
     field of a Flux::World object.  Setting it to 0 uses no concurrency; setting it to 1 uses

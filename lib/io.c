@@ -423,7 +423,7 @@ int footpoint_action(WORLD *world, char *s) {
 	  else if(gcmd[1]=='O' && gcmd[2]=='N') { /* GLOBAL CONCURRENCY */
 	    int nval;
 	    long concurrency;
-	    if( 1 > (nval = sscanf(s+off,"%D",&concurrency))) {
+	    if( 1 > (nval = sscanf(s+off,"%*s %D",&concurrency))) {
 	      badstr = "couldn't parse GLOBAL CONCURRENCY line\n";
 	    } else {
 	      world->concurrency = concurrency;
@@ -1768,6 +1768,7 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
     vd->r_v     = v->r_v;
     vd->r_s     = v->r_s;
     vd->r_cl    = v->r_cl;
+    vd->r_ncl   = v->r_ncl;
     vd->neighbors_n = v->neighbors.n;
     vd->f_n_tot = v->f_n_tot;
 
@@ -1982,6 +1983,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     v->r_v      = vd->r_v;
     v->r_s      = vd->r_s;
     v->r_cl     = vd->r_cl;
+    v->r_ncl    = vd->r_ncl;
     v->f_n_tot  = vd->f_n_tot;
 
     if(w->verbosity>1) {
