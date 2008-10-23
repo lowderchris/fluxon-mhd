@@ -62,6 +62,7 @@ void init_minmax_accumulator(WORLD *w);
 void vertex_accumulate_f_minmax(VERTEX *v, WORLD *w);
 void finalize_minmax_accumulator(WORLD *w);
 
+NUM calc_stiffness(VERTEX *v);
 void fluxon_calc_step(FLUXON *fl, NUM t);
 void fluxon_relax_step(FLUXON *fl, NUM t);
 

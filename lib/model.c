@@ -1026,13 +1026,21 @@ NUM fastpow( NUM num, NUM exponent ) {
 
   }
 }
+
+NUM calc_stiffness(VERTEX *v) {
+  NUM f_denom;
+  if(!v->prev || !v->next)
+    return 0 ;
+  f_denom = v->f_v_tot + 0.5 * (v->f_s_tot + v->prev->f_s_tot);
+  return (f_denom == 0) ? 1 : ( norm_3d(v->f_t)  / (1e-9 + f_denom));
+}
     
 void fluxon_calc_step(FLUXON *f, NUM dt) {
   VERTEX *v = f->start;
   WORLD *w = f->fc0->world;
   NUM a[3];
   NUM total[3];
-  NUM force_factor, f_denom;
+  NUM stiffness;
   int verbosity = f->fc0->world->verbosity;
 
   a[2] = a[1] = a[0] = 0;
@@ -1062,15 +1070,13 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
 
     d = 4/(1/d + 1/d1 + 1/r_cl + 1/v->prev->r_cl);
 
-    f_denom = v->f_v_tot + 0.5 * (v->f_s_tot + v->prev->f_s_tot);
+    stiffness = calc_stiffness(v);
+    if(stiffness == 0) stiffness = 1e-6;
 
-    force_factor = (f_denom == 0) ? 1 : ( norm_3d(v->f_t)  / (1e-9 + f_denom));
-    if(force_factor == 0) force_factor = 1e-3;
-
-    if(verbosity >= 3)  printf("fluxon %d, vertex %d: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  force_factor = %g (%g / %g), f_t=(%g,%g,%g)[%g]\t",f->label,v->label, v->x[0],v->x[1],v->x[2], v->r_cl, r_cl, force_factor, norm_3d(v->f_t), f_denom, v->f_t[0],v->f_t[1],v->f_t[2],norm_3d(v->f_t));
+    if(verbosity >= 3)  printf("fluxon %d, vertex %d: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  stiffness = %g, f_t=(%g,%g,%g)[%g]\t",f->label,v->label, v->x[0],v->x[1],v->x[2], v->r_cl, r_cl, stiffness, norm_3d(v->f_t), v->f_t[0],v->f_t[1],v->f_t[2],norm_3d(v->f_t));
     
-    if(force_factor > 1.00001) {
-      fprintf(stderr,"fluxon %d, vertex %d: force_factor = %g, >1!  This is allegedly impossible! You've got trouble, gov\n",f->label,v->label,force_factor);
+    if(stiffness > 1.00001) {
+      fprintf(stderr,"fluxon %d, vertex %d: stiffness = %g, >1!  This is allegedly impossible! You've got trouble, gov\n",f->label,v->label,stiffness);
       fflush(stdout);
       fflush(stderr);
     }
@@ -1097,7 +1103,7 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
       }
 
       fac *= fastpow(d,             w->step_scale.d_power);
-      fac *= fastpow(force_factor,  w->step_scale.s_power);
+      fac *= fastpow(stiffness,  w->step_scale.s_power);
 
       /*
        * Handle acceleration of steps when everything's moving the same way
@@ -1406,14 +1412,18 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 
 	// Accumulate temporary step for the current set of neighbors.
 	// Start accumulating at the END of the previous batch, to keep
-	// track of neighbor generational averages...
+	// track of neighbor generational averages.
+	// Ignore anyone whose stiffness is worse than 5%.
 	tmp_step[0] = tmp_step[1] = tmp_step[2] = 0.0;
 
 	for (j=idx;j<workspace->n;j++) {
 	  vert_neigh = ((VERTEX *)(workspace->stuff[j]));
 	  if(vert_neigh->next && vert_neigh->prev) {
-	    sum_3d(tmp_step, tmp_step, vert_neigh->plan_step);
-	    n_found++;
+	    NUM stiffness= calc_stiffness(vert_neigh);
+	    if(stiffness < 0.05) {
+	      sum_3d(tmp_step, tmp_step, vert_neigh->plan_step);
+	      n_found++;
+	    }
 	  }
 	}
 	
@@ -2851,6 +2861,12 @@ void fl_b_tied_inject(VERTEX *v) {
 	for(i=0; i<v->nearby.n; i++) {
 	  dumblist_add( &(vn->nearby), v->nearby.stuff[i] );
 	  dumblist_add( &(((VERTEX *)(v->nearby.stuff[i]))->neighbors), vn);
+	}
+
+	// Now do an extra neighbor calculation to make sure everyone's copascetic
+	vertex_update_neighbors(vn,0);
+	for(i=0;i<vn->neighbors.n;i++) {
+	  vertex_update_neighbors( ((VERTEX **)(vn->neighbors.stuff))[i], 0);
 	}
 
 	// ... Finally, rig it up to do nothing this time step...
