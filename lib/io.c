@@ -423,8 +423,8 @@ int footpoint_action(WORLD *world, char *s) {
 	  else if(gcmd[1]=='O' && gcmd[2]=='N') { /* GLOBAL CONCURRENCY */
 	    int nval;
 	    long concurrency;
-	    if( 1 > (nval = sscanf(s+off,"%*s %D",&concurrency))) {
-	      badstr = "couldn't parse GLOBAL CONCURRENCY line\n";
+	    if( 1 > (nval = sscanf(s,"%*s %*s %d",&concurrency))) {
+	      badstr = "couldn't parse GLOBAL CONCURRENCY line";
 	    } else {
 	      world->concurrency = concurrency;
 	    }
