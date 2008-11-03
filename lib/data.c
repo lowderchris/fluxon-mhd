@@ -2272,8 +2272,25 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
  void dumblist_clear(DUMBLIST *foo) {
   foo->n = 0;
 }
+
+/**********************************************************************
+ * dumblist_init
+ * Prep a freshly-allocated dumblist for life
+ */
  void dumblist_init(DUMBLIST *foo) {
   foo->n = foo->size = 0;
+  foo->stuff = 0;
+}
+
+/**********************************************************************
+ * dumblist_clean
+ * De-allocate the stuff[] array and clean up the dumblist for freeing.
+ */
+void dumblist_clean(DUMBLIST *foo) {
+  foo->n = foo->size = 0;
+  if(foo->stuff) {
+    localfree(foo->stuff);
+  }
   foo->stuff = 0;
 }
 

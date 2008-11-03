@@ -370,19 +370,18 @@ long safe_tree_walker(void *tree, int label_offset, int link_offset, long((*func
 
 DUMBLIST *new_dumblist();
 void free_dumblist(DUMBLIST *dl);
- void dumblist_init(DUMBLIST *foo);
- void dumblist_add(DUMBLIST *dl, void *a);
- void dumblist_delete(DUMBLIST *dl, void *a);
- void dumblist_rm(DUMBLIST *dl, int i);
- void dumblist_sort(DUMBLIST *dl, int((*compare)(void *a, void *b)));
- void dumblist_snarf(DUMBLIST *dl, DUMBLIST *source);
- void dumblist_grow(DUMBLIST *dl, int size);
- void dumblist_clear(DUMBLIST *dl);
- void dumblist_crunch(DUMBLIST *dl);
+void dumblist_init(DUMBLIST *foo);
+void dumblist_clean(DUMBLIST *foo);
+void dumblist_add(DUMBLIST *dl, void *a);
+void dumblist_delete(DUMBLIST *dl, void *a);
+void dumblist_rm(DUMBLIST *dl, int i);
+void dumblist_sort(DUMBLIST *dl, int((*compare)(void *a, void *b)));
+void dumblist_snarf(DUMBLIST *dl, DUMBLIST *source);
+void dumblist_grow(DUMBLIST *dl, int size);
+void dumblist_clear(DUMBLIST *dl);
+void dumblist_crunch(DUMBLIST *dl);
 
-
-
- char fl_eq(NUM a, NUM b);
+char fl_eq(NUM a, NUM b);
 
 
 /* defines for debugging malloc wrapper in data.c */
@@ -397,6 +396,7 @@ void free_dumblist(DUMBLIST *dl);
 #define MALLOC_PLANE 9
 #define MALLOC_MISC 10
 #define MALLOC_MAXTYPENO 10
+
 
 
 char *malloc_types[MALLOC_MAXTYPENO+1];

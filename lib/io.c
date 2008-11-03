@@ -2222,7 +2222,7 @@ int binary_read_neighbors(long size, char *buf, WORLD *w) {
 
   
   if(*(long *)ptr != WORLD_END_FENCE) {
-    fprintf("%s: missed end fence\n",me);
+    fprintf(stderr, "%s: missed end fence\n",me);
     return 7;
   }
   
@@ -2656,6 +2656,3 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
 
     
   
-    
-  
-    

@@ -3117,6 +3117,7 @@ static DUMBLIST *fluxon_batch = 0;  // Dumblist gets the current fluxon batch to
 typedef struct SUBPROC_DESC {   // Keeps track of what we spawned...
   long pid;
   long pipe;
+  DUMBLIST batch;
 } SUBPROC_DESC;
 static SUBPROC_DESC *sbd, *sbdi;    // Used for bookkeeping subprocs.
 
@@ -3140,12 +3141,18 @@ static long v_ct_springboard(FLUXON *fl, int lab, int link, int depth) {
  * subproc dumblist...
  */
 void parallel_prep(WORLD *a) {
+  int i;
+
   /* Make sure our dumblists exist */
   if(!fluxon_batch)
     fluxon_batch = new_dumblist();
 
-  sbdi = sbd = (SUBPROC_DESC *)malloc(sizeof(SUBPROC_DESC) * a->concurrency);
-  
+  sbdi = sbd = (SUBPROC_DESC *)localmalloc(sizeof(SUBPROC_DESC) * a->concurrency, MALLOC_MISC);
+
+  // Zero out the pointers and such in the dumblists, so as not to confuse the library.
+  for(i=0;i<a->concurrency; i++) 
+    dumblist_init(&(sbd[i].batch));
+ 
   /* Accumulate the total number of vertices, to divide 'em up about equally */
   v_ct = 0;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, v_ct_springboard,0);
@@ -3159,47 +3166,14 @@ void parallel_prep(WORLD *a) {
 
 
 /******************************
- * parallel_finish - call this to suck back in all the state
- * from the daughter subprocesses...
- */
-void parallel_finish(WORLD *a) {
-  SUBPROC_DESC *sbdii;
-  
-
-  init_minmax_accumulator(a);
-
-  for(sbdii=sbd; sbdii < sbdi; sbdii++) {
-    if(a->verbosity) {
-      printf("Reading dumpfile for pid %d...",sbdii->pid);
-      fflush(stdout);
-    }
-    binary_read_dumpfile( sbdii->pipe, a );
-    close(sbdii->pipe);
-
-    if(a->verbosity) {
-      printf("finished pid %d dump..\n",sbdii->pid);
-    }
-  }
-
-  finalize_minmax_accumulator(a);
-
-  /* Clean up the mess of the daughters... */
-  {
-    int stat_loc;
-    while(wait(&stat_loc) > 0) {}
-  }
-
-  dumblist_clear(fluxon_batch);
-  free(sbd);
-}
-
-/******************************
  * parallel_fluxon_spawn_springboard - call this from tree_walker 
  * to launch your task, parallelized by fluxon.  You determine the
  * task by setting the global work_springboard, which is a 
  * pointer to a function that accepts a FLUXON * and returns an
  * int.  
  */
+
+static int parallel_daughter(int p); // handles processing in the daughters.
 
 static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int depth) {
 
@@ -3233,44 +3207,127 @@ static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int
       v_ct = 0;
       dumblist_clear( fluxon_batch );
       
-      /* Store the pid information */
+      /* Store the pid information including re-do batch list in case we have to, er, redo.
+       */
       sbdi->pid = pid;
       sbdi->pipe = p[0];
+      dumblist_snarf(&(sbdi->batch), fluxon_batch);
+
       sbdi++;
       
       return 0;
 
     } else {
-      
+
       /*** daughter process ***/
       close(p[0]);
+      exit(parallel_daughter(p[1]));
 
-      {
-	int i;
-	for(i=0; i<fluxon_batch->n; i++) {
-	  FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
-	  if((*work_springboard)( f ))
-	    exit(1);
-	}
-
-	for(i=0; i<fluxon_batch->n; i++) {
-	  FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
-	  binary_dump_fluxon_pipe( p[1], f );
-	}
-
-	binary_dump_end( p[1] );
-	exit(0);
-      }
+      /*** Never executes ***/
+      fprintf(stderr,"You should never see this!\n");
+      return 1;
     }
-
-    fprintf(stderr,"You should never see this!\n");
-    return 1;
-  }
 
   /* Normal exit case - just iterate again and spawn another time */
   return 0;
+  }
 }
+
+/******************************
+ * parallel_daughter 
+ * Handle springboard processing in the daughter processes.
+ * If the pipe argument contains an actual fd, then 
+ * it dumps the fluxon results to the pipe (which carries them
+ * back to the parent process.
+ */
+int parallel_daughter(int p) {
+  int i;
+  
+  for(i=0; i<fluxon_batch->n; i++) {
+    FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
+    if((*work_springboard)( f ))
+      return(1);
+  }
+  
+  if(p) {
+    for(i=0; i<fluxon_batch->n; i++) {
+      FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
+      binary_dump_fluxon_pipe( p, f );
+    }
+    binary_dump_end( p );
+    return(0);
+  }
+}
+
+/******************************
+ * parallel_finish - call this to suck back in all the state
+ * from the daughter subprocesses.  If there's a failure (e.g. an
+ * interrupted system call) then re-try the daughter call.
+ * 
+ * Returns 0 on normal completion, 1 on error.
+ */
+int parallel_finish(WORLD *a) {
+  SUBPROC_DESC *sbdii;
+  int throw_err = 0;
+  int i;
+
+  init_minmax_accumulator(a);
+
+  for(sbdii=sbd; sbdii < sbdi; sbdii++) {
+    WORLD *brd_ret;
+    if(a->verbosity) {
+      printf("Reading dumpfile for pid %d...",sbdii->pid);
+      fflush(stdout);
+    }
+    brd_ret = binary_read_dumpfile( sbdii->pipe, a );
+    close(sbdii->pipe);
+
+    // Uh oh -- we failed!  Re-try the daughter process task. 
+    // Since this shouldn't happen too often, we just do it here 
+    // in the parent rather than trying to respawn the daughter.
+
+    if(!brd_ret) {
+      dumblist_clear(fluxon_batch);
+      dumblist_snarf(fluxon_batch, &(sbdii->batch));
+
+      fprintf(stderr,"parallel_finish: Oh noes! Daughter failed for fluxons");
+      for(i=0; i < fluxon_batch->n; i++) {
+	fprintf(stderr," %d",( ((FLUXON **)(fluxon_batch->stuff))[i] )->label );
+      }
+      fprintf(stderr,"! This is sometimes caused by a system interrupt damaging the pipe. Re-trying in the parent...\n");
       
+      i = parallel_daughter(0); // sending 0 omits dumping
+      if(i) {
+	fprintf(stderr,"parallel_finish: task failed on re-try.  I will snarf all remaining data and return an error.\n");
+	throw_err++;
+      }
+    }
+
+    if(a->verbosity) {
+      printf("finished pid %d dump..\n",sbdii->pid);
+    }
+  }
+
+  finalize_minmax_accumulator(a);
+
+  /* Clean up the mess of the daughters... */
+  {
+    int stat_loc;
+    while(wait(&stat_loc) > 0) {}
+  }
+
+  // Clear the batch dumblist but leave around for next time.
+  dumblist_clear(fluxon_batch);
+
+  // Clean up the cached batches and free them (a waste - we really
+  // ought to keep 'em around for next time...)
+  for(sbdii=sbd; sbdii<sbdi; sbdi++) 
+    dumblist_clean(&(sbdii->batch));
+  localfree(sbd);
+
+  return throw_err;
+}
+
 
 /**********************************************************************
  *
