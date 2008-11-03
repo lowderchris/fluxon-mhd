@@ -83,7 +83,7 @@ void *force_str_to_ptr(char *s) {
   int i;
   if(!s)
     return 0;
-  for(i=0; FLUX_FORCES[i].name; i++) 
+  for(i=0; *(FLUX_FORCES[i].name); i++) 
     if( !strcmp(FLUX_FORCES[i].name, s) )
       return FLUX_FORCES[i].func;
   return 0;
@@ -98,7 +98,7 @@ struct FLUX_RECON FLUX_RECON[] = {
 
 char *recon_ptr_to_str(void *f) {
   int i;
-  for(i=0;FLUX_RECON[i].name; i++) 
+  for(i=0;*(FLUX_RECON[i].name); i++) 
     if(FLUX_RECON[i].func == f)
       return FLUX_RECON[i].name;
   return 0;
