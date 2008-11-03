@@ -241,7 +241,11 @@ Really Know What You're Doing.
 	    energy=>     [26, 'num'],
 	    plan_step=>  [27, 'vec'],
 	    f_n_tot=>    [28, 'num'],
-	    r_ncl=>      [29, 'num']
+	    r_ncl=>      [29, 'num'],
+	    neighbors_n=>   [30,'long'],
+	    neighbors_size=>[31,'long'],
+	    nearby_n=>      [32,'long'],
+	    nearby_size=>   [33,'long']
 	    },
 	fluxon => {
 	    flux=>	          [1,'num'],

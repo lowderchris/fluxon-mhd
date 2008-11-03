@@ -992,21 +992,7 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   fputc('\n',file);
   fprint_tree(file, world->vertices, v_lab_of, v_ln_of, 0, fprint_v_nbors);
 }    
-    
-/**********************************************************************
- **********************************************************************
- ** FREEZING ROUTINES --
- ** 
- ** These generate snippets of Perl code that reconstitute the 
- ** World in its current state.
- ** (FIXME: write this stuff!)
- **    char *freeze_vertex
- **    char *freeze_fluxon
- **    char *freeze_fc
- **    char *freeze_world
- **/
 
-    
 /**********************************************************************
  **********************************************************************
  ** 
@@ -1302,283 +1288,10 @@ void print_dumblist(DUMBLIST *foo, void ((*item_printer)())) {
   }
 }
 
-/**********************************************************************
- **********************************************************************
- *****  GRAPHICS STUFF STARTS HERE
- *****  For now, this is a pretty stoopid diagnostic/debugging tool --
- *****  but eventually it will have several different output options.
- *****  You call gl_2d_start() to start writing a display script,
- *****  then you call the various gl_2d routines to dump display features
- *****  into the script.  Finally, you call gl_2d_finish() to close and
- *****  execute the display script.  Check individual routines for calling
- *****  conventions.
-
- *****  This is all pretty cheesy just now -- it should be handled
- *****  better and could almost certainly be handled with local gl calls.
- */ 
-
-
-/**********************************************************************
- * gl_2d_start(FILENAME, l,r,b,t )
- * FILENAME is optional -- pass in 0 to make the routine
- * generate one for you.  
- * 
- * The l, r, b, and t parameters set the size of the viewport in 
- * scientific coordinates.  You need them.
- * 
- */
-static FILE *gl_2d_file = 0;
-static char gl_2d_fname[BUFSIZ+1];
-static NUM gl_current_depth = 0;
-static NUM gl_depth_step=1e-6;
-static int gl_2d_fnum = 0;
-
-int gl_2d_start(char *fname, float l, float r, float b, float t) {
-  gl_current_depth = 0;
-
-  if(gl_2d_file) {
-    fprintf(stderr,"Warning: gl_2d_start abandoning unfinished file `%s'.\n",gl_2d_fname);
-  }
-
-  if(fname) {
-    strncpy(gl_2d_fname,fname,BUFSIZ);
-  } else {
-    sprintf(gl_2d_fname,"/tmp/%d.graph%d",getpid(),gl_2d_fnum++);
-  }
-
-  if (!(gl_2d_file = fopen(gl_2d_fname,"w"))) /* assignment */ {
-    fprintf(stderr,"Warning: gl_2d_start couldn't open file `%s' for writing\n",gl_2d_fname);
-    return -1;
-  }
-  
-
-  fprintf(gl_2d_file,"%s","#!/usr/bin/perl\n" \
-"#\n" \
-"# 2-D graphics dump file from FLEM \n" \
-"#\n" \
-"use OpenGL;\n" \
-"glpOpenWindow(attributes=>[GLX_RGBA,GLX_DEPTH_SIZE,1],width=>600,height=>600,mask=>0x1ffffff);\n" \
-"glEnable(GL_DEPTH_TEST);\n" \
-"glClearColor(0.5,0.5,0.5,1);\n" \
-"glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);\n" \
-"glLoadIdentity;\n");
-
-  fprintf(gl_2d_file,"glOrtho(%g,%g,%g,%g,-1,1);\n",l,r,b,t);
-
-
-  fprintf(gl_2d_file,"sub draw {\n" \
-"glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);\n");
-
-  return 0;
-}
-
-/**********************************************************************
- * gl_2d_finish( display_time, display_mode )
- * Finish up a 2d gl dump file.  Returns the file name in a 
- * temporary variable.  The display_time parameter sets how long the
- * window is displayed, in seconds.  (Give it a negative number to wait
- * forever or until killed with the X manager).  The display_mode 
- * parameter tells what FLEM does with the output:
- *      0  -   do nothing
- *      1  -   run the display dump and wait for it to exit
- *      2  -   run the display dump and don't wait (killing it the next
- *             time gl_2d_finishes its run).
- */
-
-static int gl_2d_pending = 0;
-static char gl_2d_last[BUFSIZ+1];
-
-char *gl_2d_finish( float display_time, int display_mode ) {
-  struct stat stat_buf;
-
-  if(!gl_2d_file) {
-    fprintf(stderr,"gl_2d_finish:  Tried to finish a file without starting one!\n");
-    *gl_2d_last = 0;
-    return gl_2d_last;
-  }
-
-  /* Put the filename in a safe place */
-  strncpy(gl_2d_last,gl_2d_fname,BUFSIZ);
-  
-  /* Write out the end condition for the window */
-  fprintf(gl_2d_file, "glFlush();\n");
-  fprintf(gl_2d_file,"\n}\n");
-
-  fprintf(gl_2d_file,"\n\n\ndraw();\n");
-
-  fprintf(gl_2d_file,"\n" \
-"##Set up event handlers\n" \
-"$cb{&ConfigureNotify} = sub{ my($e,$w,$h)=@_; };\n" \
-"$cb{4}=$cb{&KeyPress}=sub{exit 0;}; # 4 is mouse down\n" \
-"$cb{12}=$cb{&GraphicsExpose}=sub{ draw(); }; \n");
-
-  if(display_time < 0) {
-    fprintf(gl_2d_file,"\n" \
-"while(1) {\n" \
-"  while($p=XPending) {\n" \
-"    @e=&glpXNextEvent;\n" \
-"    if($s=$cb{$e[0]}) {\n" \
-" #     print \"handling event @e\\n\";\n" \
-"      &$s(@e);\n" \
-"    } else {\n" \
-"#      print \"event was @e\\n\";\n" \
-"    }\n" \
-"  }\n" \
-"  sleep 0.1;\n" \
-"} \n");
-
-  } else {
-    fprintf(gl_2d_file,"sleep %g\n",display_time);
-  }
-
-  /* Close the file and set permissions */
-  fclose(gl_2d_file);
-  gl_2d_file = 0;
-
-  if(stat(gl_2d_fname,&stat_buf)) {
-    fprintf(stderr,"gl_2d_finish: couldn't stat the file being finished (`%s')\n",gl_2d_fname);
-    perror("");
-    *gl_2d_last = 0;
-    return gl_2d_last;
-  }
-  chmod(gl_2d_fname,  stat_buf.st_mode | S_IXUSR);
-
-  /* Figure out what sort of subprocess to run */
-  if(gl_2d_pending) {
-    kill(gl_2d_pending,SIGKILL);
-    gl_2d_pending = 0;
-  }
-
-  {
-    int pid;
-    int foo;
-
-    switch(display_mode) {
-    case 1:
-      if(pid = fork())
-	waitpid(pid,0,0);
-      else {
-	execl(gl_2d_fname,gl_2d_fname,0);
-	fprintf(stderr,"exec failed (`%s')\n",gl_2d_fname);
-	perror("");
-	exit(-1);
-      }
-      break;
-
-    case 2:
-      if(pid=fork())
-	gl_2d_pending = pid;
-      else {
-	execl(gl_2d_fname,gl_2d_fname,0);
-	fprintf(stderr,"exec failed (`%s')\n",gl_2d_fname);
-	perror("");
-	exit(-1);
-      }
-      break;
-
-    default:
-      break;
-    }
-  }
-
-  strncpy(gl_2d_last,gl_2d_fname,BUFSIZ);
-  *gl_2d_fname=0;
-  return gl_2d_last;
-}
-
-/**********************************************************************
- * gl_2d_point -- draw a "point" (actually, a little octagon) in the 
- * gl buffer
- */
-void gl_2d_point(float x, float y, float radius, float colors[3]) {
-  float rt2= 1.4142135623731;
-  float x_off[9] = {-1, 1, 1+rt2 , 1+rt2, 1, -1, -1-rt2, -1-rt2, -1};
-  float y_off[9] = {1+rt2,1+rt2,1,-1,-1-rt2,-1-rt2,-1,1,1+rt2};
-  int i;
-
-  if(!gl_2d_file) {
-    fprintf(stderr,"gl_2d_point: no 2d output file is open!\n");
-    return;
-  }
-
-  radius /= (1+rt2);  /* Make up for scale in the offsets */
-
-  fprintf(gl_2d_file,"\n## gl_2d_point(%g,%g,%g)\n",x,y,radius);
-  fprintf(gl_2d_file,"glColor3f(%g,%g,%g);\n",colors[0],colors[1],colors[2]);
-  fprintf(gl_2d_file,"glBegin(GL_POLYGON);\n");
-  for(i=0;i<9;i++) 
-    fprintf(gl_2d_file,"\tglVertex3f(%g,%g,%g);\n",
-	    x + radius * x_off[i],
-	    y + radius * y_off[i],
-	    (gl_current_depth += gl_depth_step)
-	    );
-  fprintf(gl_2d_file,"glEnd();\n");
-
-  return;
-}    
-  
-void gl_2d_scr_poly(DUMBLIST *horde, float colors[3]) {
-  int i;
-  if(!gl_2d_file) {
-    fprintf(stderr,"gl_2d_scr_poly: no 2d output file!\n");
-    return;
-  }
-
-  fprintf(gl_2d_file,"\n\n##gl_2d_vertex_scr\n");
-  fprintf(gl_2d_file,"glColor3f(%g,%g,%g);\n",colors[0],colors[1],colors[2]);
-  fprintf(gl_2d_file,"glBegin(GL_POLYGON);\n");
-  for(i=0;i<horde->n;i++) {
-    fprintf(gl_2d_file,"\tglVertex3f(%g,%g,%g);\n",
-	    ((VERTEX *)((horde->stuff)[i]))->scr[0],
-	    ((VERTEX *)((horde->stuff)[i]))->scr[1],
-	    (gl_current_depth += gl_depth_step));
-  }
-  fprintf(gl_2d_file,"\tglVertex3f(%g,%g,0);\n",
-	  ((VERTEX *)((horde->stuff)[0]))->scr[0],
-	  ((VERTEX *)((horde->stuff)[0]))->scr[1]);
-	  
-  fprintf(gl_2d_file,"glEnd();\n");
-}
-
-void gl_2d_line(float x0, float y0, float x1, float y1, float colors[3]) {
-  if(!gl_2d_file) {
-    fprintf(stderr,"gl_2d_line: no 2d output file is open!\n");
-    return;
-  }
-
-  fprintf(gl_2d_file,"\n\n## gl_2d_line(%g,%g,%g,%g)\n",x0,y0,x1,y1);
-  fprintf(gl_2d_file,"glColor3f(%g,%g,%g);\n",colors[0],colors[1],colors[2]);
-  fprintf(gl_2d_file,"glBegin(GL_LINE_STRIP);\n");
-  fprintf(gl_2d_file,"\tglVertex3f(%g,%g,%g);\n",x0,y0,(gl_current_depth += gl_depth_step));
-  fprintf(gl_2d_file,"\tglVertex3f(%g,%g,%g);\n",x1,y1,(gl_current_depth += gl_depth_step));
-  fprintf(gl_2d_file,"glEnd();\n");
-
-  return;
-}
-  
-
-void gl_2d_scr_list(DUMBLIST *horde,float colors[3]) {
-  int i;
-  if(!gl_2d_file) {
-    fprintf(stderr,"gl_2d_scr_list: no 2d output file!\n");
-    return;
-  }
-
-  for(i=0;i<horde->n;i++) {
-    gl_2d_point(
-		((VERTEX *)((horde->stuff)[i]))->scr[0],
-		((VERTEX *)((horde->stuff)[i]))->scr[1],
-		1,
-		colors
-		);
-  }
-}
-    
 
 /**********************************************************************
  **********************************************************************
- */
-/**********************************************************************
+ **********************************************************************
  * Binary serialization / activation
  *
  * These routines implement a binary file format for FLUX, but it is not
@@ -1594,10 +1307,16 @@ void gl_2d_scr_list(DUMBLIST *horde,float colors[3]) {
  * To generate a file, just start sending packets of data into an open
  * file descriptor, and terminate with the end field (using binary_dump_end).
  *
- * To read a file, call binary_dump_read with an open descriptor and the 
+ * If you want to store a portable file, you should start by calling
+ * binary_dump_header(), which will send a check header to ensure 
+ * binary architecture compatibility.  
+ *
+ * To read a file, call binary_read_dumpfile with an open descriptor and the 
  * WORLD to which it should apply.  It will read and parse all the elements 
  * in the file, modifying the arena as they are processed, and close the 
- * file descriptor on exit.
+ * file descriptor on exit.  If you send NULL instead of a valid WORLD, 
+ * then binary_read_dumpfile will allocate a WORLD for you.
+ *
  *
  */
 
@@ -1622,8 +1341,10 @@ int binary_dump_field(int fd, long code, long len, char *buf) {
   
   i = write(fd, hdrbuf, 3*sizeof(long));
   
-  if( i != 3*sizeof(long) ) 
+  if( i != 3*sizeof(long) )  {
+    perror("binary_dump_field");
     return 1;
+  }
   
   if(len > 0) {
     i = write( fd, buf, len );
@@ -1668,7 +1389,850 @@ static int check_binary_buf( long desired_len ) {
 }
 
 /******************************
- * dump_end - send an end marker to the file.  Does not close the file descriptor.
+ * binary_dump_header  & binary_read_header - send/check  a start marker in a file.  
+ * Not strictly necessary for local dump/restore, but allows endianness and data size checking.
+ * 
+ * The header format is several unsigned longs:
+ *    0:  0xAABBCCDD - check endianness
+ *    1:  version number (currently 1)
+ *    2:  sizeof(NUM)
+ *    3:  3.1416 in floating point
+ */
+int binary_dump_header(int fd) {
+  long *foo;
+  check_binary_buf( 4 * sizeof(long) );
+  foo = (long *)binary_buffer;
+  foo[0] = 0xAABBCCDD;
+  foo[1] = 1;
+  foo[2] = sizeof(NUM);
+  foo[3] = 3.1416;
+  binary_dump_field(fd, BD_HDR, 4 * sizeof(long), binary_buffer);
+}
+
+int binary_read_header(long size, char *buf, WORLD *w) {
+  char *me = "binary_read_header";
+  long *foo = (long *)buf;
+
+  if(foo[0] != 0xAABBCCDD) {
+    fprintf(stderr,"%s, endian check: expected %x, got %x (NUXI problem?)\n",me, 0xAABBCCDD,foo[0]);
+    return 1;
+  }
+  if(foo[1] != 1) {
+    fprintf(stderr,"%s, version check: expected %d, got %d (oops)\n",me, 1,foo[1]);
+    return 2;
+  }
+
+  if(foo[2] != sizeof(NUM)) {
+    fprintf(stderr,"%s, precision check: sizeof(NUM) is %d, but file claims %d (oops)\n",me, sizeof(NUM), foo[2]);
+    return 3;
+  }
+  
+  if(foo[3] != 3.1416) {
+    fprintf(stderr,"%s, binary format check: expected 3.1416, got %g",me,foo[3]);
+    return 4;
+  }
+  return 0;
+}
+
+
+/******************************
+ * binary_dump_WORLD
+ * 
+ * Doesn't dump the whole shebang, only the global stuff 
+ * (and none of the major data structures such as the
+ * concentration, vertex, or fluxon trees).
+ */
+int binary_dump_WORLD(int fd, WORLD *w) {
+  char *ptr;
+  char *s;
+  int i,j;
+
+  // Allocate buffer space.   As always, overkill is the norm.
+  check_binary_buf( sizeof(WORLD) +        // Room for structure fields 
+		    sizeof(long)*8  +      // Room for a few extras
+		    80 * (1 + N_FORCE_FUNCS*2 + N_RECON_FUNCS + N_RECON_PARAMS + N_M_PARAMS));
+  ptr = binary_buffer;
+
+  *(long *)ptr = 1;  // WORLD dump version number
+  ptr += sizeof(long);
+  
+  *(long *)ptr = sizeof(WORLD);         //sizeof(WORLD) structure as an additional check
+  ptr += sizeof(long);
+  
+  // Copy the WORLD structure, in its entirety
+  for(i=0, s=(char *)w; i<sizeof(WORLD); i++)
+    *(ptr++) = *(s++);
+  for(; i%16; i++) 
+    *(ptr++) = 0;
+
+  
+  // Now patch it up.
+
+
+  // Leave a fence before the variable part
+  *(long *)ptr = WORLD_VAR_FENCE; ptr += sizeof(long);
+
+  // skip the concentration, line, and vertex trees...
+
+  // fill in photospheric planes...
+  if(w->photosphere.plane) {
+    *(NUM *)ptr = w->photosphere.plane->origin[0];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere.plane->origin[1];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere.plane->origin[2];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere.plane->normal[0];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere.plane->normal[1];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere.plane->normal[2];   ptr += sizeof(NUM);
+  }
+  if(w->photosphere2.plane) {
+    *(NUM *)ptr = w->photosphere2.plane->origin[0];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere2.plane->origin[1];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere2.plane->origin[2];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere2.plane->normal[0];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere2.plane->normal[1];   ptr += sizeof(NUM);
+    *(NUM *)ptr = w->photosphere2.plane->normal[2];   ptr += sizeof(NUM);
+  }
+
+  // skip all the magic-concentration and image stuff...
+
+
+  // Store the default-boundary name...
+  s = boundary_ptr_to_name( w->default_bound );
+  if(!s) { s = ""; }
+  for(i=0;i<80;i++) {
+    *ptr++ = *s;
+    if(*s)
+      s++;
+  }
+
+    // f_funcs as names
+  for(i=0; i<N_FORCE_FUNCS; i++) {
+    s = force_ptr_to_str(w->f_funcs[i]);
+    if(!s) { s = ""; }
+    for(j=0; j<80; j++) {
+      *ptr++ = *s;
+      if(*s)
+	s++;
+    }
+  }
+  
+  // m_funcs as names
+  for(i=0;i<N_FORCE_FUNCS;i++) {
+    s = force_ptr_to_str(w->m_funcs[i]);
+    if(!s) { s = ""; }
+    for(j=0; j<80; j++) {
+      *ptr++ = *s;
+      if(*s)
+	s++;
+    }
+  }
+
+  // rc_funcs as names
+  for(i=0; i<N_RECON_FUNCS; i++) {
+    s = recon_ptr_to_str(w->rc_funcs[i]);
+    if(!s) { s="";}
+    for(j=0; j<80; j++) {
+      *ptr++ = *s;
+      if(*s)
+	s++;
+    }
+  }
+  
+  // final fence
+  *(long *)ptr = WORLD_END_FENCE;
+  ptr += sizeof(long);
+
+  return binary_dump_field(fd, BD_WORLD, ptr - binary_buffer, binary_buffer);
+}
+
+int binary_read_WORLD(long size, char *buf, WORLD *w) {
+  char *me = "binary_read_world";
+  char *ptr = buf;
+  char *s;
+  WORLD w0;
+  long phot_ok;
+  int i,j;
+  
+  if( *(long *)ptr != 1 ) {
+    fprintf(stderr,"%s: expected WORLD dump version %d, got %d\n",me,1,*(long *)ptr);
+    return 1;
+  }
+  ptr += sizeof(long);
+
+
+  if( *(long *)ptr != sizeof(WORLD) ) {
+    fprintf(stderr,"%s: expected WORLD with a size of %d; found %d (oops)\n",me, sizeof(WORLD), *(long *)ptr);
+    return 2;
+  }
+  ptr += sizeof(long);
+
+  // Copy the WORLD structure, in its entirety
+  for(i=0, s = (char *)(&w0); i<sizeof(WORLD); i++)
+    *(s++) = *(ptr++);
+  for(; i%16; i++) 
+    ptr++;
+
+  // Copy all the non-pointer fields into the WORLD we were given.
+  w->frame_number = w0.frame_number;
+  w->state        = w0.state;
+  // skip refct
+  // skip concentrations
+  // skip lines
+  // skip vertices
+
+  // do photosphere types, but skip planes for now
+  // (handle them after the main copy)
+  w->photosphere.type = w0.photosphere.type;
+  w->photosphere2.type = w0.photosphere2.type;
+
+  // Skip all the magic-concentration and image stuff...
+  
+  w->locale_radius = w0.locale_radius;
+  w->auto_open = w0.auto_open;
+  
+  // Skip the open & plasmoid concentrations
+  // Skip the default boundary condition -- will fill in later from string.
+  
+  w->verbosity = w0.verbosity;
+  
+  // Skip force, m, and rc funcs and  rc params.
+  
+  // Copy m params
+  for(i=0; i<N_M_PARAMS; i++)
+    w->m_params[i] = w0.m_params[i];
+  
+  w->step_scale.b_power = w0.step_scale.b_power;
+  w->step_scale.d_power = w0.step_scale.d_power;
+  w->step_scale.s_power = w0.step_scale.s_power;
+  w->step_scale.ds_power = w0.step_scale.ds_power;
+  
+  w->passno = w0.passno;
+  w->handle_skew = w0.handle_skew;
+
+  w->max_angle = w0.max_angle;
+  w->mean_angle = w0.mean_angle;
+  w->dtau = w0.dtau;
+  w->rel_step = w0.rel_step;
+
+  for(i=0;i<MAXNUMCOEFFS;i++) 
+    w->coeffs[i] = w0.coeffs[i];
+  
+  w->n_coeffs = w0.n_coeffs;
+  w->maxn_coeffs = w0.maxn_coeffs;
+  
+  w->concurrency = w0.concurrency;
+  
+  w->f_min = w0.f_min;
+  w->f_max = w0.f_max;
+  w->fr_min = w0.fr_min;
+  w->fr_max = w0.fr_max;
+  w->ca_min = w0.ca_min;
+  w->ca_max = w0.ca_max;
+  w->ca_acc = w0.ca_acc;
+  w->ca_ct = w0.ca_ct;
+
+  // RC params
+  for(i=0; i<N_RECON_FUNCS;i++) {
+    for(j=0; j<N_RECON_PARAMS; j++) {
+      w->rc_params[i][j] = w0.rc_params[i][j];
+    }
+  }
+
+  // M params
+  for(i=0; i<N_M_PARAMS; i++) {
+    w->m_params[i] = w0.m_params[i];
+  }
+
+
+  // Check fence
+  if( *(long *)ptr != WORLD_VAR_FENCE ) {
+    fprintf(stderr,"%s: missed variable fence! (expected 0x%x, got 0x%x)\n",me,WORLD_VAR_FENCE, *(long *)ptr);
+    for(i=-16; i<=16; i++) {
+      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+    }
+    return 3;
+  }
+  ptr += sizeof(long);
+  
+  // Finished copying the actual structure.  Now interpret the ancillary stuff - pointers and strings.
+
+  if(w0.photosphere.plane) {
+    if(!w->photosphere.plane) {
+      w->photosphere.plane = (PLANE *)localmalloc(sizeof(PLANE),MALLOC_PLANE);
+    }
+    w->photosphere.plane->origin[0] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere.plane->origin[1] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere.plane->origin[2] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere.plane->normal[0] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere.plane->normal[1] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere.plane->normal[2] = *(NUM *)ptr;  ptr += sizeof(NUM);
+  } else {
+    if(w->photosphere.plane)
+      localfree(w->photosphere.plane);
+    w->photosphere.plane = 0;
+  }
+
+  if(w0.photosphere2.plane) {
+    if(!w->photosphere2.plane) {
+      w->photosphere2.plane = (PLANE *)localmalloc(sizeof(PLANE),MALLOC_PLANE);
+    }
+    w->photosphere2.plane->origin[0] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere2.plane->origin[1] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere2.plane->origin[2] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere2.plane->normal[0] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere2.plane->normal[1] = *(NUM *)ptr;  ptr += sizeof(NUM);
+    w->photosphere2.plane->normal[2] = *(NUM *)ptr;  ptr += sizeof(NUM);
+  } else {
+    if(w->photosphere2.plane)
+      localfree(w->photosphere2.plane);
+    w->photosphere2.plane = 0;
+  }
+
+  
+  // Start interpreting strings...
+
+  // Default boundary condition
+  w->default_bound = boundary_name_to_ptr(ptr);
+  ptr += 80;
+
+  // Force funcs
+  for(i=0; i<N_FORCE_FUNCS; i++)  {
+    w->f_funcs[i] = force_str_to_ptr(ptr);
+    ptr += 80;
+  }
+
+  // M funcs
+  for(i=0; i<N_FORCE_FUNCS; i++) {
+    w->m_funcs[i] = force_str_to_ptr(ptr);
+    ptr += 80;
+  }
+  
+  // RC funcs
+  for(i=0; i<N_RECON_FUNCS; i++) {
+    w->rc_funcs[i] = recon_str_to_ptr(ptr);
+    ptr += 80;
+  }
+  
+  // final fence
+  if( *(long *)ptr != WORLD_END_FENCE ) {
+    fprintf(stderr,"%s: missed end-of-WORLD fence! (expectex 0x%x, got 0x%x)\n",me, WORLD_END_FENCE, *(long *)ptr);
+    for(i=-80; i<=80; i++) {
+      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+    }
+    return 4;
+  }
+
+  return 0;
+}
+
+/******************************
+ * binary_dump_CONCENTRATION
+ * 
+ * Dumps a FLUX_CONCENTRATION, minus fluxons and vertices.
+ */
+int binary_dump_CONCENTRATION(int fd, FLUX_CONCENTRATION *fc) {
+  char *ptr;
+  char *s;
+  int i,j;
+  
+  check_binary_buf( sizeof(FLUX_CONCENTRATION) +
+		    sizeof(long)*8 +
+		    80 * 2
+		    );
+  ptr = binary_buffer;
+
+  *(long *)ptr = 1; // CONCENTRATION dump version number
+  ptr += sizeof(long);
+
+  *(long *)ptr = sizeof(FLUX_CONCENTRATION); 
+  ptr += sizeof(long);
+
+  // Copy the FLUX_CONCENTRATION structure, in its entirety
+  for(i=0, s=(char *)fc; i<sizeof(FLUX_CONCENTRATION); i++)
+    *(ptr++) = *(s++);
+  for(; i%16; i++)
+    *(ptr++) = 0;
+
+  // Write a fence (re-use the WORLD fence)
+  *(long *)ptr = WORLD_VAR_FENCE;
+  ptr += sizeof(long);
+
+
+  // Now patch up the concentration...
+
+  // skip world
+  // skip lines tree
+  // skip concentrations links
+  
+  // store the boundary condition pointer as a string
+  s = boundary_ptr_to_name( fc->bound );
+  if(!s) { s=""; }
+  for(i=0;i<80;i++) {
+    *ptr++ = *s;
+    if(*s)
+      s++;
+  }
+
+  // all done - write another fence (re-use the WORLD fence);
+  *(long *)ptr = WORLD_END_FENCE;
+  ptr += sizeof(long);
+  
+  return binary_dump_field(fd, BD_CONCENTRATION, ptr - binary_buffer, binary_buffer);
+}
+ 
+int binary_read_CONCENTRATION(long size, char *buf, WORLD *w) {
+  char *me = "binary_read_concentration";
+  char *ptr = buf;
+  char *s;
+  FLUX_CONCENTRATION fc;
+  FLUX_CONCENTRATION *f;
+  int i;
+  char new_conc;
+
+  if( *(long *)ptr != 1 ) { // Check for version
+    fprintf(stderr,"%s: version number is wrong (expected %d, got %d)\n",me, 1, *(long *)ptr);
+    return 1;
+  }
+  ptr += sizeof(long);
+
+  if( *(long *)ptr != sizeof(FLUX_CONCENTRATION)) {
+    fprintf(stderr,"%s: size of FLUX_CONCENTRATION is wrong (expected %d, got %d)\n",me, sizeof(FLUX_CONCENTRATION), *(long *)ptr);
+    return 2;
+  }
+  ptr += sizeof(long);
+
+  for(i=0, s = (char *)&fc; i<sizeof(FLUX_CONCENTRATION); i++)
+    *(s++) = *(ptr++);
+  for(; i%16; i++)
+    *(ptr++) = 0;
+
+  if(*(long *)ptr != WORLD_VAR_FENCE) {
+    fprintf(stderr,"%s: Missed variable field fence! (expected 0x%x, got 0x%x)\n",WORLD_VAR_FENCE, *(long *)ptr);
+    for(i=-10; i<=10; i++) {
+      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+    }
+    return 3;
+  }
+  ptr += sizeof(long);
+
+  fc.bound = boundary_name_to_ptr(ptr);
+  ptr += 80;
+  
+  if(*(long *)ptr != WORLD_END_FENCE) {
+    fprintf(stderr,"%s: Missed end-of-concentration fence! (expected 0x%x, got 0x%x)\n",WORLD_VAR_FENCE, *(long *)ptr);
+    for(i=-10; i<=10; i++) {
+      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+    }
+    return 4;
+  }
+
+  // Now copy the fc into a new (or old!) flux concentration in the WORLD.
+  f = tree_find(w->concentrations, fc.label, fc_lab_of, fc_ln_of);
+  new_conc = ( !f );
+  if(new_conc) {
+    f = new_flux_concentration(w, fc.x[0], fc.x[1], fc.x[2], fc.flux, fc.label);
+    check_special_concentration(f);
+  }
+  
+  f->world = w;
+  f->flux = fc.flux;
+  f->label = fc.label;
+  f->x[0] = fc.x[0];
+  f->x[1] = fc.x[1];
+  f->x[2] = fc.x[2];
+  f->locale_radius = fc.locale_radius;
+  f->passno = fc.passno;
+  f->bound = fc.bound;
+
+  return 0;
+}
+    
+/******************************
+ * binary_dump_FLUXON
+ * 
+ * Dumps a FLUXON (including concentration label), including vertices but not neighbors.
+ */
+
+int binary_dump_FLUXON(int fd, FLUXON *f) {
+  char *me = "binary_dump_FLUXON";
+  char *ptr;
+  char *s;
+  int i,j;
+  VERTEX *v;
+
+  check_binary_buf( sizeof(FLUXON) + 
+		    sizeof(long)*8 + 
+		    (sizeof(VERTEX)+16) * f->v_ct
+		    );
+  
+  ptr = binary_buffer;
+  
+  *(long *)ptr = 1; // FLUXON dump version number
+  ptr += sizeof(long);
+
+  *(long *)ptr = sizeof(FLUXON);  // size of a fluxon
+  ptr += sizeof(long);
+
+  *(long *)ptr = sizeof(VERTEX);  // size of a vertex
+  ptr += sizeof(long);
+
+  *(long *)ptr = f->fc0 ? f->fc0->label : 0;  // start FC label
+  ptr += sizeof(long);
+		   
+  *(long *)ptr = f->fc1 ? f->fc1->label : 0;  // end FC label
+  ptr += sizeof(long);
+
+  // Dump the FLUXON structure in its entirety.
+  for( i=0, s=(char *)f; i<sizeof(FLUXON); i++) 
+    *(ptr++) = *(s++);
+  for(; i%16; i++)
+    *(ptr++) = 0;
+
+  // leave a fence (re-use the WORLD fence)
+  *(long *)ptr = WORLD_VAR_FENCE;
+  ptr += sizeof(long);
+
+  // dump the vertices as a unit...
+
+  for(i=0, v=f->start; i<f->v_ct && v; i++,v=v->next) {
+    s = (char *)v;
+    for(j=0;j<sizeof(VERTEX); j++)
+      *(ptr++) = *(s++);
+    for(; j%16; j++)
+      *(ptr++) = 0;
+  }
+  if(i != f->v_ct || v) {
+    fprintf(stderr,"%s: inconsistent vertex count in fluxon %d; giving up (i=%d)\n",me, f->label,i);
+    return 3;
+  }
+
+  // leave another fence 
+  *(long *)ptr = WORLD_END_FENCE;
+  ptr += sizeof(long);
+
+  return binary_dump_field(fd, BD_FLUXON, ptr - binary_buffer, binary_buffer);
+}
+
+int binary_read_FLUXON(long size, char *buf, WORLD *w) {
+  char *me = "binary_read_FLUXON";
+  char *ptr= buf;
+  char *s;
+  FLUXON f0;
+  FLUXON *f;
+  long fc0lab, fc1lab, lab;
+  FLUX_CONCENTRATION *fc0, *fc1;
+  VERTEX v0, *v, *vp;
+  int i,j;
+  char fluxon_was_new;
+
+  // Check for version
+  if( *(long *)ptr != 1) {
+    fprintf(stderr,"%s: version number is wrong (expected %d, got %d)\n",me,1,*(long *)ptr);
+    return 1;
+  }
+  ptr += sizeof(long);
+
+  // Check for size of a fluxon
+  if( *(long *)ptr != sizeof(FLUXON)) {
+    fprintf(stderr,"%s: FLUXON structure has wrong size (expected %d, got %d)\n",me, sizeof(FLUXON), *(long *)ptr);
+    return 2;
+  }
+  ptr += sizeof(long);
+
+  // Check for size of a vertex
+  if( *(long *)ptr != sizeof(VERTEX)) {
+    fprintf(stderr,"%s: VERTEX structure has wrong size (expected %d, got %d)\n",me, sizeof(VERTEX), *(long *)ptr);
+    return 3;
+  }
+  ptr += sizeof(long);
+
+  // start concentration
+  fc0lab = *(long *)ptr;
+  fc0 = tree_find(w->concentrations, fc0lab, fc_lab_of, fc_ln_of);
+  if(!fc0) {
+    fprintf(stderr,"%s: couldn't find start concentration %d in existing WORLD!\n",me, fc0lab);
+    return 4;
+  }
+  ptr += sizeof(long);
+
+  // end concentration
+  fc1lab = *(long *)ptr;
+  fc1 = tree_find(w->concentrations, fc1lab, fc_lab_of, fc_ln_of);
+  if(!fc1) {
+    fprintf(stderr,"%s: couldn't find end concentration %d in existing WORLD!\n",me, fc1lab);
+    return 5;
+  }
+  ptr += sizeof(long);
+
+  // Read the FLUXON into buffer...
+  for(i=0, s=(char *)&f0; i<sizeof(FLUXON); i++) 
+    *(s++) = *(ptr++);
+  for(; i%16; i++)
+    ptr++;
+
+  lab = f0.label;
+  f = tree_find(w->lines, lab, fl_lab_of, fl_all_ln_of);
+  if(!f) {
+    f = new_fluxon( f0.flux, fc0, fc1, lab, f0.plasmoid );
+    fluxon_was_new = 1;
+  }
+
+  // Copy the data into the output FLUXON.
+  f->flux = f0.flux;
+  f->label = f0.label;
+  // f->start = 0; // redundant -- 0 on creation or after our purge above
+  // f->end = 0;   // redundant -- 0 on creation or after our purge above
+  f->v_ct = f0.v_ct;
+
+  // Handle linking in the old-fluxon case
+  if( !fluxon_was_new ) {
+    if( f->fc0 != fc0 ) {
+      f->fc0->lines = tree_unlink( f, fl_lab_of, fl_start_ln_of );
+      fc0->lines = tree_binsert( fc0->lines, f, fl_lab_of, fl_start_ln_of );
+    }
+    if( f->fc1 != fc1 ) {
+      f->fc1->lines = tree_unlink( f, fl_lab_of, fl_end_ln_of );
+      fc1->lines = tree_binsert( fc1->lines, f, fl_lab_of, fl_end_ln_of );
+    }
+    f->fc0 = fc0;
+    f->fc1 = fc1;
+  }
+
+  // Get rid of old vertices if this isn't a new fluxon...
+  if(!fluxon_was_new) {
+    for(v=f->start; v; v=f->start )
+      delete_vertex(v);
+  }
+  
+  // Check the fence
+  if( *(long *)ptr != WORLD_VAR_FENCE ) {
+    fprintf(stderr,"%s: missed variable fence!\n",me);
+    if(fluxon_was_new) 
+      delete_fluxon(f);
+    return 6;
+  }
+  ptr += sizeof(long);
+      
+  // Grab vertices...
+  vp = 0;
+
+  for(i=0; i<f0.v_ct; i++) {
+    void *l,*r,*up;
+    long n;
+    NUM sum;
+
+    // Snarf the new vertex into the vertex buffer
+    for(j=0, s=(char *)&v0; j<sizeof(VERTEX); j++) 
+      *(s++) = *(ptr++);
+    for(; j%16; j++)
+      ptr++;
+
+    //    printf("f label is %d, f->fc0 label is %d, world is %d; ",f->label, f->fc0->label, f->fc0->world);
+    v = new_vertex( v0.label, v0.x[0], v0.x[1], v0.x[2], f );
+
+    // Copy the vertex buffer fields into the new vertex.
+    v->line = f;
+    v->prev = vp;
+    if(vp)
+      vp->next = v;
+    else
+      f->start = v;
+    v->next = 0; // will be overwritten on next i iteration.
+
+    // Skip x as new_vertex handles that.
+
+    v->neighbors.n = 0;
+    v->neighbors.size = 0;
+    v->neighbors.stuff = 0;
+    v->nearby.n = 0;
+    v->nearby.size = 0;
+    v->nearby.stuff = 0;
+
+    cp_3d(v->scr, v0.scr);
+    
+    v->passno = v0.passno;
+    
+    v->r = v0.r;
+    v->a = v0.a;
+
+    cp_3d(v->b_vec, v0.b_vec);
+
+    v->b_mag = v0.b_mag;
+    v->energy = v0.energy;
+
+    cp_3d(v->f_v, v0.f_v);
+    cp_3d(v->f_s, v0.f_s);
+    cp_3d(v->f_t, v0.f_t);
+    v->f_s_tot = v0.f_s_tot;
+    v->f_v_tot = v0.f_v_tot;
+    v->f_n_tot = v0.f_n_tot;
+    v->r_v    = v0.r_v;
+    v->r_s    = v0.r_s;
+    v->r_cl   = v0.r_cl;
+    v->r_ncl  = v0.r_ncl;
+    v->label  = v0.label;
+    cp_3d(v->plan_step, v0.plan_step);
+
+    vp = v;
+  }
+
+  f->end = v;
+
+  if( *(long *)ptr  != WORLD_END_FENCE ) {
+    fprintf(stderr,"%s: missed final fence in fluxon %d, arena may be corrupted.\n",me, f->label);
+    for(i=-10; i<=10; i++) {
+      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+    }
+
+    return 7; 
+  }
+ 
+  return 0;
+}
+		    
+/******************************
+ * binary_dump_neighbors - write the neighbor list of all vertices in a fluxon.
+ */
+  
+int binary_dump_neighbors(int fd, FLUXON *f) {
+  char *me = "binary_dump_neighbors";
+  char *ptr;
+  char *s;
+  int i,j;
+  VERTEX *v;
+
+  // Accumulate total number of neighbors on this fluxon
+  for(v=f->start, j=i=0; v; v=v->next, j++) {
+    i += v->neighbors.n;
+  }
+
+  if(j != f->v_ct)  {
+    fprintf(stderr,"%s: inconsistent vertex count in fluxn %d (v_ct is %d, counted %d neighbors); giving up\n", me, f->label, f->v_ct, j);
+    return 1;
+  }
+  
+  check_binary_buf( sizeof(long) * i  +
+		    sizeof(long) * 5 +
+		    (3 * sizeof(long)) * f->v_ct
+		    );
+  ptr = binary_buffer;
+
+  *(long *)ptr = 1;  // Version number
+  ptr += sizeof(long);
+
+  *(long *)ptr = f->label; // Which fluxon's vertices to dump
+  ptr += sizeof(long);
+  
+  *(long *)ptr = f->v_ct; // Total number of vertices to dump
+  ptr += sizeof(long);
+
+  // Loop over vertices within the fluxon...
+  for(v=f->start; v; v=v->next) {
+    *(long *)ptr = NEIGHBOR_FENCE;  // Fence for safety
+    ptr += sizeof(long);
+
+    *(long *)ptr = v->label;        // Label of this vertex
+    ptr += sizeof(long);
+    
+    *(long *)ptr = v->neighbors.n;  // Neighbor count
+    ptr += sizeof(long);
+    
+    for(j=0;j<v->neighbors.n;j++)  { // The neighbors (as labels)
+      *(long *)ptr = ((VERTEX **)(v->neighbors.stuff))[j]->label;
+      ptr += sizeof(long);
+    }
+  }
+  
+  *(long *)ptr = WORLD_END_FENCE;
+  ptr+= sizeof(long);
+
+  return binary_dump_field(fd, BD_NEIGHBORS, ptr - binary_buffer, binary_buffer);
+}
+
+int binary_read_neighbors(long size, char *buf, WORLD *w) {
+  char *me = "binary_read_neighbors";
+  char *ptr = buf;
+  char *s;
+  long i,j, ct;
+  FLUXON *f;
+  VERTEX *v;
+ 
+  if( *(long *)ptr != 1 ) { // Check version number
+    fprintf(stderr,"%s: wrong version (expected %d, got %d)\n",me, 1, *(long *)ptr);
+    return 1;
+  }
+  ptr += sizeof(long);
+
+  // Read fluxon label, and find it in the tree...
+  f = tree_find( w->lines, *(long *)ptr, fl_lab_of, fl_all_ln_of );
+  if(!f) {
+    fprintf(stderr, "%s: couldn't find fluxon %d! I give up.\n",me, *(long *)ptr);
+    return 2;
+  }
+  ptr += sizeof(long);
+
+  // Check number of vertices
+  if( (*(long *)ptr) != f->v_ct ) {
+    fprintf(stderr, "%s: fluxon %d thinks it has %d vertices, not %d as advertised in the file...\n",me, f->label, f->v_ct, *(long *)ptr);
+    
+    {
+      VERTEX *vv;
+      int i;
+      for(vv=f->start, i=0; vv; vv=vv->next, i++)
+	;
+      fprintf(stderr,"    ... and it seems to actually have %d vertices.\n",i);
+      if(i == *(long *)ptr) {
+	f->v_ct = i;
+	fprintf(stderr,"  Fixed it.\n");
+      } else {
+	fprintf(stderr,"  I give up.\n");
+	return 3;
+      }
+    }
+  }
+  ptr += sizeof(long);
+
+  for( v=f->start, i=0; v; v=v->next, i++ ) {
+    if( *(long *)ptr != NEIGHBOR_FENCE ) {
+      fprintf(stderr,"%s: missed neighbor fence on vertex #%d of fluxon %d; giving up\n",me, i, f->label);
+      return 4;
+    }
+    ptr += sizeof(long);
+
+    if( *(long *)ptr != v->label ) {
+      fprintf(stderr,"%s: file has vertex %d at position #%d of fluxon %d, we have %d instead.  Giving up.\n",me, *(long *)ptr, i, f->label, v->label);
+      return 5;
+    }
+    ptr += sizeof(long);
+    
+    // Get count.
+    ct = *(long *)ptr;
+    ptr += sizeof(long);
+
+    // Clear the dumblist, then add the neighbors from the file...
+    vertex_clear_neighbors(v);
+    for(j=0; j<ct; j++) {
+      VERTEX *vn = tree_find(w->vertices, *(long *)ptr, v_lab_of, v_ln_of );
+      if(!vn) {
+	fprintf(stderr,"%s: vertex %d is called out as a neighbor to %d (fluxon %d, pos. #%d) but doesn't exist!\n",me, *(long *)ptr, v->label, f->label, j);
+	return 6;
+      }
+      vertex_add_neighbor( v, vn);
+      ptr += sizeof(long);
+    }
+  }
+
+  
+  if(*(long *)ptr != WORLD_END_FENCE) {
+    fprintf("%s: missed end fence\n",me);
+    return 7;
+  }
+  
+  return 0;
+}
+    
+  
+/******************************
+ * binary_dump_end - send an end marker to the file.  Does not close the file descriptor.
  */
 int binary_dump_end(int fd) {
   binary_dump_field( fd, BD_END, 0, 0 );
@@ -1794,19 +2358,25 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
   binary_dump_field( fd, BD_FLUXON_PIPE, dex - binary_buffer, binary_buffer );
 }
 
-
-
 /**********************************************************************
- * binary_read_dumpfile - read in a complete binary dump
+ * binary_read_dumpfile - read in a complete binary dump, returning the
+ * WORLD object you've been working on (or 0 on failure).
  *
  */
-int binary_read_dumpfile ( int fd, WORLD *w ) {
+WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
   long hdrbuf[3];
   int ct;
   int pos = 0;
   long type;
   long len;
   char *me = "FLUX: binary_read_dumpfile";
+  char allocated_world = 0;
+
+  if(!w) {
+    w = new_world();
+    allocated_world = 1;
+  }
+
   do {
 
     // Read the header (try twice if necessary)
@@ -1820,22 +2390,28 @@ int binary_read_dumpfile ( int fd, WORLD *w ) {
       if(ct2+ct != sizeof(long)*3) {
 	fprintf(stderr,"%s: failed to read field header, position %d",me,pos);
 	perror("read returned the error");
-	return 1;
+	if(allocated_world)
+	  free_world(w);
+	return 0;
       }
     }
-
 
     // Parse header: check for fence, and get data type and length
     pos += ct;
     if(hdrbuf[0] != BD_FENCE) {
       fprintf(stderr,"%s: failed to find fence (expected %x, got %x), position %d", me, BD_FENCE, hdrbuf[0]);
-      return 2;
+      if(allocated_world)
+	free_world(w);
+      return 0;
     }
+
     type = hdrbuf[1];
     len = hdrbuf[2];
     if(type <=0 || type > BD_MAX_TYPENO) {
       fprintf(stderr,"%s: failed to find valid type (expected 1-%d, got %d), position %d",me,BD_MAX_TYPENO,type);
-      return 3;
+      if(allocated_world)
+	free_world(w);
+      return 0;
     }
     check_binary_buf( len );
 
@@ -1850,7 +2426,9 @@ int binary_read_dumpfile ( int fd, WORLD *w ) {
       if(ct2+ct != len)  {
 	fprintf(stderr,"%s: failed to read %d bytes (got %d bytes from position %d, type %d; second try yielded %d bytes for %d total)\n",me,len,ct, pos, type,ct2,ct+ct2);
 	perror("read returned the error");
-	return 4;
+	if(allocated_world)
+	  free_world(w);
+	return 0;
       }
     }
 
@@ -1863,12 +2441,42 @@ int binary_read_dumpfile ( int fd, WORLD *w ) {
     switch(type) {
     case BD_END:
       close(fd);
-      return 0;
+      return w;
       break;
     case BD_FLUXON_PIPE:
       if(binary_read_fluxon_pipe(len, binary_buffer, w)) {
 	fprintf(stderr,buf);
-	return 1;
+	if(allocated_world)
+	  free_world(w);
+	return 0;
+      }
+      break;
+    case BD_WORLD:
+      if(binary_read_WORLD(len, binary_buffer, w)) {
+	if(allocated_world)
+	  free_world(w);
+	return 0;
+      }
+      break;
+    case BD_CONCENTRATION:
+      if(binary_read_CONCENTRATION(len, binary_buffer, w)) {
+	  if(allocated_world)
+	    free_world(w);
+	  return 0;
+	}
+	break;
+    case BD_FLUXON:
+      if(binary_read_FLUXON(len, binary_buffer, w)) {
+	if(allocated_world)
+	  free_world(w);
+	return 0;
+      }
+      break;
+    case BD_NEIGHBORS:
+      if(binary_read_neighbors(len, binary_buffer, w)) {
+	if(allocated_world)
+	  free_world(w);
+	return 0;
       }
       break;
     default:

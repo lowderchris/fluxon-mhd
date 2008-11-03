@@ -25,7 +25,7 @@ sv * Copyright (c) Craig DeForest, 2004-2007
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 15
+#define FLUX_CORE_VERSION 16
 
 typedef struct FluxCore {
 
@@ -104,13 +104,23 @@ typedef struct FluxCore {
 
   WORLD *(*read_world)(FILE *file, WORLD *a);
 
+  int (*binary_dump_header)(int fd);
+  int (*binary_dump_WORLD)(int fd, WORLD *w);
+  int (*binary_dump_CONCENTRATION)(int fd, FLUX_CONCENTRATION *fc);
+  int (*binary_dump_FLUXON)(int fd, FLUXON *fl);
+  int (*binary_dump_neighbors)(int fd, FLUXON *fl);
+  int (*binary_dump_end)(int fd);
+  int (*binary_dump_fluxon_pipe)(int fd, FLUXON *f);
 
+  WORLD *(*binary_read_dumpfile)(int fd, WORLD *w);
+  int (*binary_read_fluxon_pipe)(long size, char *buf, WORLD *w);
+  
   /***********  functions from model.h */
   
   
   void (*world_update_neighbors) (WORLD *a, char global);
-  NUM *(*world_update_mag)       (WORLD *a, char global);
-  NUM *(*world_update_mag_parallel)(WORLD *a, char global);
+  int (*world_update_mag)       (WORLD *a, char global);
+  int (*world_update_mag_parallel)(WORLD *a, char global);
   void (*world_fluxon_length_check) (WORLD *a, char global);  
   void (*world_relax_step)       (WORLD *a, NUM t);
   void (*world_relax_step_parallel) (WORLD *a, NUM t);

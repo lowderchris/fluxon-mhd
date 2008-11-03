@@ -155,6 +155,10 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	case 27: return (void *)&(v->plan_step[0]);     break;
 	case 28: return (void *)&(v->f_n_tot);          break;
 	case 29: return (void *)&(v->r_ncl);            break;
+	case 30: return (void *)&(v->neighbors.n);      break;
+	case 31: return (void *)&(v->neighbors.size);   break;
+	case 32: return (void *)&(v->nearby.n);         break;
+	case 33: return (void *)&(v->nearby.size);      break;
 	default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 	                 typeno,fieldno);
 	         return (void *)0;
@@ -277,6 +281,18 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
            return (void *)0;
            break;
   }
+}
+
+/* Helpers for binary_dump, below */
+static b_d_fd;
+static long b_d_fc_spring(FLUX_CONCENTRATION *fc, int lab, int link, int depth) {
+       return FLUX->binary_dump_CONCENTRATION(b_d_fd, fc);
+}
+static long b_d_fl_spring(FLUXON *fl, int lab, int link, int depth) {
+       return FLUX->binary_dump_FLUXON(b_d_fd, fl);
+}
+static long b_d_n_spring(FLUXON *fl, int lab, int link, int depth) {
+       return FLUX->binary_dump_neighbors(b_d_fd, fl);
 }
  
 /**********************************************************************
@@ -1487,6 +1503,79 @@ CODE:
 	printf("Got back %g\n",RETVAL);
 OUTPUT:
 	RETVAL
+
+
+IV
+binary_dump_WORLD(wsv, fname)
+ SV *wsv
+ char *fname
+PREINIT:
+ int fd;
+ WORLD *w;
+CODE:
+  w = SvWorld(wsv,"binary_dump_WORLD",1);
+ fd =open(fname,O_WRONLY | O_CREAT | O_TRUNC, 0664);
+ printf("fd is %d\n",fd);
+ if(fd<0) 
+  Perl_croak(aTHX_ "binary_dump_WORLD: couldn't open file");
+ RETVAL = FLUX->binary_dump_WORLD(fd, w);
+ FLUX->binary_dump_end(fd);
+ close(fd);
+OUTPUT:
+ RETVAL
+
+SV *
+binary_read_dumpfile(fname)
+ char *fname
+PREINIT:
+ int fd;
+ WORLD *w;
+CODE:
+ fd = open(fname,O_RDONLY);
+ if(fd<0) {
+  Perl_croak(aTHX_ "binary_read_dmpfile: couldn't open file");
+ }
+ printf("fd=%d\n",fd);
+ w = FLUX->binary_read_dumpfile(fd, 0);
+ if(w) 
+  RETVAL = FLUX->new_sv_from_ptr(w, FT_WORLD, 0);
+ else
+  RETVAL = &PL_sv_undef;
+ printf( "read_dumpfile: refct is %d\n", w->refct );
+ close(fd);
+OUTPUT:
+	RETVAL
+
+IV
+binary_dump(wsv, fname)
+ SV *wsv
+ char *fname
+PREINIT:
+ int fd;
+ WORLD *w;
+CODE:
+  w = SvWorld(wsv,"binary_dump_WORLD",1);
+ fd =open(fname,O_WRONLY | O_CREAT | O_TRUNC, 0664);
+ printf("fd is %d\n",fd);
+ if(fd<0) 
+  Perl_croak(aTHX_ "binary_dump_WORLD: couldn't open file");
+ RETVAL = FLUX->binary_dump_WORLD(fd, w);
+ if(!RETVAL) {
+   b_d_fd = fd;
+   RETVAL = FLUX->tree_walker(w->concentrations, fc_lab_of, fc_ln_of, b_d_fc_spring,0);
+ }
+ if(!RETVAL) {
+   b_d_fd = fd;
+   RETVAL = FLUX->tree_walker(w->lines, fl_lab_of, fl_all_ln_of, b_d_fl_spring, 0);
+ }
+ if(!RETVAL) {
+   b_d_fd = fd;
+   RETVAL = FLUX->tree_walker(w->lines, fl_lab_of, fl_all_ln_of, b_d_n_spring, 0);
+ }
+ FLUX->binary_dump_end(fd);
+ close(fd);
+OUTPUT:
+ RETVAL
 
 
 	

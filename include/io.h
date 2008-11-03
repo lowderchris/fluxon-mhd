@@ -100,23 +100,37 @@ void gl_2d_scr_list(DUMBLIST *horde,float colors[3]);
 
 // Some fences - unusual numbers with funny names 
 #define BD_FENCE         0xAB5C155A
-#define NEIGHBOR_FENCE   0xBED51DE0
-#define NEARBY_FENCE     0xBED51DE1
+#define NEIGHBOR_FENCE   0xBED57EAD
 #define VERTEX_END_FENCE 0x5AFEB055
+#define WORLD_VAR_FENCE  0x5AFEBEEF
+#define WORLD_END_FENCE  0x5AFED00D
 
 // Assign type codes sequentially, and set BD_MAX_TYPENO to the value of the highest one.
 #define BD_END                       1
 #define BD_FLUXON_PIPE               2
-#define BD_MAX_TYPENO                2
+#define BD_HDR                       3
+#define BD_WORLD                     4
+#define BD_CONCENTRATION             5
+#define BD_FLUXON                    6
+#define BD_NEIGHBORS                 7
+#define BD_MAX_TYPENO                7
 
 // The read/write routines.  Note that some (the _pipe routines) are intended ONLY 
 // for returning state to a parent via a pipe -- they pass pointers directly!
 int binary_dump_field(int fd, long code, long len, char *buf);
+int binary_dump_header(int fd);
+int binary_dump_WORLD(int fd, WORLD *w);
+int binary_dump_CONCENTRATION(int fd, FLUX_CONCENTRATION *fc);
+int binary_dump_FLUXON(int fd, FLUXON *f);
+int binary_dump_neighbors(int fd, FLUXON *f);
 int binary_dump_end(int fd);
 int binary_dump_fluxon_pipe(int fd, FLUXON *f);
 
-int binary_read_dumpfile(int fd, WORLD *w);
+WORLD *binary_read_dumpfile(int fd, WORLD *w);
 int binary_read_fluxon_pipe(long size, char *buf, WORLD *w);
+int binary_read_header(long size, char *buf, WORLD *w);
+int binary_read_WORLD(long size, char *buf, WORLD *w);
+int binary_read_CONCENTRATION(long size, char *buf, WORLD *w);
 int binary_read_fluxon(int fd, FLUXON *f);
 
 

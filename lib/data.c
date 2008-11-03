@@ -176,7 +176,7 @@ long new_vertex_label(long request) {
  * new_fluxon 
  * Creates a new FLUXON data structure given the flux, begin and end
  * concentrations, and a label. Plasmoid isn't really used. The new fluxon
- * has no linked fluxons. 
+ * has no linked vertices. 
  */
 
 FLUXON *new_fluxon(      NUM flux, 
@@ -246,7 +246,7 @@ FLUXON *new_fluxon(      NUM flux,
  * new_vertex
  *
  * Returns a vertex given an X,Y,Z, and fluxon. 
- * The neighbor list is empty -- call set_neighbors to get that.
+ * The neighbor list is empty.
  *
  */
 
@@ -276,6 +276,10 @@ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
 
   dumblist_init( &(tp->neighbors) );
   dumblist_init( &(tp->nearby) );
+
+  // Pre-grow the neighbor lists to avoid having to do it later.
+  dumblist_grow( &(tp->neighbors), N_NEIGHBORS_PREALLOC );
+  dumblist_grow( &(tp->nearby),    N_NEIGHBORS_PREALLOC );
   
   tp->b_mag = 0;
   tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
@@ -326,6 +330,36 @@ FLUX_CONCENTRATION *new_flux_concentration(
   return fc;
 }
 
+/**********************************************************************
+ * check_special_concentration - checks if a FLUX_CONCENTRATION 
+ * has one of the magic labels and links accordingly if it does.
+ * Useful for IO.
+ */
+void check_special_concentration(FLUX_CONCENTRATION *f) {
+  if(!f)
+    return;
+  if(!f->world) {
+    fprintf(stderr,"check_special_concentration - only works for concentrations that are already associated with a world!\n");
+    return;
+  }
+  switch(f->label) {
+  case FC_OB_ID: 
+    f->world->fc_ob = f;
+    break;
+  case FC_OE_ID:
+    f->world->fc_oe = f;
+    break;
+  case FC_PB_ID:
+    f->world->fc_pb = f;
+    break;
+  case FC_PE_ID:
+    f->world->fc_pe = f;
+    break;
+  default:
+    break;
+  }
+}
+
 
 /**********************************************************************
  * new_world
@@ -353,12 +387,12 @@ WORLD *new_world() {
    * photosphere this requires two(4) dummy vertices connected onto a
    * dummy fluxon.  */
 
-  a->fc_im10 = new_flux_concentration(a,0,0,0,0,-8);
-  a->fc_im11 = new_flux_concentration(a,0,0,0,0,-9);
-  a->fc_im20 = new_flux_concentration(a,0,0,0,0,-10);
-  a->fc_im21 = new_flux_concentration(a,0,0,0,0,-11);
-  a->fl_im = new_fluxon(0,a->fc_im10, a->fc_im11, -9, 0);
-  a->fl_im2 = new_fluxon(0,a->fc_im20, a->fc_im21, -10, 0);
+  a->fc_im10 = new_flux_concentration(a,0,0,0,0,FC_IM10_ID);
+  a->fc_im11 = new_flux_concentration(a,0,0,0,0,FC_IM11_ID);
+  a->fc_im20 = new_flux_concentration(a,0,0,0,0,FC_IM20_ID);
+  a->fc_im21 = new_flux_concentration(a,0,0,0,0,FC_IM21_ID);
+  a->fl_im = new_fluxon(0,a->fc_im10, a->fc_im11, FL_IM1_ID, 0);
+  a->fl_im2 = new_fluxon(0,a->fc_im20, a->fc_im21, FL_IM2_ID, 0);
   a->image =  new_vertex(-1,0,0,0,a->fl_im);
   a->image2 = new_vertex(-2,0,0,0,a->fl_im);
   a->image3 = new_vertex(-3,0,0,0,a->fl_im2);
@@ -372,30 +406,33 @@ WORLD *new_world() {
   
   a->fl_im->start = a->image;
   a->fl_im->end = a->image2;
+  a->fl_im->v_ct = 2;
+
   a->fl_im2->start = a->image3;
   a->fl_im2->end = a->image4;
+  a->fl_im2->v_ct = 2;
 
   /*** By default, don't handle automatically open field lines ***/
   a->locale_radius = 0;
   a->auto_open = 0;
 
   /*** Init. the open-field and plasmoid pseudo flux concentrations ***/
-  a->fc_ob = new_flux_concentration(a,0,0,0,1,-1);
+  a->fc_ob = new_flux_concentration(a,0,0,0,1, FC_OB_ID);
   a->fc_ob->label = -1;
   a->fc_ob->bound = fl_b_open;
   a->fc_ob->locale_radius = 0;
 
-  a->fc_oe = new_flux_concentration(a,0,0,0,-1,-2);
+  a->fc_oe = new_flux_concentration(a,0,0,0,-1, FC_OE_ID);
   a->fc_oe->label = -2;
   a->fc_oe->bound = fl_b_open;
   a->fc_oe->locale_radius = 0;
   
-  a->fc_pb = new_flux_concentration(a,0,0,0,1,-3);
+  a->fc_pb = new_flux_concentration(a,0,0,0,1, FC_PB_ID);
   a->fc_pb->label = -3;
   a->fc_pb->bound = fl_b_plasmoid;
   a->fc_pb->locale_radius = 0;
   
-  a->fc_pe = new_flux_concentration(a,0,0,0,-1,-4);
+  a->fc_pe = new_flux_concentration(a,0,0,0,-1, FC_PE_ID);
   a->fc_pe->label = -4;
   a->fc_pe->bound = fl_b_plasmoid;
   a->fc_pe->locale_radius = 0;
@@ -461,9 +498,11 @@ void delete_fluxon ( FLUXON *f ) {
   if(f->fc0->world->verbosity>=2) 
     printf("deleting fluxon %d (%d under it)...\n",f->label,f->all_links.n);
 
-  for(v=f->start->next; v && v != f->end; ) {
-    delete_vertex(v);
-    v=f->start->next;
+  if(f->start) {
+    for(v=f->start->next; v && v != f->end; ) {
+      delete_vertex(v);
+      v=f->start->next;
+    }
   }
   delete_vertex(f->start); f->start = 0;
   delete_vertex(f->end);   f->end = 0;
@@ -751,6 +790,34 @@ void unlink_vertex(VERTEX *v) {
       printf("Finished unlinking vertex\n");
     }
   }
+}
+
+/**********************************************************************
+ * vertex_clear_neighbors
+ * Clears out the neighbor list of a vertex, removing it from the appropriate
+ * nearby lists as necessary.
+ */
+void vertex_clear_neighbors(VERTEX *v) {
+  int i;
+  VERTEX *vn;
+
+  // Clear out the nearby links
+  for(i=0;i<v->neighbors.n;i++) {
+    vn = ((VERTEX **)(v->neighbors.stuff))[i];
+    dumblist_delete( &(vn->nearby), v );
+  }
+
+  // Clear out the neighbors
+  v->neighbors.n = 0;
+}
+
+/**********************************************************************
+ * vertex_add_neighbor
+ * Adds a neighbor and links this vertex to the neighbor's nearby list
+ */
+void vertex_add_neighbor(VERTEX *v, VERTEX *neighbor) {
+  dumblist_add( &(v->neighbors), neighbor );
+  dumblist_add( &(neighbor->nearby), v );
 }
 
 /**********************************************************************

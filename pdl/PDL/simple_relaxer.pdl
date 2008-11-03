@@ -132,7 +132,7 @@ sub simple_relaxer {
 
 	if($a->{concurrency}) {
 	    print "parallel...\n";
-	    $fmax = $w->update_force_parallel($global || $w->{rel_step}==0);
+	    $fmax = $w->update_force_parallel($global);
 	    $w->relax_step_parallel($dt);
 	} else {
 	    $fmax = $w->update_force($global || $w->{rel_step}==0);

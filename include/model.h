@@ -113,6 +113,8 @@ extern struct F_B_NAMES {
   char name[80];
   char summary[80];
 } F_B_NAMES[];
+void *boundary_name_to_ptr(char *name);
+char *boundary_ptr_to_name(void *ptr);
 
 void fl_b_tied_force(VERTEX *v);
 void fl_b_tied_inject(VERTEX *v);

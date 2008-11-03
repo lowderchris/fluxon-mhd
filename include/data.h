@@ -143,6 +143,18 @@ typedef struct FLUXON {
 
 } FLUXON;
 
+#define FC_OB_ID  -1
+#define FC_OE_ID  -2
+#define FC_PB_ID  -3
+#define FC_PE_ID  -4
+#define FC_IM10_ID -8
+#define FC_IM11_ID -9
+#define FC_IM20_ID -10
+#define FC_IM21_ID -11
+
+#define FL_IM1_ID -9
+#define FL_IM2_ID -10
+
 typedef struct FLUX_CONCENTRATION {
   struct WORLD *world;
   NUM flux;                  /* Total magnetic flux in Maxwells */
@@ -187,6 +199,8 @@ typedef struct PHOTOSPHERE {
 #define N_RECON_PARAMS 3    /* Number of world-global parameters to be stored for each reconnection function */
 
 #define N_M_PARAMS 5        /* Number of world-global parameters for a generic mass scaling function */
+
+#define N_NEIGHBORS_PREALLOC 10 /* Number of neighbors to pre-allocate for each vertex.  Saves time on file read. */
 
 typedef VERTEX *((RC_FUNC)(VERTEX *v, NUM *params));
 
@@ -321,13 +335,17 @@ static const v_lab_of = (long)&(v__samp.label) - (long)&(v__samp);
 						  NUM flux,
 						  long label
 						  );
+void check_special_concentration(FLUX_CONCENTRATION *f);
 
 WORLD *new_world();
 
-void free_world();
-void delete_flux_concentration();
-void delete_fluxon();
-void delete_vertex();
+void free_world( WORLD *w );
+void delete_flux_concentration(FLUX_CONCENTRATION *fc);
+void delete_fluxon(FLUXON *f);
+void delete_vertex(VERTEX *v);
+void unlink_vertex(VERTEX *v);
+void vertex_clear_neighbors(VERTEX *v);
+void vertex_add_neighbor(VERTEX *v, VERTEX *neighbor);
 int vertex_renumber(VERTEX *v, long newlab);
 int fluxon_renumber(FLUXON *f, long newlab);
 int concentration_renumber(FLUX_CONCENTRATION *fc, long newlab);

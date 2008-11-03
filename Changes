@@ -1,3 +1,8 @@
+3-Nov-2008 [cd]
+    - binary file save architecture in place (hopefully runs faster than ASCII?)
+    - Use parallelization on initial update_neighbors.
+    - Per-vertex globalization of neighbor finding should avoid the need for global neighbor finding to initialize -- code detects which vertices require global finding.
+    - Added vertex neighbor dumblist size/n to vertex hash interface
 23-Oct-2008 [cd]
     Updated fix_curvature issues (r_ncl now transmitted via io.c)
 22-Oct-2008 [cd]

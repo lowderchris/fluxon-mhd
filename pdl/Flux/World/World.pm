@@ -66,11 +66,23 @@ Read in a fluxon structure from a file
 You supply the file name; the fluxon gets read into memory.
 The file is a "standard" FLUX ASCII fluxon description file.
 
+If the file ends with a '.gz' extension, it is automatically
+gunzipped on-the-fly.
+
 =cut
 
 sub read_world {
   shift if(substr($_[0],0,length(__PACKAGE__)) eq __PACKAGE__);
-  _read_world(@_);
+  my $file = $_[0];
+  unless($file =~ m/.gz$/) {
+      return _read_world(@_);
+  } else {
+      my $tmpfile = "/tmp/$file-$$-tmp.flux";
+      `gunzip < $file > $tmpfile`;
+      $w = _read_world($tmpfile);
+      unlink $tmpfile;
+      return $w;
+  }
 }
 
 
@@ -127,6 +139,29 @@ Write a fluxon structure out to a file
 
 Writes an ASCII description file to the filename you give.
 
+If the file name ends in ".gz", the file is automatically gzipped on-the-fly.
+
+=cut
+
+sub write_world {
+    my $world = shift;
+    my $fname = shift;
+    
+    unless($fname =~ m/\.gz$/) {
+	_write_world($world,$fname);
+    } else {
+	my $tmpfname = "/tmp/fluxtmp-$$";
+	eval {unlink $tmpfname;};
+	my $wwo = _write_world($world, $tmpfname);
+	`gzip $tmpfname`;
+	`mv ${tmpfname}.gz $fname`;
+	return $wwo;
+    }
+}
+    
+
+=pod
+
 =head2 string
 
 =for ref
@@ -135,6 +170,7 @@ Convert a fluxon model to an ASCII string or (in list context) list.
 
 Works mighty cheesily, by using the C code to write the string out to 
 a temporary file, then snarfing the temp file back in.
+
 
 =cut
 

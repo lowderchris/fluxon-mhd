@@ -146,6 +146,7 @@ CODE:
 	w = FLUX->read_world(f,(WORLD *)0);
 	fclose(f);
 
+
 	if(w) {
 		printf("Read '%s': %d vertices, %d fluxons, %d concentrations\n", 
 			s,
@@ -166,7 +167,7 @@ OUTPUT:
 
 
 void
-write_world(wsv,s)
+_write_world(wsv,s)
   SV *wsv
   char *s
 PREINIT:

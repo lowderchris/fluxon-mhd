@@ -71,11 +71,49 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {0,0,0}
 };
 
+char *force_ptr_to_str(void *f) {
+  int i;
+  for(i=0;FLUX_FORCES[i].name; i++) 
+    if(FLUX_FORCES[i].func == f)
+      return FLUX_FORCES[i].name;
+  return 0;
+}
+
+void *force_str_to_ptr(char *s) {
+  int i;
+  if(!s)
+    return 0;
+  for(i=0; FLUX_FORCES[i].name; i++) 
+    if( !strcmp(FLUX_FORCES[i].name, s) )
+      return FLUX_FORCES[i].func;
+  return 0;
+}
+
 /* global reconnection-condition calculator table */
 struct FLUX_RECON FLUX_RECON[] = {
   {"rc_a_ad2","Threshold angle per d^2 (J proxy avoids explicit B calc)", rc_a_ad2, "(min. angle), (min A/D^2 [or 0 for none])"},
   {"","",0,""}
 };
+
+
+char *recon_ptr_to_str(void *f) {
+  int i;
+  for(i=0;FLUX_RECON[i].name; i++) 
+    if(FLUX_RECON[i].func == f)
+      return FLUX_RECON[i].name;
+  return 0;
+}
+
+void *recon_str_to_ptr(char *s) {
+  int i;
+  if(!s)
+    return 0;
+  for(i=0; FLUX_RECON[i].name; i++) 
+    if( !strcmp(FLUX_RECON[i].name, s) )
+      return FLUX_RECON[i].func;
+  return 0;
+}
+
 
 /* fluxon physics routines get called like this:
  *    force = routine( VERTEX *v );

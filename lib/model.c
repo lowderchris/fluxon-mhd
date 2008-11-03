@@ -774,7 +774,7 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
 
   while(v->next) {   
     if(verbosity>=3)  printf("\tfluxon_update_neighbors... vertex %d\n",v->label);
-    vertex_update_neighbors(v,global);
+    vertex_update_neighbors(v,global || (v->neighbors.n == 0));
     if(verbosity>=4)   fdump_fluxon(stdout,fl,0);
     if(verbosity>=3)   printf("=============\n\n");
     v=v->next;
@@ -829,7 +829,7 @@ int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
     /* Update neighbor map and establish neighbors' (r,a) variables, 
      *  which will be used by the physics funcs! */
 
-     vertices = vertex_update_neighbors(v,global); 
+    vertices = vertex_update_neighbors(v,global || (v->neighbors.n==0)); 
 
     /* Zero the vertex's force accumulators */
     v->f_v[0] = v->f_v[1] = v->f_v[2] = 0;
@@ -2811,7 +2811,6 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
  * fluxon end-condition handlers - update end position of the fluxon
  * to be consistent with the boundary condition
  */
-
 struct F_B_NAMES F_B_NAMES[] = {
   {fl_b_tied_inject, "fl_b_tied_inject", "Auto-inject new vertices to maintain one near the FC"},
   {fl_b_tied_force,  "fl_b_tied_force",  "Force the closest vertex to be near the FC"},
@@ -2820,6 +2819,30 @@ struct F_B_NAMES F_B_NAMES[] = {
   {0, 0},
   {0, 0}
 };
+void *boundary_name_to_ptr(char *s) {
+  int i;
+  if(!s) 
+    return 0;
+  for(i=0; F_B_NAMES[i].func; i++) {
+    if(!strcmp(s, F_B_NAMES[i].name)){
+      return F_B_NAMES[i].func;
+    }
+  }
+  return 0;
+}
+
+char *boundary_ptr_to_name(void *f) {
+  int i;
+  if(!f)
+    return 0;
+  for(i=0; F_B_NAMES[i].func; i++) {
+    if(F_B_NAMES[i].func == f) {
+      return F_B_NAMES[i].name;
+    }
+  }
+}
+
+
 
 void fl_b_tied_inject(VERTEX *v) {
   POINT3D a;
