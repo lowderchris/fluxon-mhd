@@ -3176,7 +3176,6 @@ void parallel_prep(WORLD *a) {
 static int parallel_daughter(int p); // handles processing in the daughters.
 
 static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int depth) {
-
   /* Skip magic boundary fluxons */
   if(fl->label <= 0 && fl->label >= -10) 
     return 0;
@@ -3186,11 +3185,12 @@ static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int
 
   if( v_ct > v_thresh+1 || fl==last_fluxon ) { // +1 ensures we run over, not under; last_fluxon check ensures we get the last one.
     int p[2], pid;
+
     if(pipe(p)) {
       fprintf(stderr,"Pipe creation failed! Giving up!\n");
       return 1;
     }
-    
+
     pid = fork();
 
     if(pid) {
@@ -3227,10 +3227,11 @@ static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int
       fprintf(stderr,"You should never see this!\n");
       return 1;
     }
+  }
 
   /* Normal exit case - just iterate again and spawn another time */
   return 0;
-  }
+
 }
 
 /******************************
@@ -3255,8 +3256,8 @@ int parallel_daughter(int p) {
       binary_dump_fluxon_pipe( p, f );
     }
     binary_dump_end( p );
-    return(0);
   }
+  return(0);
 }
 
 /******************************
@@ -3270,7 +3271,6 @@ int parallel_finish(WORLD *a) {
   SUBPROC_DESC *sbdii;
   int throw_err = 0;
   int i;
-
   init_minmax_accumulator(a);
 
   for(sbdii=sbd; sbdii < sbdi; sbdii++) {
@@ -3294,12 +3294,14 @@ int parallel_finish(WORLD *a) {
       for(i=0; i < fluxon_batch->n; i++) {
 	fprintf(stderr," %d",( ((FLUXON **)(fluxon_batch->stuff))[i] )->label );
       }
-      fprintf(stderr,"! This is sometimes caused by a system interrupt damaging the pipe. Re-trying in the parent...\n");
+      fprintf(stderr,"!\n     This is sometimes caused by a system interrupt damaging the pipe. Re-trying in the parent...\n");
       
       i = parallel_daughter(0); // sending 0 omits dumping
       if(i) {
-	fprintf(stderr,"parallel_finish: task failed on re-try.  I will snarf all remaining data and return an error.\n");
+	fprintf(stderr,"     task failed on re-try.  I will snarf all remaining data and return an error.\n");
 	throw_err++;
+      } else {
+	fprintf(stderr,"     OK.  Continuing...\n");
       }
     }
 
@@ -3316,12 +3318,13 @@ int parallel_finish(WORLD *a) {
     while(wait(&stat_loc) > 0) {}
   }
 
+
   // Clear the batch dumblist but leave around for next time.
   dumblist_clear(fluxon_batch);
 
   // Clean up the cached batches and free them (a waste - we really
   // ought to keep 'em around for next time...)
-  for(sbdii=sbd; sbdii<sbdi; sbdi++) 
+  for(sbdii=sbd; sbdii<sbdi; sbdii++) 
     dumblist_clean(&(sbdii->batch));
   localfree(sbd);
 
