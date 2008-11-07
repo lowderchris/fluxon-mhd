@@ -1475,7 +1475,7 @@ CODE:
 	if(ppdl->ndims != 2 || ppdl->dims[0] != 3 || ppdl->dims[1] != vpdl->dims[0])
 	  croak("interpolate_lin_3d: P must be a 3xn pdl, matching val");
 
-	  n = vpdl->dims[0];
+	n = vpdl->dims[0];
 	xd = xpdl->data;
 	pd = ppdl->data;
 	vd = vpdl->data;

@@ -1837,6 +1837,59 @@ This is actually just a jump point into the C routine "world_check", in model.c.
 
 ## implemented in World.xs
 
+=pod
+
+=head2 interpolate_value - interpolate a numeric field from the VERTICES onto a specific spatial location
+
+=for usage
+
+    $val = $a->interpolate_value( $field_name, $loc, $global, $seed );
+    $val = $a->interpolate_value( $field_name, $loc );
+
+=for ref
+    
+Uses the initial string to identify a field type to interpolate, and returns an interpolated value for it. 
+If the field type is a 'num', you get back the straight interpolation.  If it is a 'vec', you get back a 3-PDL 
+containing all interpolated components.  Other types get undef.
+
+If $global exists and is nonzero, then a global (rather than local) search is done.
+
+=cut
+
+sub interpolate_value {
+    my $w = shift;
+    my $field = shift;
+    my $loc = shift;
+    my $global = shift;
+    my $seed = shift;
+    my $offset;
+    
+    if((ref $w) ne 'Flux::World') {
+	die "Flux::World::interpolate_value needs a Flux::World\n";
+    }
+
+    if( ((ref $loc) ne 'PDL') || ($loc->ndims != 1) || $loc->dim(0) != 3 ) {
+	die "Flux::World::interpolate_value needs a 3-PDL location (no threading yet)\n";
+    }
+    
+    if( $Flux::codes->{vertex}->{$field}->[1] =~ m/num/ ) {
+	$offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
+	return _interpolate_value($w, $loc, $global, $seed, $offset);
+    }
+    elsif( $Flux::codes->{vertex}->{$field}->[1] =~ m/vector/) {
+	$offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
+	return _interpolate_vector($w,$loc,$global,$seed,$offset);
+    }	
+    else {
+	die "Flux::World::interpolate_value: field '$field' isn't a num or a vector...\n";
+    }
+}
+
+    
+    
+
+## implemented in World.xs
+
 
 
 sub DESTROY {

@@ -1159,10 +1159,9 @@ _interpolate_value( wsv, xsv, gsv, vsv, offset )
 PREINIT:
  /***********************************************************************
  * _interpolate_value - takes a location and such as needed by _closest_simplex,
- * and a numerical offset to the NUM pointer you want to interpolate.  This
- * is really a helper for interpolate_value, in World.pm, which has easier
- * access to the Flux:_ptr_offset utility to convert between type codes and 
- * pointer offsets.
+ * and a numerical offset to the NUM pointer you want to interpolate. 
+ * It is normally called by interpolate_value, in World.pm, which calculated
+ * the offset using the _ptr_offset routine in Flux.xs...
  */
  WORLD *w;
  VERTEX *v; 
@@ -1187,6 +1186,63 @@ CODE:
  x[2] = ((PDL_Double *)(xpdl->data))[2];
 
  RETVAL = FLUX->interpolate_value(x, w, v, global, offset);
+OUTPUT:
+ RETVAL
+
+SV *
+_interpolate_vector( wsv, xsv, gsv, vsv, offset ) 
+ SV *wsv
+ SV *xsv
+ SV *gsv
+ SV *vsv
+ IV offset
+PREINIT:
+ /***********************************************************************
+ * _interpolate_vector - takes a location and such as needed by _closest_simplex,
+ * and a numerical offset to the vector you want to interpolate. 
+ * It is normally called by interpolate_value, in World.pm, which calculated
+ * the offset using the _ptr_offset routine in Flux.xs...
+ * 
+ * Returns a 3-PDL containing the interpolated vector.
+ */
+ WORLD *w;
+ VERTEX *v; 
+ pdl *xpdl;
+ POINT3D x;
+ int global;
+ DUMBLIST *dl;
+ pdl *opdl;
+ NUM *pd;
+ int dims[2];
+ int i;
+CODE:
+ w = SvWorld(wsv, "_interpolate_value",1);
+ v = (!vsv || vsv==&PL_sv_undef)?0:SvVertex(vsv, "closest_vertex",0);
+ xpdl = PDL->SvPDLV(xsv);
+ PDL->converttype(&xpdl, PDL_D, 1);
+ PDL->make_physical(xpdl);
+ if(xpdl->ndims != 1 || xpdl->dims[0] != 3) {
+    croak("closest_vertex: takes a 3-PDL only!\n");
+ }
+ global = SvIV(gsv);
+
+ x[0] = ((PDL_Double *)(xpdl->data))[0];
+ x[1] = ((PDL_Double *)(xpdl->data))[1];
+ x[2] = ((PDL_Double *)(xpdl->data))[2];
+
+ dl = find_simplex_by_location(x,w,v,global);
+ 
+ opdl = PDL->create(PDL_PERM);
+ dims[0] = 3;
+ PDL->setdims(opdl,dims,1);
+ opdl->datatype = PDL_D;
+ PDL->make_physical(opdl);
+ pd = opdl->data;
+ *(pd++) = FLUX->interpolate_value_simplex(x, dl, offset);
+ *(pd++) = FLUX->interpolate_value_simplex(x, dl, offset + sizeof(NUM));
+ *(pd++) = FLUX->interpolate_value_simplex(x, dl, offset + 2*sizeof(NUM));
+ RETVAL = NEWSV(556,0); /* 556 is arbitrary */
+ PDL->SetSV_PDL(RETVAL,opdl);
 OUTPUT:
  RETVAL
  

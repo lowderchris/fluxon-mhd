@@ -2533,10 +2533,11 @@ int above_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
 int in_simplex( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
   POINT3D P01, P02, P03;
 
-  return ( ( !above_plane(P0,P1,P2,P3) ^ above_plane(P0,P1,P2,X) ) &&
-	   ( !above_plane(P1,P2,P3,P0) ^ above_plane(P1,P2,P3,X) ) &&
-	   ( !above_plane(P2,P3,P0,P1) ^ above_plane(P2,P3,P0,X) ) &&
-	   ( !above_plane(P3,P0,P1,P2) ^ above_plane(P3,P0,P1,X) )
+  return ( ! (  (above_plane(P0,P1,P2,P3) ^ above_plane(P0,P1,P2,X) ) ||
+		(above_plane(P1,P2,P3,P0) ^ above_plane(P1,P2,P3,X) ) ||
+		(above_plane(P2,P3,P0,P1) ^ above_plane(P2,P3,P0,X) ) ||
+		(above_plane(P3,P0,P1,P2) ^ above_plane(P3,P0,P1,X) )
+	      )
 	   );
 }
 
@@ -2557,7 +2558,17 @@ int in_simplex( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
 static DUMBLIST *fsbl_cache = 0;
 
 
-#define f_s_calc_stuff(vc, pc,ac,acl,v) do { (vc)=(v); (pc)=(v->x); diff_3d((ac),(pc),x); (acl)=norm_3d(ac); } while(0)
+// f_s_calc_stuff: shorthand for some geometrical calculations:
+//  - pc gets the point of the argument VERTEX
+//  - ac gets the offset vector to that VERTEX from the current origin (x).
+//  - acl gets the norm of the offset vector.
+#define f_s_calc_stuff(pc,ac,acl,v) do { (pc)=(v->x); diff_3d((ac),(pc),x); (acl)=norm_3d(ac); } while(0)
+
+// f_s_copy_stuff: shorthand for copying a bunch of things.
+//   - p gets pc;
+//   - a gets ac;
+//   - al gets acl;
+//   - v gets vc.
 #define f_s_copy_stuff(p,a,al,v,pc,ac,acl,vc) do { (p)=(pc); cp_3d((a),(ac)); (al)=(acl); (v)=(vc);} while(0)
 
 DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
@@ -2582,21 +2593,26 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
   }
 
   // Put the vertex in the simplex, and calculate its ancillary vectors
-  f_s_calc_stuff(simplex[0], p0, a0, a0l, vv);
+  simplex[0] = vv;
+  f_s_calc_stuff(p0, a0, a0l, vv);
   dumblist_add(fsbl_cache,simplex[0]);
+
+  //  printf("x is (%g,%g,%g)\n",x[0],x[1],x[2]);
+  //  printf("p0 is vertex %d (%g,%g,%g)\n",simplex[0]->label, simplex[0]->x[0], simplex[0]->x[1], simplex[0]->x[2]);
+	   
   
   /************
    * Now search for the neighbor of P0 that has the highest angle relative to the P0 - x line
    */
   {
     static DUMBLIST *cache = 0;
-    NUM costheta, l0l1sintheta;
+    NUM costheta, cosphi, l0l1sintheta;
     NUM *pc;
     POINT3D ac,scr;
     NUM acl;
     int i;
     long passno;
-    NUM costheta_min = 2; /* impossibly large */
+    NUM costheta_min, cosphi_max;
     p1 = 0;
 
     if( !cache ) {
@@ -2610,14 +2626,20 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     expand_lengthwise(cache, 0, passno);
     expand_via_neighbors(cache, 0, passno);
 
+    costheta_min = 2;  // Impossibly large; grab first possible answer.
     for(i=1;i<cache->n;i++){ // skip simplex[0]
-      f_s_calc_stuff(  vv, pc, ac, acl, (  ((VERTEX **)(cache->stuff)) [i]   )  );
-      
+      vv = ((VERTEX **)(cache->stuff))[i];
+      f_s_calc_stuff(  pc, ac, acl, vv );
+
+      // Find the cosine of the angle between the first VERTEX found and the current one;
+      // retain the lowest-cosine (highest angle) VERTEX.
       if( (costheta = inner_3d(ac,a0)/a0l/acl) < costheta_min) { // assignment
-	f_s_copy_stuff( p1, a1, a1l, simplex[1], pc, ac, acl, vv );
+	f_s_copy_stuff( p1, a1, a1l, simplex[1],        pc, ac, acl, vv );
 	costheta_min = costheta;
       }
     }
+
+    // printf("p1 is vertex %d (%g,%g,%g)\n",simplex[1]->label, simplex[1]->x[0], simplex[1]->x[1], simplex[1]->x[2]);
 
     if(!p1) {
       fprintf(stderr, "find_simplex_by_location: FAILED to find a second neighbor! (Should never happen...?\n");
@@ -2626,14 +2648,17 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     dumblist_add(fsbl_cache,simplex[1]);
     
     /* Now we have two points (p0 and p1) and their ancillary info.  Search the neighbors of
-     * p0 and p1 to find the maximum angle out of the (x,p0,p1) plane.
+     * p0 and p1 to find the maximum angle out of the (x,p0,p1) plane.  We do that by trying 
+     * to find a vector that is (parallel | antiparallel) to the (x,p0,p1) normal vector.  
+     * 
+     * That means maximizing abs(cos(phi)), the angle between the vector to the trial point and
+     * the normal fo (x,p0,p1).
      */
     
     p2 = 0;
-    costheta_min = 2; /* impossibly large */
 
+    // Assemble candidates
     dumblist_clear(cache);
-
     passno = ++(vv->line->fc0->world->passno);
     dumblist_add(cache, simplex[0]);
     dumblist_add(cache, simplex[1]);
@@ -2641,20 +2666,23 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     expand_lengthwise(cache, 0, passno);
     expand_via_neighbors(cache, 0, passno);
 
+
+    // scr gets the normal vector to the x,p0,p1 plane. l0l1sintheta gets its length.
     cross_3d(scr,a0,a1);
     l0l1sintheta = norm_3d(scr);
+    cosphi_max = -0.1; /* impossibly tiny since we take absolute value later */
 
     for(i=2; i<cache->n; i++) { // skip simplex[0] and simplex[1]
-      POINT3D scr;
       NUM triple;
-      f_s_calc_stuff(vv, pc, ac, acl, ( ((VERTEX **)(cache->stuff)) [i] ) );
-      
-      cross_3d(scr,a0,a1);
-      triple = inner_3d( ac, scr );
-      costheta = triple / l0l1sintheta / acl;
-      if( costheta < costheta_min ) {
-	f_s_copy_stuff( p2, a2, a2l, simplex[2], pc, ac, acl, vv );
-	costheta_min = costheta;
+      vv = ((VERTEX **)(cache->stuff))[i];
+
+      f_s_calc_stuff(pc, ac, acl, vv);
+      triple = inner_3d( ac, scr );                // triple is the triple product (ac . a0 x a1)
+      cosphi = fabs(triple / l0l1sintheta / acl);   // Divide out to get cos(phi); get absolute value
+
+      if( cosphi > cosphi_max ) {
+	f_s_copy_stuff( p2, a2, a2l, simplex[2],      pc, ac, acl, vv );
+	cosphi_max = cosphi;
       }
     }
     if(!p2) {
@@ -2663,19 +2691,24 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     }
     dumblist_add(fsbl_cache,simplex[2]);
 
+    // printf("p2 is vertex %d (%g,%g,%g)\n",simplex[2]->label, simplex[2]->x[0], simplex[2]->x[1], simplex[2]->x[2]);
 
     /* We've got three points that are hopefully noncoplanar with the original point.  
      * Now try to find a fourth VERTEX that makes an enclosing simplex.
      */
 
-    dumblist_clear(cache);
 
     passno = ++(vv->line->fc0->world->passno);
+    dumblist_clear(cache);
     dumblist_add(cache,simplex[0]);
     dumblist_add(cache,simplex[1]);
     dumblist_add(cache,simplex[2]);
+
+    // printf("passno is %d...",passno);
+    simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
     expand_lengthwise(cache,0,passno);
     expand_via_neighbors(cache,0,passno);
+    expand_lengthwise(cache,0,passno);
     {
       long n = cache->n;
       expand_lengthwise(cache,n,passno);
@@ -2683,37 +2716,39 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     }
     //    printf("Testing %d candidates for the final point of the simplex...\n",cache->n - 3);
 
+    simplex[3] = 0;
     for(i=3; i<cache->n; i++) {
       int ok;
-      f_s_calc_stuff(vv, pc, ac, acl, ( ((VERTEX **)(cache->stuff)) [i] ) );
+      vv =  ((VERTEX **)(cache->stuff)) [i] ;
+      // acl gets the volume of the simplex formed by the three prior points and the candidate.
+      // We want the smallest simplex that encloses the sample point.
+      f_s_calc_stuff(pc, ac, acl, vv);
       
+      // printf(" v%d ",vv->label);
       ok =  in_simplex( a0, a1, a2, ac, origin );
-
-      /*
-	printf(" a0: %g\t%g\t%g\n a1: %g\t%g\t%g\n a2: %g\t%g\t%g\n ac: %g\t%g\t%g\n x: %g\t%g\t%g\n ok is %d; Vs: %d, %d, %d, %d\n\n",
-	       a0[0],a0[1],a0[2],
-	       a1[0],a1[1],a1[2],
-	       a2[0],a2[1],a2[2],
-	       ac[0],ac[1],ac[2],
-	       x[0],x[1],x[2],
-	       ok,
-	       simplex[0]->label,
-	       simplex[1]->label,
-	       simplex[2]->label,
-	       vv->label
-	       );
-      */
-
+      
       if( ok ) {
+	// If the simplex hasn't been filled yet (always true on the first OK) or if
+	// we're better than the last simplex-filler, copy the fourth point to the simplex.
 	if(  (!simplex[3]) || (acl < a3l )  )
-	  f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
+	  f_s_copy_stuff(p3, a3, a3l, simplex[3],          pc, ac, acl, vv);
       }
     }
     
     if(!simplex[3]) {
-      //  fprintf(stderr,"find_simplex_by_location: FAILED to find a third neighbor!\n");
+      // Not finding a 4th neighbor is not unusual if you are outside the sim, so we don't throw an error.
+      // Kept as a comment because it is useful for debugging.
+      //      fprintf(stderr,"find_simplex_by_location: FAILED to find a fourth neighbor!\n");
+      //      fprintf(stderr,"\tChecking planarity condition...\n");
+      //      fprintf(stderr,"\tx is (%g,%g,%g)\n\tp0 is (%g,%g,%g) (v%d)\n\tp1 is (%g,%g,%g) (v%d)\n\tp2 is (%g,%g,%g) (v%d)\n",x[0],x[1],x[2],
+      //	      simplex[0]->x[0],simplex[0]->x[1],simplex[0]->x[2],simplex[0]->label,
+      //	      simplex[1]->x[0],simplex[1]->x[1],simplex[1]->x[2],simplex[1]->label,
+      //	      simplex[2]->x[0],simplex[2]->x[1],simplex[2]->x[2],simplex[2]->label
+      //	      );
+
       return fsbl_cache;
     }
+    //printf("p3 is vertex %d (%g,%g,%g)\n",simplex[3]->label, simplex[3]->x[0], simplex[3]->x[1], simplex[3]->x[2]);
      
     dumblist_add(fsbl_cache,simplex[3]);
    
@@ -2816,7 +2851,7 @@ NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset) {
 
   for(i=0;i<dl->n;i++) {
     cp_3d( &p[i*3], ((VERTEX **)(dl->stuff))[i]->x );
-    val[i] = * ( (NUM *)(dl->stuff[i] + val_offset) );
+    val[i] = * ( (NUM *)( (void *)(dl->stuff[i]) + val_offset ) );
   }
   cp_3d(scr, x);
   return interpolate_lin_3d(scr, p, val, dl->n);
@@ -2832,7 +2867,14 @@ NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset) {
 
 NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset ) {
   DUMBLIST *dl;
+  int i;
   dl = find_simplex_by_location(x, w, v, global);
+  printf("found %d vertices: ",dl->n);
+  for(i=0;i<dl->n;i++) {
+    printf(" %d ",((VERTEX **)dl->stuff)[i]->label);
+  }
+  printf("\n");
+
   return interpolate_value_simplex(x, dl, val_offset);
 }
 

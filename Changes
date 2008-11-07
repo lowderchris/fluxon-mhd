@@ -1,3 +1,6 @@
+6-Nov-2008 [cd]
+    - Debugging of wonky-vertex problem in place (some vertices develop HUNDREDS of neighbors!)
+    - interpolation of values works now using the interpolate_value method in Flux::World.
 3-Nov-2008 [cd]
     - binary file save architecture in place (hopefully runs faster than ASCII?)
     - Use parallelization on initial update_neighbors.
