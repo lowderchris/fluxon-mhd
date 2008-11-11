@@ -522,6 +522,36 @@ sub _wphot {
     }
 }
 
+sub binary_dump {
+    my $world = shift;
+    my $fname = shift;
+
+    if($fname =~ m/\.gz$/) {
+	my $tmpname = "/tmp/flux-tmp-$$.flx";
+	binary_dump_int($world,$tmpname);
+	`gzip < $tmpname > $fname`;
+	unlink $tmpname;
+    } else {
+	binary_dump_int($world, $fname);
+    }
+}
+
+sub binary_read_dumpfile {
+    my $fname = shift;
+    my $world;
+
+    if($fname =~ m/\.gz$/) {
+	my $tmpname = "/tmp/flux-tmp-$$.flx";
+	`gunzip < $fname > $tmpname`;
+	$world = binary_read_dumpfile_int($tmpname);
+	unlink $tmpname;
+    } else {
+	$world = binary_read_dumpfile_int($fname);
+    }
+    return $world;
+}
+    
+
 =pod
 
 =head1 AUTHOR

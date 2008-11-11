@@ -1525,7 +1525,7 @@ OUTPUT:
  RETVAL
 
 SV *
-binary_read_dumpfile(fname)
+binary_read_dumpfile_int(fname)
  char *fname
 PREINIT:
  int fd;
@@ -1533,7 +1533,7 @@ PREINIT:
 CODE:
  fd = open(fname,O_RDONLY);
  if(fd<0) {
-  Perl_croak(aTHX_ "binary_read_dmpfile: couldn't open file");
+  Perl_croak(aTHX_ "binary_read_dumpfile: couldn't open file");
  }
  printf("fd=%d\n",fd);
  w = FLUX->binary_read_dumpfile(fd, 0);
@@ -1547,7 +1547,7 @@ OUTPUT:
 	RETVAL
 
 IV
-binary_dump(wsv, fname)
+binary_dump_int(wsv, fname)
  SV *wsv
  char *fname
 PREINIT:

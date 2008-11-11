@@ -77,7 +77,7 @@ sub read_world {
   unless($file =~ m/.gz$/) {
       return _read_world(@_);
   } else {
-      my $tmpfile = "/tmp/$file-$$-tmp.flux";
+      my $tmpfile = "/tmp/world-$$-tmp.flux";
       `gunzip < $file > $tmpfile`;
       $w = _read_world($tmpfile);
       unlink $tmpfile;
