@@ -1521,7 +1521,23 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
     return 0;
   }
 
+
   vn = &(v->neighbors);
+
+
+#if DEBUG_DUPE_CHECK
+  // Debugging check - remove for production
+  // Check to see if the VERTEX has any duplicate neighbors!
+  {
+    int i,j;
+    for (i=1;i<vn->n;i++)
+      for(j=0;j<i;j++)
+	if(vn->stuff[i]==vn->stuff[j]) {
+	  printf("ZOINKS! Vertex %d came in with dup neighbor %d (in locations %d and %d)\n",v->label,((VERTEX **)(vn->stuff))[i]->label,i,j);
+	}
+  }
+#endif
+
 
   dl = gather_neighbor_candidates(v,global);
 
@@ -1561,6 +1577,20 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
     vn->n = 0;
     dumblist_snarf(vn,dl);
   }
+
+#if DEBUG_DUPE_CHECK
+  // Debugging check - remove for production
+  // Check to see if the VERTEX has any duplicate neighbors!
+  {
+    int i,j;
+    for (i=1;i<vn->n;i++)
+      for(j=0;j<i;j++)
+	if(vn->stuff[i]==vn->stuff[j]) {
+	  printf("ZOINKS! Vertex %d left with dup neighbor %d (in locations %d and %d)\n",v->label,((VERTEX **)(vn->stuff))[i]->label,i,j);
+	}
+  }
+#endif
+
   return hv;
 }
 
@@ -3147,7 +3177,15 @@ void parallel_prep(WORLD *a) {
   if(!fluxon_batch)
     fluxon_batch = new_dumblist();
 
+  if(a->concurrency > 1000) {
+    fprintf(stderr,"parallel_prep: WARNING - concurrency is ludicrous! (%d)\n",a->concurrency);
+  }
+
   sbdi = sbd = (SUBPROC_DESC *)localmalloc(sizeof(SUBPROC_DESC) * a->concurrency, MALLOC_MISC);
+  
+  if(!sbd) {
+    fprintf(stderr,"parallel_prep: sbd is 0 (malloc failed).  I'm about to crash....\n");
+  }
 
   // Zero out the pointers and such in the dumblists, so as not to confuse the library.
   for(i=0;i<a->concurrency; i++) 
@@ -3157,7 +3195,7 @@ void parallel_prep(WORLD *a) {
   v_ct = 0;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, v_ct_springboard,0);
 
-  printf("v_ct is %d\n",v_ct);
+  //  printf("v_ct is %d\n",v_ct);
   v_thresh = v_ct / a->concurrency;
   
   dumblist_clear(fluxon_batch);

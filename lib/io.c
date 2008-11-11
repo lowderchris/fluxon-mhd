@@ -1,3 +1,4 @@
+#define DEBUG_DUPE_CHECK 1 
 /**********************************************************************
  * io.c -- I/O routines for FLUX
  *
@@ -2272,6 +2273,7 @@ int binary_dump_end(int fd) {
 int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
   int v_ct = f->v_ct;
   int i,j;
+  long v_ct_max;
   VERTEX_PIPE_FIXED *vd;
   VERTEX *v;
   char *dex;
@@ -2302,7 +2304,15 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
   dex += sizeof(long);
   
   /*** Now copy vertex info into the buffer... ***/
+  v_ct_max = 0;
   for(v=f->start, i=0; v; v=v->next, i++) {
+
+    if(v->neighbors.n > v_ct_max) 
+      v_ct_max = v->neighbors.n;
+
+    if(v->neighbors.n > MAX_AV_NEIGHBORS) {
+      fprintf(stderr,"binary_dump_fluxon_pipe: WARNING - vertex %d is wonky (%d neighbors!)",v->label, v->neighbors.n);
+    }
 
     // i is just for error checking - complain here
     if( i >= f->v_ct ) {
@@ -2337,7 +2347,7 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
 
     neighbors_found += v->neighbors.n;
     if(neighbors_found > neighbors_allowed_for){
-      fprintf(stderr,"binary_dump_fluxon_pipe: Whoa!  Never expected to see this.  Found %d neighbors along fluxon %d - that's over %d per vertex! I give up.\n",f->label, neighbors_found, MAX_AV_NEIGHBORS);
+      fprintf(stderr,"binary_dump_fluxon_pipe: Whoa!  Never expected to see this.  Found %d neighbors along fluxon %d (which has %d vertices)- that's over %d per vertex! I give up.\n",neighbors_found, f->label, f->v_ct, MAX_AV_NEIGHBORS);
       fflush(stderr);
       return 2;
     }
@@ -2619,21 +2629,57 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
 
     ////// Now - merge the neighbors with the local neighbor list. 
 
-    // Delete current vertex neighbors that aren't in the new list.
-    // This is complicated by the need to maintain back-links.
-    for(j=0; j<v->neighbors.n; j++) {
-      int found = 0;
-      for(k=0; k<dl->n && !found; k++) 
-	found = ( dl->stuff[k] == v->neighbors.stuff[j] );
-      if(!found) {
-	// Delete the back link first, then remove the item from the neighbor list.
-	dumblist_delete(  &( ((VERTEX *)(v->neighbors.stuff[j]))->nearby ), v );
-	dumblist_rm( &(v->neighbors), j );
-	// Decrement counter - last element moved to this slot, so we have to re-do the slot.
-	j--;
+
+#if DEBUG_DUPE_CHECK    
+    /* Delete this check in production code */
+    {
+      int ii,jj;
+      for(ii=1; ii<dl->n;ii++) {
+	for(jj=0;jj<ii;jj++) {
+	  if(dl->stuff[ii]==dl->stuff[jj]) {
+	    printf("YOIKS! daughter gave us neighbor dupes ( vertex %d, pos %d and %d)\n",((VERTEX **)(dl->stuff))[ii]->label,ii,jj);
+	  }
+	}
+      }
+
+      for(ii=1;ii<v->neighbors.n; ii++) {
+	for(jj=0;jj<ii;jj++) {
+	  if(v->neighbors.stuff[ii]==v->neighbors.stuff[jj]) {
+	    printf("YOW! parent had neighbor dupes (vertex %d, pos %d and %d)\n",((VERTEX **)(v->neighbors.stuff))[ii]->label,ii,jj);
+	  }
+	}
       }
     }
-    
+#endif
+
+    // Clean up current neighbor list: 
+    //   -- delete items in the current neighbor list that are not in the new 
+    //      list delivered from the daughter.
+    //   -- delete duplicate items in the current neighbor list.
+    {
+      long passno = ++(w->passno);
+
+      for(j=0; j<v->neighbors.n; j++) {
+	int keep = 0;
+	if(v->passno != passno) {
+	  for(k=0; k<dl->n && !keep; k++) 
+	    keep = ( dl->stuff[k] == v->neighbors.stuff[j] );
+	}
+	if(!keep) {
+	  // Either it's a dupe or it was not found in the incoming list.
+
+	  // Delete the back link first, then remove the item from the neighbor list.
+	  dumblist_delete(  &( ((VERTEX *)(v->neighbors.stuff[j]))->nearby ), v );
+	  dumblist_rm( &(v->neighbors), j );
+	  // Decrement counter - last element moved to this slot, so we have to re-do the slot.
+	  j--;
+	} else {
+	  // Keeping it -- mark to detect duplicates in the neighbor list
+	  v->passno = passno;
+	}
+      }
+    }
+
     // Finally - add any items from the new list that aren't already neighbors.
     for(k=0; k<dl->n; k++) {
       int found = 0;
@@ -2648,6 +2694,20 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     if(w->verbosity>1) {
       printf("after transfer: %d neighbors.      ",v->neighbors.n);
     }
+
+#if DEBUG_DUPE_CHECK
+    /* Delete this check in production code */
+    {
+      int ii,jj;
+      for(ii=1;ii<v->neighbors.n;ii++) {
+	for(jj=0;jj<ii;jj++) {
+	  if(v->neighbors.stuff[ii]==v->neighbors.stuff[jj]) {
+	    printf("YAWN: after merge, we had neighbor dupes (vertex %d, pos %d and %d)\n",((VERTEX **)(v->neighbors.stuff))[ii]->label,ii,jj);
+	  }
+	}
+      }
+    }
+#endif
 
   }
 
