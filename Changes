@@ -1,3 +1,9 @@
+11-Nov-2008 [cd]
+    - wonky-vertex problem solved: duplicate neighbors were not being deleted in the parallel
+      case, so operations like opening fluxons (which creates duplicate neighbor candidates
+      in the newly-opened fluxon) were causing duplicate neighbors.  The hull algorithm works
+      correctly -- it was the merge-neighbors operation in io.c (for parallel operation) that
+      was not working properly.
 6-Nov-2008 [cd]
     - Debugging of wonky-vertex problem in place (some vertices develop HUNDREDS of neighbors!)
     - interpolation of values works now using the interpolate_value method in Flux::World.
