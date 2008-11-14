@@ -2103,7 +2103,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
 
   }
 
-  if(verbosity >= 1) {
+  if(verbosity > 1) {
     printf(".");
     
     if(verbosity >= 5)
@@ -2912,8 +2912,9 @@ void fl_b_tied_inject(VERTEX *v) {
 
 	// ... and stick it in the neighbors' candidate lists...
 	for(i=0; i<v->nearby.n; i++) {
-	  dumblist_add( &(vn->nearby), v->nearby.stuff[i] );
-	  dumblist_add( &(((VERTEX *)(v->nearby.stuff[i]))->neighbors), vn);
+	  dumblist_add( &(((VERTEX *)(v->nearby.stuff[i]))->neighbors), vn); // Add vn as a neighbor to one of v's nearby vertices
+	  dumblist_add( &(vn->nearby), v->nearby.stuff[i] );                 // Add v's nearby vertex as a neighbor candidate.
+
 	}
 
 	// Now do an extra neighbor calculation to make sure everyone's copascetic
@@ -3195,8 +3196,10 @@ void parallel_prep(WORLD *a) {
   v_ct = 0;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, v_ct_springboard,0);
 
-  //  printf("v_ct is %d\n",v_ct);
+
   v_thresh = v_ct / a->concurrency;
+  printf("v_ct is %d, v_thresh is %d\n",v_ct,v_thresh);
+  fflush(stdout);
   
   dumblist_clear(fluxon_batch);
   v_ct = 0; // Zero the vertex count for comparison against v_thresh...
@@ -3228,11 +3231,10 @@ static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int
       fprintf(stderr,"Pipe creation failed! Giving up!\n");
       return 1;
     }
-
     pid = fork();
 
     if(pid) {
-      
+
       /** parent process **/
       close(p[1]);
 
@@ -3281,11 +3283,19 @@ static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int
  */
 int parallel_daughter(int p) {
   int i;
+  int pid = getpid();
   
   for(i=0; i<fluxon_batch->n; i++) {
     FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
-    if((*work_springboard)( f ))
+    if(f->fc0->world->verbosity) {
+      printf("pid %d: processing fluxon %d (%d of %d)\n",pid,f->label,i,fluxon_batch->n);
+      fflush(stdout);
+    }
+    if((*work_springboard)( f )) {
+      printf("pid %d: fluxon %d failed its springboard! Exiting early.\n",pid,f->label);
+      fflush(stdout);
       return(1);
+    }
   }
   
   if(p) {
@@ -3352,8 +3362,13 @@ int parallel_finish(WORLD *a) {
 
   /* Clean up the mess of the daughters... */
   {
-    int stat_loc;
-    while(wait(&stat_loc) > 0) {}
+    int status;
+    int pid;
+    while(  (pid = wait(&status)) > 0) { // assignment
+      if(status) {
+	printf("Whoa! pid %d terminated with status %d (%s)\n",pid,status,strerror(status));
+      }
+    }
   }
 
 
@@ -3382,6 +3397,7 @@ int parallel_finish(WORLD *a) {
 
 static int fluxon_calc_step_sb(FLUXON *f) {
   fluxon_calc_step(f, gl_t);
+  return 0;
 }
 
 void world_relax_step_parallel(WORLD *a, NUM t) {

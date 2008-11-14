@@ -1256,7 +1256,7 @@ CODE:
   * check - just springboard into world_check over in model.c..
   */
  w = SvWorld(wsv, "check",1);
- RETVAL =  world_check(w);
+ RETVAL = 0; // FLUX->world_check(w);
 OUTPUT:
  RETVAL
 

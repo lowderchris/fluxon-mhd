@@ -1,4 +1,3 @@
-#define DEBUG_DUPE_CHECK 1 
 /**********************************************************************
  * io.c -- I/O routines for FLUX
  *
@@ -423,7 +422,7 @@ int footpoint_action(WORLD *world, char *s) {
 	  }
 	  else if(gcmd[1]=='O' && gcmd[2]=='N') { /* GLOBAL CONCURRENCY */
 	    int nval;
-	    long concurrency;
+	    int concurrency;
 	    if( 1 > (nval = sscanf(s,"%*s %*s %d",&concurrency))) {
 	      badstr = "couldn't parse GLOBAL CONCURRENCY line";
 	    } else {
@@ -2446,55 +2445,53 @@ WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
     if(w->verbosity>1) {
       printf("read_dumpfile: found fence; type=%d, len=%d\n",hdrbuf[1],hdrbuf[2]);
     }
-    
-    switch(type) {
-    case BD_END:
-      close(fd);
-      return w;
-      break;
-    case BD_FLUXON_PIPE:
-      if(binary_read_fluxon_pipe(len, binary_buffer, w)) {
-	fprintf(stderr,buf);
-	if(allocated_world)
-	  free_world(w);
+
+    ///// Dispatch read to the correct reader...
+    {
+      int (*reader)(long size, char *buf, WORLD *w) = 0;
+
+      switch(type) {
+      case BD_END:
+	close(fd);
+	return w;
+	break;
+      case BD_FLUXON_PIPE:
+	reader = binary_read_fluxon_pipe;
+	break;
+      case BD_WORLD:
+	reader = binary_read_WORLD;
+	break;
+      case BD_CONCENTRATION:
+	reader = binary_read_CONCENTRATION;
+	break;
+      case BD_FLUXON:
+	reader = binary_read_FLUXON;
+	break;
+      case BD_NEIGHBORS:
+	reader = binary_read_neighbors;
+	break;
+      default:
+	fprintf(stderr,"WARNING: typecode %d not implemented - you should never see this message from binary_read_dumpfile, in io.c...\n",type);
 	return 0;
+	break;
       }
-      break;
-    case BD_WORLD:
-      if(binary_read_WORLD(len, binary_buffer, w)) {
-	if(allocated_world)
-	  free_world(w);
-	return 0;
-      }
-      break;
-    case BD_CONCENTRATION:
-      if(binary_read_CONCENTRATION(len, binary_buffer, w)) {
+	
+      if(reader) {
+	if( (*reader)(len, binary_buffer, w) ) {
+	  fprintf(stderr,buf);
 	  if(allocated_world)
 	    free_world(w);
 	  return 0;
 	}
-	break;
-    case BD_FLUXON:
-      if(binary_read_FLUXON(len, binary_buffer, w)) {
-	if(allocated_world)
-	  free_world(w);
-	return 0;
+      } else {
+	fprintf(stderr,"binary_read_dumpfile: you should not ever see this message...\n");
       }
-      break;
-    case BD_NEIGHBORS:
-      if(binary_read_neighbors(len, binary_buffer, w)) {
-	if(allocated_world)
-	  free_world(w);
-	return 0;
-      }
-      break;
-    default:
-      fprintf(stderr,"WARNING: typecode %d not implemented - you should never see this message from binary_read_dumpfile, in io.c...\n",type);
-      break;
-    }
+
+    }// end of dispatch convenience block
+
   } while(1);
-}
-    
+}    
+
 /**********************************************************************
  * read routines - these are dispatched from the binary dump reader.
  * Each gets a buffer with the binary data from the packet.
@@ -2602,6 +2599,8 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     v->r_cl     = vd->r_cl;
     v->r_ncl    = vd->r_ncl;
     v->f_n_tot  = vd->f_n_tot;
+    // Note: passno not copied!  (the daughter may have incremented it a lot; we want to make sure
+    // nothing has a passno higher than the current world passno....)
 
     if(w->verbosity>1) {
       printf("vertex %d: found %d neighbors...\n",v->label,vd->neighbors_n);
@@ -2627,8 +2626,6 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     }
     dex += sizeof(long);
 
-    ////// Now - merge the neighbors with the local neighbor list. 
-
 
 #if DEBUG_DUPE_CHECK    
     /* Delete this check in production code */
@@ -2652,39 +2649,51 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     }
 #endif
 
-    // Clean up current neighbor list: 
-    //   -- delete items in the current neighbor list that are not in the new 
-    //      list delivered from the daughter.
-    //   -- delete duplicate items in the current neighbor list.
+    ////// Now merge the neighbors with the local neighbor list. 
+
+
+    // Step 1: delete anything that is in the current list but not in the daughter-delivered neighbor list.
     {
-      long passno = ++(w->passno);
+      long passno = ++(w->passno); 
 
       for(j=0; j<v->neighbors.n; j++) {
-	int keep = 0;
-	if(v->passno != passno) {
-	  for(k=0; k<dl->n && !keep; k++) 
-	    keep = ( dl->stuff[k] == v->neighbors.stuff[j] );
-	}
-	if(!keep) {
-	  // Either it's a dupe or it was not found in the incoming list.
 
-	  // Delete the back link first, then remove the item from the neighbor list.
-	  dumblist_delete(  &( ((VERTEX *)(v->neighbors.stuff[j]))->nearby ), v );
+	// Check for dupes -- if passno matches our current passno, then we've been here before.
+	if( ((VERTEX *)(v->neighbors.stuff[j]))->passno == passno) {
+
+	  // Delete it!  (Don't delete "nearby" back-pointer entries -- that was handled the 
+	  // first time we touched this VERTEX.)
 	  dumblist_rm( &(v->neighbors), j );
 	  // Decrement counter - last element moved to this slot, so we have to re-do the slot.
 	  j--;
-	} else {
-	  // Keeping it -- mark to detect duplicates in the neighbor list
-	  v->passno = passno;
-	}
-      }
-    }
 
-    // Finally - add any items from the new list that aren't already neighbors.
+	} else { 
+	  int keep;
+	  // not a dupe -- check to make sure this neigbor is in the daughter-delivered list.
+
+	  for(k=keep=0; k<dl->n && !keep; k++) 
+	    keep = ( dl->stuff[k] == v->neighbors.stuff[j] );
+	  
+	  // Mark that we've been here...
+	  ((VERTEX *)(v->neighbors.stuff[j]))->passno = passno; 
+
+	  if(!keep) {
+	    // Delete the back link first, then remove the item from the neighbor list.
+	    dumblist_delete(  &( ((VERTEX *)(v->neighbors.stuff[j]))->nearby ), v );
+	    dumblist_rm( &(v->neighbors), j );
+	    // Decrement counter - last element moved to this slot, so we have to re-do the slot.
+	    j--;
+	  } // end of don't-keep contingency
+	} // end of non-dupe contingency
+      } // end of j-loop over the neighbors
+    } // end of convenience block for merging
+
+    // Step 2:  add any new neighbors reported by the daughter, who are not in the current list.
     for(k=0; k<dl->n; k++) {
-      int found = 0;
-      for(j=0; j<v->neighbors.n && !found; j++) 
+      int found;
+      for(j=found=0; j<v->neighbors.n && !found; j++) 
 	found = ( dl->stuff[k] == v->neighbors.stuff[j] );
+
       if(!found) {
 	dumblist_add( &(v->neighbors), dl->stuff[k] );
 	dumblist_add( &( ((VERTEX *)(dl->stuff[k]))->nearby ), v );
