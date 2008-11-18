@@ -1563,6 +1563,11 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       for(i_l=MOD_NEXT(i,n);  i_l != i && !horde->stuff[i_l]; MOD_INC(i_l,n))
 	;
       lv = (VERTEX *)(horde->stuff[i_l]);
+
+      // Remove dupes
+      if( iv==rv )
+	goto reject;
+
       if(!been_there)
 	perp_bisector_2d( out[i_l].bisector, 0, lv->scr );
       
@@ -1804,13 +1809,11 @@ int check_hullpoint(VERTEX *v,
     return 0;
   }
 
-
   /* Check for colinearity -- easy fix if we're colinear */
   /* The colinear_keep flag gets return value that will be given if
    * the vertex turns out to be open - this is sort of the opposite sense 
    * of the return value.
    */
-
 
   { 
     int colinear_keep = 0;

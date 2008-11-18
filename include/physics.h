@@ -69,7 +69,8 @@ extern struct FLUX_FORCES {
 void *force_str_to_ptr(char *s);
 char *force_ptr_to_str(void *f);
 
-/* R_COND_TABLE is an array that associates function names with jumptable 
+/* R_COND_TABLE is an array that associates function names with jumptable 8008ies
+
  * entries for reconnection conditions.  The actual array is defined in 
  * physics.c.
  */
@@ -85,5 +86,6 @@ void *recon_str_to_ptr(char *s);
 char *recon_ptr_to_str(void *f);
 
 RC_FUNC rc_a_ad2;
+RC_FUNC rc_a_ad2_h;
 
 #endif

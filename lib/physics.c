@@ -92,6 +92,7 @@ void *force_str_to_ptr(char *s) {
 /* global reconnection-condition calculator table */
 struct FLUX_RECON FLUX_RECON[] = {
   {"rc_a_ad2","Threshold angle per d^2 (J proxy avoids explicit B calc)", rc_a_ad2, "(min. angle), (min A/D^2 [or 0 for none])"},
+  {"rc_a_ad2_h","Similar to rc_a_ad2, but J threshold adjusts with a scale height", rc_a_ad2_h,"(min. angle),(min A/ln(z/h)/d^2), (h)"},
   {"","",0,""}
 };
 
@@ -1918,6 +1919,85 @@ VERTEX *rc_a_ad2(VERTEX *v, NUM *params) {
       }
       if(a     >       ath      &&
 	 a / d / d >   ad2th)
+	return v2;
+    }
+  }
+  return 0;
+}
+
+VERTEX *rc_a_ad2_h(VERTEX *v, NUM *params) {
+  NUM ath  = params[0];
+  NUM ad2th = params[1];
+  NUM h = params[2];
+  int i;
+  VERTEX *v2;
+  NUM d;
+  NUM a;
+  NUM p1[3], p2[3];
+  NUM pm[9];
+  NUM l1l2;
+  int verbosity = v->line->fc0->world->verbosity;
+  
+  if(verbosity) {
+    printf("aad2: ");
+  }
+
+  /* Don't even try unless we've got an element to look at */
+  if( !v || !(v->next) )
+    return 0;
+
+  if(verbosity > 1) {
+    printf("Vertex %d: neighbors are: %d",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
+    for(i=1;i<v->neighbors.n; i++) 
+      printf(", %d",((VERTEX *)(v->neighbors.stuff[i]))->label);
+    printf("\n");
+  }
+
+  for(i=0;i<v->neighbors.n;i++) {
+
+    v2 = (VERTEX *)(v->neighbors.stuff[i]);
+
+    if(!V_ISDUMMY(v2) && v2->next) {
+
+      /* p1 and p2 get the closest approach points */
+      d = fl_segment_deluxe_dist(p1, p2, v, v2);
+	       
+      /* Find matrix projecting them into the z axis */
+      projmatrix(pm, p1, p2);
+      
+      /* Project the segments into that plane */
+      diff_3d(p1, v->next->x, v->x);
+      mat_vmult_3d(v->scr, pm, p1);
+
+      diff_3d(p2, v2->next->x, v2->x);
+      mat_vmult_3d( v2->scr, pm, p2);
+
+
+      /* Now v->scr and v2->scr contain the projected 2-vecs of the corresponding
+       * fluxel directions.  Now calculate the angle.  (Could avoid square roots
+       * entirely using the half-angle formula, but no sense fixing that since this
+       * isn't the hot spot for the whole relaxation).
+       */
+      l1l2 = sqrt( norm2_2d( v->scr ) * norm2_2d( v2->scr )  );
+      a = acos( inner_2d( v->scr , v2->scr )  /  l1l2 );
+
+      if(verbosity>1) {
+	printf( "vertices %d-%d: norm2(v->scr)=%.2g, norm2(v2->scr)=%.2g, l1l2=%.2g, inner=%.2g, a=%.2g, d=%.2g, ad2=%.2g, ath=%.2g, ad2th=%.2g\n",
+		v->label,
+		v2->label,
+		norm2_2d(v->scr),
+		norm2_2d(v2->scr),
+		l1l2,
+		inner_2d(v->scr,v2->scr),
+		a,
+		d,
+		a/d/d,
+		ath,
+		ad2th
+		);
+      }
+      if(a     >       ath      &&
+	 exp(v->x[2]/h) * a / d / d >   ad2th)
 	return v2;
     }
   }
