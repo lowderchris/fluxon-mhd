@@ -227,8 +227,6 @@ FLUXON *new_fluxon(      NUM flux,
   nf->start_links.sum = nf->flux;
   nf->fc0 = c1;				/* start concentration */
 
-
-
   clear_links(&(nf->end_links));
   nf->end_links.sum = nf->flux;
   nf->fc1 = c2;				/* end concentration */
@@ -247,6 +245,9 @@ FLUXON *new_fluxon(      NUM flux,
  *
  * Returns a vertex given an X,Y,Z, and fluxon. 
  * The neighbor list is empty.
+ * 
+ * Mass, T, and momentum are set to 0, which is almost 
+ * certainly Wrong.
  *
  */
 
@@ -280,11 +281,15 @@ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   // Pre-grow the neighbor lists to avoid having to do it later.
   dumblist_grow( &(tp->neighbors), N_NEIGHBORS_PREALLOC );
   dumblist_grow( &(tp->nearby),    N_NEIGHBORS_PREALLOC );
-  
+
   tp->b_mag = 0;
   tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
 
   tp->label = new_vertex_label(label);
+  
+  tp->rho = 0;
+  tp->p[0] = tp->p[1] = tp->p[2] = 0;
+  tp->T = 0;
 
   clear_links(&(tp->world_links));
 
@@ -484,6 +489,8 @@ WORLD *new_world() {
   a->ca_max = -1;
   a->ca_acc = 0;
   a->ca_ct = 0;
+
+  a->use_fluid = 0;  // Ignore mass by default
 
   return a;
 }

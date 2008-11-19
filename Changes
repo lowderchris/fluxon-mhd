@@ -1,3 +1,6 @@
+18-Nov [cd]
+       Spliced mass handling into the  main data structures; added f_v_ps field for 
+       pseudoforces.  No I/O or physics handling yet - the quantities are just tracked.
 11-Nov-2008 [cd]
     - wonky-vertex problem solved: duplicate neighbors were not being deleted in the parallel
       case, so operations like opening fluxons (which creates duplicate neighbor candidates

@@ -245,8 +245,12 @@ Really Know What You're Doing.
 	    neighbors_n=>   [30,'long'],
 	    neighbors_size=>[31,'long'],
 	    nearby_n=>      [32,'long'],
-	    nearby_size=>   [33,'long']
-	    },
+	    nearby_size=>   [33,'long'],
+	    f_v_ps=>        [34,'vec'],
+	    rho=>           [35,'num'],
+	    T=>             [36,'num'],
+	    p=>             [37,'vec']
+	},
 	fluxon => {
 	    flux=>	          [1,'num'],
 	    label=>               [2,'flab'],

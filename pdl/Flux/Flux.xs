@@ -159,6 +159,10 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	case 31: return (void *)&(v->neighbors.size);   break;
 	case 32: return (void *)&(v->nearby.n);         break;
 	case 33: return (void *)&(v->nearby.size);      break;
+	case 34: return (void *)&(v->f_v_ps);           break;
+	case 35: return (void *)&(v->rho);              break;
+	case 36: return (void *)&(v->T);                break;
+	case 37: return (void *)&(v->p);                break;
 	default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
 	                 typeno,fieldno);
 	         return (void *)0;

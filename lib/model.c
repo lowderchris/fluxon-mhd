@@ -154,7 +154,7 @@ void world_update_ends(WORLD *a) {
  * fluxon_update_ends also checks to see if any new ends are
  * required, and creates 'em.
  *
- * It also handles U-loop exit (sometime in the indefinite future).
+ * It also handles U-loop exit (via the auto_open mechanism)
  */
 void fluxon_update_ends(FLUXON *f) {
   WORLD *w = f->fc0->world;
@@ -250,11 +250,19 @@ void fluxon_auto_open(FLUXON *f) {
        */
       
       if( f->plasmoid ) {
+	/* Plasmoid case - turn it into a U-loop.  This gets 
+	 * a little complex becasue we have to rotate
+	 * the endpoint of the plasmoid around to the new 
+	 * true endpoints.
+	 */
 
 	VERTEX *vp = v->prev;  // vp gets the last one inside the boundary
 	VERTEX *vn = v;        
 	char stop = 0;
-	
+
+	/******************************
+         * Walk around the plasmoid to find how many vertices are outside.
+         */
 	for( vn=v ; vn != vp  && !stop 
 	       ; vn = ( (vn->next && vn->next->next) ? vn->next : f->start ) ) {
 	  diff_3d(x0, vn->x, xcen);
@@ -271,7 +279,7 @@ void fluxon_auto_open(FLUXON *f) {
 	}
 
 	/******************************
-         * Splice the plasmoid into a single fully-open fluxon.
+         * Normal case -- Splice the plasmoid into a single fully-open fluxon.
          */
 
 	// Wrap around the end of the plasmoid if we have to...
@@ -286,16 +294,6 @@ void fluxon_auto_open(FLUXON *f) {
 	  vn = f->start->next;
 
 
-	{
-	  int i;
-	  VERTEX *vvv;
-	  printf("fluxon %d: f->v_ct is %d, ",f->label,f->v_ct);
-	  for(i=0,vvv=f->start; vvv; vvv=vvv->next, i++)
-	    ;
-	  printf("counted %d\n",i);
-	}
-
-
 	// Create a real loop, cutting out the dummy vertices
 	f->end->prev->next   = f->start->next;
 	f->start->next->prev = f->end->prev;
@@ -308,26 +306,15 @@ void fluxon_auto_open(FLUXON *f) {
 
 	  
 	// Delete the dummy first and last vertices (also decrements v_ct)
-	{
-	  VERTEX *fe = f->end;
-	  
-	  delete_vertex(f->start);
-	  //	  printf("deleted - v_ct is %d\n",f->v_ct);
-	  delete_vertex(fe);
-	  //printf("deleted - v_ct is %d\n",f->v_ct);
-	}
+	delete_vertex(f->start);
+	delete_vertex(f->end);
 
 	// Delete the intervening vertices between vp and vn
 	// (also decrementing v_ct)
 	{
-	  int ii= 0;
 	  VERTEX *vv;
-	  for(vv=vp->next; vv != vn; vv=vp->next) {
+	  for(vv=vp->next; vv != vn; vv=vp->next) 
 	    delete_vertex(vv);
-	    // printf("deleted - v_ct is %d\n",f->v_ct);
-	    ii++;
-	  }
-	  // printf("deleted %d (+2) vertices...\n",ii);
 	}
 
 	// Link in the proper (new) start and end
@@ -347,24 +334,16 @@ void fluxon_auto_open(FLUXON *f) {
 	    printf("Hey! plasmoid beginning wasn't the world plasmoid start\n");
 	  if(f->fc1 != w->fc_pe) 
 	    printf("Hey! plasmoid end wasn't the world plasmoid end\n");
-	    
+
+	  // Unlink from the plasmoid flux concentration placeholders
 	  f->fc0->lines = tree_unlink(f, fl_lab_of, fl_start_ln_of);
 	  f->fc1->lines = tree_unlink(f, fl_lab_of, fl_end_ln_of);
 
+	  // Link to the open flux concentration placeholders
 	  f->fc0 = w->fc_ob;
 	  f->fc1 = w->fc_oe;
 	  f->fc0->lines = tree_binsert(f->fc0->lines, f, fl_lab_of, fl_start_ln_of);
 	  f->fc1->lines = tree_binsert(f->fc1->lines, f, fl_lab_of, fl_end_ln_of);
-	}
-
-
-	{
-	  int i;
-	  VERTEX *vvv;
-	  printf("fluxon %d: f->v_ct is %d, ",f->label,f->v_ct);
-	  for(i=0,vvv=f->start; vvv; vvv=vvv->next, i++)
-	    ;
-	  printf("counted %d\n",i);
 	}
 
 	return;
@@ -372,7 +351,7 @@ void fluxon_auto_open(FLUXON *f) {
       } else /* not a plasmoid */ {
 	
 	/****************
-         * Not a plasmoid...
+         * Not a plasmoid... cut into two separate fluxons
          */
 
 	NUM x1[3];
@@ -813,6 +792,7 @@ int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
   {
     VERTEX *v = fl->end;
     v->f_v[0] = v->f_v[1] = v->f_v[2] = 0;
+    v->f_v_ps[0] = v->f_v_ps[1] = v->f_v_ps[2] = 0;
     v->f_s[0] = v->f_s[1] = v->f_s[2] = 0;
     v->f_s_tot = v->f_v_tot = 0;
     v->r_s = v->r_v = -1;
@@ -1269,26 +1249,6 @@ void vertex_enforce_photosphere(VERTEX *v, PHOTOSPHERE *p) {
       scale_3d(delta, p->plane->normal, - (x1z * 1.001) / norm2_3d(p->plane->normal));
       sum_3d(x1,x1,delta);
       sum_3d(v->x, x1, p->plane->origin);
-      
-      // Add some new vertices so that we hopefully don't have this problem next time.
-      //add_vertex_after( v->line, v, 
-      //		new_vertex(0, 
-      //				   0.5 * (v->x[0] + v->next->x[0]),
-      //				   0.5 * (v->x[1] + v->next->x[1]),
-      //				   0.5 * (v->x[2] + v->next->x[2]),
-      //				   v->line
-      //				   )
-      //			);
-      //if(v->prev) {
-      //add_vertex_after( v->line, v->prev,
-      //		  new_vertex(0,
-      //			     0.5 * (v->prev->x[0] + v->x[0]),
-      //			     0.5 * (v->prev->x[1] + v->x[1]),
-      //			     0.5 * (v->prev->x[2] + v->x[2]),
-      //			     v->line
-      //			     )
-      //		  );
-      //}
     }
   }
     break;
@@ -2927,6 +2887,7 @@ void fl_b_tied_inject(VERTEX *v) {
 	cp_3d(vn->f_s, v->f_s);
 	vn->f_s_tot = v->f_s_tot;
 	vn->f_v[0] = vn->f_v[1] = vn->f_v[2] = 0;
+	vn->f_v_ps[0] =vn->f_v_ps[1] = vn->f_v_ps[2];
 	vn->f_v_tot = 1.0;
 	cp_3d(vn->f_t, v->f_t);
 	vn->r_v = v->r_v;

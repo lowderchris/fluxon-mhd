@@ -104,7 +104,11 @@ typedef struct VERTEX {
   NUM energy;                            /* calculated B energy for segment */
 
      /* Force accumulators are filled by the force functions in physics.c. */
+     /* As of v3, the vertex pseudoforce can be tracked indepenently of the */
+     /* plasma force that is localized at the vertex.  For the purpose of relaxation */
+     /* step sizing, the f_vp_ps magnitude is added to f_v_tot, not to a separate variable. */
   POINT3D f_v;                  /* Stores force on the vertex */
+  POINT3D f_v_ps;               /* vertex pseudoforce - used for vertex distribution */
   POINT3D f_s;                  /* Stores force on the following segment */
   POINT3D f_t;                  /* Stores total force */
   NUM f_s_tot;                  /* sum-of-magnitudes force on the segment (for help in auto-step-size)*/
@@ -119,6 +123,13 @@ typedef struct VERTEX {
   long label;                  
   LINKS world_links;      /* tree access to all the vertices in the world */
   POINT3D plan_step;       /* planned step */
+
+
+  /* Single-fluid data -- these are valid halfway down the following segment. */
+  NUM rho;         // Density 
+  NUM T;           // Internal energy
+  POINT3D p;       // Momentum
+
 } VERTEX;
 
 #define V_ISDUMMY(v) ( (v)->label == -1 || (v)->label == -2 || (!(v)->line) || !((v)->line->label) )
@@ -206,7 +217,7 @@ typedef VERTEX *((RC_FUNC)(VERTEX *v, NUM *params));
 
 typedef struct WORLD {
   /* Globally memorable fields go here */
-  long frame_number;        /* Identifies currently-being-worked-on frame */
+  long frame_number;        /* Identifies currently-being-worked-on time step */
   long state;               /* State of the world  */
   long refct;               /* Used for perl interface (deallocate world when this reaches zero) */
   FLUX_CONCENTRATION *concentrations;
@@ -275,6 +286,9 @@ typedef struct WORLD {
   NUM ca_max;
   NUM ca_acc;
   NUM ca_ct;
+
+  // Switch use of mass
+  int use_fluid;
 
 } WORLD;
 
