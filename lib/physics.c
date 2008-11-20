@@ -1958,6 +1958,8 @@ VERTEX *rc_a_ad2_h(VERTEX *v, NUM *params) {
     v2 = (VERTEX *)(v->neighbors.stuff[i]);
 
     if(!V_ISDUMMY(v2) && v2->next) {
+      NUM sh_fac;
+      NUM ad2 = a/d/d;
 
       /* p1 and p2 get the closest approach points */
       d = fl_segment_deluxe_dist(p1, p2, v, v2);
@@ -1981,7 +1983,8 @@ VERTEX *rc_a_ad2_h(VERTEX *v, NUM *params) {
       l1l2 = sqrt( norm2_2d( v->scr ) * norm2_2d( v2->scr )  );
       a = acos( inner_2d( v->scr , v2->scr )  /  l1l2 );
 
-      if(verbosity>1) {
+      sh_fac = exp(v->x[2]/h); // scale height factor
+      if(verbosity>1 || ( a > ath  &&   sh_fac * ad2 > ad2th ) ) {
 	printf( "vertices %d-%d: norm2(v->scr)=%.2g, norm2(v2->scr)=%.2g, l1l2=%.2g, inner=%.2g, a=%.2g, d=%.2g, ad2=%.2g, ath=%.2g, ad2th=%.2g\n",
 		v->label,
 		v2->label,
@@ -1997,7 +2000,7 @@ VERTEX *rc_a_ad2_h(VERTEX *v, NUM *params) {
 		);
       }
       if(a     >       ath      &&
-	 exp(v->x[2]/h) * a / d / d >   ad2th)
+	 sh_fac * ad2 > ad2th )
 	return v2;
     }
   }

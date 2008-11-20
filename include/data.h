@@ -207,7 +207,7 @@ typedef struct PHOTOSPHERE {
 
 #define N_FORCE_FUNCS 30    /* Number of functions allowed in the force list */
 #define N_RECON_FUNCS 5     /* Number of reconnection condition functions in the recon list */
-#define N_RECON_PARAMS 3    /* Number of world-global parameters to be stored for each reconnection function */
+#define N_RECON_PARAMS 5    /* Number of world-global parameters to be stored for each reconnection function */
 
 #define N_M_PARAMS 5        /* Number of world-global parameters for a generic mass scaling function */
 
@@ -387,6 +387,7 @@ void free_dumblist(DUMBLIST *dl);
 void dumblist_init(DUMBLIST *foo);
 void dumblist_clean(DUMBLIST *foo);
 void dumblist_add(DUMBLIST *dl, void *a);
+void dumblist_quickadd(DUMBLIST *dl, void *a);
 void dumblist_delete(DUMBLIST *dl, void *a);
 void dumblist_rm(DUMBLIST *dl, int i);
 void dumblist_sort(DUMBLIST *dl, int((*compare)(void *a, void *b)));

@@ -23,7 +23,7 @@
  * structures.
  * 
  * Most of the access routines also use the constructor defined in 
- * Core.xs and present in the FLUX core.
+ * Core.xs and present in the ndFLUX core.
  * 
  * XS methods defined here are:
  * 
@@ -163,7 +163,7 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	case 35: return (void *)&(v->rho);              break;
 	case 36: return (void *)&(v->T);                break;
 	case 37: return (void *)&(v->p);                break;
-	default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
+	default: fprintf(stderr,"Unknown type,field (%ld,%ld) in Flux::World::fieldptr!\n",
 	                 typeno,fieldno);
 	         return (void *)0;
 	         break;
@@ -199,7 +199,7 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 		case 24: return (void *)&(f->fc0);              break;
 		case 25: return (void *)&(f->fc1);              break;
 	        case 26: return (void *)&(f->plasmoid);         break;
-		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
+		default: fprintf(stderr,"Unknown type,field (%ld,%ld) in Flux::World::fieldptr!\n",
 				typeno,fieldno);
 			return (void *)0;
 			break;
@@ -251,7 +251,7 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 		case 40: return (void *)&(w->ca_max);                   break;
 		case 41: return (void *)&(w->ca_acc);                   break;
 		case 42: return (void *)&(w->ca_ct);                    break;
-		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
+		default: fprintf(stderr,"Unknown type,field (%ld,%ld) in Flux::World::fieldptr!\n",
 				typeno, fieldno);		
 			 return (void *)0;
 		         break;
@@ -274,21 +274,21 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 		case 11: return (void *)&(fc->x[0]);			break;
 		case 12: return (void *)&(fc->locale_radius);		break;
 	        case 13: return (void *)&(fc->bound);                   break;
-		default: fprintf(stderr,"Unknown type,field (%d,%d) in Flux::World::fieldptr!\n",
+		default: fprintf(stderr,"Unknown type,field (%ld,%ld) in Flux::World::fieldptr!\n",
 				typeno, fieldno);
 			return (void *)0;
 			break;
 	 }
         }
 	break;
-     default: fprintf(stderr,"Unknown type number %d in Flux::World::fieldptr!\n",typeno);
+     default: fprintf(stderr,"Unknown type number %ld in Flux::World::fieldptr!\n",typeno);
            return (void *)0;
            break;
   }
 }
 
 /* Helpers for binary_dump, below */
-static b_d_fd;
+static int b_d_fd;
 static long b_d_fc_spring(FLUX_CONCENTRATION *fc, int lab, int link, int depth) {
        return FLUX->binary_dump_CONCENTRATION(b_d_fd, fc);
 }
@@ -423,7 +423,6 @@ _wvlab(sv,typeno,fieldno,val)
  IV val
 PREINIT:
  void *v;
- long *lp;
 CODE:
 	/* Specialized writer for VERTEX labels */
 	/* (Note that this could invalidate other FLUX objects floating about in perl space!) */	
@@ -434,6 +433,8 @@ CODE:
 	  RETVAL = val;
 	  FLUX->SvChangeLabel(sv, val, "Flux::Vertex");
 	}
+	if(0) // Prevent warning for unused typeno/fieldno variables...
+	  fieldno=typeno=fieldno;
 OUTPUT:
 	RETVAL
 
@@ -445,7 +446,6 @@ _wflab(sv,typeno,fieldno,val)
  IV val
 PREINIT:
  void *v;
- long *lp;
 CODE:
 	/* Specialized writer for FLUXON labels */
 	/* (Note that this could invalidate other FLUX objects floating about in perl space!) */	
@@ -456,6 +456,8 @@ CODE:
 	  RETVAL = val;
 	  FLUX->SvChangeLabel(sv, val, "Flux::Fluxon");
 	}
+	if(0) // Prevent warning for unused typeno/fieldno variables...
+	  fieldno=typeno=fieldno;
 OUTPUT:
 	RETVAL
 
@@ -467,7 +469,6 @@ _wfclab(sv,typeno,fieldno,val)
  IV val
 PREINIT:
  void *v;
- long *lp;
 CODE:
 	/* Specialized writer for FLUXON labels */
 	/* (Note that this could invalidate other FLUX objects floating about in perl space!) */	
@@ -478,6 +479,8 @@ CODE:
 	  RETVAL = val;
 	  FLUX->SvChangeLabel(sv, val, "Flux::Concentration");
 	}
+	if(0) // Prevent warning for unused typeno/fieldno variables...
+	  fieldno=typeno=fieldno;
 OUTPUT:
 	RETVAL
 
@@ -495,7 +498,6 @@ CODE:
 	if(np) {	
 		pdl *p;
 		PDL_Double *d;
-		SV *psv;
 		PDL_Long dim=3;
 
 		p = PDL->create(PDL_PERM);
@@ -646,7 +648,6 @@ _wconc_line(sv, typeno, fieldno, val)
  long fieldno
  SV *val
 PREINIT:
- WORLD *world;
  FLUX_CONCENTRATION *fc,**dest;
  FLUXON *f;
 CODE:
@@ -695,8 +696,9 @@ CODE:
         vert = newSVnv(world->coeffs[i]);
 	av_push( av, vert );
  }
-
  RETVAL = newRV_inc((SV *) av);
+ if(0) // Shut up unused-variable warning...
+  fieldno = typeno = fieldno;
 OUTPUT:
  RETVAL
 
@@ -712,7 +714,6 @@ PREINIT:
 CODE:
  I32 i;
  pdl *p;
- PDL_Double *d;
 
  world = (void *)(FLUX->SvFluxPtr(sv,"_wcoeffs","Flux::World",0,1));
 
@@ -753,6 +754,8 @@ CODE:
 
  SvREFCNT_inc(val);
  RETVAL = val;
+ if(0)
+  fieldno = typeno = fieldno;
 OUTPUT:
  RETVAL		
 
@@ -786,10 +789,11 @@ CODE:
      sv = newSVpv(FLUX->FLUX_FORCES[j].name,strlen(FLUX->FLUX_FORCES[j].name));
    } else {
      char s[80];
-     sprintf(s,"UNKNOWN (0x%x)",(unsigned long)(f_funcs[i]));
+     sprintf(s,"UNKNOWN (0x%lx)",(unsigned long)(f_funcs[i]));
      sv = newSVpv(s,strlen(s));
    }
-   av_store(av, av_len(av)+1, sv) || svREFCNT_dec(sv);
+   if(!av_store(av, av_len(av)+1, sv))
+    svREFCNT_dec(sv);
  }
  rv = newRV_noinc((SV *)av);
  SvREFCNT_inc(rv);
@@ -866,7 +870,6 @@ _rbound(sv, typeno, fieldno)
  long typeno
  long fieldno
 PREINIT:
- SV *rv;
  void *ptr;
  void **field;
 CODE:
@@ -883,7 +886,7 @@ CODE:
 	 strlen(  FLUX->F_B_NAMES[i].name));
  } else {
      char s[80];
-     sprintf(s,"UNKNOWN (0x%x)",(unsigned long)(*field));
+     sprintf(s,"UNKNOWN (0x%lx)",(unsigned long)(*field));
      sv = newSVpv(s,strlen(s));
  }
  RETVAL = sv;
@@ -901,11 +904,9 @@ _wbound(sv, typeno, fieldno, val)
 PREINIT:
  void *ptr;
  void **field;
- SV *val_sv;
  char *what;
 CODE:
  I32 j;
- I32 l;
 
  ptr = (void *)(FLUX->SvFluxPtr(sv, "_wbound","Flux",0,1));
  field = fieldptr(ptr, typeno, fieldno);
@@ -919,7 +920,7 @@ CODE:
 	     FLUX->F_B_NAMES[j].func &&
 	     strcmp(FLUX->F_B_NAMES[j].name, what);
 	     j++)
-	//printf("Trying 0x%x (%s); value is %x\n",FLUX->F_B_NAMES[j].func,FLUX->F_B_NAMES[j].name,*field);
+	printf("Trying 0x%lx (%s); value is %lx\n",(unsigned long)(FLUX->F_B_NAMES[j].func),FLUX->F_B_NAMES[j].name,(unsigned long)(*field));
 	       ;
 	 if(!(FLUX->F_B_NAMES[j].func)) {
 		char buf[10240];
@@ -948,11 +949,7 @@ _rrecon(sv, typeno, fieldno)
 PREINIT:
  AV *av;
  AV *params_av;
- SV *params;
- SV *rv;
  WORLD *w;
- void *ptr;
- void **field;
  I32 i;
  int ii;
  int jj;
@@ -980,7 +977,7 @@ CODE:
 	     av_push(av, (SV *)newRV_noinc((SV *)params_av)); 
 	 } else {
 	     char s[80];
-	     sprintf(s,"UNKNOWN (0x%x)",(unsigned long)(w->rc_funcs[i]));
+	     sprintf(s,"UNKNOWN (0x%lx)",(unsigned long)(w->rc_funcs[i]));
 	     sv = newSVpv(s,strlen(s));
 
 	     params_av = newAV();
@@ -988,7 +985,9 @@ CODE:
 	     av_push(av, (SV *)newRV_noinc((SV *)params_av));
          }
  }
- RETVAL = (SV *)newRV_noinc((SV *)av);
+ RETVAL = (SV *)newRV_inc((SV *)av);
+ if(0)
+   fieldno = typeno = fieldno;
 OUTPUT:
  RETVAL
 
@@ -1007,17 +1006,20 @@ PREINIT:
  NUM rc_params[N_RECON_FUNCS][N_RECON_PARAMS];
 CODE:
  w = SvWorld(sv, "_wrecon",1);
-
+ 
+ // clear array
  for(i=0;i<N_RECON_FUNCS;i++) {
     rc_funcs[i] = 0;
     for(j=0;j<N_RECON_PARAMS;j++)
 	rc_params[i][j] = 0;
  }
+  
  if( val && val != &PL_sv_undef ) {   
    AV *val_av;
    static char errbuf[1024];
    if( ! SvROK ( val ) || SvTYPE(SvRV(val)) != SVt_PVAV ) 
 	croak("_wrecon: error - reconnection field must be an array ref!\n");
+
    val_av = (AV *)SvRV(val);
    for(i=0; i<=av_len(val_av); i++) {
 	SV **field = av_fetch(val_av, i, 0);
@@ -1082,6 +1084,9 @@ CODE:
  }
  
  RETVAL = val;
+ SvREFCNT_inc(val);
+ if(0) 
+       fieldno = typeno = fieldno;
 OUTPUT:
  RETVAL
 
@@ -1216,7 +1221,6 @@ file_versions()
 PREINIT:
  char buf[1024];
  char *newline="\n";
- SV *sv;
 CODE:
  buf[0] = '\0';
  strcpy(buf,FLUX->code_info_data);
@@ -1385,7 +1389,6 @@ PREINIT:
  WORLD *w;
  SV *sv;
  AV *av;
- int i;
  PHOTOSPHERE *ph;
 /**********************************************************************
  * _photosphere
@@ -1409,13 +1412,13 @@ CODE:
      PLANE *p;
      av_extend(RETVAL,6);
      p = ph->plane;
-     sv=newSVnv(p->origin[0]); av_store(RETVAL,0,sv) || svREFCNT_dec(sv);
-     sv=newSVnv(p->origin[1]); av_store(RETVAL,1,sv) || svREFCNT_dec(sv);
-     sv=newSVnv(p->origin[2]); av_store(RETVAL,2,sv) || svREFCNT_dec(sv);
-     sv=newSVnv(p->normal[0]); av_store(RETVAL,3,sv) || svREFCNT_dec(sv);
-     sv=newSVnv(p->normal[1]); av_store(RETVAL,4,sv) || svREFCNT_dec(sv);
-     sv=newSVnv(p->normal[2]); av_store(RETVAL,5,sv) || svREFCNT_dec(sv);
-     sv=newSViv(ph->type); av_store(RETVAL,6,sv) || svREFCNT_dec(sv);
+     sv=newSVnv(p->origin[0]); if(!av_store(RETVAL,0,sv)) { svREFCNT_dec(sv); };
+     sv=newSVnv(p->origin[1]); if(!av_store(RETVAL,1,sv)) { svREFCNT_dec(sv); };
+     sv=newSVnv(p->origin[2]); if(!av_store(RETVAL,2,sv)) { svREFCNT_dec(sv); };
+     sv=newSVnv(p->normal[0]); if(!av_store(RETVAL,3,sv)) { svREFCNT_dec(sv); };
+     sv=newSVnv(p->normal[1]); if(!av_store(RETVAL,4,sv)) { svREFCNT_dec(sv); };
+     sv=newSVnv(p->normal[2]); if(!av_store(RETVAL,5,sv)) { svREFCNT_dec(sv); };
+     sv=newSViv(ph->type);     if(!av_store(RETVAL,6,sv)) { svREFCNT_dec(sv); };
    }
  } else {
   PLANE *newp;
@@ -1545,7 +1548,7 @@ CODE:
   RETVAL = FLUX->new_sv_from_ptr(w, FT_WORLD, 0);
  else
   RETVAL = &PL_sv_undef;
- printf( "read_dumpfile: refct is %d\n", w->refct );
+ printf( "read_dumpfile: refct is %ld\n", w->refct );
  close(fd);
 OUTPUT:
 	RETVAL

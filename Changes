@@ -1,3 +1,5 @@
+19-Nov [cd]
+       Fixed problem with rc_funcs setting -- increment refct on return val.
 18-Nov [cd]
        Spliced mass handling into the  main data structures; added f_v_ps field for 
        pseudoforces.  No I/O or physics handling yet - the quantities are just tracked.
