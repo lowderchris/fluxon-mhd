@@ -87,5 +87,6 @@ char *recon_ptr_to_str(void *f);
 
 RC_FUNC rc_a_ad2;
 RC_FUNC rc_a_ad2_h;
+RC_FUNC rc_a_ad2_h_ad2hmax;
 
 #endif

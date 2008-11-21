@@ -2576,8 +2576,8 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     vd = (VERTEX_PIPE_FIXED *)dex;
     dex += sizeof(VERTEX_PIPE_FIXED);
 
-    if(vd->label != v->label) {
-      fprintf(stderr,"%s: vertex label mismatch in fluxon %d, pos %d - file expected %d, found %d\n",me,f_lab,i,vd->label,v->label);
+    if(!vd || !v || vd->label != v->label) {
+      fprintf(stderr,"%s: vertex label mismatch in fluxon %d, pos %d - file expected %d, found %d\n",me,f_lab,i,vd?vd->label:-1,v?v->label:-1);
       return 5;
     }
 

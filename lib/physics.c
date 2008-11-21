@@ -71,6 +71,19 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {0,0,0}
 };
 
+
+/* global reconnection-condition calculator table */
+struct FLUX_RECON FLUX_RECON[] = {
+  {"rc_a_ad2","Threshold angle per d^2 (J proxy avoids explicit B calc)", rc_a_ad2, "(min. angle), (min A/D^2 [or 0 for none])"},
+  {"rc_a_ad2_h","Similar to rc_a_ad2, but J threshold adjusts with a scale height", rc_a_ad2_h,"(min. angle),(min A/exp(z/h)/d^2), (h)"},
+  {"rc_a_ad2_h_ad2hmax","Similar to rc_a_ad2, but only reconnects at local maxima of exp(z/h)a/d^2", rc_a_ad2_h_ad2hmax,"(min. angle),(min A/exp(z/h)), (h)"},
+  {"","",0,""}
+};
+
+/**********************************************************************
+ * String-pointer conversion routines for forces and rc_funcs - 
+ * use for name lookup (e.g. in the perl interface)
+ */
 char *force_ptr_to_str(void *f) {
   int i;
   for(i=0;*(FLUX_FORCES[i].name); i++) 
@@ -88,14 +101,6 @@ void *force_str_to_ptr(char *s) {
       return FLUX_FORCES[i].func;
   return 0;
 }
-
-/* global reconnection-condition calculator table */
-struct FLUX_RECON FLUX_RECON[] = {
-  {"rc_a_ad2","Threshold angle per d^2 (J proxy avoids explicit B calc)", rc_a_ad2, "(min. angle), (min A/D^2 [or 0 for none])"},
-  {"rc_a_ad2_h","Similar to rc_a_ad2, but J threshold adjusts with a scale height", rc_a_ad2_h,"(min. angle),(min A/ln(z/h)/d^2), (h)"},
-  {"","",0,""}
-};
-
 
 char *recon_ptr_to_str(void *f) {
   int i;
@@ -1153,12 +1158,7 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
   /* Stick the force where it belongs in the VERTEX's force vector.*/
 
   if (!finite(norm_3d(force))) {
-    // printf("somethign is wrong with the forces on vertex %d, fn1=, fn3=%g, force=(%g,%g,%g) \n", V->label, fn1,fn3,force[0],force[1],force[2]);
-    //printf("somethign is wrong with the forces on vertex %d, l1=%g,l2=%g,d1n=%g,d2n=%g,fn1=%g,fn3=%g,force=(%g,%g,%g) \n",V->label, l1,l2,d1nr,d2nr, fn1,fn3,force[0],force[1],force[2]);
-    //printf("somethign is wrong with the forces on vertex %d, lnn=%g,lpp=%g,acos_p=%g, acos_n=%g,alpha_p=%g,alpha_n=%g,fn1=%g,fn3=%g,force=(%g,%g,%g) \n",V->label, lnn,lpp,acos( (inner_3d(dpp, d1)) / (l1 * lpp) ),acos( (inner_3d(dnn, d2)) / (l2 * lnn) ),alpha_p,alpha_n, fn1,fn3,force[0],force[1],force[2]);
-    //printf("somethign is wrong with the forces on vertex %d, l1=%g,l2=%g,lnn=%g,lpp=%g,inner_n=%g,inner_p=%ginside_cos_p=%g, inside_cos_n=%g,acos_p=%g, acos_n=%g,alpha_p=%g,alpha_n=%g,fn3=%g \n",V->label, l1,l2,lnn,lpp,inner_3d(dnn, d2),inner_3d(dpp, d1),(inner_3d(dpp, d1)/(l1 * lpp)),(inner_3d(dnn, d2)/(l2 * lnn)), acos( (inner_3d(dpp, d1)) / (l1 * lpp) ),acos( (inner_3d(dnn, d2)) / (l2 * lnn) ),alpha_p,alpha_n,fn3);
-
-    printf("somethign is wrong with the forces on vertex %d on fl%d, ln is %d on %d, nn is %d on %d, l1=%g,l2=%g,lnn=%g,lpp=%g,x=(%g,%g,%g),xn=(%g,%g,%g),xnn=(%g,%g,%g)\n",V->label,V->line->label,V->next->label,V->next->line->label, V->next->next->label,V->next->next->line->label,l1,l2,lnn,lpp,V->x[0],V->x[1],V->x[2],V->next->x[0],V->next->x[1],V->next->x[2],V->next->next->x[0],V->next->next->x[1],V->next->next->x[2]);
+    printf("something is wrong with the vertex4 force on vertex %d on fl%d (non-finite). ln is %d on %d, nn is %d on %d, l1=%g,l2=%g,lnn=%g,lpp=%g,x=(%g,%g,%g),xn=(%g,%g,%g),xnn=(%g,%g,%g)\n",V->label,V->line->label,V->next->label,V->next->line->label, V->next->next->label,V->next->next->line->label,l1,l2,lnn,lpp,V->x[0],V->x[1],V->x[2],V->next->x[0],V->next->x[1],V->next->x[2],V->next->next->x[0],V->next->next->x[1],V->next->next->x[2]);
       }
 
 
@@ -1575,7 +1575,7 @@ void e_eqa(VERTEX *V, HULL_VERTEX *verts) {
 /**********************************************************************
  * b_eqa
  *  
- * Not truly a force, but required for the others.  Calculates 
+ * Not truly a force, but required for some others.  Calculates 
  * B and |B| and inserts them into the VERTEX.  b_eqa uses the 
  * angular equiparition estimate, and delivers a phi-averaged
  * magnitude.  See DeForest notebooks v. VIII, p. 70.
@@ -2006,3 +2006,101 @@ VERTEX *rc_a_ad2_h(VERTEX *v, NUM *params) {
   }
   return 0;
 }
+
+
+// helper routine finds the highest exp(z/h)a/d^2...
+static void find_max_ad2h(VERTEX *v, NUM h, VERTEX **vmaxp, NUM *maxp, NUM *maxap) {
+  int i;
+  VERTEX *v2;
+  NUM p1[3], p2[3];
+  NUM pm[9];
+  NUM l1l2;
+
+  *vmaxp = 0;
+  *maxp = 0;
+
+  if(!v || !v->next )
+    return;
+  
+  for(i=0;i<v->neighbors.n;i++) {
+    v2 = (VERTEX *)(v->neighbors.stuff[i]);
+    if(!V_ISDUMMY(v2) && v2->next) {
+      NUM sh_fac;
+      NUM ad2;
+      NUM d, a, aa;
+
+      // p1 and p2 get the closest approach points
+      d = fl_segment_deluxe_dist( p1,p2,v,v2 );
+
+      // Find the matrix projecting p1p2 into the z axis
+      projmatrix(pm, p1, p2);
+
+      //Project the segments into the p1p2-perpendicular plane, to measure their mutual angle
+      diff_3d(p1, v->next->x, v->x);
+      mat_vmult_3d(v->scr, pm, p1);
+      
+      diff_3d(p2, v2->next->x, v2->x);
+      mat_vmult_3d(v2->scr, pm, p2);
+      
+      // Now v->scr and v2->scr contain the projected 2-vecs.  Calculate the angle.
+      l1l2 = sqrt( norm2_2d( v->scr ) * norm2_2d( v2->scr ) );
+      a = aa = acos( inner_2d( v->scr, v2->scr ) / l1l2 );
+      
+      // Calculate the scale-height factor and merge it in.
+      sh_fac = exp((v->x[2] + v2->x[2])/2/h);
+      aa *= sh_fac;
+
+      // Merge in the distance factor
+      aa /= (d * d);
+
+      if( aa > *maxp ) {
+	*maxp = aa;
+	*maxap = a;
+	*vmaxp = v2;
+      }
+    }
+  }
+}
+
+VERTEX *rc_a_ad2_h_ad2hmax(VERTEX *v, NUM *params) {
+  NUM ath  = params[0];
+  NUM ad2th = params[1];
+  NUM h = params[2];
+
+  VERTEX *v2,*v3;
+  NUM amax;
+  NUM ad2hmax;
+  NUM foo, bar;
+
+  int verbosity = v->line->fc0->world->verbosity;
+
+  /* Don't even try unless we've got an element to look at */
+  if( !v || !(v->next) )
+    return 0;
+
+  if(verbosity > 1) {
+    int i;
+    printf("Vertex %d: neighbors are: %d",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
+    for(i=1;i<v->neighbors.n; i++) 
+      printf(", %d",((VERTEX *)(v->neighbors.stuff[i]))->label);
+    printf("\n");
+  }
+
+  find_max_ad2h(v, h, &v2, &ad2hmax, &amax );
+  
+  if( amax > ath && ad2hmax > ad2th )  {
+    // Found a max-a above threshold, and a max-ad2h above threshold; 
+    // check for local maximumness
+    find_max_ad2h(v->prev, h, &v3, &foo, &bar);
+    if(foo < ad2hmax) {
+      find_max_ad2h(v->next, h, &v3, &foo, &bar);
+      if( foo < ad2hmax ) 
+	// It was a local maxmimum!
+	return v2;
+    }
+  }
+   
+  // Nobody met all the criteria.
+  return 0;
+}
+
