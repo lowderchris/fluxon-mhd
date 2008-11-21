@@ -16,7 +16,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  * 
- * This file is part of FLUX 2.0 (31-Oct-2007).
+ * This file is part of FLUX 2.2 (22-Nov-2008).
  */
 
 #ifndef FLEM_GEOMETRY

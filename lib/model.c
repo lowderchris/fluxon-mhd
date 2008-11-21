@@ -21,7 +21,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
- * This file is part of the FLUX 2.0 release (31-Oct-2007).
+ * This file is part of the FLUX 2.2 release (22-Nov-2008).
  * 
  */
 #include "model.h"
@@ -175,8 +175,28 @@ void fluxon_update_ends(FLUXON *f) {
    if(w->auto_open) {
      fluxon_auto_open(f);
    }
+
+   if(f->plasmoid) {
+     fluxon_plasmoid_cleanup(f);
+   }
 }
 
+/**********************************************************************
+ * fluxon_plasmoid_cleanup - given a FLUXON, check that it is a plasmoid,
+ * and if it is, check for trivial plasmoid removal.  The problem to be
+ * solved is that trivial loop plamoids in gas-free simulations tend to
+ * shrink without limit.  If they shrink far enough, eliminate 'em.
+ */
+void fluxon_plasmoid_cleanup(FLUXON *f) {
+  if(!f)
+    return;
+  if(!f->plasmoid)
+    return;
+  if(trivloop(f)) { // trivloop is in geometry.c
+    delete_fluxon(f);
+  }
+  
+}
 
 /**********************************************************************
  * fluxon_auto_open - given a FLUXON, check whether any of its vertices
@@ -222,7 +242,7 @@ void fluxon_auto_open(FLUXON *f) {
     // Tiny U-loops...
     //    printf("Checking fluxon %d for triviality (start is at (%g,%g,%g))\n",
     //   f->label, f->start->x[0], f->start->x[1], f->start->x[2]);
-    if(trivloop(f)) {
+    if(trivloop(f)) { // trivloop is in geometry.c
       //printf("Deleting %d...\n",f->label);
       delete_fluxon(f);
       return;
@@ -2367,6 +2387,19 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
 
   if(!v1 || !v2 || !v1->next || !v2->next ) {
     fprintf(stderr,"reconnect_vertices: error -- got a null or end vertex!\n");
+    return;
+  }
+
+  if(v1->passno ==passno || 
+     v2->passno == passno || 
+     v1->next->passno == passno || 
+     v2->next->passno == passno ||
+     (v1->prev && v1->prev->passno==passno) ||
+     (v2->prev && v2->prev->passno==passno) ||
+     (v1->next->next && v1->next->next->passno==passno) ||
+     (v2->next->next && v2->next->next->passno==passno)
+     ) {
+    fprintf(stderr,"reconnect_vertices: tried to reconnect an already-reconnected vertex -- nope.\n");
     return;
   }
   

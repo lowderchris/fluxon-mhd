@@ -4,7 +4,7 @@
  * handle VERTEXs and FLUXONs etc.
  * 
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) Southwest Research Institute, 2004-2007
+ * Copyright (c) Southwest Research Institute, 2004-2008
  * 
  * You may modify and/or distribute this software under the terms of
  * the Gnu Public License, version 2.  You should have received a copy
@@ -74,7 +74,7 @@
  *  find_vertex_by_location - just that.  Finds the closest vertex to you.
  *  interpolate_by_location - linearly interpolates a NUM valueto a location
  *  
- * This file is part of FLUX 2.0 (31-Oct-2007).
+ * This file is part of FLUX 2.2 (22-Nov-2008)
  *
  */
 #include "data.h"

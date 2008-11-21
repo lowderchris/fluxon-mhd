@@ -156,6 +156,17 @@ All entities receive numeric labels that should be unique.
 For more information, examine the FLUX wiki at 
   http://flux.boulder.swri.edu/wiki/User_Manual
 
+=head2 AUTHOR
+
+Copyright 2004-2008 Craig DeForest.  You may distribute this file 
+under the terms of the Gnu Public License (GPL), version  2. 
+You should have received a copy of the GPL with this file.  If not,
+you may retrieve it from "http://www.gnu.org".
+
+=head2 VERSION
+
+This file is part of the FLUX 2.2 release (22-Nov-2008)
+
 =head1 METHODS
 
 The Flux module itself is a shell that contains no external methods at

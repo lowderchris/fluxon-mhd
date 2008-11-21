@@ -7,7 +7,7 @@
  * You should have received a copy of the GPL with this file.
  * If not, you may retrieve it from "http://www.gnu.org".
  *
- * This file is part of FLUX 2.0 (31-Oct-2007).
+ * This file is part of FLUX 2.2 (22-Nov-2008).
  */
 #include "EXTERN.h"
 #include "perl.h"

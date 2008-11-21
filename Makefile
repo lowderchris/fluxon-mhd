@@ -13,9 +13,7 @@ all: libinstall
 install: libinstall pdlinstall
 
 libinstall:
-	cd lib
-	make install
-	cd ..
+	/bin/sh -c 'cd lib; make; make install';
 
 pdlinstall: 
 	cd pdl

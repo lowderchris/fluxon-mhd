@@ -2,7 +2,7 @@
  * in perl.
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) 2004 Craig DeForest.  You may distribute this
+ * Copyright (c) 2004-2008 Craig DeForest.  You may distribute this
  * file under the terms of the Gnu Public License (GPL), version 2.
  * You should have received a copy of the GPL with this file.
  * If not, you may retrieve it from "http://www.gnu.org".
@@ -19,7 +19,7 @@
  *
  *  mutual_helicity	<NA> - calculates the mutual helicity of two fluxons.  (not working yet).
  * 
- * This file is part of the FLUX 2.0 release (31-Oct-2007).
+ * This file is part of the FLUX 2.2 release (22-Nov-2008).
  */
 #include "EXTERN.h"
 #include "perl.h"

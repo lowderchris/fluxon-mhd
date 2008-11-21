@@ -5,12 +5,14 @@
  * work.
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) 2004-2007 Craig DeForest.  You may distribute this
- * file under the terms of the Gnu Public License (GPL), version 2.
- * You should have received a copy of the GPL with this file.
- * If not, you may retrieve it from "http://www.gnu.org".
+ * Copyright (c) 2004-2008 Craig DeForest.  
+ * 
+ * You may distribute this file under the terms of the Gnu Public 
+ * License (GPL), version 2. You should have received a copy of the 
+ * GPL with this file. If not, you may retrieve it from 
+ * "http://www.gnu.org".
  *
- * This is version 2.0 of Flux.xs, released 31-Oct-2007.
+ * This is version 2.2 of Flux.xs, released 22-Nov-2008
  *
  *
  * WHAT IS WHAT: 

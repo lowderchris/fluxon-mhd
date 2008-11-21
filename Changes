@@ -1,3 +1,8 @@
+----------
+RELEASED VERSION 2.2
+----------
+20-Nov [cd]
+       checked-in local-maximum reconnection criteria
 19-Nov [cd]
        Fixed problem with rc_funcs setting -- increment refct on return val.
 18-Nov [cd]

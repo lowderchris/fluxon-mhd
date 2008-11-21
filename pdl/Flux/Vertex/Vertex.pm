@@ -12,9 +12,17 @@ Flux::Vertex - fluxon vertex / fluxel
   $vertex = $fluxon->vertex(4);
   $vertices = $fluxon->vertices;
 
+
+=head2 AUTHOR
+
+Copyright 2004-2008 Craig DeForest.  You may distribute this file 
+under the terms of the Gnu Public License (GPL), version  2. 
+You should have received a copy of the GPL with this file.  If not,
+you may retrieve it from "http://www.gnu.org".
+
 =head2 VERSION
 
-This file is part of the FLUX 2.0 release (31-Oct-2007).
+This file is part of the FLUX 2.2 release (22-Nov-2008)
 
 =head1 Methods
 

@@ -3,7 +3,7 @@
  * use the libraries in data.c, geometry.c, and io.c.
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
- * Copyright (c) Craig DeForest, 2004-2007
+ * Copyright (c) Craig DeForest, 2004-2008
  * 
  * You may modify and/or distribute this software under the temrs of
  * the Gnu Public License, version 2.  You should have received a copy
@@ -18,7 +18,7 @@
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  * 
- * This file is part of FLUX 2.0 (31-Oct-2007)
+ * This file is part of FLUX 2.0 (22-Nov-2008)
  */
 
 #ifndef FLEM_MODEL
@@ -33,6 +33,7 @@
  */
 void world_update_ends(WORLD *a);
 void fluxon_update_ends(FLUXON *f);
+void fluxon_plasmoid_cleanup(FLUXON *f);
 void fluxon_auto_open(FLUXON *f);
 
 /**********************************************************************
