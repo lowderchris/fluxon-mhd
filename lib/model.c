@@ -2295,6 +2295,12 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
 		     new_vertex(0, P0[0],P0[1],P0[2], V->line));
     add_vertex_after(V->line, V,
 		     new_vertex(0, P1[0],P1[1],P1[2], V->line));
+
+    // Force global neighbor checks...
+    vertex_clear_neighbors(V->prev);
+    vertex_clear_neighbors(V);
+    vertex_clear_neighbors(V->next);
+
     return 2;
 
   } else {
@@ -2477,10 +2483,15 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     firstv->next = lastv->next;
     firstv->next->prev = firstv;
     firstv->line->v_ct -= (ilast - ifirst);
+    vertex_clear_neighbors(firstv);
+    vertex_clear_neighbors(firstv->next);
 
     /* ... and link it into the new fluxon */
     Fnew->start->next = v;
     v->prev = Fnew->start;
+
+    vertex_clear_neighbors(v);
+    vertex_clear_neighbors(v->prev);
 
     Fnew->end->prev = lastv;
     lastv->next = Fnew->end;
@@ -2532,6 +2543,9 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     }
 
     // splice a genuine loop out of the plasmoid
+    vertex_clear_neighbors(f2->end->prev);
+    vertex_clear_neighbors(f2->start->next);
+
     f2->end->prev->next   = f2->start->next;
     f2->start->next->prev = f2->end->prev;
     f2->start->next       = f2->end;
@@ -2543,6 +2557,9 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     v1->next->prev = v1;
     v2->next = v;
     v2->next->prev = v2;
+
+    vertex_clear_neighbors(v1);
+    vertex_clear_neighbors(v2);
     
     // Set the fluxon pointer of all vertices
     for(v=f1->start; v; v=v->next)
@@ -2576,6 +2593,11 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     
     v2->next = vv;
     v2->next->prev = v2;
+
+    vertex_clear_neighbors(v1);
+    vertex_clear_neighbors(v2);
+    vertex_clear_neighbors(v1->next);
+    vertex_clear_neighbors(v2->next);
     
     /* Now clean up the fluxons and the back-to-fluxon links in the individual vertices. */
     
