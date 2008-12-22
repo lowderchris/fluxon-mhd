@@ -91,22 +91,22 @@ sub make_world_spiro {
     ##print "begin $rstart, end $rend, ";
 
     if ($line->((2),(0)) < $or_h){
-	until ($line->((2),(1)) > $or_h){
-	    $line=$line(:,1:-1);
-	    ##chop off first, although this should be 
-	    ##the case already if you use shoot_line
-	}
-	$line->((2),(0)) .= $or_h;
-	##cludge for now, really need an interpolation along the line from prev to next vertex, don't want to think about it right now though.
+	##in the spot, the last vertex calculated is the first in the $line
+	my $a=$line->(:,0)->copy;
+	my $b=$line->(:,1)->copy;
+	my $slope = -1 * $a(2)/($b(2)-$a(2));
+	$line->((0),(0)).=$a(0)+($slope*($b(0)-$a(0)));
+	$line->((1),(0)).=$a(1)+($slope*($b(1)-$a(1)));
+	$line->((2),(0)).=0;
     }
+	
     if ($line->((2),(-1)) < $or_h){
-	until ($line->((2),(-2)) > $or_h){
-	    $line=$line(:,0:-2);
-	    ##chop off last, although this should be 
-	    ##the case already if you use shoot_line
-	}
-	$line->((2),(-1)) .= $or_h;
-	##cludge for now, really need an interpolation along the line from prev to next vertex, don't want to think about it right now though.
+	my $a=$line->(:,-2)->copy;
+	my $b=$line->(:,-1)->copy;
+	my $slope = -1 * $a(2)/($b(2)-$a(2));
+	$line->((0),(-1)).=$a(0)+($slope*($b(0)-$a(0)));
+	$line->((1),(-1)).=$a(1)+($slope*($b(1)-$a(1)));
+	$line->((2),(-1)).=0;
     }
     
 
