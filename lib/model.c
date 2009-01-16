@@ -75,7 +75,7 @@ static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
   VERTEX *v;
 
   /* skip magic boundary fluxons */
-  if(fl->label <= 0 && fl->label >= -10)
+  if( FL_ISDUMMY(fl) )
     return 0;
 
 
@@ -132,7 +132,7 @@ int world_check(WORLD *a) {
  */
 static long w_u_e_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
-  if(fl->label <= 0 && fl->label >= -10) 
+  if( FL_ISDUMMY(fl) )
     return 0 ;
 
   fluxon_update_ends(fl);
@@ -592,7 +592,7 @@ static void ((**gl_f_funcs)()); /* springboard functions list */
 
 static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
-  if(fl->label <= 0 && fl->label >= -10) 
+  if( FL_ISDUMMY(fl) )
     return 0 ;
 
   if(fl->fc0->world->verbosity >= 5) dump_all_fluxon_tree(gl_a->lines);
@@ -614,7 +614,7 @@ void world_update_neighbors(WORLD *a, char global) {
  */
 static long w_u_m_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
-  if(fl->label <= 0 && fl->label >= -10) 
+  if( FL_ISDUMMY(fl) )
     return 0 ;
 
   return fluxon_update_mag(fl,gl_gl, gl_f_funcs);
@@ -669,7 +669,7 @@ void world_fluxon_length_check(WORLD *w, char global){
 static struct VERTEX_STATS gl_st;
 static long w_c_s_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
-  if(fl->label <= 0 && fl->label >= -10) 
+  if( FL_ISDUMMY(fl) )
     return 0 ;
 
   fluxon_collect_stats(fl,&gl_st);
@@ -722,7 +722,7 @@ static NUM gl_t;
 
 static long w_ca_s_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
-  if(fl->label <= 0 && fl->label >= -10) 
+  if( FL_ISDUMMY(fl) )
     return 0 ;
 
   fluxon_calc_step(fl, gl_t);
@@ -731,7 +731,7 @@ static long w_ca_s_springboard(FLUXON *fl, int lab, int link, int depth) {
 
 static long w_r_s_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
-  if(fl->label <= 0 && fl->label >= -10) 
+  if( FL_ISDUMMY(fl) )
     return 0 ;
 
   fluxon_relax_step(fl, gl_t);
@@ -762,6 +762,8 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
 
   if(verbosity>=2) printf("fluxon_update_neighbors... (gl=%d), fluxon %d\n",global,fl->label);
 
+  if(FL_ISDUMMY(fl))
+    return 0;
 
   /* First thing - make sure the end conditions are up to date... */
   if(fl->fc0->bound) {	
@@ -771,11 +773,15 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
     (*(fl->fc1->bound))(fl->end);
   }
 
+  v=v->next;
+
   while(v->next) {   
     if(verbosity>=3)  printf("\tfluxon_update_neighbors... vertex %d\n",v->label);
+
     vertex_update_neighbors(v,global || (v->neighbors.n == 0));
     if(verbosity>=4)   fdump_fluxon(stdout,fl,0);
     if(verbosity>=3)   printf("=============\n\n");
+
     v=v->next;
     i++;
   }
@@ -853,14 +859,20 @@ int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
     if(fl->fc0->world->verbosity >= 3) 
       printf("---forces:\n");
 
+    {
+      int ignore_segment_forces = 
+	( ((!v->prev) && funky_fl_b(v->line->fc0))
+	  ||
+	  (  ((!v->next) || (!v->next->next))  && funky_fl_b(v->line->fc1) )
+	  );
+
      /* Accumulate forces and relevant lengthscales */
     for(f_func = &f_funcs[0]; *f_func; f_func++) 
-      (**f_func)(v,vertices);
-
+      (**f_func)(v,vertices,ignore_segment_forces);
+    }
 
     if(fl->fc0->world->verbosity >= 3)
       printf("\n");
-
 
   }
   if(verbosity >= 3) printf("\n");
@@ -1799,9 +1811,9 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
    * photosphere.  Plasmoids do interact with the photosphere, since
    * they generally don't intersect it. */
 
-  if(v->next && 
-     v->prev &&
-     (v->next->next || v->line->plasmoid)
+  if(v->next //&& 
+     //     v->prev &&
+     //(v->next->next || v->line->plasmoid)
      )
   {
     PHOTOSPHERE *phot;
@@ -2138,7 +2150,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
  ** does 10, consistent with the general trend that tighter
  ** thresholds mean more numerical work.  1.0 is "normal", I think.
  ** 
-  */
+ */
 int fix_proximity(VERTEX *V, NUM scale_thresh) {
   int i;
   NUM dist = -1;
@@ -2146,6 +2158,9 @@ int fix_proximity(VERTEX *V, NUM scale_thresh) {
   NUM diff[3];
 
   if(!V || !V->next)
+    return 0;
+
+  if( V_ISDUMMY(V) || FL_ISDUMMY(V->line) )
     return 0;
 
   /* Find minimum neighbor-segment distance from the segment, and 
@@ -2854,8 +2869,23 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
     
 /********************************************************************
  * fluxon end-condition handlers - update end position of the fluxon
- * to be consistent with the boundary condition
+ * to be consistent with the boundary condition.
+ * 
+ * the utility routine funky_fl_b indicates whether it's OK for the final
+ * segment of the fluxons on this flux concentration to end at the exact
+ * same point in space.  If you add a new boundary condition that 
+ * allows swivel-hook action, you need to update funky_ends.
  */
+int funky_fl_b(FLUX_CONCENTRATION *fc) {
+  void *bound;
+  if(!fc)
+    return 0;
+  bound = fc->bound;
+  if(!bound)
+    fc->world->default_bound;
+  return (bound==fl_b_tied_inject || bound==fl_b_tied_force);
+}
+
 struct F_B_NAMES F_B_NAMES[] = {
   {fl_b_tied_inject, "fl_b_tied_inject", "Auto-inject new vertices to maintain one near the FC"},
   {fl_b_tied_force,  "fl_b_tied_force",  "Force the closest vertex to be near the FC"},
@@ -3175,7 +3205,7 @@ int (*work_springboard)(FLUXON *f); // Contains the actual action
  * v_ct_springboard - counts up the total number of vertices in the sim.
  */
 static long v_ct_springboard(FLUXON *fl, int lab, int link, int depth) {
-  if(!(fl->label <= 0 && fl->label >= -10)) 
+  if( ! FL_ISDUMMY(fl) )
     v_ct += fl->v_ct;
   last_fluxon = fl;
   return 0;
@@ -3214,7 +3244,7 @@ void parallel_prep(WORLD *a) {
 
 
   v_thresh = v_ct / a->concurrency;
-  printf("v_ct is %d, v_thresh is %d\n",v_ct,v_thresh);
+  //  printf("v_ct is %d, v_thresh is %d\n",v_ct,v_thresh);
   fflush(stdout);
   
   dumblist_clear(fluxon_batch);
@@ -3234,7 +3264,7 @@ static int parallel_daughter(int p); // handles processing in the daughters.
 
 static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
-  if(fl->label <= 0 && fl->label >= -10) 
+  if( FL_ISDUMMY(fl) ) 
     return 0;
 
   dumblist_add( fluxon_batch, fl );

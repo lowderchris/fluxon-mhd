@@ -154,7 +154,7 @@ void *recon_str_to_ptr(char *s) {
  * two lengths rather than by the larger.
  * 
  */
-void f_curvature(VERTEX *V, HULL_VERTEX *verts) {
+void f_curvature(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM recip_l1, recip_l2, recip_len, len;
   NUM b1hat[3];
   NUM b2hat[3];
@@ -216,7 +216,7 @@ void f_curvature(VERTEX *V, HULL_VERTEX *verts) {
  *  165 deg -29.85 
  *  
  */
-void f_curvature2(VERTEX *V, HULL_VERTEX *verts) {
+void f_curvature2(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM recip_l1, recip_l2, recip_len, len;
   NUM b1hat[3];
   NUM b2hat[3];
@@ -254,7 +254,7 @@ void f_curvature2(VERTEX *V, HULL_VERTEX *verts) {
 
 }
 
-void f_curvature3(VERTEX *V, HULL_VERTEX *verts) {
+void f_curvature3(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM recip_l1, recip_l2, recip_len, len;
   NUM b1hat[3];
   NUM b2hat[3];
@@ -310,7 +310,7 @@ void f_curvature3(VERTEX *V, HULL_VERTEX *verts) {
  * Voronoi hull, and r_i is the radius to the closest approach of the
  * ith line segment (see DeForest notebook V, pp. 69-70)
  */
-void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
+void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3]; /* force accumulator */
   static HULL_VERTEX *point_cache = 0;  /* Workspace grows and sticks */
   static int pc_size = 0;               /* Workspace size */
@@ -320,7 +320,7 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
 
   force[0] = force[1] = force[2] = 0;
 
-  if(!V->next) 
+  if(!V->next || segflag) 
     return;
 
   /* Get the perpendicular-plane projection matrix */
@@ -434,7 +434,7 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts) {
  * Voronoi hull, and r_i is the radius to the closest approach of the
  * ith line segment (see DeForest notebook V, pp. 69-70)
  */
-void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts) {
+void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3]; /* force accumulator */
   static HULL_VERTEX *point_cache = 0;  /* Workspace grows and sticks */
   static int pc_size = 0;               /* Workspace size */
@@ -444,7 +444,7 @@ void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts) {
 
   force[0] = force[1] = force[2] = 0;
 
-  if(!V->next) 
+  if(!V->next || segflag) 
     return;
 
   /* Get the perpendicular-plane projection matrix */
@@ -568,7 +568,7 @@ void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts) {
  * This version applies the force from the median angle of the cell wall,
  * rather than from the normal.
  */
-void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts) {
+void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3]; /* force accumulator */
   static HULL_VERTEX *point_cache = 0;  /* Workspace grows and sticks */
   static int pc_size = 0;               /* Workspace size */
@@ -578,7 +578,7 @@ void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts) {
 
   force[0] = force[1] = force[2] = 0;
 
-  if(!V->next) 
+  if(!V->next || segflag) 
     return;
 
   /* Get the perpendicular-plane projection matrix */
@@ -673,7 +673,7 @@ void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts) {
  * wall force, is doubled.
  */
 
-void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
+void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3]; /* force accumulator */
   static HULL_VERTEX *point_cache = 0;  /* Workspace grows and sticks */
   static int pc_size = 0;               /* Workspace size */
@@ -683,7 +683,7 @@ void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
 
   force[0] = force[1] = force[2] = 0;
 
-  if(!V->next) 
+  if(!V->next || segflag) 
     return;
 
   /* Get the perpendicular-plane projection matrix (This is wasteful
@@ -771,7 +771,7 @@ void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts) {
  * local B field magnitude.
  * 
  */
-void f_vert(VERTEX *V, HULL_VERTEX *verts) {
+void f_vert(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3];
   NUM d1[3], d2[3];
   NUM d1nr,d2nr,fn,d1n,d2n;
@@ -835,7 +835,7 @@ void f_vert(VERTEX *V, HULL_VERTEX *verts) {
  * that are b-normalized.  Use f_vert with the newer ones.
  * 
  */
-void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
+void f_vertex(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3];
   NUM d1[3], d2[3];
   NUM d1nr,d2nr,fn,d1n,d2n;
@@ -906,7 +906,7 @@ void f_vertex(VERTEX *V, HULL_VERTEX *verts) {
  * 
  */
 
-void f_vertex2(VERTEX *V, HULL_VERTEX *verts) {
+void f_vertex2(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3];
   NUM d1[3], d1n [3], d2[3], d2n[3];
   NUM d1nr,d2nr,fn1,fn2,fn3; /* fn's are scalers */
@@ -1012,7 +1012,7 @@ void f_vertex2(VERTEX *V, HULL_VERTEX *verts) {
  * 
  */
 
-void f_vertex3(VERTEX *V, HULL_VERTEX *verts) {
+void f_vertex3(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3];
   NUM d1[3], d1n [3], d2[3], d2n[3];
   NUM d1nr,d2nr,fn1,fn2,fn3; /* fn's are scalers */
@@ -1094,7 +1094,7 @@ void f_vertex3(VERTEX *V, HULL_VERTEX *verts) {
  * 
  */
 
-void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
+void f_vertex4(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3];
   NUM d1[3], d1n [3], d2[3], d2n[3];
   NUM d1nr,d2nr,fn1,fn2,fn3; /* fn's are scalers */
@@ -1176,7 +1176,7 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts) {
  * slightly for more stability. (f_vertex3 has vertex flow)
  *
  */
-void f_vertex5(VERTEX *V, HULL_VERTEX *verts) {
+void f_vertex5(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM force[3];
   NUM d1[3], d1n[3], d2[3], d2n[3];
   NUM l1, l2;
@@ -1297,12 +1297,15 @@ void f_vertex5(VERTEX *V, HULL_VERTEX *verts) {
  *
  * (august 2005)
  */
-void b_simple (VERTEX *V, HULL_VERTEX *verts) {
+void b_simple (VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM Bmag = 0;
   NUM vec1[3];
   int n = V->neighbors.n;
   int i;
   int bad = 0;
+
+  if( !V->next || segflag ) 
+    bad=1;
 
   for(i=0;i<n && !bad;i++) {
     NUM A;
@@ -1341,7 +1344,7 @@ void b_simple (VERTEX *V, HULL_VERTEX *verts) {
  * field is zero.
  * 
  */
-void e_simple (VERTEX *V, HULL_VERTEX *verts) {
+void e_simple (VERTEX *V, HULL_VERTEX *verts, int segflag) {
   int flux = 1;
   NUM ds = 0;
   NUM Area = 0;
@@ -1350,7 +1353,7 @@ void e_simple (VERTEX *V, HULL_VERTEX *verts) {
   int i;
   int bad = 0;
 
-  if (!V->next) { // if ds=0, then energy=0
+  if (!V->next || segflag) { // if ds=0, then energy=0
     V->energy = 0;
     return;
   } else {
@@ -1399,7 +1402,7 @@ void e_simple (VERTEX *V, HULL_VERTEX *verts) {
  * 
  */
 
-void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
+void e_simple2 (VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM flux = 1;
   NUM iflux = 0;
   NUM ds = 0;
@@ -1409,7 +1412,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
   int n = V->neighbors.n;
   int i;
 
-  if (!V->next) { // if ds=0, then energy=0
+  if (!V->next || segflag) { // if ds=0, then energy=0
     V->energy = 0;
     return;
   } else {
@@ -1463,7 +1466,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts) {
  * 
  */
 
-void e_open (VERTEX *V, HULL_VERTEX *verts) {
+void e_open (VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM flux = 1;
   NUM ds = 0;
   NUM ienergy =0;
@@ -1473,7 +1476,7 @@ void e_open (VERTEX *V, HULL_VERTEX *verts) {
   int n = V->neighbors.n;
   int i;
 
-  if (!V->next) { // if ds=0, then energy=0
+  if (!V->next || segflag) { // if ds=0, then energy=0
     V->energy = 0;
     return;
   } else {
@@ -1543,11 +1546,16 @@ void e_open (VERTEX *V, HULL_VERTEX *verts) {
  * Calculates the magnetic energy contained in a fluxel, using angular 
  * equipartition of flux.  See DeForest Notebox X, pp. 122-123
  */
-void e_eqa(VERTEX *V, HULL_VERTEX *verts) {
+void e_eqa(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM E_accum = 0;
   static NUM R;
   int n = V->neighbors.n;
   int i;
+
+  if(!V->next || segflag) {
+    V->energy = 0;
+    return;
+  }
 
   for(i=0; i<n; i++) {
     HULL_VERTEX *left = &(verts[i]);
@@ -1587,12 +1595,19 @@ void e_eqa(VERTEX *V, HULL_VERTEX *verts) {
  * (august 2004) it's not here.
  * 
  */
-void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
+void b_eqa(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM Bmag = 0;
   static NUM vec1[3],vec2[3];
   VERTEX **nv = (VERTEX **)(V->neighbors.stuff);
   int n = V->neighbors.n;
   int i;
+
+
+  if(!V->next || segflag) {
+    V->b_mag = 0;
+    V->b_vec[0] = V->b_vec[1] = V->b_vec[2] = 0;
+    return;
+  }
 
   for(i=0;i<n;i++) {
     HULL_VERTEX *left = &(verts[i]);
@@ -1666,7 +1681,7 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts) {
  * its deprecated predecessor, f_curvature.
  * 
  */
-void f_curv_hm(VERTEX *V, HULL_VERTEX *verts) {
+void f_curv_hm(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM recip_l1, recip_l2, recip_len, len;
   NUM b1hat[3];
   NUM b2hat[3];
@@ -1715,7 +1730,7 @@ void f_curv_hm(VERTEX *V, HULL_VERTEX *verts) {
  * its deprecated predecessor, f_curvature.
  * 
  */
-void f_curv_m(VERTEX *V, HULL_VERTEX *verts) {
+void f_curv_m(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM l1, l2, recip_len, len;
   NUM b1hat[3];
   NUM b2hat[3];
@@ -1758,7 +1773,7 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts) {
  *
  */
 
-void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts) {
+void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   static NUM scr2d[3],scr3d[3];
   int i,n;
   NUM sina, cosa;
@@ -1766,7 +1781,7 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts) {
   VERTEX **nv = (VERTEX **)(V->neighbors.stuff);
   NUM fac = V->line->flux * V->line->flux / (PI*PI*PI);
   
-  if(!(V->next))
+  if(!(V->next) || segflag)
     return;
 
   /* Get the perpendicular-plane projection matrix */
