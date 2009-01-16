@@ -190,9 +190,6 @@ void SvChangeLabel( SV *sv, long newlabel, char *tstr ) {
 }   
 	       
      
-
-
-
 /**********************************************************************
  * new_sv_from_ptr - construct a generic FLUX object from a world pointer, 
  * type code, and label.

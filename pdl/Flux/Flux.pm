@@ -238,7 +238,7 @@ Really Know What You're Doing.
 	    f_v=>        [12, 'vec'],
 	    f_s=>        [13, 'vec'],
 	    f_t=>        [14, 'vec'],
-	    f_s_tot=>    [15, 'vec'],
+	    f_s_tot=>    [15, 'num'],
 	    f_v_tot=>    [16, 'num'],
 	    r_v=>        [17, 'num'],
 	    r_s=>        [18, 'num'],

@@ -538,7 +538,7 @@ sub fluxons {
     my $id;
     my @fluxons;
     while(defined ($id=shift)) {
-      push(@fluxons, &fluxon($world,$id));
+	push(@fluxons, &fluxon($world,$id)) unless($id<0 && $id>=-11);
     }
     
     return @fluxons;
@@ -1068,12 +1068,17 @@ sub render {
     release3d;
     print "foo...\n" if($Flux::debug);
 
-    my $fid;
-    my @poly = map { print "$_..." if($Flux::debug); $w->fluxon($_)->polyline } $w->fluxon_ids;
 
     my @rgb,@prgb;
     print "Defining RGB..." if($Flux::debug);
-    my @fluxons = $w->fluxon_ids;
+    my @fluxons = ();
+    for my $id($w->fluxon_ids) {
+	push(@fluxons,$id) if($id>0 || $id<-11);
+    }
+
+    my $fid;
+    my @poly = map { print "$_..." if($Flux::debug); $w->fluxon($_)->polyline } @fluxons;
+
 
     if($opt->{'RGB_CODE'}) {
       ### RGB_CODE - just execute the code string
@@ -1314,7 +1319,7 @@ sub render {
     ##############################
     # Generate line strips for each fluxon...
     my $rgbdex = 0;
-    my @id = $w->fluxon_ids;
+    my @id = @fluxons;
 
     my $olabel = pdl($opt->{label}) if ( ref $opt->{label} eq 'ARRAY');
 
@@ -1574,8 +1579,9 @@ Dumps a giant polyline for all fluxons in the simulation.
 
 sub polyline {
     my $w = shift;
+    my $id_list = shift;
     my @l,$l1;
-    @l = map { $_->polyline } $w->fluxons;
+    @l = map { $_->polyline } (defined($id_list) ? @$id_list : $w->fluxons);
     $l1 = @l[0];
     return $l1->glue(1,@l[1..$#l]);
 }

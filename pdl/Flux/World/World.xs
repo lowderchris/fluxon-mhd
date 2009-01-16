@@ -11,22 +11,23 @@
  * This file is part of the FLUX 2.2 release, 22-Nov-2008
  *
  * Routines in here:
- *   PERL INTERFACE  FLUX SUBROUTINE / FUNCTION
+ *   PERL INTERFACE        FLUX SUBROUTINE / FUNCTION
  *
- *   _read_world        read_world (io.c) (leading '_' for ref in World.pm)
- *   write_world       	write_world (io.c)
+ *   _read_world           read_world (io.c) (leading '_' for ref in World.pm)
+ *   write_world       	   write_world (io.c)
  *
- *   fix_proximity     	global_fix_proximity (model.c)
- *   _fix_curvature     global_fix_curvature (model.c); accessed mainly by
- *                        fix_curvature from World.pm.
+ *   fix_proximity     	   global_fix_proximity (model.c)
+ *   _fix_curvature        global_fix_curvature (model.c); accessed mainly by
+ *                         fix_curvature from World.pm.
  *  
- *   update_neighbors  	world_update_neighbors (model.c)
- *   f_length_check	world_fluxon_length_check (model.c)
- *   update_force       world_update_forces    (model.c)
- *   relax_step         world_relax_step       (model.c)
+ *   update_neighbors  	   world_update_neighbors             (model.c)
+ *   f_length_check   	   world_fluxon_length_check          (model.c)
+ *   update_force          world_update_mag                   (model.c)
+ *   update_force_parallel world_update_mag_parallel          (model.c)
+ *   relax_step            world_relax_step                   (model.c)
+ *   relax_step_parallel   world_relax_step_parallel          (model.c)
  *
  *   verbosity         	NA (sets verbosity of the world; obviated by tied-hash interface)
- * 
  *   step_scales	Sets the scaling powers for step law.  Obviated by tied-hash interface.
  * 
  *   _fluxon_ids        Returns a perl list of all fluxon labels in the world
@@ -41,7 +42,7 @@
  *   _forces		Returns the force list for the world as a set of identifier strings
  * 			  (obviated by the tied-hash interface)
  *   _set_force         Tries to interpret a string as a force and set the appropriate force pointer to it.
- *			  (obviated by teh tied-hash interface)
+ *			  (obviated by the tied-hash interface)
  *
  *   _rcfuncs           Retrieve the reconnection criteria (obviated by the tied-hash interface)
  *   _set_rc            Set the reconnection criteria (obviated by the tied-hash interface)
@@ -236,7 +237,7 @@ f_length_check(wsv, globalflag)
 PREINIT:
  WORLD *w;
 /**********************************************************************
- * update_neighbors glue
+ * world_fluxon_length_check glue
  */
 CODE:
   w = SvWorld(wsv,"f_length_check",1);
@@ -267,7 +268,8 @@ PREINIT:
  WORLD *w;
 /**********************************************************************
  * update_force
- * Updates the forces everywhere in the model.
+ * Updates the forces everywhere in the model, using the 
+ * first-stage parallel entry point
  */
 CODE:
  w = SvWorld(wsv,"Flux::World::update_force",1);
@@ -282,6 +284,10 @@ SV *wsv
 NV time
 PREINIT:
  WORLD *w;
+ /**********************************************************************
+  * relax_step
+  * glue for world_relax_step in model.c
+  */
 CODE:
  w = SvWorld(wsv,"Flux::World::relax_step",1);
  FLUX->world_relax_step(w,time);
@@ -292,6 +298,10 @@ SV *wsv
 NV time
 PREINIT:
  WORLD *w;
+ /*********************************************************************
+  * relax_step_parallel
+  * glue for world_relax_step_parallel in model.c
+  */
 CODE:
  w = SvWorld(wsv,"Flux::World::relax_step",1);
  FLUX->world_relax_step_parallel(w,time);
@@ -487,6 +497,10 @@ PREINIT:
  WORLD *w;
  pdl *x;
  FLUX_CONCENTRATION *fc;
+ /*********************************************************************
+  * _new_concentration - glue for new_flux_concentration in data.c
+  * internal - called only from new_concentration in World.pm...
+  */
 CODE:
  w = SvWorld(wsv, "Flux::World::new_concentration",1);
  x = PDL->SvPDLV(xsv);
@@ -731,6 +745,9 @@ SV *wsv
 PREINIT:
  WORLD *w;
  struct VERTEX_STATS *st;
+ /*********************************************************************
+  * _stats - glue for world_collect_stats...
+  */
 CODE:
  w = SvWorld(wsv,"Flux::World::stats",1);
  st = FLUX->world_collect_stats(w);	

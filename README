@@ -17,7 +17,7 @@ specified.
 
 FLUX consists of two parts: a relaxation engine, written in C, and a
 control interface in Perl.  The control interface is intended to be
-used The Perl Data Language (PDL).  If you do not have PDL on your
+used with Perl Data Language (PDL).  If you do not have PDL on your
 system, you can get it for free from http://pdl.perl.org.  PDL
 compiles "out of the box" on most UNIX systems, and a "native" 
 version exists for Microsoft Windows.

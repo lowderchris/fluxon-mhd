@@ -117,6 +117,8 @@ extern struct F_B_NAMES {
 void *boundary_name_to_ptr(char *name);
 char *boundary_ptr_to_name(void *ptr);
 
+int funky_fl_b(FLUX_CONCENTRATION *fc);
+
 void fl_b_tied_force(VERTEX *v);
 void fl_b_tied_inject(VERTEX *v);
 void fl_b_open(VERTEX *v);

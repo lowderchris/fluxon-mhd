@@ -132,7 +132,7 @@ typedef struct VERTEX {
 
 } VERTEX;
 
-#define V_ISDUMMY(v) ( (v)->label == -1 || (v)->label == -2 || (!(v)->line) || !((v)->line->label) )
+#define V_ISDUMMY(v) ( ((v)->label <= -1 && (v)->label >=-4) || (!(v)->line) || !((v)->line->label) )
 
 typedef struct FLUXON {
   NUM flux;                  /* Flux in Maxwells */
@@ -162,9 +162,11 @@ typedef struct FLUXON {
 #define FC_IM11_ID -9
 #define FC_IM20_ID -10
 #define FC_IM21_ID -11
+#define FC_ISDUMMY(fc) ( (fc)->label < 0 && (fc)->label >= -11 )
 
 #define FL_IM1_ID -9
 #define FL_IM2_ID -10
+#define FL_ISDUMMY(fl) ( (fl)->label == -9 || (fl)->label == -10 )
 
 typedef struct FLUX_CONCENTRATION {
   struct WORLD *world;

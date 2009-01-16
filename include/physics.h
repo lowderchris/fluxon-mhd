@@ -29,33 +29,35 @@
 
 #include <stdio.h>
 
-void b_eqa(VERTEX *V, HULL_VERTEX *verts); /* calculate B field at vertex */
-void b_simple(VERTEX *V, HULL_VERTEX *verts); /* B field at vertex */
+typedef void PHYSICS_FUNC(VERTEX *V, HULL_VERTEX *verts, int segflag);
 
-void e_simple(VERTEX *V, HULL_VERTEX *verts); /* energy, breaks if hull is open */
-void e_simple2(VERTEX *V, HULL_VERTEX *verts); /* energy assoc. with vertex */
-void e_open(VERTEX *V, HULL_VERTEX *verts); /* energy assoc. with vertex */
-void e_eqa(VERTEX *V, HULL_VERTEX *verts);
+PHYSICS_FUNC b_eqa;       // calculate B field at vertex
+PHYSICS_FUNC b_simple;    // B field at vertex
 
-void f_curvature(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
-void f_curvature2(VERTEX *V, HULL_VERTEX *verts);     /* deprecated ( f/|B| ) */
-void f_curvature3(VERTEX *V, HULL_VERTEX *verts);   
-void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
-void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
-void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
-void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts); /* deprecated ( f/|B| ) */
+PHYSICS_FUNC e_simple;    // energy, breaks if hull is open
+PHYSICS_FUNC e_simple2;   // energy, better at open hulls
+PHYSICS_FUNC e_open;      // energy, best with open hulls (still not great)
+PHYSICS_FUNC e_eqa;       // equal-flux-per-angle formula for energy
 
-void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts); /* ang. equipart. pressure */
-void f_curv_hm(VERTEX *V, HULL_VERTEX *verts); /* harmonic-mean curvature  */ 
-void f_curv_m(VERTEX *V, HULL_VERTEX *verts);  /* normal mean curvature */ 
+PHYSICS_FUNC f_curvature;  
+PHYSICS_FUNC f_curvature2; 
+PHYSICS_FUNC f_curvature3; 
 
-void f_vertex(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
-void f_vertex2(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
-void f_vertex3(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
-void f_vertex4(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
-void f_vertex5(VERTEX *V, HULL_VERTEX *verts); /* vertex pseudoforce */
-void f_vert(VERTEX *V, HULL_VERTEX *verts);   /* vertex pseudoforce */
+PHYSICS_FUNC f_pressure_equi;
+PHYSICS_FUNC f_pressure_equi2;
+PHYSICS_FUNC f_pressure_equi2a;
+PHYSICS_FUNC f_pressure_equi2b;
 
+PHYSICS_FUNC f_p_eqa_radial;
+PHYSICS_FUNC f_curv_hm;
+PHYSICS_FUNC f_curv_m;
+
+PHYSICS_FUNC f_vertex;
+PHYSICS_FUNC f_vertex2;
+PHYSICS_FUNC f_vertex3;
+PHYSICS_FUNC f_vertex4;
+PHYSICS_FUNC f_vertex5;
+PHYSICS_FUNC f_vert;
 
 /* F_CONV_TABLE is an array that associates function names with 
  * jumptable entries.  The actual array is defined in physics.c.
