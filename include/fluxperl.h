@@ -25,7 +25,7 @@
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 16
+#define FLUX_CORE_VERSION 17
 
 typedef struct FluxCore {
 
@@ -160,6 +160,9 @@ typedef struct FluxCore {
   void (*fluxon_collect_stats)(FLUXON *fl, VERTEX_STATS *st);
 
   void (*fluxon_auto_open)(FLUXON *f);
+  DUMBLIST *(*gather_photosphere_neighbor_candidates)(VERTEX *v, char global);
+  HULL_VERTEX *(*photosphere_hull_neighbors)(VERTEX *v, DUMBLIST *horde);
+  HULL_VERTEX *(*photosphere_vertex_update_neighbors)(VERTEX *v, char global, int n);
 
   /************  routines from geometry.h */
   NUM (*norm_2d)(NUM *x);
@@ -224,6 +227,9 @@ typedef struct FluxCore {
   NUM (*interpolate_lin_3d)( POINT3D x, NUM p[12], NUM val[4], int n);
   NUM (*interpolate_value_simplex)( POINT3D x, DUMBLIST *dl, int val_offset);
   NUM (*interpolate_value)( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset);
+  void (*project_n_fill_photosphere)(VERTEX *v, DUMBLIST *horde);
+  void (*hull_2d_us_photosphere)(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v);
+
 
   /************  globals from data.h */
   char *code_info_model;
@@ -255,8 +261,9 @@ typedef struct FluxCore {
  * SvFluxon
  * SvWorld
  *
- * Each macro calls SvFluxPtr to pull out the underlying pointer, and casts it correctly.
- * Requires that the FLUX core has been initialized in the current source file.
+ * Each macro calls SvFluxPtr to pull out the underlying pointer, and
+ * casts it correctly.  Requires that the FLUX core has been
+ * initialized in the current source file.
  */
 
 #define SvVertex(sv,name,croak) ( (VERTEX *)            (FLUX->SvFluxPtr((sv),(name),"Flux::Vertex",0,(croak))))

@@ -2034,19 +2034,21 @@ void winnow_neighbor_candidates(VERTEX *v, DUMBLIST *horde) {
 
 
 /**********************************************************************
- * hull_neighbors - Out of a list of neighbor candidates, 
- * hull_neighbors generates a true neighbor list.  It also produces 
- * planar hull information and a host of other useful 2-D projected goodies.
+ * hull_neighbors - Out of a list of neighbor candidates,
+ * hull_neighbors generates a true neighbor list.  It also produces
+ * planar hull information and a host of other useful 2-D projected
+ * goodies.
  *
- * Each of the neighbor candidate segments is projected into the current segment's 
- * plane.  Then the Voronoi cell is constructed around the central point in the
- * projection plane.  Fortunately, routines in geometry.c take care of the
- * geometric details.
+ * Each of the neighbor candidate segments is projected into the
+ * current segment's plane.  Then the Voronoi cell is constructed
+ * around the central point in the projection plane.  Fortunately,
+ * routines in geometry.c take care of the geometric details.
  *
  * As long as a hull calculation is being done anyhow, hull_neigbors
- * keeps the valuable hull vertex information and returns it in 
- * a buffer of (x,y) pairs.  The buffer is ephemeral -- it gets overwritten
- * each time hull_neighbors is called -- so use it while you can.
+ * keeps the valuable hull vertex information and returns it in a
+ * buffer of (x,y) pairs.  The buffer is ephemeral -- it gets
+ * overwritten each time hull_neighbors is called -- so use it while
+ * you can.
  */
 
 HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
@@ -2891,7 +2893,7 @@ int funky_fl_b(FLUX_CONCENTRATION *fc) {
     return 0;
   bound = fc->bound;
   if(!bound)
-    fc->world->default_bound;
+    bound = fc->world->default_bound;
   return (bound==fl_b_tied_inject || bound==fl_b_tied_force);
 }
 
@@ -3510,3 +3512,313 @@ int world_update_mag_parallel(WORLD *a, char global) {
   return 0;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**********************************************************************
+ * Photosphere hull routines
+ * 
+ * Tese routines are to find the hull of the begin/end vertices on the
+ * photosphere. They are only called through PDL (p
+ * $w->vertex(#)->photohull), and none of the information is stored in
+ * the vertex itself.
+ */
+
+/**********************************************************************
+ * gather_photosphere_neighbor_candidates
+ * 
+ * This finds the neighbor candidates of a first or last vertex on a
+ * planar photosphere. The list of neighnor candidates are all of the
+ * other first/last vertices in the world. This can be slow. This
+ * routine was developed for determining the exact hull (and hence
+ * flux) on a photosphere for a better energy calculation.
+ * 
+ * It returns a pointer to its own workspace -- so calling it kills
+ * your last instance of its return value, unless you've gone and copied
+ * it yourself.
+ * 
+ * Use with other routines that have 'photosphere' in the name. 
+ * 
+ * Created by Laurel Rachmeler: Jan 2009.
+ *
+ */
+
+
+
+/*********************************************************************
+ * Helper routine for snarfing up first and last vertex of all fluxons
+ * -- called via tree_walk, in data.c. Does not collect v because v is
+ * the only vertex that has the updated passno, and only does real
+ * fluxons, no images. It also checkes to make sure that only tied
+ * vertices are added, not those that are on an open boundary.
+ *
+ * NOTE: it does not check which photosphere the vertex is on. We only
+ * tie to one photopshere now even though we can do it to 2. you may
+ * need to modify this somehow to check for that later.
+*/
+static DUMBLIST *snarfer_workspace;
+static long begin_end_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
+  long passno = f->fc0->world->passno;
+  if (f->label > 0) {
+    if (funky_fl_b(f->fc0) && f->start->passno != passno)
+      dumblist_quickadd(snarfer_workspace, f->start);
+    if (funky_fl_b(f->fc1) && f->end->passno != passno)  
+      dumblist_quickadd(snarfer_workspace, f->end);
+  }
+  return 0;
+}
+
+
+DUMBLIST *gather_photosphere_neighbor_candidates(VERTEX *v, char global){
+  static DUMBLIST *workspace =0;
+  void **foo;
+  int i;
+  int n;
+  int verbosity = v->line->fc0->world->verbosity;
+  long passno = ++(v->line->fc0->world->passno);
+  v->passno = passno; //identifier for current vertex
+  
+  if(verbosity >= 2) {
+    printf("passno=%d...  ",passno);
+  }
+
+  if(!v)        /* Paranoia */
+    return;
+
+  if(v != v->line->start && v != v->line->end){
+    printf("Oops, gather_photosphere_neighbor_candidates got a non begin/end vertex (label %d) \n",v->label);
+    return;
+  }
+
+  if(!workspace) 
+    workspace = new_dumblist();
+
+  workspace->n = 0;
+
+
+   /* find all the end vertices world by doing a tree-walk trhough
+      each line and grabbing the first/last vertex of each.  */
+
+    FLUXON *f;
+
+    if(verbosity >= 3)
+      printf("searching for neighbors in gather_photosphere_neighbors.");
+
+    f = v->line;
+
+    while(f->all_links.up)
+      f=f->all_links.up; //goes to the top of the tree
+
+    snarfer_workspace = workspace;
+    // What is the reason for the new pointer name? Just to make begin_end_snarfer as general as possible
+
+
+    /* calls a tree (fluxons) and walks along all of the tree. uses
+       begin_end_snarfer to add each begin and end vertex into
+       snarfer_workspace.*/
+    tree_walk(f, fl_lab_of, fl_all_ln_of, begin_end_snarfer);
+
+    if(verbosity >= 4)
+          {
+            int i;
+            printf("gather_photosphere_neighbor_candidates:  global neighbor add gives:\n\t");
+            for(i=0;i<workspace->n;i++)
+      	printf("%d ",((VERTEX *)(workspace->stuff[i]))->label);
+            printf("\n");
+          }
+
+  if(verbosity >= 3) printf("gather_photosphere_neighbor_candidates: returning %d elements\n",workspace->n);
+
+  return workspace;
+}
+
+
+
+/**********************************************************************
+ * photosphere_hull_neighbors - Out of a list of neighbor candidates,
+ * photosphere_hull_neighbors generates a true neighbor list.  It also
+ * produces planar hull information and a host of other useful 2-D
+ * projected goodies.
+ *
+ * Each of the neighbor candidate segments is projected onto the
+ * photosphere's plane (photosphere MUST be a plane).  Then the
+ * Voronoi cell is constructed around the central point in the
+ * projection plane.  Fortunately, routines in geometry.c take care of
+ * the geometric details.
+ *
+ * As long as a hull calculation is being done anyhow,
+ * photosphere_hull_neigbors keeps the valuable hull vertex
+ * information and returns it in a buffer of (x,y) pairs.  The buffer
+ * is ephemeral -- it gets overwritten each time
+ * photosphere_hull_neighbors or hull_neighbors is called -- so use it
+ * while you can.
+ */
+
+HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde) {
+  int i;
+  int a,b;
+  POINT3D x0;
+  NUM pm[9];
+  NUM or[3]={0,0,0};//how do i initialize this array? (syntax)
+  NUM temp_p[3];
+  int verbosity = v->line->fc0->world->verbosity;
+
+  static HULL_VERTEX *voronoi_buf = 0;
+  static int voronoi_bufsiz = 0;
+
+  if(v->line->fc0->world->verbosity >= 5) 
+    printf("Entering photosphere hull_neighbors...\n");
+
+  if(v != v->line->start && v != v->line->end){
+    printf("Oops, photosphere_hull_neighbors got a non begin/end vertex (label %d) \n",v->label);
+    return 0;
+  }
+
+  /* Project the horde into the photospheric plane The projected
+   * vectors go into the vertices' scratch space. In the case of a
+   * horizonal plane, the effect should be to remove the z-coordinate.
+   */
+  if(v->line->fc0->world->verbosity>=5)
+    printf("hull_neighbors calling project_n_fill_photosphere...\n");
+
+  project_n_fill_photosphere(v, horde); /* in geometry.c, not
+					   nonlinear, only used vertex
+					   positions, not fluxel
+					   paths */
+
+  if(v->line->fc0->world->verbosity>=5)
+    printf("hull_neighbors_photosphere back from project_n_fill_photosphere...\n");
+
+
+  /* Grow the buffer if necessary. */
+  if(voronoi_bufsiz <= horde->n*2) {
+    voronoi_bufsiz = horde->n*4;
+
+    if(voronoi_buf)
+      localfree(voronoi_buf);
+    voronoi_buf = (HULL_VERTEX *)localmalloc((voronoi_bufsiz)*sizeof(HULL_VERTEX),MALLOC_VL);
+
+    if(!voronoi_buf) {
+      fprintf(stderr,"Couldn't get memory in hull_neighbors!\n");
+      exit(99);
+    } 
+
+  }
+
+  if(verbosity > 1) {
+    printf(".");
+    
+    if(verbosity >= 5)
+      printf("V%4d: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
+  }
+
+  /* Find the 2-D hull.  Don't want rejects. */
+  /*  hull_2d(HULL_VERTEX out,VERTEX list for neighbors,central v),
+      are they the same?; */
+  hull_2d_us(voronoi_buf, horde, v);
+
+  projmatrix(pm,or,v->line->fc0->world->photosphere.plane->normal); 
+  //pm is the rotation matrix to the plane perpendicular to the photosphere
+
+  for(i=0;i<horde->n;i++){ /* set the z-coord of the hull vertex */
+    /* use temp_p to find the derotated and de-translated position of
+       the hull point. copy this new position into the old position.*/
+    voronoi_buf[i].p[2]=0;
+    vec_mmult_3d(temp_p,pm,voronoi_buf[i].p);
+    sum_3d(temp_p,temp_p,v->x);
+    cp_3d(voronoi_buf[i].p,temp_p);
+  }
+  
+  if(horde->n==0) {
+    printf("VERTEX %d: hull_2d gave up! That's odd....\n",v->label);
+  }
+
+  if(verbosity >= 5){
+    printf("hull_neighbors_photosphere:  hull trimming gives:\n");
+    for(i=0;i<horde->n;i++) 
+      printf("%d ",((VERTEX *)(horde->stuff[i]))->label); fflush(stdout);
+    printf("\n");
+  }
+  
+  return voronoi_buf;
+}
+
+
+/**********************************************************************
+ * photosphere_vertex_update_neighbors 
+ * 
+ * Updates a begin/end vertex's neighbor list using
+ * gather_photosphere_neighbor_candidates followed by
+ * winnow_neighbor_candidates and hull_neighbors.
+ * 
+ * Returns the hull vertex list that is used in the final winnowing
+ * process, since it's needed for some of the force laws (see
+ * vertex_update_mag).  
+ */
+
+HULL_VERTEX *photosphere_vertex_update_neighbors(VERTEX *v, char global, int *n_ptr) {
+  //n is the final number of hull/neighbor vertices
+  DUMBLIST *dl;
+  HULL_VERTEX *hv;
+  int i,j;
+  //DUMBLIST *vn; //vertex neighbors
+  int verbosity = v->line->fc0->world->verbosity;
+
+  if(!v) {
+    fprintf(stderr,"Vertex_update_neighbors: null vertex ignored!\n");
+    return 0;
+  }
+
+   if(v != v->line->start && v != v->line->end){
+    printf("Oops, photosphere_vertex_update_neighbors got a non begin/end vertex (label %d) \n",v->label);
+    return 0;
+  }
+
+ if(v->line->fc0->world->photosphere.type != 1) {
+    printf("Oops, photosphere_vertex_update_neighbors got a vertex (label %d) that was not on a planar surface \n",v->label);
+    return 0;
+  }
+
+ //vn = &(v->neighbors);
+
+  dl = gather_photosphere_neighbor_candidates(v,global);
+
+
+  if(verbosity >= 3) {
+    printf("photosphere_vertex_update_neighbors: Vertex %d has %d candidates: ",v->label,dl->n);
+    if(verbosity >= 4)
+      for(i=0;i<dl->n;i++)
+	printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
+    printf("\n");
+  }
+
+  hv = photosphere_hull_neighbors(v, dl); /* save hv for return */
+  
+  if(verbosity >= 3) {
+    printf("Hull_neighbors returned %d neighbors: ",dl->n);
+    if(verbosity >= 4)
+      for(i=0;i<dl->n;i++) 
+	printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
+    printf("\n");
+  }
+
+  *n_ptr = dl->n;
+
+  return hv;
+}

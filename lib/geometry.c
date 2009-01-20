@@ -1004,6 +1004,9 @@ NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1){
  * The deluxe_dist accepts two points, which get filled with the 
  * points of closest approach of the two line segments.
  *
+ * Does a projection in the inverse sine to get the output
+ * distance. P0 and P1 are not projected.
+ *
  */
 NUM fl_segment_dist(VERTEX *v0, VERTEX *v1) {
   NUM P0[3],P1[3];
@@ -1270,8 +1273,10 @@ int intersection_2d(NUM *out, NUM *L1, NUM *L2) {
  * project_n_fill
  * 
  * Given a VERTEX and a DUMBLIST of VERTICES, project the DUMBLIST
- * down to 2-D using fl_segment_deluxe_dist to find the projected radius,
- * and fill the angle and radius fields of the members of the DUMBLIST.
+ * down to 2-D using fl_segment_deluxe_dist (closest approach of
+ * fluxels associated with vertices, not the vertices themselves) to
+ * find the projected radius, and fill the angle and radius fields of
+ * the members of the DUMBLIST.
  * 
  * Also accumulate the closest-real-approach distance between neighbors
  * and the current VERTEX.  By examining only neighbors that have been
@@ -1318,7 +1323,11 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
    
     v1 = (VERTEX *)((horde->stuff)[i]);
     
-    r = fl_segment_deluxe_dist(p0, p1, v, v1);
+    r = fl_segment_deluxe_dist(p0, p1, v, v1); /*This is where the
+						 non-linear projection
+						 is done. It is for r
+						 only, not for p0 and
+						 p1*/
 
     if((v->line->fc0->world->verbosity - (r>=0))>=6)
       printf("\nfl_segment_deluxe_dist returned %g for vertex %d\n",r,v1->label);
@@ -1350,10 +1359,16 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
 	crunch=1;
       }
       else {
-	scale_3d(v1->scr,v1->scr,r/len);
+	scale_3d(v1->scr,v1->scr,r/len); /*so scr is the vector of the
+					   nearest approach with a
+					   length of the inverese
+					   sin^2 projected distance
+					   that has been projected
+					   into a plane perpendicular
+					   to the v-fluxel.*/
 	
-	v1->a = ATAN2(v1->scr[1],v1->scr[0]);
-	v1->r = r;
+	v1->a = ATAN2(v1->scr[1],v1->scr[0]); //store angles
+	v1->r = r; //store non-linear projected distances.
       }
     }
     
@@ -1947,13 +1962,13 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   if(! horde->n) 
     return;
 
-  for(i=0;!w && i<horde->n; i++) 
+  for(i=0;!w && i<horde->n; i++) //go through each potential neighbor
     if( (((VERTEX **)(horde->stuff))[i])->line )
       w = (((VERTEX **)(horde->stuff))[i])->line->fc0->world;
   if(!w) {
     fprintf(stderr,"You're in trouble, guv! exiting (horde->n was %d)...\n",horde->n);
     exit(99);
-  }
+  } //somehow your potential neighbor was not connected to a fluxon
 
   // use passno to prevent multiple looks at the same candidate.
   passno = ++w->passno;
@@ -1968,15 +1983,15 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 
   /* always add the first eligible VERTEX in the list... */
   for(i=0;i<horde->n && 
-	( horde->stuff[i] == central_v ||                                 // skip the main vertex if present
-	  horde->stuff[i] == central_v->prev ||                           // skip the following segment if present
-	  horde->stuff[i] == central_v->next ||                           // skip the previous segment if present
-	  !( ((VERTEX *)(horde->stuff[i]))->next ) ||                     // skip endpoint vertices if present
+	( horde->stuff[i] == central_v ||              // skip the main vertex if present
+	  horde->stuff[i] == central_v->prev ||        // skip the following segment if present
+	  horde->stuff[i] == central_v->next ||        // skip the previous segment if present
+	  !( ((VERTEX *)(horde->stuff[i]))->next ) ||  // skip endpoint vertices if present
 	  plasmoid_conjugate( (VERTEX *)(horde->stuff[i]), central_v )
 	  );
-      i++) 
+      i++) //find first candidate
     ;
-  if(i<horde->n) {
+  if(i<horde->n) { //first look at this candidate and add it.
     ((VERTEX **)(horde->stuff))[i]->passno = passno;
     ws->stuff[0] = horde->stuff[i];
     ws->n = 1;
@@ -1985,7 +2000,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   } else {
     horde->n = 0;
     return;
-  }
+  }//will we ever remove it?
 
 
   /** Loop over the horde and check vertices as we go... **/
@@ -1999,12 +2014,12 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
     int  flag;
 
     // Check for skip conditions...
-    if(v->passno == passno ||                               // Already been here
-       v == central_v ||                                    // Skip ourselves if we encounter us
-       !v->next ||                                          // Must have a following segment to be valid
-       ( v->line==central_v->line &&                  // Several end conditions for same fluxon:
-	 ( v->next==central_v ||                            // Skip next segment
-	   v->prev==central_v ||                            // Skip previous segment
+    if(v->passno == passno ||                   // Already been here
+       v == central_v ||                        // Skip ourselves if we encounter us
+       !v->next ||                              // Must have a following segment to be valid
+       ( v->line==central_v->line &&            // Several end conditions for same fluxon:
+	 ( v->next==central_v ||                // Skip next segment
+	   v->prev==central_v ||                // Skip previous segment
 	   plasmoid_conjugate( v, central_v)
 	   )
 	 )
@@ -2015,14 +2030,15 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
       
       keep = 0;
 
-      /* Linear searches are slow, but not so bad -- there are generally under 10 */
-      /* elements in ws, so binary search probably isn't worth the effort.        */
+      /* Linear searches are slow, but not so bad -- there are
+       generally under 10 elements in ws, so binary search probably
+       isn't worth the effort.  */
       for(next_idx = 0; 
 	  next_idx < ws->n && 
 	    (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
 	  next_idx++ 
 	  )
-	;
+	;//not sure about this loop 
 
 
       /******************************
@@ -2687,3 +2703,418 @@ NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offse
 
   
   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**********************************************************************
+ * project_n_fill_photosphere
+ * 
+ * Similar to project_n_fill, but instead of using the fluxel to
+ * derive the plane, we use photosphere1. Also, there are no
+ * non-linear projections, and all distances are from vertices instead
+ * of fluxels.
+ *
+ * Given a VERTEX and a DUMBLIST of VERTICES, project the DUMBLIST
+ * down to 2-D using fl_segment_deluxe_dist to find the projected radius,
+ * and fill the angle and radius fields of the members of the DUMBLIST.
+ * 
+ * Also accumulate the closest-real-approach distance between neighbors
+ * and the current VERTEX.  By examining only neighbors that have been
+ * winnowed with the special metric, we risk missing the actual
+ * minimum distance -- but not very often.  Hopefully it won't lead to
+ * pathological evolution problems!
+ * 
+ */
+void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
+  int i;
+  NUM pm[9];
+  NUM X0[3];
+  //NUM p0[3], p1[3]; //points of closest approach (essentially v and v1)
+  NUM or[3]={0,0,0};//how do i initialize this array? (syntax)
+  NUM len, r;
+  VERTEX *v1;
+  char crunch = 0;
+
+  if(v->line->fc0->world->verbosity >= 5) 
+    printf("Entered project_n_fill_phototsphere... got a horde of %d candidates...\n",horde->n);
+    
+  if(v->line->fc0->world->verbosity >= 5) 
+    printf("calling projmatrix with (%g,%g,%g) and (%g,%g,%g)\n",or[0],or[1],or[2],v->line->fc0->world->photosphere.plane->normal[0],v->line->fc0->world->photosphere.plane->normal[1],v->line->fc0->world->photosphere.plane->normal[2]);
+
+  projmatrix(pm,or,v->line->fc0->world->photosphere.plane->normal); //pm is the projection matrix
+
+  if(v->line->fc0->world->verbosity >= 5)
+    printf("back\n");
+
+  v->r_cl = -1; /* Initialize closest-approach accumulator */
+
+  for(i=0;i<horde->n;i++) {
+
+    if(v->line->fc0->world->verbosity >= 5) {
+      printf("i=%d ",i);
+      fflush(stdout);
+    }
+
+   
+    v1 = (VERTEX *)((horde->stuff)[i]);
+
+    //p0 = v->x;
+
+    //p1 = v1->x;
+    
+    diff_3d(X0, v->x, v1->x); /*X0 is the line of closest approach
+			     between v and neighbor v1*/
+
+    r = norm_3d(X0); 
+
+    if(r<=0 || !finite(r)) { /*not sure what these circumstance would be*/
+      horde->stuff[i] = 0;
+      crunch=1;
+    }
+    else {
+
+      if(r<v->r_cl || v->r_cl < 0 ) /* Accumulate closest approach distance */
+	v->r_cl = r;
+      
+      mat_vmult_3d(v1->scr,pm,X0);
+      //v1->scr is X0 rotated to perpendicular to the photosphere.
+
+      len = norm_2d(v1->scr);      /* 2-D length of vector, should be
+				      the same as r because length is
+				      preserved for rotation
+				      matrices*/
+
+      if (len != r){
+	printf("Oops! len!=r in project_n_fill_photsphere, v %d, neighbor %d,len=%f,r=%f \n",v->label, v1->label,len,r);
+	printf("pm is ((%f,%f,%f),(%f,%f,%f),(%f,%f,%f)) \n",pm[0],pm[1],pm[2],pm[3],pm[4],pm[5],pm[6],pm[7],pm[8]);
+	
+      } /*else {
+	printf("len=r for neighbor %d \n",v1->label);
+	}*/
+
+      if(v->line->fc0->world->verbosity >= 5) 
+	printf("len=%g for vertex %d\n",len,v1->label);
+
+      if(len <= 0) {
+
+	if(v->line->fc0->world->verbosity == 4) 
+	  printf("len=%g for vertex %d\n",len,v1->label);
+
+	horde->stuff[i] = 0;
+	crunch=1;
+      }
+      else {
+	//scale_3d(v1->scr,v1->scr,r/len); /* not this b/c should be the same.*/
+	
+	v1->a = ATAN2(v1->scr[1],v1->scr[0]); //accumulate angles
+	v1->r = r; //accumulate non-linear projected distance.
+      }
+    }
+    
+  }
+
+  /* If some of the items were invalidated, crunch down the horde... */
+  if(crunch) {
+    int j;
+    for(i=j=0;i<horde->n;i++) {
+      for(;i<horde->n && !horde->stuff[i]; i++)
+	;
+      if(i<horde->n)
+	horde->stuff[j++] = horde->stuff[i];
+    }
+    horde->n = j;
+  }
+}
+ 
+
+/**********************************************************************
+ * The only difference for the photosphere version is that it doesn't
+ * skip end vertices.
+ */
+void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
+  int n = horde->n;
+  int horde_i;
+  long passno;
+  WORLD *w = 0;
+  int i,j;
+
+  if(ws==0) {
+    ws = new_dumblist();
+    dumblist_grow(ws,16);
+  }
+
+  if(! horde->n) 
+    return;
+
+  for(i=0;!w && i<horde->n; i++) //go through each potential neighbor
+    if( (((VERTEX **)(horde->stuff))[i])->line )
+      w = (((VERTEX **)(horde->stuff))[i])->line->fc0->world;
+  if(!w) {
+    fprintf(stderr,"You're in trouble, guv! exiting (horde->n was %d)...\n",horde->n);
+    exit(99);
+  } //somehow your potential neighbor was not connected to a fluxon
+
+  // use passno to prevent multiple looks at the same candidate.
+  passno = ++w->passno;
+
+  /* Set our output list to zero length */
+  ws->n = 0;
+
+  /* Nothing in the horde?  We're done! */
+  if(horde->n == 0)
+    return;
+
+
+  /* always add the first eligible VERTEX in the list... */
+  for(i=0;i<horde->n && 
+	( horde->stuff[i] == central_v ||              // skip the main vertex if present
+	  plasmoid_conjugate( (VERTEX *)(horde->stuff[i]), central_v )
+	  );
+      i++) //find first candidate
+    ;
+  if(i<horde->n) { //first look at this candidate and add it.
+    ((VERTEX **)(horde->stuff))[i]->passno = passno;
+    ws->stuff[0] = horde->stuff[i];
+    ws->n = 1;
+    hull[0].open = 1;
+    perp_bisector_2d(hull[0].bisector, 0, ((VERTEX *)(horde->stuff[i]))->scr);
+  } else {
+    horde->n = 0;
+    return;
+  }//will we ever remove it?
+
+
+  /** Loop over the horde and check vertices as we go... **/
+  for(horde_i=1; horde_i<horde->n; horde_i++) {
+    VERTEX *v =  ((VERTEX **)(horde->stuff))[horde_i];
+    VERTEX *nv, *pv;
+    static HULL_VERTEX scrhv;
+    HULL_VERTEX *nh, *ph, *scr;
+    int next_idx;
+    char keep;
+    int  flag;
+
+    // Check for skip conditions...
+    if(v->passno == passno ||                   // Already been here
+       v == central_v ||                        // Skip ourselves if we encounter us
+       ( v->line==central_v->line &&            // Several end conditions for same fluxon:
+	 ( v->next==central_v ||                // Skip next segment
+	   v->prev==central_v ||                // Skip previous segment
+	   plasmoid_conjugate( v, central_v)
+	   )
+	 )
+       ) {   
+      // Skip (do nothing; just move on to the next candidate)
+    } else {
+      v->passno = passno; // Mark it processed (avoid duplicated effort)
+      
+      keep = 0;
+
+      /* Linear searches are slow, but not so bad -- there are
+       generally under 10 elements in ws, so binary search probably
+       isn't worth the effort.  */
+      for(next_idx = 0; 
+	  next_idx < ws->n && 
+	    (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
+	  next_idx++ 
+	  )
+	;//not sure about this loop 
+
+
+      /******************************
+       * Now set nv to the next vertex after this one and pv to the previous one.
+       * next_idx is the true insertion point if this element is kept.
+       */
+
+      if( nv->a < v->a ) {
+	/* We went off the end... */
+
+	next_idx = ws->n;
+	nv = ((VERTEX **)(ws->stuff))[0];
+	nh = hull;
+	pv = ((VERTEX **)(ws->stuff))[ws->n-1];
+	ph = hull + ws->n-1;
+      } else {
+	/* We didn't... */
+	if(next_idx==0) {
+	  nh = hull;
+	  pv = ((VERTEX **)(ws->stuff))[ws->n-1];
+	  ph = hull + ws->n-1;
+	} else {
+	  nh = hull + next_idx;
+	  pv = ((VERTEX **)(ws->stuff))[next_idx - 1];
+	  ph = hull + next_idx-1;
+	}
+      }
+      
+      flag = check_hullpoint(v, pv,ph, nv,nh, &scrhv);
+
+      if(flag) {
+	/* Make sure we have room in the workspace */
+	if(ws->size <= ws->n)
+	  dumblist_grow(ws, ws->size * 1.5 + 10);
+
+	/* Make room in the workspace dumb list and the hull list */
+	for( j = ws->n; j>next_idx; j--){
+	  ws->stuff[j] = ws->stuff[j-1];
+	  hv_cp(hull+j, hull+j-1);
+	}
+
+	ws->n++;
+	
+	/* Set the insertion-point values */
+	ws->stuff[next_idx] = v;
+	hv_cp(hull+next_idx, &(scrhv));
+
+	hull[next_idx].open = ( flag>0 && (flag & 1) ); /* logical && and bitwise & */
+	hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open = 
+	  ( flag>0 && (flag & 2) ); /* logical && and bitwise & */
+	
+	/**************************
+	 * Now that we've put the new guy in, make sure he doesn't invalidate
+         * his neighbors on the prev side...
+         */
+	{
+	  int n, p, pp, nn, nnn, check_flag;
+
+	  n = next_idx;
+	  p = n; MOD_DEC(p, ws->n);
+	  pp= p; MOD_DEC(pp, ws->n);
+	  nn = n; MOD_INC(nn, ws->n);
+	  nnn=nn; MOD_INC(nnn,ws->n);
+
+	  /* Walk backward until we find a still-keep-worthy vertex */
+	  while( p != n && 
+		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]), 
+						  (VERTEX *)(ws->stuff[pp]), hull + pp, 
+						  (VERTEX *)(ws->stuff[n]),  hull + n,
+						  hull + p))
+		 ) {
+
+	    p=pp;
+	    MOD_DEC(pp, ws->n);
+	  }
+
+	  hull[p].open = (check_flag > 0) && (check_flag & 1);
+	  hull[pp].open = (check_flag > 0) && (check_flag & 2);
+
+	  /* walk forward until we find a still-keep-worthy vertex */
+	  while( n != p &&
+		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[nn]),
+						  (VERTEX *)(ws->stuff[n]),  hull + n,
+						  (VERTEX *)(ws->stuff[nnn]), hull + nnn,
+						  hull+nn
+						  ) )
+		 ) {
+
+	    nn=nnn;
+	    MOD_INC(nnn, ws->n);
+	  }
+
+	  hull[nn].open = (check_flag > 0) && (check_flag & 1);
+	  hull[n].open = (check_flag > 0) && (check_flag & 2);
+
+	  /* Now p is the first keepworthy vertex, walking backward from n, and */
+	  /* nn is the first keepworthy vertex, walking forward from n.         */
+	  /* Crunch down the list... */
+	  {
+
+	    int ii,jj, diff;
+	    
+	    if( p <= n-1 ) {
+	      if( nn <= n-1 ) {
+
+		// ...*****...|.....  case
+		for(ii=0, jj=nn; jj<=p; jj++,ii++) {
+		  hv_cp( hull+ii, hull+jj );
+		  ws->stuff[ii] = ws->stuff[jj];
+		}
+		hv_cp( hull+ii, hull +n );
+		ws->stuff[ii] = ws->stuff[n];
+		ii++;
+
+	      } else {
+
+		// *****...|...**** case
+
+		ii=p+1;
+		if(ii == n) {
+		  ii++;
+		} else {
+		  hv_cp( hull + ii, hull + n );
+		  ws->stuff[ii] = ws->stuff[n];
+		  ii++;
+		}
+		if(ii<nn) {
+		  for( jj=nn; jj < ws->n; ii++,jj++) {
+		    hv_cp(hull + ii, hull + jj);
+		    ws->stuff[ii] = ws->stuff[jj];
+		  }
+		} else if(ii==nn) {
+		  ii = ws->n;
+		}
+	      }
+	    } else {
+	      
+	      // ....|...****.. case
+	      if(n>0) {
+		hv_cp(hull, hull+n);
+		ws->stuff[0] = ws->stuff[n];
+	      }
+	      ii=1;
+	      
+	      if( nn>1 ) {
+		for( jj=nn; jj<=p; ii++, jj++) {
+		  hv_cp( hull + ii, hull + jj );
+		  ws->stuff[ii] = ws->stuff[jj];
+		}
+	      } else {
+		ii= p + 1;
+	      }
+	      
+	    }/* end of case testing */
+	    ws->n = ii;
+
+	  } /* end of crunching convenience block */
+	} /* end of neighbor-testing convenience block */
+      } else {
+	/* no keeping -- just ignore this point and start the next loop */
+      }
+    } /* end of non-duplication test block */
+  } /* end of horde loop */
+
+  /* Calculate the (more expensive) true-atan angles for the hull points and for the 
+   * actual neighbors, since there are so few of them.
+   */
+
+  for(  i=0; i<ws->n; i++ ) {
+    VERTEX *vv = ((VERTEX **)(ws->stuff))[i];
+
+    if(hull[i].open) {
+      VERTEX *vn = ((VERTEX **)(ws->stuff))[MOD_NEXT(i,ws->n)];
+      hull[i].a_r = atan2(vn->scr[1],vn->scr[0]) - PI/2;
+      hull[i].a_l = atan2(vv->scr[1],vv->scr[0]) + PI/2;
+    } else {
+      hull[i].a_r = hull[i].a_l = atan2(hull[i].p[1],hull[i].p[0]);
+    }
+
+    vv->a = atan2(vv->scr[1],vv->scr[0]);
+    horde->stuff[i] = vv;
+  }
+  horde->n = i;
+}
+
+

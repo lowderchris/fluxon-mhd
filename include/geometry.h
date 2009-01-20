@@ -130,8 +130,14 @@ int find_neighbors_from_list(VERTEX *tp,
 
 
 /* The a_left and a_right differ when the point is open... */
+
+/* Generally you only need 2 points for the hull position because all
+   are projected onto a perpendicular plane, but I changed it to 3
+   because of the hull vertices on the photosphere specifically. For
+   the regular relaxing code, it should only use the first two
+   coordinates. */
 typedef struct HULL_VERTEX {
-  NUM p[2];  /* point coordinates */
+  NUM p[3];  /* point coordinates */
   NUM a_l;   /* absolute point angle when seen on left */
   NUM a_r;   /* absolute point angle when seen on right */
   NUM bisector[3]; /* bisector line description -- cached here for use later */
@@ -151,8 +157,13 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global);
 NUM interpolate_lin_3d( POINT3D x, NUM p[12], NUM val[4], int n);
 NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset);
 NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset);
+/********************************************************************** 
+ *Photosphere only functions
+ */
+void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde);
+void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v);
 
-
+/**********************************************************************/
 
 NUM atan2_oct(NUM x, NUM y);
 #define ATAN2 atan2_oct

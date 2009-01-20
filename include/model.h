@@ -124,5 +124,14 @@ void fl_b_tied_inject(VERTEX *v);
 void fl_b_open(VERTEX *v);
 void fl_b_plasmoid(VERTEX *v);
 
+/**********************************************************************
+ * Photosphere hull handlers and names (not part of relaxing code)
+ */
+
+DUMBLIST *gather_photosphere_neighbor_candidates(VERTEX *v, char global);
+HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde);
+HULL_VERTEX *photosphere_vertex_update_neighbors(VERTEX *v, char global, int *n_ptr);
+
+
 #endif /* overall file include */
 

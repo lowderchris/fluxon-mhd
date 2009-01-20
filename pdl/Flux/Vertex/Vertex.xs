@@ -17,7 +17,8 @@
  *  prev               Returns the prevoius vertex on the fluxon - obviated by tied-hash
  *  _adjacent	       Returns a perl list containing either the neighbors or nearby dumblist.
  *  add_vertex_after   Constructs a VERTEX and adds it after the specified one.
- *  hull               Returnns the projected hull of the vertex as a 7xN PDL
+ *  hull               Returns the projected hull of the vertex as a 7xN PDL
+ *  photohull          Returns the real hull of the photospheric vertex as a 3xN PDL
  *  projmatrix         Returns the projection matrix used for hull, as a 3x3 PDL
  *  proj_neighbors     Calls vertex_update_neighbors.
  *  reconnect          Forces reconnection with another vertex
@@ -271,6 +272,48 @@ CODE:
    *(d++) = hull_verts[i].a_r;
  }
  RETVAL = NEWSV(545,0); /* 545 is arbitrary tag */
+ PDL->SetSV_PDL(RETVAL,p);
+OUTPUT:
+ RETVAL
+
+SV *
+photohull(svrt,global=0)
+SV *svrt
+char global
+PREINIT:
+ VERTEX *v;
+ pdl *p;
+ HULL_VERTEX *hull_verts;
+ PDL_Long dims[2];
+ int i;
+ int n = 0;
+ PDL_Double *d;
+CODE:
+ /*********************************************
+  * hull - return the Voronoi hull of a vertex 
+  * on the photosphere
+  */
+ v = SvVertex(svrt,"Flux::Vertex::hull",1); /**/
+ hull_verts = FLUX->photosphere_vertex_update_neighbors(v, global, &n);
+ 
+ /* Now stuff the hull vertices into the first PDL. */
+ p = PDL->create(PDL_PERM);
+ dims[0] = 4;
+ dims[1] = n;
+ PDL->setdims(p,dims,2);	
+ p->datatype = PDL_D;
+ PDL->allocdata(p);
+ PDL->make_physical(p);
+ d =  p->data;
+
+ for(i=0;i<n; i++) {
+
+   *(d++) = hull_verts[i].p[0];
+   *(d++) = hull_verts[i].p[1];
+   *(d++) = hull_verts[i].p[2];
+   *(d++) = (double)(hull_verts[i].open);
+ }
+ RETVAL = NEWSV(545,0); /* 545 is arbitrary tag */ /**/
  PDL->SetSV_PDL(RETVAL,p);
 OUTPUT:
  RETVAL
