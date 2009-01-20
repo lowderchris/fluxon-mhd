@@ -2507,9 +2507,14 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
 
     vertex_clear_neighbors(v);
     vertex_clear_neighbors(v->prev);
+    vertex_clear_neighbors(v->next);
 
     Fnew->end->prev = lastv;
     lastv->next = Fnew->end;
+    
+    vertex_clear_neighbors(lastv);
+    vertex_clear_neighbors(lastv->next);
+    vertex_clear_neighbors(lastv->prev);
     
     Fnew->v_ct = 2 + (ilast - ifirst);
     
@@ -2613,6 +2618,10 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     vertex_clear_neighbors(v2);
     vertex_clear_neighbors(v1->next);
     vertex_clear_neighbors(v2->next);
+    if(v1->prev)
+      vertex_clear_neighbors(v1->prev);
+    if(v2->prev)
+      vertex_clear_neighbors(v2->prev);
     
     /* Now clean up the fluxons and the back-to-fluxon links in the individual vertices. */
     

@@ -326,6 +326,7 @@ FLUX_CONCENTRATION *new_flux_concentration(
   fc->locale_radius = 0; 	/* notional size of the flux concentration... */
   
   fc->bound = 0; 
+  fc->pbound = 0;
 
   clear_links(&(fc->links));
   fc->links.sum = fc->flux;

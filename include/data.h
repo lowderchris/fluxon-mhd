@@ -177,8 +177,9 @@ typedef struct FLUX_CONCENTRATION {
   NUM x[3];                  /* Location of the concentration */
   NUM locale_radius;         /* Radius of the concentration's neighborhood */
   
-  long passno;                /* Multiple-pass detection for hull calculation */
+  long passno;               /* Multiple-pass detection for hull calculation */
   void (*bound)(VERTEX *v);  /* Boundary condition routine */
+  void (*pbound)(VERTEX *v); /* Plasma boundary condition routine */
 } FLUX_CONCENTRATION;
 
 typedef struct PLANE {
