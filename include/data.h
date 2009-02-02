@@ -106,7 +106,7 @@ typedef struct VERTEX {
      /* Force accumulators are filled by the force functions in physics.c. */
      /* As of v3, the vertex pseudoforce can be tracked indepenently of the */
      /* plasma force that is localized at the vertex.  For the purpose of relaxation */
-     /* step sizing, the f_vp_ps magnitude is added to f_v_tot, not to a separate variable. */
+     /* step sizing, the f_v_ps magnitude is added to f_v_tot, not to a separate variable. */
   POINT3D f_v;                  /* Stores force on the vertex */
   POINT3D f_v_ps;               /* vertex pseudoforce - used for vertex distribution */
   POINT3D f_s;                  /* Stores force on the following segment */
