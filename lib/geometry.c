@@ -31,7 +31,6 @@
 #define NAN (nan("NAN"))
 #endif
 
-
 char *code_info_geometry="%%%FILE%%% (new unsorted hull routine)";
 
 /**********************************************************************
@@ -1820,21 +1819,30 @@ int check_hullpoint(VERTEX *v,
   /* Check for identity -- very easy fix if we're identical */
   // (Why is this here?  The passno mechanism, below, should prevent ever triggering it)
   if(v==pv || v==nv) {
-    fprintf(stderr,"Hmmm, check_hullpoint duplication check activated, pv:%d, v:%d, nv:%d.  This could be a problem -- see code in geometry.c...\n",pv->label,v->label,nv->label);
+    if (v->line->fc0->world->verbosity >= 1) {
+    fprintf(stderr,"Hmmm, check_hullpoint duplication check activated, pv:%d, v:%d, nv:%d. Could be nearly cospatial.\n",pv->label,v->label,nv->label);
+    /* This gets caught in for the third horde vertex. The problem
+       initially occured in the second horde bvertex where the first
+       and second horde vertices were nearly cospatial. The colinear
+       check didn't work correcly in that case because both sides
+       needed to be open.*/
+    }
     return 0;
   }
 
   /* Check for colinearity -- easy fix if we're colinear */
   /* The colinear_keep flag gets return value that will be given if
-   * the vertex turns out to be open - this is sort of the opposite sense 
-   * of the return value.
+   * the vertex turns out to be open - this is sort of the opposite
+   * sense of the return value.
    */
 
   { 
     int colinear_keep = 0;
     NUM eps = EPSILON * v->r;
+    /* if the angle between them in small (sin(theta) near zero,
+       cos(theta) is positive) */
     if( fabs( cross_2d(v->scr, pv->scr) ) < eps && (inner_2d(v->scr, pv->scr) > 0) ) {
-      if(  v->r >= pv->r  ) {
+      if(  pv->r >= pv->r  ) {
 	return 0;
       }
       else
@@ -1882,7 +1890,7 @@ int check_hullpoint(VERTEX *v,
   } 
   /**** Open on previous side ? ****/
   else if(     cross_2d( pv->scr,  v->scr) <= 0) {
-    // Noncolinear and opern on prev side -- keep
+    // Noncolinear and open on prev side -- keep
     open = 2;
   }
   
@@ -1898,7 +1906,11 @@ int check_hullpoint(VERTEX *v,
       return 0;
   }
   
-  
+  /* are the points the same? If so, reject it. */
+  /*if (scr->p[0] == point[0] && scr->p[1] == point[1]) {
+    return 0;
+    }*/
+
   /*** If we get here we're keeping, so we have to copy the ***/
   /*** intersection point into the previous hull_vertex.    ***/
   phv->p[0] = point[0];
@@ -1951,7 +1963,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   int n = horde->n;
   int horde_i;
   long passno;
-  WORLD *w = 0;
+   WORLD *w = 0;
   int i,j;
 
   if(ws==0) {
@@ -1962,13 +1974,18 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   if(! horde->n) 
     return;
 
-  for(i=0;!w && i<horde->n; i++) //go through each potential neighbor
+  /*go through each potential neighbor and make sure it is in the
+    world still. Old problem that is now fixed, can do it an easier
+    way now. 
+  for(i=0;!w && i<horde->n; i++)
     if( (((VERTEX **)(horde->stuff))[i])->line )
-      w = (((VERTEX **)(horde->stuff))[i])->line->fc0->world;
+    w = (((VERTEX **)(horde->stuff))[i])->line->fc0->world;*/
+
+  w = (((VERTEX **)(horde->stuff))[0])->line->fc0->world;
   if(!w) {
     fprintf(stderr,"You're in trouble, guv! exiting (horde->n was %d)...\n",horde->n);
     exit(99);
-  } //somehow your potential neighbor was not connected to a fluxon
+  } 
 
   // use passno to prevent multiple looks at the same candidate.
   passno = ++w->passno;
@@ -1991,16 +2008,19 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	  );
       i++) //find first candidate
     ;
-  if(i<horde->n) { //first look at this candidate and add it.
+
+  /*first look at this candidate and add it, it will be removed later
+    if it is not really a neighbor. */
+  if(i<horde->n) { 
     ((VERTEX **)(horde->stuff))[i]->passno = passno;
     ws->stuff[0] = horde->stuff[i];
     ws->n = 1;
-    hull[0].open = 1;
+    hull[0].open = 1; //because there are no others yet
     perp_bisector_2d(hull[0].bisector, 0, ((VERTEX *)(horde->stuff[i]))->scr);
   } else {
     horde->n = 0;
     return;
-  }//will we ever remove it?
+  }
 
 
   /** Loop over the horde and check vertices as we go... **/
@@ -2013,7 +2033,9 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
     char keep;
     int  flag;
 
-    // Check for skip conditions...
+    /* Check for skip conditions. This has the same conditions as
+       above, but it rejects ws->stiff[0] because that passno has
+       already been updated. */
     if(v->passno == passno ||                   // Already been here
        v == central_v ||                        // Skip ourselves if we encounter us
        !v->next ||                              // Must have a following segment to be valid
@@ -2033,12 +2055,16 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
       /* Linear searches are slow, but not so bad -- there are
        generally under 10 elements in ws, so binary search probably
        isn't worth the effort.  */
+      /* Sort through the current candidates to find the first one
+	 that has a larger angle than v, this candidate will be nv. nv
+	 is assigned here. This loop determines next_idx which is also
+	 the index for nv.*/
       for(next_idx = 0; 
 	  next_idx < ws->n && 
 	    (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
 	  next_idx++ 
 	  )
-	;//not sure about this loop 
+	;
 
 
       /******************************
@@ -2047,20 +2073,21 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
        */
 
       if( nv->a < v->a ) {
-	/* We went off the end... */
-
+	/* We went off the end, so put ti at the end */
+	
 	next_idx = ws->n;
 	nv = ((VERTEX **)(ws->stuff))[0];
 	nh = hull;
 	pv = ((VERTEX **)(ws->stuff))[ws->n-1];
 	ph = hull + ws->n-1;
       } else {
-	/* We didn't... */
+	/* We didn't, it is at the beginning */
 	if(next_idx==0) {
 	  nh = hull;
 	  pv = ((VERTEX **)(ws->stuff))[ws->n-1];
 	  ph = hull + ws->n-1;
 	} else {
+	  /* It is somewhere in the middle */
 	  nh = hull + next_idx;
 	  pv = ((VERTEX **)(ws->stuff))[next_idx - 1];
 	  ph = hull + next_idx-1;
@@ -2074,7 +2101,9 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	if(ws->size <= ws->n)
 	  dumblist_grow(ws, ws->size * 1.5 + 10);
 
-	/* Make room in the workspace dumb list and the hull list */
+	/* Make room in the workspace dumb list and the hull
+	   list. backward loop, search backward and shift everything
+	   +1 until we get to next_idx. */
 	for( j = ws->n; j>next_idx; j--){
 	  ws->stuff[j] = ws->stuff[j-1];
 	  hv_cp(hull+j, hull+j-1);
@@ -2097,11 +2126,11 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	{
 	  int n, p, pp, nn, nnn, check_flag;
 
-	  n = next_idx;
-	  p = n; MOD_DEC(p, ws->n);
-	  pp= p; MOD_DEC(pp, ws->n);
-	  nn = n; MOD_INC(nn, ws->n);
-	  nnn=nn; MOD_INC(nnn,ws->n);
+	  n = next_idx;              //n
+	  p = n; MOD_DEC(p, ws->n);  //n-1
+	  pp= p; MOD_DEC(pp, ws->n); //n-2
+	  nn = n; MOD_INC(nn, ws->n);//n+1
+	  nnn=nn; MOD_INC(nnn,ws->n);//n+2
 
 	  /* Walk backward until we find a still-keep-worthy vertex */
 	  while( p != n && 
@@ -2112,7 +2141,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 		 ) {
 
 	    p=pp;
-	    MOD_DEC(pp, ws->n);
+	    MOD_DEC(pp, ws->n); //decrement p and pp
 	  }
 
 	  hull[p].open = (check_flag > 0) && (check_flag & 1);
@@ -2128,15 +2157,18 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 		 ) {
 
 	    nn=nnn;
-	    MOD_INC(nnn, ws->n);
+	    MOD_INC(nnn, ws->n); //increment nn and nnn
 	  }
 
 	  hull[nn].open = (check_flag > 0) && (check_flag & 1);
 	  hull[n].open = (check_flag > 0) && (check_flag & 2);
 
-	  /* Now p is the first keepworthy vertex, walking backward from n, and */
-	  /* nn is the first keepworthy vertex, walking forward from n.         */
-	  /* Crunch down the list... */
+	  /* Now p is the first keepworthy vertex, walking backward
+	     from n, and nn is the first keepworthy vertex, walking
+	     forward from n. Crunch down the list. */
+	  /* Case nomeclature: .=no longer neighbor, *=true
+	     neighbor. the line represents each vertex currently in
+	     ws.*/
 	  {
 
 	    int ii,jj, diff;
@@ -2144,7 +2176,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	    if( p <= n-1 ) {
 	      if( nn <= n-1 ) {
 
-		// ...*****...|.....  case
+		// ...n*****p...|.....  case
 		for(ii=0, jj=nn; jj<=p; jj++,ii++) {
 		  hv_cp( hull+ii, hull+jj );
 		  ws->stuff[ii] = ws->stuff[jj];
@@ -2155,7 +2187,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 
 	      } else {
 
-		// *****...|...**** case
+		// *****p...|...n**** case
 
 		ii=p+1;
 		if(ii == n) {
@@ -2176,7 +2208,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	      }
 	    } else {
 	      
-	      // ....|...****.. case
+	      // ....|...n****p.. case
 	      if(n>0) {
 		hv_cp(hull, hull+n);
 		ws->stuff[0] = ws->stuff[n];
