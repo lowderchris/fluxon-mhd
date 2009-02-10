@@ -255,6 +255,7 @@ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   VERTEX *tp;				/* new vertex name */
   WORLD *w;
   int i;
+  static int v_ct = 0;
 
   if(!fluxon || !fluxon->fc0 || !fluxon->fc0->world) {
     fprintf(stderr,"new_vertex: got a bad fluxon, flux concentration, or world! No new vertex for you!\n");
@@ -293,7 +294,10 @@ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
 
   clear_links(&(tp->world_links));
 
-  w->vertices = tree_binsert( w->vertices, tp, v_lab_of, v_ln_of );
+  w->vertices = tree_insert( w->vertices, tp, v_lab_of, v_ln_of );
+  if(v_ct++ % 100 == 0) {
+    w->vertices = tree_balance(w->vertices, v_lab_of, v_ln_of);
+  }
 
   return tp;
 }
