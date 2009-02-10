@@ -156,7 +156,8 @@ int footpoint_action(WORLD *world, char *s) {
 	     */
   case 'N': /* NEW  <label> <x> <y> <z> <flux>
 	     */
-
+    
+    fprintf(stderr,"new\n");
     /* Initialize the scan string, if necessary */
     if(!*mscan) {
       sprintf(mscan,"%%*s %%ld %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
@@ -242,6 +243,7 @@ int footpoint_action(WORLD *world, char *s) {
     }
 
     n = sscanf(s,lscan, &fl0, &vl0, &vl1, &l0, &l1, &flux0);
+
     if(n != 6) {
       // Fall back to older form 
 
@@ -260,6 +262,7 @@ int footpoint_action(WORLD *world, char *s) {
     }
 
     if(n != 0) {
+      //fprintf(stderr,"We are at another line now %ld\n",fl0); //debugging
 
       if(fl0 <= -11 || fl0 >0) {
 	FLUX_CONCENTRATION *fc0, *fc1;
