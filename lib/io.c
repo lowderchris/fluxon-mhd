@@ -156,8 +156,6 @@ int footpoint_action(WORLD *world, char *s) {
 	     */
   case 'N': /* NEW  <label> <x> <y> <z> <flux>
 	     */
-    
-    fprintf(stderr,"new\n");
     /* Initialize the scan string, if necessary */
     if(!*mscan) {
       sprintf(mscan,"%%*s %%ld %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
@@ -858,6 +856,34 @@ int footpoint_action(WORLD *world, char *s) {
 WORLD *read_world(FILE *file, WORLD *a) {
   char *s;
   int error = 0;
+  int seekable = 0;
+  int reporting = 0;
+  long startpos;
+  long endpos = 0;
+  long last_report = 0;
+  long pos;
+
+  // Check if it's seekable
+  startpos = ftell(file);
+  if(startpos >= 0) {
+    if(fseek(file, startpos, SEEK_SET) >= 0) {
+      seekable = 1;
+    }
+  }
+
+  // If seekable, scan ahead to find the end of the file
+  if(seekable) {
+    fseek(file, 0, SEEK_END);
+    endpos = ftell(file);
+    fseek(file, startpos, SEEK_SET);
+  }
+
+  // Report progress on files greater than a megabyte
+  if(seekable && (endpos - startpos > 1024*1024)) {
+    printf("FLUX: Reading %g MB...\n",(double)(endpos-startpos)/1024/1024);
+    reporting = 1;
+    last_report = startpos;
+  }
   
   do{
     if( a == NULL ) {
@@ -867,9 +893,24 @@ WORLD *read_world(FILE *file, WORLD *a) {
     if(s = next_line(file)) {
       error = footpoint_action(a, s);
     }
+
+    if(seekable && reporting) {
+      pos = ftell(file);
+      if(last_report==startpos || (pos - last_report >= 1024 * 100)) {
+	printf("\r%4.2f%% completed (%5.2f MB), %d fluxons, %d vertices  ",100 * (double)(pos - startpos)/(double)(endpos - startpos), (double)(pos - startpos) / 1024 / 1024, a->lines->all_links.n, a->vertices->world_links.n);
+	fflush(stdout);
+	last_report = pos;
+      }
+    }
+    
   } while (s && !error);
+
+  if(seekable && reporting) {
+    printf("done\n");
+  }
   
   world_update_ends(a);
+  a->vertices = tree_balance(a->vertices, v_lab_of, v_ln_of);
 
   world_check(a);
 

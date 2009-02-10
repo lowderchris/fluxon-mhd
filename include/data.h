@@ -33,6 +33,10 @@
 
 #include <stdlib.h>
 
+/* MD5 hashing is now used for new VERTEX ID's CED 10-Feb-2009 */
+#include <time.h>
+#include <unistd.h>
+
 /**********************************************************************
  * Data structures
  * 
@@ -309,7 +313,9 @@ const char *world_state_name(WORLD *a);
 
 void barf(int barf_on_op, char *where);
 
-long new_label(long label);
+long new_label(long request);
+long new_vertex_label(long request);
+long hash_vertex_label(long request, WORLD *w);
 
 /* Offsets defined here... */
 static const FLUXON f__samp;

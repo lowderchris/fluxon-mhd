@@ -1,3 +1,9 @@
+10-Feb-2009 [cd]
+	    * new_vertex generates random vertex IDs to support very large arrays -- 
+	      sequential ID generation is pessimal for binary-tree insertion.
+	      new_vertex also only balances the tree once every thousand vertices.  
+	      This should probably be matched with an explicit tree-balancing operation
+	      sprinkled around after most new-vertex operations, but is not (yet).
 20-Jan-2009 [lr]
 	    Added several routines in model.c and geometry.c to handle calculating the hull of a begin/end vertex on the photosphere. All the routines are all the bottom, and are not part of the regular relaxation step. They are only called through PDL ($v->photohull). Also added to vertex.xs to impliment this.
 	    incremented the FLUX_CORE_VERSION to 17 in fluxperl.h

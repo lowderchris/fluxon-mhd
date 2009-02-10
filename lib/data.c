@@ -172,6 +172,38 @@ long new_vertex_label(long request) {
   return out;
 }
 
+static int randomized = 0;
+long hash_vertex_label(long request, WORLD *w) {
+  long new_label;
+  long count = 0;
+
+  if(randomized == 0) {
+    randomized = 1;
+    srandomdev();
+  }
+
+  if(w==0)
+    return new_vertex_label(request);
+
+  do {
+
+    new_label = random() & 0x7fffffff;
+
+  } while( tree_find( w->vertices, new_label, v_lab_of, v_ln_of ) && count < 1000);
+
+  if(count>=1000) {
+    fprintf(stderr,"Hey! hash_vertex_label gave up after 1000 tries.  I give up!\n");
+    exit(123);
+  }
+  // probably not too smart -- md5 will fill up the space reasonably quickly - but what the heck.
+  if(new_label > max_vertex_label)
+    max_vertex_label = new_label;
+
+  return new_label;
+}
+      
+    
+
 /***********************************************************************
  * new_fluxon 
  * Creates a new FLUXON data structure given the flux, begin and end
@@ -286,7 +318,7 @@ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   tp->b_mag = 0;
   tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
 
-  tp->label = new_vertex_label(label);
+  tp->label = hash_vertex_label(label, fluxon->fc0->world);
   
   tp->rho = 0;
   tp->p[0] = tp->p[1] = tp->p[2] = 0;
@@ -781,7 +813,7 @@ void unlink_vertex(VERTEX *v) {
     for(root=w->vertices;
 	root && ((LINKS *)(root+v_ln_of))->up; 
 	root=((LINKS *)(root+v_ln_of))->up)
-      printf("WHOA!  Normalizing world root in unlink_vertex -- looks crazy from here!\n");
+      printf("WHOA!  Normalizing world root in unlink_vertex -- looks crazy from here!  Walking upwards...\n");
       ;
     v->line->fc0->world->vertices = root;
     
@@ -1416,7 +1448,7 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
       break; /* Item is already in tree... */
     else {
       /* Item is not already in tree but label is not unique. */
-      fprintf(stderr,"tree_insert: Assertion failed!  label %ld(%ld) is not unique! Proceeding anyway!\n(Casey Jones, you're in trouble!)\n",foo_label,node_label);
+      fprintf(stderr,"tree_insert: Hey! Label %ld(%ld) is not unique! Proceeding anyway, but this is a real problem for you.\n");
 
       if(foo_links->left == NULL) {
 	foo_links->left = item;
