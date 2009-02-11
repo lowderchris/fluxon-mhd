@@ -179,7 +179,7 @@ long hash_vertex_label(long request, WORLD *w) {
 
   if(randomized == 0) {
     randomized = 1;
-    srandomdev();
+    srandom( getpid() * time(NULL) );
   }
 
   if(w==0)
