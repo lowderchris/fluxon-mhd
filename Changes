@@ -1,3 +1,5 @@
+6-Mar-2009[lr]
+	-changed the global update force. Old way is still there and still works with the '1' global number. Simple relaxer now uses -1 on the first go that does a fast global neighbor search instead.
 10-Feb-2009 [cd]
 	    * new_vertex generates random vertex IDs to support very large arrays -- 
 	      sequential ID generation is pessimal for binary-tree insertion.

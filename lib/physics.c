@@ -1,4 +1,4 @@
-/*
+ *
  * physics.c
  * 
  * Contains force laws and other directly physics-related 

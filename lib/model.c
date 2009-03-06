@@ -590,6 +590,78 @@ static WORLD *gl_a;  /* springboard world parameter */
 static char gl_gl;   /* springboard global flag */
 static void ((**gl_f_funcs)()); /* springboard functions list */
 
+/* Helper routine for snarfing up the closest vertex in each fluxon to
+   a particular vertex-- called via tree_walk, in data.c. It does not
+   winnow, and it does not check the current fluxon. that should be
+   taken care of in the next step when it does two regular neighbor
+   searches.  */
+static VERTEX *vertex_for_closest_v;
+static DUMBLIST *snarfer_workspace;
+
+static long closest_v_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
+  VERTEX *v2; //current vertex in the fluxon
+  VERTEX *v_keep; //vertex we want to snarf
+  int i; //dummy counter
+  NUM r ; //distance b/w v2 and v
+  NUM rmax=0; //distance accumulator
+  
+  v2 = f->start; //(don't do first and last)
+  for (i=0; i < f->v_ct; i++){
+    r = cart_3d(v2->x,vertex_for_closest_v->x);
+      //sqrt(((v2->x[0] - vertex_for_closest_v->x[0])**2)+((v2->x[1] - vertex_for_closest_v->x[1])**2)+((v2->x[2] - vertex_for_closest_v->x[2])**2));
+    if (r > rmax){
+      v_keep = v2;
+    }
+
+    if (v2->next) { //for i=v_ct-1, there is no vnext
+      v2 = v2->next;
+    }
+
+  }
+  dumblist_quickadd (snarfer_workspace, v_keep);
+  return 0;
+}
+
+static long fast_world_gather_neighbors(VERTEX *v, int lab_of, int ln_of, long depth){
+  if( FL_ISDUMMY(v->line) ) //added. hopefully works.
+    return 0 ;
+
+  if (v == v->line->start || v == v->line->end)
+    return 0;
+
+  static DUMBLIST *workspace =0;
+  void **foo;
+  int i;
+  int n;
+  int verbosity = v->line->fc0->world->verbosity;
+  long passno = ++(v->line->fc0->world->passno);
+  DUMBLIST *vn;
+  FLUXON *f;
+
+  vertex_for_closest_v=v;
+  
+  f = v->line;
+  while(f->all_links.up)
+    f=f->all_links.up;
+  
+  if(!workspace) 
+    workspace = new_dumblist();
+  
+  workspace->n = 0;
+  
+  snarfer_workspace = workspace;
+  tree_walk(f, fl_lab_of, fl_all_ln_of,closest_v_snarfer);
+  
+  //is this the right way?
+  vn = &(v->neighbors);
+  vn->n=0;
+  dumblist_snarf(vn,workspace);
+  //printf("%d  ",v->label);
+  
+  return 0;
+}
+
+
 static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
   if( FL_ISDUMMY(fl) )
@@ -606,8 +678,50 @@ static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
 void world_update_neighbors(WORLD *a, char global) {
   gl_a = a;
   gl_gl = global;
-  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_n_springboard, 0);
+  if (gl_gl == -1) { 
+    /*do fast neighbor search then do 2 iterations of regular neighbor search. */
+    tree_walk(a->vertices,v_lab_of,v_ln_of,fast_world_gather_neighbors);
+    printf("done with fast gather neighbors\n");
+    gl_gl = 0;
+    tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_n_springboard, 0);
+    printf("done with first gather neighbors\n");
+    tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_n_springboard, 0);
+    printf("done with second gather neighbors\n");
+    gl_gl = -1;
+  } else {
+    tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_n_springboard, 0);
+  }
 }
+
+
+
+
+/**********************************************************************
+ * fast_world_update_neighbors
+ * 
+ * Initializes the neighbors as the closest vertex to you from each
+ * fluxon.
+ */
+
+static long f_w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
+  /* Skip magic boundary fluxons */
+  if( FL_ISDUMMY(fl) )
+    return 0 ;
+
+  if(fl->fc0->world->verbosity >= 5) dump_all_fluxon_tree(gl_a->lines);
+  if(fl->fc0->world->verbosity) {
+    printf(" %d",fl->label);
+    fflush(stdout);
+  }
+  return fast_fluxon_update_neighbors(fl, gl_gl);
+}
+
+void fast_world_update_neighbors(WORLD *a, char global) {
+  gl_a = a;
+  gl_gl = global;
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, f_w_u_n_springboard, 0);
+}
+
 
 /**********************************************************************
  * world_update_mag updates the magnetic forces for the whole world 
@@ -757,7 +871,7 @@ void world_relax_step(WORLD *a, NUM t) {
  */
 int fluxon_update_neighbors(FLUXON *fl, char global) {
   int i=0;
-  VERTEX *v = fl->start;
+  VERTEX *v =fl->start;
   int verbosity = fl->fc0->world->verbosity;
 
   if(verbosity>=2) printf("fluxon_update_neighbors... (gl=%d), fluxon %d\n",global,fl->label);
@@ -1016,8 +1130,9 @@ void vertex_accumulate_f_minmax(VERTEX *v, WORLD *w) {
  */
 
 
-/*** fastpow is quite fast for small integer powers, slightly slower for fractional. Acceleration 
- *** fails for large negative powers.  Powers within 0.0001 of an integer get treated as integers.
+/*** fastpow is quite fast for small integer powers, slightly slower
+ *** for fractional. Acceleration fails for large negative powers.
+ *** Powers within 0.0001 of an integer get treated as integers.
  ***/
 NUM fastpow( NUM num, NUM exponent ) {
   NUM out = 1.0;
@@ -1223,13 +1338,23 @@ void expand_via_neighbors(DUMBLIST *workspace, int start_idx, long passno) {
     nlist = &(v->neighbors);
     for(j=0; j<nlist->n; j++) {
       VERTEX *vv;
+      //printf("j=%d, ",j);
       vv = ((VERTEX *)(nlist->stuff[j]));
+      //printf,("j=%d workspace.n=%d, neighbors.n=%d, neighbors.size=%d, workspace.size=%d \n",j,n,v->neighbors.n,v->neighbors.size, workspace->size);
+      //printf("vv=%d, ",vv->label);
+      //printf("vv->line=%d, ",vv->line->label);
+      //printf("vv->passno=%d, ",vv->passno);
+      //printf("passno=%d\n",passno);
       if(vv->line && vv->passno != passno) {
+	//printf("here1 ");
 	vv->passno = passno;
+	//printf("here2 ");
 	dumblist_quickadd(workspace, vv);
+	//printf("here3 ");
       }
     }
 
+    //printf("here4 ");
     nlist = &(v->nearby);
     for(j=0;j<nlist->n;j++) {
       VERTEX *vv;
@@ -1471,16 +1596,20 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
  * process, since it's needed for some of the force laws (see 
  * vertex_update_mag).
  * 
- * The 'global' flag can have several values, and the behavior changes accordingly::
+ * The 'global' flag can have several values, and the behavior changes
+ * accordingly. fast, faster, and gonzo are defined in model.::
  * 
+ *   -1 - quasi-global operation (requires cleanup afterward): the closest 
+ *        vertex (using regular 3-D Cartesian distance) along each fluxon 
+ *        is a candidate for the hull)
  *    0 - "normal" non-global operation (about 300 candidates for the hull)
  *    1 - global operation (every vertex is a candidate for every hull
- *    2 - reduced operation (neighbors of neighbors and neighbors' next/prev only: about 60-70 candidates)
- *    3 - stripped-down operation (neighbors and their next/prev only: about 24 candidates)
- *    4 - gonzo operation (neighbors only: about 8 candidates)
+ *    2 - reduced operation (neighbors of neighbors and neighbors' next/prev only: about 60-70 candidates) ->fast_neighbors
+ *    3 - stripped-down operation (neighbors and their next/prev only: about 24 candidates) ->faster_neighbors
+ *    4 - gonzo operation (neighbors only: about 8 candidates) -> gonzo_neighbors
  *
- * The stripped-down operations operate much more quickly but at the expense of not
- * finding neighbor candidates under evolution.  
+ * The stripped-down operations operate much more quickly but at the
+ * expense of not finding neighbor candidates under evolution.
  */
 
 static int ptr_cmp(void *a, void *b) { /* Helper routine for sorting by pointer */
@@ -1675,7 +1804,6 @@ static inline void expand_list(DUMBLIST *workspace, long passno) {
 
 /* Helper routine for snarfing up whole fluxons -- called via
    tree_walk, in data.c */
-static DUMBLIST *snarfer_workspace;
 static long line_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
   VERTEX *v;
   for(v = f->start; v->next && ((!f->plasmoid) || v->next->next); v=v->next) {
@@ -1684,8 +1812,6 @@ static long line_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
   return 0;
 }
 
-
-
 DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   static DUMBLIST *workspace =0;
   void **foo;
@@ -1693,7 +1819,8 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   int n;
   int verbosity = v->line->fc0->world->verbosity;
   long passno = ++(v->line->fc0->world->passno);
-  
+  //printf(". ");
+
   if(verbosity >= 2) {
     printf("passno=%d...  ",passno);
   }
@@ -1707,8 +1834,6 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   workspace->n = 0;
 
   
-
-  /**********************************************************************/
   /* Gather the candidates together 
    * This step has had a longish history -- I started out 
    * grabbing lots and lots of stuff, but "just" neighbors-of-neighbors
@@ -1790,6 +1915,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
       f=f->all_links.up;
 
     snarfer_workspace = workspace;
+
     tree_walk(f, fl_lab_of, fl_all_ln_of, line_snarfer);
 
 
@@ -2226,7 +2352,7 @@ int global_fix_proximity(WORLD *w, NUM scale_thresh) {
  ** fluxon_fix_curvature
  ** global_fix_curvature
  ** 
- ** You feed in a VERTEX, and the curvature of the field line is
+ ** You feed in a VEREX, and the curvature of the field line is
  ** compared with the upper and lower curvature threshold that you
  ** pass in (in radians). The vertex is split into 3 vertexes if the
  ** curvature is too high, and the vertexs is deleted if the curvature
