@@ -91,6 +91,19 @@ CODE:
 OUTPUT:
   RETVAL
 
+void
+delete(vrt)
+ SV *vrt
+PREINIT:
+ VERTEX *v;
+/**********************************************************************
+ * delete - terminate with extreme prejudice
+ */
+CODE:
+ v = SvVertex(vrt,"Flux::Vertex::delete",1);
+ FLUX->delete_vertex(v);
+ 
+
 long 
 id(vrt)
  SV *vrt
