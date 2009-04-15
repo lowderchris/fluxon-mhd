@@ -1,0 +1,189 @@
+=head2 make_world_gh - given a list of lines, make a string that can
+be converted into a world with str2world. This make_world is
+specifically formulated for a gold hoyle flux rope in that it creates
+a world that is a thin tube centered at the origin with an external
+spherical line-tied photosphere.
+
+=for usage
+
+$string=make_world_gh(@lines,{$opt})
+ 
+=for ref
+
+You feed in a list of pdls, one pdl per fluxon.  You get back a world
+with default characteristics and two flux concentrations per fluxon (north
+at the beginning, south at the end).
+
+options:
+cyl_r:radius of thin tube;
+sph_r:radius of outer sphere
+
+=cut
+
+sub make_world_gh {
+
+  my $epsilon = 1e-5;
+
+  my $opt = pop;
+
+  my @lines = @_;
+  push(@lines,$opt) and undef $opt unless UNIVERSAL::isa($opt,'HASH');
+  ##push it back onto @lines if it isn't a hash
+
+  my $cyl_r=$opt->{cyl_r} || 5;
+  my $sph_r=$opt->{sph_r} || 20;
+  print "cylinder radius is $cyl_r and sphere radius is $sph_r";
+
+  ##$phot=(1,2,3,4,5,6,7) 
+  ##1-type:0,none;1,plane;2,sphere
+  ##2,3,4:origin of the plane or sphere
+  ##5,6,7:normal to origin for a plane or radius,0,0 for a sphere
+
+  my @out = "";
+
+
+##GLOBAL FORCE name1 name2 ...
+##Sets up the force laws that are to be used for this simulation. The
+##names must be names of force laws that are compiled into the code
+##(they're stored in a global array defined in physics.c). For simple
+##NLFFF relaxations you probably want f_pressure_equi2, f_curvature,
+##and f_vertex.
+
+  push(@out, "GLOBAL FORCES f_pressure_equi2b f_curvature f_vertex5 e_simple2");
+
+##GLOBAL BOUNDARY x1 x2 x3 n1 n2 n3 type
+##Declares high-beta line-tied boundary at the specified location,
+##with the specified type. Note that nothing prevents you from placing
+##naked flux concentrations anywhere in space -- the boundary merely
+##has the property of being impenetrable to fluxons. The x and n
+##vectors are parameters used to specify the surface. The type is as
+##follows:
+
+##sphere: x is the center of the sphere; n1 is its radius. n2 and n3
+##are ignored. If n1 is positive, the syste is outside the sphere, if
+##it is negative, the system is inside the sphere.
+##cyl: x is the center of the cylinder(always 0,0,0); length of n is
+##radius, direction of n is normal
+
+  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 ".-$sph_r." -1 0");
+##  push(@out, "GLOBAL BOUNDARY PLANE 0 0 0 0 0 1");
+
+  push(@out, "GLOBAL B2 CYL 0 0 0 0 0 ".$cyl_r);
+
+  my $j=100;
+  my $ln=0;
+  my $i=0;
+
+  foreach $l(@lines) {
+      my $line=$l->copy;
+      my $fc0, $fc1, $fl;
+      
+      $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
+      if ($rend >= ($sph_r-$epsilon)){
+	  ##the outer point is beyond the sphere
+	  while (sqrt(sum($line->(:,(-2)) * $line->(:,(-2)))) >= ($sph_r-$epsilon)){
+	      $line=$line(:,0:-2);
+	      ##print sqrt(sum($line->(:,(-1))**2))."\n"; 
+	      ##chop off last vertex
+	  }
+	  $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
+	  $line->(:,(-1))*=($sph_r-$epsilon)/$rend;
+	  ##scale the length of the last vertex to be on
+	  ##the sphere. going to be open boundary so it doesn't
+	  ##matter where on the boundary it is
+      }
+
+      $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
+      if ($rstart >= ($sph_r-$epsilon)){
+	  ##the outer point is beyond the sphere
+	  while (sqrt(sum($line->(:,(1)) * $line->(:,(1)))) >= ($sph_r-$epsilon)){
+	      $line=$line(:,1:-1);
+	      ##chop off first vertex
+	  }
+	  $rstart   = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
+	  $line->(:,(0))*=($sph_r-$epsilon)/$rstart;
+	  ##scale the length of the last vertex to be on
+	  ##the sphere. going to be open boundary so it doesn't
+	  ##matter where on the boundary it is
+      }
+      ##print $rend."\n";
+      ##print "begin $rstart, end $rend, ";
+      
+      ##if ($rstart != $sph_r){
+##	  $line->((0),(0)).=$line->((0),(0))*$sph_r/$rstart;
+##	  $line->((1),(0)).=$line->((1),(0))*$sph_r/$rstart;
+##	  $line->((2),(0)).=$line->((2),(0))*$sph_r/$rstart;
+##      }
+  ##    if ($rend != $sph_r){
+	##  $line->((0),(-1)).=$line->((0),(-1))*$sph_r/$rend;
+	##  $line->((1),(-1)).=$line->((1),(-1))*$sph_r/$rend;
+	##  $line->((2),(-1)).=$line->((2),(-1))*$sph_r/$rend;
+     ## }
+      
+##NEW label x1 x2 x3 flux
+##Creates a new flux concentration with the given label (label should
+##be an integer), located at x, with the given amount of magnetic flux
+##(positive or negative). If a flux concentration already exists with
+##that label, then it moves the old one to the new location. The flux
+##parameter is stored in the FLUX_CONCENTRATION structure, but has no
+##direct effect on the simulation -- it is intended for bookkeeping
+##the values of the fluxons that come into and/or out of the flux
+##concentration. By convention, positive flux concentrations are
+##sources that should serve as fluxon beginnings, and negative ones
+##are sinks that should serve as fluxon ends -- but the code does not
+##enforce that directionality. The first 99 negative flux
+##concentration labels are reserved (-1 through -99) and should not be
+##used!
+
+##LINE label fc1 fc2 flux
+##Creates a fluxon with the given label (label should be an integer),
+##starting at the flux concentration labeled fc1 and ending at the
+##flux concentration labeled fc2. The first few negative flux
+##concentration labels are special and are used for open and plasmoid
+##fluxons. To make a fluxon that is open at the beginning, fc1 should
+##be -1. To make a fluxon that is open at the end, fc2 should be
+##-2. To make a fluxon that is a plasmoid, fc1 should be -3 and fc2
+##should be -4.
+
+##VERTEX fluxon label pos x1 x2 x3
+##Creates a new vertex on the given fluxon, with unique label label
+##(should be an integer), at position pos counting from the start of
+##the fluxon. The start and end points of the fluxon are defined
+##implicitly and don't need to be declared. The first nontrivial
+##vertex is at position 1.
+
+      push(@out,sprintf("NEW %d %f %f %f 1",
+			($fc0=$j++),
+			$line->at(0,0), $line->at(1,0), $line->at(2,0)
+	   )
+	  );
+
+      push(@out,sprintf("NEW %d %f %f %f -1",
+			($fc1=$j++),
+			$line->at(0,-1), $line->at(1,-1), $line->at(2,-1)
+	   )
+	  );
+      
+    
+      push(@out,sprintf("LINE %d %d %d 1",
+			($fl = $j++),  
+			($open_start ? -1 : $fc0),   
+			($open_end ? -2 : $fc1)
+	   )
+	  );
+      $ln++;
+      for $k(1..$line->dim(1)-2) {
+	  ## print "line $ln; k=$k\n";
+	  push(@out,sprintf("VERTEX %d %d %d %f %f %f",
+			    $fl,
+			    $j++,
+			    $k,
+			    $line->(:,($k))->list
+	       )
+	      );
+      }
+      push(@out,"");
+      $i++;
+  }
+  join("\n",@out);
+}

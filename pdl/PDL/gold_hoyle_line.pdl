@@ -1,0 +1,76 @@
+=head2 gold_hoyle_line
+
+=for usage
+
+$line = gold_hoyle_line($start, $q, $endz, $step);
+
+=for ref
+
+Shoot a field line through the Gold-Hoyle flux rope analytical solution. The line has a constant radius, and changez only z and theta.  It continues 
+stepping until the Z position reaches $endz.
+
+$start is the initial position (3pdl) of the line in xyz.
+
+$q is the GH twist parameter
+
+$endz is the inal z position of the line
+
+$step is the step size (radians) in theta for each step.
+
+Note that Bo is always one in this calculation.
+
+The returned $line is a 3xn piddle where the positions are given in xyz.
+
+=cut
+sub gold_hoyle_line {
+    use PDL::NiceSlice;
+
+    my $startxyz = shift;
+    my $q = shift;
+    my $endz = pdl(shift);
+    my $step = shift || 0.1;
+    
+    $start=zeroes(3);
+    $next=zeroes(3);
+    $nextxyz=zeroes(3);
+    
+    $start(0).=sqrt($startxyz(0)**2+$startxyz(1)**2);
+    $start(1).=atan2($startxyz(1),$startxyz(0));
+    $start(2).=$startxyz(2);
+    
+    $line=$startxyz; ##line accumulator
+    
+    ##p $start, $startxyz;
+    
+    $fac=(1+$q**2*$start(0)**2);
+    $r=$start(0);
+    $t=$step*$fac/($q*$start(0));
+    if (!$r) {$t=1;}
+    
+    ##p $fac, $r, $t," ";
+
+    until ($next(2) > $endz){
+
+	
+	$next(0).=$start(0);
+	$next(1).=($t*$q*$r/$fac)+$start(1);
+	$next(2).=($t/$fac)+$start(2);
+	##p $next."\n";
+	
+	$nextxyz(0).=$next(0)*cos($next(1));
+	$nextxyz(1).=$next(0)*sin($next(1));
+	$nextxyz(2).=$next(2);
+	##p $nextxyz."\n";
+	
+	$line=$line->glue(1,$nextxyz);
+	
+	$start=$next->copy;
+	
+    }
+    
+    print dims($line), "\n";
+    return $line;
+    
+}
+
+  

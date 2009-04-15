@@ -1,3 +1,5 @@
+15-Apr-2009[lr]
+	-added make_world_gh.pdl and gold_hoyle_line.pdl to pdl/PDL.
 6-Mar-2009[lr]
 	-changed the global update force. Old way is still there and still works with the '1' global number. Simple relaxer now uses -1 on the first go that does a fast global neighbor search instead.
 10-Feb-2009 [cd]
