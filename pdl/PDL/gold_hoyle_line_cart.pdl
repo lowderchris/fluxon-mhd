@@ -81,7 +81,7 @@ sub gold_hoyle_line_cart {
 	}
 	##p "2";
      	##p $next2."\n";
-	p $dt;
+	##p $dt;
 	
 	$line=$line->glue(1,$next2);
 	
