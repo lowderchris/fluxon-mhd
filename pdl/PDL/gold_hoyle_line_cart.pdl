@@ -1,0 +1,100 @@
+=head2 gold_hoyle_line_cart
+
+=for usage
+
+$line = gold_hoyle_line_cart($start, $q, $endz, $dxdt, $epsilon);
+
+=for ref
+
+Shoot a field line through the Gold-Hoyle flux rope analytical
+solution. The line has a constant radius, and changez only z and
+theta.  It continues stepping until the Z position reaches $endz.
+
+$start is the initial position (3pdl) of the line in xyz.
+
+$q is the GH twist parameter
+
+$endz is the inal z position of the line
+
+$dxdt is the perl code ref for the vector field (B(r,theta,z)).
+
+$epsilon is the error you will accept for each step. 10^-5 is a nice
+starting number
+
+Note that Bo=1 in this calculation.
+
+The returned $line is a 3xn piddle where the positions are given in
+xyz.
+
+=cut
+sub gold_hoyle_line_cart {
+    use PDL::NiceSlice;
+
+    my $start = shift;
+    my $q = shift;
+    my $endz = pdl(shift);
+    my $dxdt = shift;
+    my $dt = shift || 0.01;
+    my $epsilon = shift || 1e-5;
+
+    my $next1=zeroes(3);
+    my $next2=zeroes(3);
+    my $next3=zeroes(3);
+    my $nextxyz=zeroes(3);
+    my $deriv0=zeroes(3);
+    my $deriv1=zeroes(3);
+    
+    $line=$start; ##line accumulator
+   ## p $start;
+
+    ##p $start, $startxyz;
+    
+    $t=0;
+    ##$dt=0.01;
+ 
+    until ($next2->at(2) > $endz){
+
+	my $ep=$epsilon*10;
+	$deriv0=&$dxdt($t,$start);
+	##p $deriv0;
+	do{
+	    $next1=rk4($t,$dt/2,$dxdt,$start,$deriv0);
+	    $deriv1=&$dxdt($t,$next1);
+	    $next2=rk4($t,$dt/2,$dxdt,$next1,$deriv1);
+	    $next3=rk4($t,$dt,$dxdt,$start,$deriv0);
+	    
+	    ##ep=(3-2)/((0-2)+(0-3)/2)
+	    $ep=sqrt(sumover(($next3-$next2)**2))*2/
+		(sqrt(sumover(($start-$next2)**2)) +
+		 sqrt(sumover(($start-$next3)**2))
+		);
+	    ##p ".";
+	    ##p $ep;
+	    ##p $next2;
+	    $dt*=.5; ## try again with half the dt
+	} while     ($ep > $epsilon);
+	
+	$dt*=2; ##remove effects of the last division of $dt
+	##p $next2->at(2)."\n";
+	if ($ep < $epsilon*.1) {
+	    $dt*=2; ##if dt is too small;
+	}
+	##p "2";
+     	##p $next2."\n";
+	p $dt;
+	
+	$line=$line->glue(1,$next2);
+	
+	$start=$next2->copy;
+	
+	##if I update start each time, I shoudl be able to keep t at
+	##zero the whole time. because this fxn is linear in time
+	##$t+=$dt;
+    }
+    
+    print dims($line), "\n";
+    return $line;
+    
+}
+
+  

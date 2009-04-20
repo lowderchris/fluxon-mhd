@@ -60,12 +60,12 @@ sub make_world_gh {
 ##follows:
 
 ##sphere: x is the center of the sphere; n1 is its radius. n2 and n3
-##are ignored. If n1 is positive, the syste is outside the sphere, if
-##it is negative, the system is inside the sphere.
+##are ignored. If n2 is zero of positive, the system is outside the
+##sphere, if it is negative, the system is inside the sphere.
 ##cyl: x is the center of the cylinder(always 0,0,0); length of n is
 ##radius, direction of n is normal
 
-  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 ".-$sph_r." -1 0");
+  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 ".$sph_r." -1 0");
 ##  push(@out, "GLOBAL BOUNDARY PLANE 0 0 0 0 0 1");
 
   push(@out, "GLOBAL B2 CYL 0 0 0 0 0 ".$cyl_r);
