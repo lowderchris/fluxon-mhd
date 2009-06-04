@@ -1508,11 +1508,10 @@ void e_open (VERTEX *V, HULL_VERTEX *verts, int segflag) {
       ang_dif += 2. * PI;
     }
 
-    ienergy =  12 * ang_dif + 
-	       8 * (sin(2. * (nhull - cneigh)) - 
-		    sin(2. * (chull - cneigh)) )+
-	       (sin(4. * (nhull - cneigh)) - 
-		sin(4. * (chull - cneigh)) );
+    ienergy = ang_dif +
+      cos(nhull - cneigh)*sin(nhull - cneigh) -
+      cos(chull - cneigh)*sin(chull - cneigh);
+
     pseudo_energy += ienergy/(ro*ro);
 
     if (ienergy/(ro*ro) < 0) {
@@ -1533,7 +1532,7 @@ void e_open (VERTEX *V, HULL_VERTEX *verts, int segflag) {
       } */
   }
 
-  Energy= pseudo_energy * ((ds * flux * flux) / (512. * PI * PI * PI) );
+  Energy= pseudo_energy * ((ds * flux * flux) / (32. * PI * PI * PI) );
   V->energy = Energy;
   //fprintf(stderr,"n=%d, energy=%f,vertex %d\n",n,Energy,V->label);
   //  fflush(stderr);
