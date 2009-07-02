@@ -1058,8 +1058,8 @@ void init_minmax_accumulator(WORLD *w) {
 }
 
 void finalize_minmax_accumulator(WORLD *w) {
-  w->max_angle = RAD2DEG * acos(w->ca_min);
-  w->mean_angle = RAD2DEG * acos(w->ca_acc / w->ca_ct);
+  w->max_angle  = RAD2DEG * acos(sqrt(fabs(w->ca_min)))            + 90 * (w->ca_min < 0);
+  w->mean_angle = RAD2DEG * acos(sqrt(fabs(w->ca_acc / w->ca_ct))) + 90 * (w->ca_acc < 0);
 }
 
 void vertex_accumulate_f_minmax(VERTEX *v, WORLD *w) {

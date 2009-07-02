@@ -77,6 +77,7 @@ struct FLUX_RECON FLUX_RECON[] = {
   {"rc_a_ad2","Threshold angle per d^2 (J proxy avoids explicit B calc)", rc_a_ad2, "(min. angle), (min A/D^2 [or 0 for none])"},
   {"rc_a_ad2_h","Similar to rc_a_ad2, but J threshold adjusts with a scale height", rc_a_ad2_h,"(min. angle),(min A/exp(z/h)/d^2), (h)"},
   {"rc_a_ad2_h_ad2hmax","Similar to rc_a_ad2, but only reconnects at local maxima of exp(z/h)a/d^2", rc_a_ad2_h_ad2hmax,"(min. angle),(min A/exp(z/h)), (h)"},
+  {"rc_a_ad2_loc","Similar to rc_a_ad2, but J threshold adjusts with proximity to a location", rc_a_ad2_loc,"(min. angle),(min A/d^2)/(r+eps/eps), x0,y0,z0,eps"},
   {"","",0,""}
 };
 
@@ -2015,6 +2016,75 @@ VERTEX *rc_a_ad2_h(VERTEX *v, NUM *params) {
 		ad2th
 		);
       }
+      if(a     >       ath      &&
+	 sh_fac * ad2 > ad2th )
+	return v2;
+    }
+  }
+  return 0;
+}
+
+VERTEX *rc_a_ad2_loc(VERTEX *v, NUM *params) {
+  NUM ath  = params[0];
+  NUM ad2th = params[1];
+  NUM x0[3] = {params[2],params[3],params[4]};
+  NUM eps = params[5];
+  int i;
+  VERTEX *v2;
+  NUM d;
+  NUM a;
+  NUM p1[3], p2[3];
+  NUM pm[9];
+  NUM l1l2;
+  int verbosity = v->line->fc0->world->verbosity;
+  
+  if(verbosity) {
+    printf("aad2: ");
+  }
+
+  /* Don't even try unless we've got an element to look at */
+  if( !v || !(v->next) )
+    return 0;
+
+  if(verbosity > 1) {
+    printf("Vertex %d: neighbors are: %d",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
+    for(i=1;i<v->neighbors.n; i++) 
+      printf(", %d",((VERTEX *)(v->neighbors.stuff[i]))->label);
+    printf("\n");
+  }
+
+  for(i=0;i<v->neighbors.n;i++) {
+
+    v2 = (VERTEX *)(v->neighbors.stuff[i]);
+
+    if(!V_ISDUMMY(v2) && v2->next) {
+      NUM sh_fac;
+      NUM ad2 = a/d/d;
+
+      /* p1 and p2 get the closest approach points */
+      d = fl_segment_deluxe_dist(p1, p2, v, v2);
+	       
+      /* Find matrix projecting them into the z axis */
+      projmatrix(pm, p1, p2);
+      
+      /* Project the segments into that plane */
+      diff_3d(p1, v->next->x, v->x);
+      mat_vmult_3d(v->scr, pm, p1);
+
+      diff_3d(p2, v2->next->x, v2->x);
+      mat_vmult_3d( v2->scr, pm, p2);
+
+
+      /* Now v->scr and v2->scr contain the projected 2-vecs of the corresponding
+       * fluxel directions.  Now calculate the angle.  (Could avoid square roots
+       * entirely using the half-angle formula, but no sense fixing that since this
+       * isn't the hot spot for the whole relaxation).
+       */
+      l1l2 = sqrt( norm2_2d( v->scr ) * norm2_2d( v2->scr )  );
+      a = acos( inner_2d( v->scr , v2->scr )  /  l1l2 );
+
+      sh_fac = eps / ( cart2_3d(x0, v->x) + eps );
+
       if(a     >       ath      &&
 	 sh_fac * ad2 > ad2th )
 	return v2;
