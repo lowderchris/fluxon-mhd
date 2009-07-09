@@ -77,6 +77,7 @@ struct FLUX_RECON FLUX_RECON[] = {
   {"rc_a_ad2","Threshold angle per d^2 (J proxy avoids explicit B calc)", rc_a_ad2, "(min. angle), (min A/D^2 [or 0 for none])"},
   {"rc_a_ad2_h","Similar to rc_a_ad2, but J threshold adjusts with a scale height", rc_a_ad2_h,"(min. angle),(min A/exp(z/h)/d^2), (h)"},
   {"rc_a_ad2_h_ad2hmax","Similar to rc_a_ad2, but only reconnects at local maxima of exp(z/h)a/d^2", rc_a_ad2_h_ad2hmax,"(min. angle),(min A/exp(z/h)), (h)"},
+  {"rc_a_ad2_r_max","Similar to rc_a_ad2_h_ad2hmax, but for sperical surfaces", rc_a_ad2_r_max,"(min. angle),(min A/D^2),(scale height),(surface radius)"},
   {"rc_a_ad2_loc","Similar to rc_a_ad2, but J threshold adjusts with proximity to a location", rc_a_ad2_loc,"(min. angle),(min A/d^2)/(r+eps/eps), x0,y0,z0,eps"},
   {"","",0,""}
 };
@@ -1881,7 +1882,7 @@ VERTEX *rc_a_ad2(VERTEX *v, NUM *params) {
   }
 
   /* Don't even try unless we've got an element to look at */
-  if( !v || !(v->next) )
+  if( !v || !(v->next) || v->line->label < 0 )
     return 0;
 
   if(verbosity > 1) {
@@ -1895,7 +1896,7 @@ VERTEX *rc_a_ad2(VERTEX *v, NUM *params) {
 
     v2 = (VERTEX *)(v->neighbors.stuff[i]);
 
-    if(!V_ISDUMMY(v2) && v2->next) {
+    if(!V_ISDUMMY(v2) && v2->next && v2->line->label > 0) {
 
       /* p1 and p2 get the closest approach points */
       d = fl_segment_deluxe_dist(p1, p2, v, v2);
@@ -2095,7 +2096,7 @@ VERTEX *rc_a_ad2_loc(VERTEX *v, NUM *params) {
 
 
 // helper routine finds the highest exp(z/h)a/d^2...
-static void find_max_ad2h(VERTEX *v, NUM h, VERTEX **vmaxp, NUM *maxp, NUM *maxap) {
+static void find_max_ad2h(VERTEX *v, NUM h, NUM rad, NUM hr, VERTEX **vmaxp, NUM *maxp, NUM *maxap) {
   int i;
   VERTEX *v2;
   NUM p1[3], p2[3];
@@ -2105,12 +2106,12 @@ static void find_max_ad2h(VERTEX *v, NUM h, VERTEX **vmaxp, NUM *maxp, NUM *maxa
   *vmaxp = 0;
   *maxp = 0;
 
-  if(!v || !v->next )
+  if(!v || !v->next || v->line->label < 0)
     return;
   
   for(i=0;i<v->neighbors.n;i++) {
     v2 = (VERTEX *)(v->neighbors.stuff[i]);
-    if(!V_ISDUMMY(v2) && v2->next) {
+    if(!V_ISDUMMY(v2) && v2->next && v2->line->label > 0) {
       NUM sh_fac;
       NUM ad2;
       NUM d, a, aa;
@@ -2132,13 +2133,28 @@ static void find_max_ad2h(VERTEX *v, NUM h, VERTEX **vmaxp, NUM *maxp, NUM *maxa
       l1l2 = sqrt( norm2_2d( v->scr ) * norm2_2d( v2->scr ) );
       a = aa = acos( inner_2d( v->scr, v2->scr ) / l1l2 );
       
+      if (h != 0){
       // Calculate the scale-height factor and merge it in.
-      sh_fac = exp((v->x[2] + v2->x[2])/2/h);
-      aa *= sh_fac;
-
+	if (hr) {
+	  NUM r;
+	  r=(norm_3d(v->x) + norm_3d(v2->x))/2;
+	  if (r > 3) {
+	    sh_fac=h/(7.2e5*pow(r,-2));
+	  } else {
+	    sh_fac=h/(1e8*(2.99*pow(r,-16)+1.55*pow(r,-6)+0.036*pow(r,-1.5)));
+	    //sh_fac = exp((norm_3d(v->x) + norm_3d(v2->x) - rad - rad)/2/h);
+	  }
+	} else {
+	  sh_fac = exp((v->x[2] + v2->x[2])/2/h);
+	}
+	
+	aa *= sh_fac;
+      }
+    
+      
       // Merge in the distance factor
       aa /= (d * d);
-
+      
       if( aa > *maxp ) {
 	*maxp = aa;
 	*maxap = a;
@@ -2172,17 +2188,93 @@ VERTEX *rc_a_ad2_h_ad2hmax(VERTEX *v, NUM *params) {
     printf("\n");
   }
 
-  find_max_ad2h(v, h, &v2, &ad2hmax, &amax );
+  find_max_ad2h(v, h, 0, 0, &v2, &ad2hmax, &amax );
   
   if( amax > ath && ad2hmax > ad2th )  {
     // Found a max-a above threshold, and a max-ad2h above threshold; 
     // check for local maximumness
-    find_max_ad2h(v->prev, h, &v3, &foo, &bar);
+    find_max_ad2h(v->prev, h, 0, 0, &v3, &foo, &bar);
     if(foo < ad2hmax) {
-      find_max_ad2h(v->next, h, &v3, &foo, &bar);
+      find_max_ad2h(v->next, h, 0, 0, &v3, &foo, &bar);
       if( foo < ad2hmax ) 
 	// It was a local maxmimum!
 	return v2;
+    }
+  }
+   
+  // Nobody met all the criteria.
+  return 0;
+}
+
+
+VERTEX *rc_a_ad2_r_max(VERTEX *v, NUM *params) {
+  NUM at  = params[0];
+  NUM ad2t = params[1];
+  NUM rparam = params[2]; //radius scale height(not including surf height)
+  NUM rad = params [3]; //radius of surface
+
+  VERTEX *v2,*v3;
+  NUM amax;
+  NUM ad2max;
+  NUM foo, bar;
+
+  int verbosity = v->line->fc0->world->verbosity;
+
+  /* Don't even try unless we've got an element to look at */
+  if( !v || !(v->next) || v->line->label < 0)
+    return 0;
+
+  if(verbosity > 1) {
+    int i;
+    printf("Vertex %d: neighbors are: %d",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
+    for(i=1;i<v->neighbors.n; i++) 
+      printf(", %d",((VERTEX *)(v->neighbors.stuff[i]))->label);
+    printf("\n");
+  }
+
+  find_max_ad2h(v, rparam, rad, 1, &v2, &ad2max, &amax );
+  
+  if( amax > at && ad2max > ad2t )  {
+    // Found a max-a above threshold, and a max-ad2 above threshold; 
+    // check for local maximumness
+    find_max_ad2h(v->prev, rparam, rad, 1, &v3, &foo, &bar);
+    if(foo < ad2max) {
+      find_max_ad2h(v->next, rparam, rad, 1, &v3, &foo, &bar);
+      if( foo < ad2max ) {
+
+	/*NUM r, r2,rmin;
+	r=norm_3d(v->x);
+	r2=norm_3d(v2->x);
+	
+	rmin=1.5;
+
+	if (r < rmin || r2 < rmin){
+	  //fprintf(stderr,"too low vertex %d\n",v->label);
+	  return 0;
+	}
+	*/
+	
+	// It was a local maxmimum!
+	if(!v->next || 
+	   !v->next->next || 
+	   !v->next->next->next || 
+	   !v->prev ||
+	   !v->prev->prev ||
+	   !v->prev->prev->prev ||
+	   !v2->next ||
+	   !v2->next->next ||
+	   !v2->next->next->next ||
+	   !v2->prev ||
+	   !v2->prev->prev ||
+	   !v2->prev->prev->prev ) {
+	  //fprintf(stderr,"too close to the photosphere vertex %d\n",v->label);
+	  return 0;
+	}	
+	
+	//printf("v1->nnn=%d, v1->ppp=%d, v2->nnn=%d, v2->ppp=%d \n",v->next->next->next->label, v->prev->prev->prev->label, v2->next->next->next->label, v2->prev->prev->prev->label);
+	printf("vertex %d, angle=%f, a/d^2=%f, ath=%f, ad2th=%f \n",v->label,amax,ad2max,at,ad2t);
+	return v2;
+      }
     }
   }
    

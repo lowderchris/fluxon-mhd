@@ -2533,8 +2533,9 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
   FLUX_CONCENTRATION *fc;
   int i,j;
 
-  if(!v1 || !v2 || !v1->next || !v2->next ) {
-    fprintf(stderr,"reconnect_vertices: error -- got a null or end vertex!\n");
+  /*  
+   if(!v1 || !v2 || !v1->next || !v2->next || v1->line->label <0 || v2->line->label <0) {
+    fprintf(stderr,"reconnect_vertices: error -- got a null or end or image vertex!\n");
     return;
   }
 
@@ -2555,6 +2556,8 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     fprintf(stderr,"reconnect_vertices: error -- tried to reconnect a vertex to itself!\n");
     return;
   }
+
+  */
 
   f1 = v1->line;
   f2 = v2->line;
@@ -2612,11 +2615,11 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
 
     /* Create the new plasmoid's end vertices and link them into the world */
     Fnew->start = new_vertex(0, 
-			     0,0,0,
+			     lastv->x[0],lastv->x[1],lastv->x[2],
 			     Fnew);
 
     Fnew->end = new_vertex(0,
-			   0,0,0,
+			   firstv->x[0],firstv->x[1],firstv->x[2],
 			   Fnew);
 
     
@@ -2730,9 +2733,9 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
      * Non-self-reconnection - normal case 
      */
 
-    printf("(normal case): Reconnecting (%d; l=%d%s) -- (%d; l=%d%s)\n",
+    printf("(normal case): Reconnecting (%d; l=%d%s) -- (%d; l=%d%s), pos (%.3g,%.3g,%.3g)\n",
 	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
-	   v2->label, v2->line->label, v2->line->plasmoid?" P":""
+	   v2->label, v2->line->label, v2->line->plasmoid?" P":"",v1->x[0],v1->x[1],v1->x[2]
 	   );
     vv = v1->next;
     v1->next = v2->next;
@@ -2828,8 +2831,54 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
 	     i-1
 	     );
     }
-    if(rv->passno == passno)
+    if(rv->passno == passno){
       return 0;
+    }
+
+    if(!v1 || !rv ||  v1->line->label <0 || rv->line->label <0) {
+      fprintf(stderr,"    reconnect_vertices: error -- got a null or end or image vertex!\n");
+      return 0;
+    }
+
+    if(!v1->next || 
+       !v1->next->next || 
+       !v1->next->next->next || 
+       !v1->prev ||
+       !v1->prev->prev ||
+       !v1->prev->prev->prev ) {
+       fprintf(stderr,"    reconnect_vertices: error -- too close to the photosphere v1 %d\n",v1->label);
+      return 0;
+    }
+
+
+    if(!rv->next || 
+       !rv->next->next ||
+       !rv->next->next->next ||
+       !rv->prev ||
+       !rv->prev->prev ||
+       !rv->prev->prev->prev ) {
+       fprintf(stderr,"    reconnect_vertices: error -- too close to the photosphere rv %d\n",rv->label);
+      return 0;
+    }
+
+    if(v1->passno ==passno || 
+       rv->passno == passno || 
+       v1->next->passno == passno || 
+       rv->next->passno == passno ||
+       (v1->prev && v1->prev->passno==passno) ||
+       (rv->prev && rv->prev->passno==passno) ||
+       (v1->next->next && v1->next->next->passno==passno) ||
+       (rv->next->next && rv->next->next->passno==passno)
+       ) {
+      fprintf(stderr,"    reconnect_vertices: tried to reconnect an already-reconnected vertex -- nope.\n");
+      return 0;
+    }
+    
+    if(v1==rv) {
+      fprintf(stderr,"    reconnect_vertices: error -- tried to reconnect a vertex to itself!\n");
+      return 0;
+    }
+
     reconnect_vertices(v1,rv, passno);
     return 1;
   }
