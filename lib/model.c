@@ -887,7 +887,7 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
     (*(fl->fc1->bound))(fl->end);
   }
 
-  v=v->next;
+  // v=v->next;
 
   while(v->next) {   
     if(verbosity>=3)  printf("\tfluxon_update_neighbors... vertex %d\n",v->label);
