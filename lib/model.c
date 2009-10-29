@@ -1045,6 +1045,11 @@ int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
  * basis, which is currently a waste in the parallel case (because the 
  * daughter processes' accumulators will be discarded).
  *
+ * This accumulator is called during force/step calculation, but 
+ * further accumulation happens in io.c in binary_read_flstep - 
+ * the results are transferred from the daughter processes to the 
+ * parent process during parallel processing.
+ *
  */
 void init_minmax_accumulator(WORLD *w) {
   w->f_min = -1;
@@ -1198,7 +1203,7 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
     d = 4/(1/d + 1/d1 + 1/r_cl + 1/v->prev->r_cl);
 
     stiffness = calc_stiffness(v);
-    if(stiffness == 0) stiffness = 1e-6;
+    if(stiffness == 0) stiffness = 1e-7;
 
     if(verbosity >= 3)  printf("fluxon %d, vertex %d: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  stiffness = %g, f_t=(%g,%g,%g)[%g]\t",f->label,v->label, v->x[0],v->x[1],v->x[2], v->r_cl, r_cl, stiffness, norm_3d(v->f_t), v->f_t[0],v->f_t[1],v->f_t[2],norm_3d(v->f_t));
     
@@ -1235,7 +1240,7 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
       /*
        * Handle acceleration of steps when everything's moving the same way
        */
-      if(w->step_scale.ds_power && v->prev && v->prev->prev && v->next && v->next->next) {
+      if(w->step_scale.ds_power && v->prev && v->next && v->next->next) {
 	NUM a[3];
 	NUM b[3];
 	NUM pfrac,nfrac;
@@ -1556,9 +1561,10 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
       }
     }
      
-    //    printf("step:   %lf %lf %lf\n", step[0], step[1], step[2]);
-    //fflush(stdout);
-    
+    //printf("step:   fl%d, v%d: %g %g %g\tfrom %g,%g,%g\n", v->line->label, v->label, step[0], step[1], step[2], v->x[0],v->x[1],v->x[2]);
+    //    fflush(stdout);
+
+
     if(finite(step[0]) && finite(step[1]) &&finite(step[2])) {
       sum_3d(v->x,v->x,step);
     } else {
@@ -3117,6 +3123,8 @@ void fl_b_tied_inject(VERTEX *v) {
 
     // Handle start-of-fluxon case
 
+    cp_3d(v->x,v->line->fc0->x);
+
     lr = v->line->fc0->locale_radius;
     if(lr>0) {
       diff_3d(a, v->next->x, v->x);
@@ -3176,7 +3184,9 @@ void fl_b_tied_inject(VERTEX *v) {
     
     // Handle end-of-fluxon case
 
-    lr = v->line->fc0->locale_radius; 
+    cp_3d(v->x, v->line->fc1->x);
+
+    lr = v->line->fc1->locale_radius; 
     if(lr>0) {
       diff_3d(a, v->prev->x, v->x);
       r = norm_3d(a);
@@ -3240,6 +3250,8 @@ void fl_b_tied_force(VERTEX *v) {
 
     // Handle start-of-fluxon case
 
+    cp_3d(v->x, v->line->fc0->x);
+
     lr = v->line->fc0->locale_radius;
     if( lr > 0 ) {
       diff_3d(a, v->next->x, v->x);
@@ -3258,7 +3270,9 @@ void fl_b_tied_force(VERTEX *v) {
     
     // handle end-of-fluxon case 
 
-    lr = v->line->fc0->locale_radius;
+    cp_3d(v->x, v->line->fc1->x);
+
+    lr = v->line->fc1->locale_radius;
     if(lr > 0) {
       diff_3d(a, v->prev->x, v->x);
       r = norm_3d(a);
@@ -3373,6 +3387,8 @@ void fl_b_plasmoid(VERTEX *v) {
 static long v_ct;            // Number of vertices in current batch
 static long v_thresh;        // Threshold vertex count above which to spawn a worker process
 static FLUXON *last_fluxon;  // Gets the last fluxon in the tree (set in v_ct_springboard)
+static int (*gl_binary_dumper)(int fd, FLUXON *f);
+
 
 static DUMBLIST *fluxon_batch = 0;  // Dumblist gets the current fluxon batch to be processed.
 
@@ -3532,7 +3548,7 @@ int parallel_daughter(int p) {
   if(p) {
     for(i=0; i<fluxon_batch->n; i++) {
       FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
-      binary_dump_fluxon_pipe( p, f );
+      (*gl_binary_dumper)( p, f );
     }
     binary_dump_end( p );
   }
@@ -3550,7 +3566,6 @@ int parallel_finish(WORLD *a) {
   SUBPROC_DESC *sbdii;
   int throw_err = 0;
   int i;
-  init_minmax_accumulator(a);
 
   for(sbdii=sbd; sbdii < sbdi; sbdii++) {
     WORLD *brd_ret;
@@ -3589,8 +3604,6 @@ int parallel_finish(WORLD *a) {
     }
   }
 
-  finalize_minmax_accumulator(a);
-
   /* Clean up the mess of the daughters... */
   {
     int status;
@@ -3627,7 +3640,18 @@ int parallel_finish(WORLD *a) {
  */
 
 static int fluxon_calc_step_sb(FLUXON *f) {
+  if(FL_ISDUMMY(f))
+    return 0;
+
   fluxon_calc_step(f, gl_t);
+  return 0;
+}
+
+static int fluxon_relax_step_sb(FLUXON *f) {
+  if(FL_ISDUMMY(f))
+    return 0;
+
+  fluxon_relax_step(f, gl_t);
   return 0;
 }
 
@@ -3640,17 +3664,29 @@ void world_relax_step_parallel(WORLD *a, NUM t) {
     return;
   }
 
+  init_minmax_accumulator(a);
+
   parallel_prep(a);                       // Get ready
 
   gl_t = t;                               // Set up global dtau variable for springboarding                                 
   work_springboard = fluxon_calc_step_sb; // This is the parallelized operation
+  gl_binary_dumper = binary_dump_flstep;  
+
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0); 
 
   parallel_finish(a);     // Snarf up our state again
 
-  /* Now advance the thing (single threaded just yet -- fix?).... */
-  gl_t = t;
-  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_springboard, 0);
+  finalize_minmax_accumulator(a);
+
+  ///* Now advance the thing (single threaded just yet -- fix?).... */
+  //gl_t = t;
+  //tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_r_s_springboard, 0);
+
+  parallel_prep(a);
+  work_springboard = fluxon_relax_step_sb; // This is the parallelized operation
+  gl_binary_dumper = binary_dump_flpos;
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0);
+  parallel_finish(a); // snarf up state again
 
 }
 
@@ -3679,24 +3715,19 @@ int world_update_mag_parallel(WORLD *a, char global) {
 
   parallel_prep(a);
 
+
   work_springboard = fluxon_update_mag_sb;
+  gl_binary_dumper = binary_dump_fluxon_pipe;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0);
   
   parallel_finish(a);
+
   return 0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
+/******************************
+ * world_step_parallel
+ * 
 
 
 

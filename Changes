@@ -1,3 +1,6 @@
+29-Oct-2009[cd]
+	- fully parallelized the two-stage stepper.  This is important because the final portion 
+(fluxon_relax_step) potentially runs slowly since it involves walking out into the neighbor tree.
 9-July-2009[lr]
 	-fiddled with the reconnection conditions. These are not yet done, use at your own risk. 
 15-Apr-2009[lr]

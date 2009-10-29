@@ -99,7 +99,9 @@ WORLD *read_world(FILE *file, WORLD *a);
 #define BD_CONCENTRATION             5
 #define BD_FLUXON                    6
 #define BD_NEIGHBORS                 7
-#define BD_MAX_TYPENO                7
+#define BD_POSITION                  8
+#define BD_STEP                      9
+#define BD_MAX_TYPENO                9
 
 // The read/write routines.  Note that some (the _pipe routines) are intended ONLY 
 // for returning state to a parent via a pipe -- they pass pointers directly!
@@ -111,13 +113,17 @@ int binary_dump_FLUXON(int fd, FLUXON *f);
 int binary_dump_neighbors(int fd, FLUXON *f);
 int binary_dump_end(int fd);
 int binary_dump_fluxon_pipe(int fd, FLUXON *f);
+int binary_dump_flpos(int fd, FLUXON *f);
+int binary_dump_flstep(int fd, FLUXON *f);
 
 WORLD *binary_read_dumpfile(int fd, WORLD *w);
 int binary_read_fluxon_pipe(long size, char *buf, WORLD *w);
 int binary_read_header(long size, char *buf, WORLD *w);
 int binary_read_WORLD(long size, char *buf, WORLD *w);
 int binary_read_CONCENTRATION(long size, char *buf, WORLD *w);
-int binary_read_fluxon(int fd, FLUXON *f);
+int binary_read_FLUXON(long size, char *buf, WORLD *w);
+int binary_read_flpos(long size, char *buf, WORLD *w);
+int binary_read_flstep(long size, char *buf, WORLD *w);
 
 
 // This structure, containing the fixed elements of a VERTEX,

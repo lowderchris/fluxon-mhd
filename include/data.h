@@ -184,6 +184,7 @@ typedef struct FLUX_CONCENTRATION {
   long passno;               /* Multiple-pass detection for hull calculation */
   void (*bound)(VERTEX *v);  /* Boundary condition routine */
   void (*pbound)(VERTEX *v); /* Plasma boundary condition routine */
+  
 } FLUX_CONCENTRATION;
 
 typedef struct PLANE {
@@ -213,8 +214,8 @@ typedef struct PHOTOSPHERE {
 #define MAXNUMCOEFFS 1024 /* Number of coefficients to create */
 
 #define N_FORCE_FUNCS 30    /* Number of functions allowed in the force list */
-#define N_RECON_FUNCS 5     /* Number of reconnection condition functions in the recon list */
-#define N_RECON_PARAMS 5    /* Number of world-global parameters to be stored for each reconnection function */
+#define N_RECON_FUNCS 10    /* Number of reconnection condition functions in the recon list */
+#define N_RECON_PARAMS 8    /* Number of world-global parameters to be stored for each reconnection function */
 
 #define N_M_PARAMS 5        /* Number of world-global parameters for a generic mass scaling function */
 
@@ -296,6 +297,10 @@ typedef struct WORLD {
 
   // Switch use of mass
   int use_fluid;
+
+  // temporary dumblist used for I/O (vertex number translation)
+  DUMBLIST *tmplist;
+
 
 } WORLD;
 

@@ -154,56 +154,76 @@ int footpoint_action(WORLD *world, char *s) {
 
   case 'M': /* MOVE <label> <x> <y> <z> <flux>
 	     */
-  case 'N': /* NEW  <label> <x> <y> <z> <flux>
+  case 'N': /* NEW  <label> <x> <y> <z> <flux> 
+             * NEW  <label> <x> <y> <z> <flux> <boundary> <locale_radius>
 	     */
     /* Initialize the scan string, if necessary */
     if(!*mscan) {
-      sprintf(mscan,"%%*s %%ld %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+      sprintf(mscan,"%%*s %%ld %%%sf %%%sf %%%sf %%%sf %%s %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
     }
+    {
+      char boundary_name[BUFSIZ];
+      NUM radius;
 
-    n = sscanf(s,mscan, &l0,x0,x0+1,x0+2,&flux0);
-
-    if(n != 5) {
-      badstr = "Couldn't parse NEW line";
-    } else {
-      if(toupper(*s)=='N') {
-
-	if( l0<0 ) {
-	  printf("WARNING: automagic FC %ld is given in file -- ignoring this gaffe. (Probably OK)\n",l0);
-	  break;
-	}
-	
-
-	/* New stuff handler */
-
-	FLUX_CONCENTRATION *fc;
-
-	fc = new_flux_concentration( world,x0[0],x0[1],x0[2],flux0, l0 );
-
-      } else if(toupper(*s)=='M') {
-	
-	/* Motion handler */
-	FLUX_CONCENTRATION *fc;
-	fc = tree_find(world->concentrations
-		       , l0
-		       , fc_lab_of, fc_ln_of);
-	if(fc==NULL) {
-	  badstr = "Couldn't find labelled flux concentration in the tree";
-	} else {
-	  /* Copy the new flux and location into the concentration. */
-	  NUM *n0 = fc->x;
-	  NUM *n1 = x0;
-	  fc->flux = flux0;
-	  *n0++ = *n1++;
-	  *n0++ = *n1++;
-	  *n0 = *n1;
-	}
+      n = sscanf(s,mscan, &l0, x0, x0+1, x0+2, &flux0, boundary_name, &radius);
+      
+      if(n != 5 && !(n==7 && toupper(*s)=='N')) {
+	badstr = "Couldn't parse NEW line";
       } else {
-	badstr = "NEW/MOVE line is neither a NEW nor a MOVE!  This should never happen.\n";
+	if(toupper(*s)=='N') {
+	  void *bptr;
+	  
+	  if(n==7) {
+	    bptr = boundary_name_to_ptr(boundary_name);
+	    if(!bptr) {
+	      badstr = "invalid boundary name in NEW line";
+	      goto global_escape;
+	    }
+	  }
+	  
+	  if( l0<0 ) {
+	    printf("WARNING: automagic FC %ld is given in file -- ignoring this gaffe. (Probably OK)\n",l0);
+	    break;
+	  }
+	  
+	  
+	  /* New stuff handler */
+	  
+	  FLUX_CONCENTRATION *fc;
+	  
+	  fc = new_flux_concentration( world,x0[0],x0[1],x0[2],flux0, l0 );
+
+	  if(n==7) {
+	    fc->bound = bptr;
+	    fc->locale_radius = radius;
+	  }
+
+	} else if(toupper(*s)=='M') {
+	  
+	  /* Motion handler */
+	  FLUX_CONCENTRATION *fc;
+	  fc = tree_find(world->concentrations
+			 , l0
+			 , fc_lab_of, fc_ln_of);
+	  if(fc==NULL) {
+	    badstr = "Couldn't find labelled flux concentration in the tree";
+	  } else {
+	    /* Copy the new flux and location into the concentration. */
+	    NUM *n0 = fc->x;
+	    NUM *n1 = x0;
+	    fc->flux = flux0;
+	    *n0++ = *n1++;
+	    *n0++ = *n1++;
+	    *n0 = *n1;
+	  }
+	} else {
+	  badstr = "NEW/MOVE line is neither a NEW nor a MOVE!  This should never happen.\n";
+	}
       }
-    }
+    } // end of convenience block 
+
     break;
-    
+      
   case 'D': /* DELETE <label>
 	     */
     badstr = "Delete not implemented";
@@ -233,105 +253,119 @@ int footpoint_action(WORLD *world, char *s) {
    * End of footpoint motion codes; start of fluxon and vertex 
    * specification codes
    */
-  case 'L': /* LINE <fl_lab> <lab1> <lab2> <flux> 
+  case 'L': /* 
+	     * LINE <fl_lab> <vlab1> <vlab2> <lab1> <lab2> <flux> <sx> <sy> <sz> <ex> <ey> <ez> (12-parameter form)
+	     * LINE <fl_lab> <vlab1> <vlab2> <lab1> <lab2> <flux>  (6-parameter form)
+	     * LINE <fl_lab> <lab1> <lab2> <flux> (4 parameter form)
 	     *  Create a field line from 1 to 2 with label and flux given 
 	     */
     if(!*lscan) {
-      sprintf(lscan,"%%*s %%ld %%ld %%ld %%ld %%ld %%%sf",NUMCHAR,NUMCHAR,NUMCHAR);
+      sprintf(lscan,"%%*s %%ld %%ld %%ld %%ld %%ld %%%sf %%%sf %%%sf %%%sf %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
     }
-
-    n = sscanf(s,lscan, &fl0, &vl0, &vl1, &l0, &l1, &flux0);
-
-    if(n != 6) {
+    
+    {
+      NUM sx, sy, sz, ex, ey, ez;
+      
+      n = sscanf(s,lscan, &fl0, &vl0, &vl1, &l0, &l1, &flux0, &sx, &sy, &sz, &ex, &ey, &ez);
+      
+      if(n < 6) {
       // Fall back to older form 
-
-      if(!*lscan2) {
-	sprintf(lscan2,"%%*s %%ld %%ld %%ld %%%sf",NUMCHAR);
-      }
-      
-      n = sscanf(s,lscan2, &fl0, &l0, &l1, &flux0);
-      
-      if(n != 4) {
-	badstr = "Couldn't parse LINE line";
-	n=0;
-      } else {
-	vl0 = vl1 = 0;
-      }
-    }
-
-    if(n != 0) {
-      //fprintf(stderr,"We are at another line now %ld\n",fl0); //debugging
-
-      if(fl0 <= -11 || fl0 >0) {
-	FLUX_CONCENTRATION *fc0, *fc1;
-	fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
-	fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
-	//printf("line %d: fc %d (%x) - fc %d (%x)\n",fl0,l0,fc0,l1,fc1);
-	if(!fc0 || !fc1) {
-	  char *badbuf = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-	  sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,fc0,fc1,BUFSIZ);
-	  badstr = badbuf;
-	  
-	} else if(fc0->flux * fc1->flux >= 0) {
-	  badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-	  sprintf(badstr,"This fluxon connects two flux concentrations of the same sign flux, or\none of its flux tubes has zero flux. Line %ld; concentrations %ld (%g) and %ld (%g)\n",fl0, flux0, l0, fc0->flux, l1, fc1->flux);
-	  break;
-	}	else {
-	  /* Check if the field line exists in either of the two 
-	     concentrations' local lists */
-	  FLUXON *f;
-	  
-	  if((f = tree_find(world->lines,fl0,fl_lab_of,fl_all_ln_of)) &&
-	     (f->fc0 != fc0 || f->fc1 != fc1)
-	     ) {
-	    badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-	    sprintf(badstr,"Hey!  fluxon %ld already exists (from conc. %ld - %ld)\n"); 
-	  } else {
-	    FLUXON *f0;
-	    
-	    if(f) {
-	      f->flux = fabs(flux0);
-	    } else {
-	      /* Regularize fluxon order */
-	      if(fc0->flux < 0) {  /* Yes, I know about the triple-^= trick. */
-		FLUX_CONCENTRATION *a;    
-		a=fc1;
-		fc1=fc0;
-		fc0=a;
-	      }
-	      
-	      /* Manufacture the new fluxon */
-	      f0 = new_fluxon(fabs(flux0),fc0,fc1,fl0,0);
-	      
-	      if(fc0->label==-3 && fc1->label==-4) {
-		f0->plasmoid = 1;
-	      } else if(fc0->label==-3 || fc1->label==-4) {
-		badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-		sprintf(badstr,"Fluxon %ld uses one (but not both) of the reserved plasmoid FC's (-3 and -4)! Not allowed.",f->label);
-	      }
-	      
-	      if(!badstr) {
-		/* Make sure it has at least the two end vertices */
-		VERTEX *v0, *v1;
-		if(vl0==0) 
-		  vl0 = -(f0->label*2 + 100);
-		if(vl1==0) 
-		  vl1 = -(f0->label*2 + 100)+1;
-		
-		v0 = new_vertex( vl0, fc0->x[0],fc0->x[1],fc0->x[2],f0);
-		v1 = new_vertex( vl1, fc1->x[0],fc1->x[1],fc1->x[2],f0);
-		if(!v0 || !v1) {
-		  badstr = "Couldn't make trivial vertices for fluxon!\n";
-		} else {
-		  if( add_vertex_pos(f0,0,v0) || add_vertex_pos(f0,-1,v1) ) 
-		    badstr = "Problems with trivial vertex addition\n";
-		}
-	      }
-	    }
-	  }
+	
+	if(!*lscan2) {
+	  sprintf(lscan2,"%%*s %%ld %%ld %%ld %%%sf",NUMCHAR);
+	}
+	
+	n = sscanf(s,lscan2, &fl0, &l0, &l1, &flux0);
+	
+	if(n != 4) {
+	  badstr = "Couldn't parse LINE line";
+	  n=0;
+	} else {
+	  // n==4
+	  vl0 = vl1 = 0;
 	}
       }
-    }
+      
+      if(n != 0) {
+      //fprintf(stderr,"We are at another line now %ld\n",fl0); //debugging
+	
+	if(fl0 <= -11 || fl0 >0) {
+	  FLUX_CONCENTRATION *fc0, *fc1;
+	  fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
+	  fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
+	  //printf("line %d: fc %d (%x) - fc %d (%x)\n",fl0,l0,fc0,l1,fc1);
+	  if(!fc0 || !fc1) {
+	    char *badbuf = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
+	    sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,fc0,fc1,BUFSIZ);
+	    badstr = badbuf;
+	    
+	  } else if(fc0->flux * fc1->flux >= 0) {
+	    badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
+	    sprintf(badstr,"This fluxon connects two flux concentrations of the same sign flux, or\none of its flux tubes has zero flux. Line %ld; concentrations %ld (%g) and %ld (%g)\n",fl0, flux0, l0, fc0->flux, l1, fc1->flux);
+	    break;
+	  }	else {
+	    /* Check if the field line exists in either of the two 
+	       concentrations' local lists */
+	    FLUXON *f;
+	    
+	    if((f = tree_find(world->lines,fl0,fl_lab_of,fl_all_ln_of)) &&
+	       (f->fc0 != fc0 || f->fc1 != fc1)
+	       ) {
+	      badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
+	      sprintf(badstr,"Hey!  fluxon %ld already exists (from conc. %ld - %ld)\n",f->label,f->fc0->label, f->fc1->label); 
+	    } else {
+	      FLUXON *f0;
+	      
+	      if(f) {
+		f->flux = fabs(flux0);
+	      } else {
+		/* Regularize fluxon order */
+		if(fc0->flux < 0) {  /* Yes, I know about the triple-^= trick. */
+		  FLUX_CONCENTRATION *a;    
+		  a=fc1;
+		  fc1=fc0;
+		  fc0=a;
+		}
+		
+		/* Manufacture the new fluxon */
+		f0 = new_fluxon(fabs(flux0),fc0,fc1,fl0,0);
+		
+		if(fc0->label==-3 && fc1->label==-4) {
+		  f0->plasmoid = 1;
+		} else if(fc0->label==-3 || fc1->label==-4) {
+		  badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
+		  sprintf(badstr,"Fluxon %ld uses one (but not both) of the reserved plasmoid FC's (-3 and -4)! Not allowed.",f->label);
+		}
+		
+		if(!badstr) {
+		  /* Make sure it has at least the two end vertices */
+		  VERTEX *v0, *v1;
+		  if(vl0==0) 
+		    vl0 = -(f0->label*2 + 100);
+		  if(vl1==0) 
+		    vl1 = -(f0->label*2 + 100)+1;
+		  
+		  if( n==6 ) {
+		    sx = fc0->x[0]; sy = fc0->x[1]; sz = fc0->x[2];
+		    ex = fc1->x[0]; ey = fc1->x[1]; ez = fc1->x[2];
+		  }
+		  
+		  v0 = new_vertex( vl0, sx, sy, sz, f0);
+		  v1 = new_vertex( vl1, ex, ey, ez, f0);
+		  
+		  if(!v0 || !v1) {
+		    badstr = "Couldn't make trivial vertices for fluxon!\n";
+		  } else {
+		    if( add_vertex_pos(f0,0,v0) || add_vertex_pos(f0,-1,v1) ) 
+		      badstr = "Problems with trivial vertex addition\n";
+		  } // end of vertex-creation check
+		}// end of error check
+	      } // end of fluxon existence & flux concentration consistency check
+	    } // end of fluxon existence check
+	  } // end of sign consistency check
+	} // end of label check
+      } // end of parsing check
+    } // end of 'L' case
     
     break;
     
@@ -1236,9 +1270,9 @@ void fprint_fc_line(FILE *f,
   FLUX_CONCENTRATION *fc=foo;
   static char fc_line_format[80]="";
   if(!*fc_line_format) {
-    sprintf(fc_line_format,"NEW\t%%ld\t%%%sf\t%%%sf\t%%%sf\t%%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+    sprintf(fc_line_format,"NEW\t%%ld\t%%%sf\t%%%sf\t%%%sf\t%%%sg\t%%s\t%%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
   }
-  fprintf(f, fc_line_format,fc->label, fc->x[0], fc->x[1], fc->x[2], fc->flux);
+  fprintf(f, fc_line_format,fc->label, fc->x[0], fc->x[1], fc->x[2], fc->flux, boundary_ptr_to_name(fc->bound), fc->locale_radius );
 }
 
 void fprint_fc_line_nonneg(FILE *f, 
@@ -1259,7 +1293,7 @@ void fprint_fc_line_nonneg(FILE *f,
 void fprint_fls_by_fc(FILE *f,
 		      void *fc0,  int i, int label_offset, int link_offset) {
   FLUX_CONCENTRATION *fc = fc0;
-  if(fc->flux >= 0) {
+  if(fc->lines && (fc->lines->fc0 == fc)) {
     fprintf(f,"# FC %ld\n",fc->label);
     fprint_tree(f, fc->lines, fl_lab_of, fl_start_ln_of, 0, fprint_fl_vertices);
   }
@@ -1276,7 +1310,7 @@ void fprint_fl_vertices(FILE *f,
   static char fl_format[80]="";
   static char v_format[80]="";
   if(!*fl_format) {
-    sprintf(fl_format,"LINE\t%%ld\t%%ld\t%%ld\t%%ld\t%%ld\t%%%sg\n",NUMCHAR);
+    sprintf(fl_format,"LINE\t%%ld\t%%ld\t%%ld\t%%ld\t%%ld\t%%%sg            %%%sg %%%sg %%%sg   %%%sg %%%sg %%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
     sprintf( v_format,"\tVERTEX\t%%ld\t%%ld\t%%ld\t%%%sf\t%%%sf\t%%%sf\n",
 	     NUMCHAR,NUMCHAR,NUMCHAR);
   }
@@ -1288,7 +1322,14 @@ void fprint_fl_vertices(FILE *f,
 	  , fl->end ? fl->end->label : 0
 	  , fl->fc0 ? fl->fc0->label : -999
 	  , fl->fc1 ? fl->fc1->label : -999
-	  , fl->flux);
+	  , fl->flux
+	  , fl->start->x[0]
+	  , fl->start->x[1]
+	  , fl->start->x[2]
+	  , fl->end->x[0]
+	  , fl->end->x[1]
+	  , fl->end->x[2]
+	  );
   
   /* Print all the vertices (leave out the first and last) */
   {
@@ -2279,6 +2320,7 @@ int binary_read_neighbors(long size, char *buf, WORLD *w) {
  */
 int binary_dump_end(int fd) {
   binary_dump_field( fd, BD_END, 0, 0 );
+  close(fd);
 }
 
 
@@ -2513,6 +2555,12 @@ WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
 	break;
       case BD_NEIGHBORS:
 	reader = binary_read_neighbors;
+	break;
+      case BD_POSITION:
+	reader = binary_read_flpos;
+	break;
+      case BD_STEP:
+	reader = binary_read_flstep;
 	break;
       default:
 	fprintf(stderr,"WARNING: typecode %d not implemented - you should never see this message from binary_read_dumpfile, in io.c...\n",type);
@@ -2769,3 +2817,341 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
 
     
   
+/******************************
+ * binary_dump_flpos
+ * 
+ * Dumps just the X vectors of the associated vertices.
+ * Used for parallelization.
+ */
+
+int binary_dump_flpos( int fd, FLUXON *f) {
+  long len = 
+    sizeof(NUM) * 3 * f->v_ct              // vectors
+    + 3*sizeof(long)                       // version, fluxon label, vertex count
+    + sizeof(FLUXON *)                     // fluxon pointer
+    + sizeof(long);                        // fence
+  char *dex;
+  VERTEX *v;
+  WORLD *w = f->fc0->world;
+  long verbosity = w->verbosity;
+  long i;
+
+  check_binary_buf(len);
+  dex = binary_buffer;
+  *(long *)dex = 1; // Version number
+  dex += sizeof(long);
+
+  *(long *)dex = f->label; // Label of the fluxon
+  dex += sizeof(long) ;
+
+  *(FLUXON **)dex = f; // fluxon pointer itself
+  dex += sizeof(FLUXON *);
+
+  *(long *)dex = f->v_ct; // Number of vertices to expect
+  dex += sizeof(long);
+
+  *(long *)dex = 0xAABBCCDD; // lay down a fence
+  dex += sizeof(long);
+
+  for(v=f->start, i=0; v; v=v->next,i++) {
+    if(i >= f->v_ct) {
+      fprintf(stderr,"binary_dump_positions: fluxon %d v_ct is incorrect!\n", f->label);
+      return 1;
+    }
+
+    if(verbosity >= 2) {
+      printf("  dumping position for fluxon %d, vertex %d: (%g,%g,%g)\n",f->label, v->label, v->x[0],v->x[1],v->x[2]);
+    }
+
+    *(NUM *)dex = v->x[0];
+    dex += sizeof(NUM);
+
+    *(NUM *)dex = v->x[1];
+    dex += sizeof(NUM);
+
+    *(NUM *)dex = v->x[2];
+    dex += sizeof(NUM);
+  }
+
+  if(verbosity >= 1)
+    printf("Dumping %d bytes of position data for fluxon %d...\n",len,f->label);
+
+  if(dex - binary_buffer != len) {
+    printf("binary_dump_flpos: expected %d bytes, but offset is %d\n",len, dex - binary_buffer);
+  }
+
+  binary_dump_field(fd, BD_POSITION, len, binary_buffer);
+}
+
+int binary_read_flpos( long size, char *buf, WORLD *w) {
+  char *ptr = buf;
+  char *me = "binary_read_flpos";
+  long v_ct;
+  long label;
+  FLUXON *f;
+  VERTEX *v;
+  long i;
+  long verbosity = w->verbosity;
+
+  if ( *(long *)ptr != 1 ) { // Check version number
+    fprintf(stderr,"%s: wrong version  (expected %d, got %d)\n", me, 1, *(long *)ptr);
+    return 1;
+  }
+  ptr += sizeof(long);
+
+  label = *(long *)ptr; // Read fluxon label
+  ptr += sizeof(long);
+
+  f = *(FLUXON **)ptr;   // Read fluxon pointer
+  ptr += sizeof(FLUXON *);
+
+
+  if( f->label != label ) { 
+    fprintf(stderr, "%s: fluxon mismatch! Followed pointer, didn't get the label %d\n",me, label);
+    return 1;
+  }
+
+  v_ct = *(long *)ptr;  // Read expected number of vertices
+  ptr += sizeof(long);
+  if(v_ct != f->v_ct) {
+    fprintf(stderr,"%s: fluxon %d has %d vertices, not %d as advertised...\n",me, label, f->v_ct, v_ct);
+    return 1;
+  }
+
+  if(*((long *)ptr) != 0xAABBCCDD) {
+    printf("Problem with read_binary_flpos -- fence not found!\n");
+    return 1;
+  }
+  ptr += sizeof(long);
+
+
+  if(w->verbosity > 1)
+    printf("Reading data for %d vertices in fluxon %d\n",f->v_ct,f->label);
+
+  for(v=f->start, i=0; i<v_ct; v=v->next,i++) {
+
+
+    v->x[0] = *(NUM *)ptr;
+    ptr += sizeof(NUM);
+    
+    v->x[1] = *(NUM *)ptr;
+    ptr += sizeof(NUM);
+    
+    v->x[2] = *(NUM *)ptr;
+    ptr += sizeof(NUM);
+
+    if(verbosity >= 2) {
+      printf("  reading fluxon %d, vertex %d: (%g,%g,%g)\n",f->label, v->label, v->x[0],v->x[1],v->x[2]);
+    }
+
+    
+  }
+
+  return 0;
+}
+
+
+  
+/******************************
+ * binary_dump_flstep
+ * 
+ * Dumps just the planned step vector for each vertex in a fluxon.
+ * Used for parallelization.
+ */
+
+int binary_dump_flstep( int fd, FLUXON *f) {
+  long len = 
+    sizeof(NUM) * 3 * f->v_ct              //  vectors
+    + 3*sizeof(long)                       //  three longs: version, fluxon label, vertex count
+    + sizeof(FLUXON *)                     //  fluxon pointer
+    + 8*sizeof(NUM)                        // accumulators
+    + sizeof(long)                         // fence
+    ;
+  char *dex;
+  VERTEX *v;
+  WORLD *w = f->fc0->world;
+  int verbosity = w->verbosity;
+  long i;
+
+  check_binary_buf(len);
+  dex = binary_buffer;
+  *(long *)dex = 1; // Version number
+  dex += sizeof(long);
+
+  *(long *)dex = f->label; // Label of the fluxon
+  dex += sizeof(long) ;
+
+  *(FLUXON **)dex = f; // fluxon pointer itself
+  dex += sizeof(FLUXON *);
+
+  *(long *)dex = f->v_ct; // Number of vertices to expect
+  dex += sizeof(long);
+
+  *(NUM *)dex = w->f_min;
+  dex += sizeof(NUM);
+  
+  *(NUM *)dex = w->f_max;
+  dex += sizeof(NUM);
+  
+  *(NUM *)dex = w->fr_min;
+  dex += sizeof(NUM);
+  
+  *(NUM *)dex = w->fr_max;
+  dex += sizeof(NUM);
+
+  *(NUM *)dex = w->ca_min;
+  dex += sizeof(NUM);
+
+  *(NUM *)dex = w->ca_max;
+  dex += sizeof(NUM);
+
+  *(NUM *)dex = w->ca_acc;
+  dex += sizeof(NUM);
+
+  *(NUM *)dex = w->ca_ct;
+  dex += sizeof(NUM);
+
+  *(long *)dex = 0x01234567;
+  dex += sizeof(long);
+
+  if(verbosity >= 2) {
+    printf("binary_dump_flstep: dumping shifts for fluxon %d:", f->label);
+  }
+
+  for(v=f->start, i=0; v; v=v->next,i++) {
+    if(i >= f->v_ct) {
+      fprintf(stderr,"binary_dump_flstep: fluxon %d v_ct is incorrect!\n", f->label);
+      return 1;
+    }
+
+    if(verbosity >= 2) {
+      printf(" (%g,%g,%g)\t",v->plan_step[0], v->plan_step[1], v->plan_step[2]);
+    }
+
+    *(NUM *)dex = v->plan_step[0];
+    dex += sizeof(NUM);
+
+    *(NUM *)dex = v->plan_step[1];
+    dex += sizeof(NUM);
+
+    *(NUM *)dex = v->plan_step[2];
+    dex += sizeof(NUM);
+  }
+  if(verbosity >= 2) {
+    printf("\n");
+  }
+  if(verbosity >= 1)
+    printf("binary_dump_flstep: dumping %d bytes of position data for fluxon %d...\n",len,f->label);
+
+  if( dex - binary_buffer  != len) {
+    printf("binary_dump_flstep: len was %d, offset is %d\n",len, dex - binary_buffer);
+  }
+
+  binary_dump_field(fd, BD_STEP, len, binary_buffer);
+}
+
+int binary_read_flstep( long size, char *buf, WORLD *w) {
+  char *ptr = buf;
+  char *me = "binary_read_flstep";
+  long v_ct;
+  long label;
+  FLUXON *f;
+  VERTEX *v;
+  int verbosity = w->verbosity;
+  long i;
+
+  if ( *(long *)ptr != 1 ) { // Check version number
+    fprintf(stderr,"%s: wrong version  (expected %d, got %d)\n", me, 1, *(long *)ptr);
+    return 1;
+  }
+  ptr += sizeof(long);
+
+  label = *(long *)ptr; // Read fluxon label
+  ptr += sizeof(long);
+
+  f = *(FLUXON **)ptr;   // Read fluxon pointer
+  ptr += sizeof(FLUXON *);
+
+
+  if( f->label != label ) { 
+    fprintf(stderr, "%s: fluxon mismatch! Followed pointer, didn't get the label %d\n",me, label);
+    return 1;
+  }
+
+  v_ct = *(long *)ptr;  // Read expected number of vertices
+  ptr += sizeof(long);
+  if(v_ct != f->v_ct) {
+    fprintf(stderr,"%s: fluxon %d has %d vertices, not %d as advertised...\n",me, label, f->v_ct, v_ct);
+    return 1;
+  }
+
+
+  // Accumulate minmax stuf finto the current accumulator
+  if(w->f_min > *(NUM *)ptr || w->f_min < 0)
+    w->f_min = *(NUM *)ptr;
+  ptr += sizeof(NUM);
+
+  if(w->f_max < *(NUM *)ptr || w->f_max < 0)
+    w->f_max = *(NUM *)ptr;
+  ptr += sizeof(NUM);
+
+  if(w->fr_min > *(NUM *)ptr || w->fr_min < 0) 
+    w->fr_min = *(NUM *)ptr;
+  ptr += sizeof(NUM);
+
+  if(w->fr_max < *(NUM *)ptr || w->fr_max < 0)
+    w->fr_max = *(NUM *)ptr;
+  ptr += sizeof(NUM);
+
+  if(w->ca_min > *(NUM *)ptr || w->ca_min < 0) 
+    w->ca_min = *(NUM *)ptr;
+  ptr += sizeof(NUM);
+
+  if(w->ca_max < *(NUM *)ptr || w->ca_max < 0) 
+    w->ca_max = *(NUM *)ptr;
+  ptr += sizeof(NUM);
+
+  w->ca_acc += *(NUM *)ptr;
+  ptr += sizeof(NUM);
+
+  w->ca_ct += *(NUM *)ptr;
+  ptr += sizeof(NUM);
+						
+  if(*(long *)ptr != 0x01234567) {
+    int i;
+    printf("Problem with read_binary_flstep -- fence not found!\n");
+    printf("looking for 01 23 45 67 (bigendian) or 67 45 23 01 (littleendian); dumping from ptr-16 to ptr+15:\n");
+    for(i=-16; i<15;i++) {
+      printf(" %x",*((unsigned char *)ptr+i));
+    }
+    printf("\n");
+	   
+    return 1;
+  }
+  ptr += sizeof(long);
+
+  if(verbosity > 1)
+    printf("binary_read_flstep: Reading data for %d vertices in fluxon %d\n",f->v_ct,f->label);
+
+  for(v=f->start, i=0; i<v_ct; v=v->next,i++) {
+
+    v->plan_step[0] = *(NUM *)ptr;
+    ptr += sizeof(NUM);
+
+    v->plan_step[1] = *(NUM *)ptr;
+    ptr += sizeof(NUM);
+    
+    v->plan_step[2] = *(NUM *)ptr;
+    ptr += sizeof(NUM);
+    if(verbosity > 1) {
+      printf(" (%g,%g,%g)\t",v->plan_step[0],v->plan_step[1],v->plan_step[2]);
+    }
+  }
+
+  if(verbosity > 1) {
+    printf("\n");
+  }
+  return 0;
+}
+
+
