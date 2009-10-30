@@ -75,6 +75,14 @@ file type of the images.
 Sets how often the on-screen rendering should be updated.  Set this to 0 
 to disable on-screen rendering.  (Default value is 10).
 
+=item save_f
+
+Format string for naming relaxation save-sequence frames (see below)
+
+=item save_n
+
+If this is specified, the state of the simulation is saved every n frames.
+
 =item render_opt
 
 Contains a hash ref to be fed to Flux::World::render() when the field is
@@ -101,7 +109,7 @@ sub simple_relaxer {
     my $opt = shift || {};
     my $auto = $opt->{auto};
     my $save_n = $opt->{save_n};
-    my $save_f = $opt->{save_n} || "step-%5.5d.flux";
+    my $save_f = $opt->{save_f} || "step-%5.5d.flux.gz";
     my $movie_n = $opt->{movie_n};
     my $movie_f = $opt->{movie_f} || "flux-movie-%5.5d.png";
     my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
