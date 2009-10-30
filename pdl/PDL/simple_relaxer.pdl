@@ -101,7 +101,7 @@ sub simple_relaxer {
     my $opt = shift || {};
     my $auto = $opt->{auto};
     my $save_n = $opt->{save_n};
-    my $save_f = $opt->{save_n || "step-%5.5d.flux";
+    my $save_f = $opt->{save_n} || "step-%5.5d.flux";
     my $movie_n = $opt->{movie_n};
     my $movie_f = $opt->{movie_f} || "flux-movie-%5.5d.png";
     my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
