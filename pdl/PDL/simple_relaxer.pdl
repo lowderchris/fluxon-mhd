@@ -100,8 +100,10 @@ sub simple_relaxer {
     my $n=shift||0;
     my $opt = shift || {};
     my $auto = $opt->{auto};
+    my $save_n = $opt->{save_n};
+    my $save_f = $opt->{save_n || "step-%5.5d.flux";
     my $movie_n = $opt->{movie_n};
-    my $movie_f = $opt->{movie_f} || "flux-movie-%4.4d.png";
+    my $movie_f = $opt->{movie_f} || "flux-movie-%5.5d.png";
     my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
     my $range = $opt->{range};
     my $conv = 180.0 / (atan2(1,1)*4.);
@@ -179,8 +181,13 @@ sub simple_relaxer {
 	      print "wrote $fname...\n";
 	    }
 	}
+	
+	unless($save_n==0 || $step % $save_n) {
+	    my $s = sprintf($save_f,$step);
+	    print "saving %s...\n";
+	    $w->write_world($s);
+        }
 ;
-
 	$step++;
 ;
 	
