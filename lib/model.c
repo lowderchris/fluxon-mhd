@@ -3082,6 +3082,7 @@ struct F_B_NAMES F_B_NAMES[] = {
   {fl_b_tied_force,  "fl_b_tied_force",  "Force the closest vertex to be near the FC"},
   {fl_b_open,        "fl_b_open",        "Enforce open (source surface) condition" },
   {fl_b_plasmoid,    "fl_b_plasmoid",    "Enforce plasmoid (ourobouros) condition" }, 
+  {0,                "(null)",           "Null condition" },
   {0, 0},
   {0, 0}
 };
@@ -3089,7 +3090,7 @@ void *boundary_name_to_ptr(char *s) {
   int i;
   if(!s) 
     return 0;
-  for(i=0; F_B_NAMES[i].func; i++) {
+  for(i=0; F_B_NAMES[i].name; i++) {
     if(!strcmp(s, F_B_NAMES[i].name)){
       return F_B_NAMES[i].func;
     }
@@ -3099,12 +3100,15 @@ void *boundary_name_to_ptr(char *s) {
 
 char *boundary_ptr_to_name(void *f) {
   int i;
-  if(!f)
-    return 0;
-  for(i=0; F_B_NAMES[i].func; i++) {
+  for(i=0; F_B_NAMES[i].name; i++) {
     if(F_B_NAMES[i].func == f) {
       return F_B_NAMES[i].name;
     }
+  }
+  {
+    char buf[80];
+    sprintf(buf,"Unknown boundary condition 0x%x",f);
+    return buf;
   }
 }
 
