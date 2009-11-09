@@ -1,3 +1,5 @@
+9-Nov-2009[cd]
+	- allow "(null)" as fluxon end-condition name
 29-Oct-2009[cd]
 	- fully parallelized the two-stage stepper.  This is important because the final portion 
 (fluxon_relax_step) potentially runs slowly since it involves walking out into the neighbor tree.

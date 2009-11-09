@@ -3095,6 +3095,7 @@ void *boundary_name_to_ptr(char *s) {
       return F_B_NAMES[i].func;
     }
   }
+  fprintf(stderr,"boundary_name_to_ptr - warning, unknown boundary condition '%s', returning null\n",s);
   return 0;
 }
 

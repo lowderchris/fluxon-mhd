@@ -175,10 +175,10 @@ int footpoint_action(WORLD *world, char *s) {
 	  
 	  if(n==7) {
 	    bptr = boundary_name_to_ptr(boundary_name);
-	    if(!bptr) {
-	      badstr = "invalid boundary name in NEW line";
-	      goto global_escape;
-	    }
+	    //	    if(!bptr) {
+	    //  badstr = "invalid boundary name in NEW line";
+	    //  goto global_escape;
+	    //  }
 	  }
 	  
 	  if( l0<0 ) {
