@@ -1,3 +1,5 @@
+12-Aug-2010[cd
+	- fix the label hasher for new vertices.  This fixes the not-reading-in-neighbors-from-save-files bug.
 9-Nov-2009[cd]
 	- allow "(null)" as fluxon end-condition name
 29-Oct-2009[cd]
