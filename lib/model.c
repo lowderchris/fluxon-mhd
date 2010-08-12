@@ -2915,7 +2915,7 @@ long fluxon_recon_check( FLUXON *f, long passno ) {
 
 static DUMBLIST *grc_vertexlist = 0;
 static long grc_tramp(VERTEX *v, int lab, int link, int depth) {
-  if( v->next && (v->prev || !(v->line->plasmoid)) )
+  if( v->next && (v->prev || !(v->line->plasmoid)) && !V_ISDUMMY(v))
     grc_vertexlist->stuff[ (grc_vertexlist->n)++ ] = (void *)v;
   return 0;
 }

@@ -185,14 +185,19 @@ long hash_vertex_label(long request, WORLD *w) {
   if(w==0)
     return new_vertex_label(request);
 
-  do {
-
+  if(!request) {
     new_label = random() & 0x7fffffff;
+  }  else {
+    new_label = request;
+  }
 
-  } while( tree_find( w->vertices, new_label, v_lab_of, v_ln_of ) && count < 1000);
+  // Try ten times to find a non-collision
+  while(tree_find( w->vertices, new_label, v_lab_of, v_ln_of ) && count < 10) {
+    new_label = random() & 0x7fffffff;
+  }
 
-  if(count>=1000) {
-    fprintf(stderr,"Hey! hash_vertex_label gave up after 1000 tries.  I give up!\n");
+  if(count>=10) {
+    fprintf(stderr,"Hey! hash_vertex_label gave up after 10 tries.  I give up!\n");
     exit(123);
   }
   // probably not too smart -- md5 will fill up the space reasonably quickly - but what the heck.
@@ -318,7 +323,7 @@ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   tp->b_mag = 0;
   tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
 
-  tp->label = hash_vertex_label(label, fluxon->fc0->world);
+  tp->label = label ? hash_vertex_label(label, fluxon->fc0->world) : hash_vertex_label(0, fluxon->fc0->world);
   
   tp->rho = 0;
   tp->p[0] = tp->p[1] = tp->p[2] = 0;

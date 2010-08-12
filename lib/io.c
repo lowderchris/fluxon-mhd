@@ -414,10 +414,11 @@ int footpoint_action(WORLD *world, char *s) {
 	v = tree_find(world->vertices, vlab, v_lab_of, v_ln_of);
 	n = tree_find(world->vertices, nlab, v_lab_of, v_ln_of);
 	if(!v || !n) {
-	  (stderr,"Warning: V_NEIGHBOR line asked for targets %d and %d; at least one of 'em isn't defined...\n",vlab,nlab);
+	  fprintf(stderr,"Warning: V_NEIGHBOR line asked for targets %d and %d; at least one of 'em isn't defined...\n",vlab,nlab);
 	} else {
 	  dumblist_add( &(v->neighbors), n );
 	  dumblist_add( &(n->nearby),    v );
+	  printf("%d: added %d (n=%d)\n",v->label, n->label, v->neighbors.n);
 	}
       }
     } else {
