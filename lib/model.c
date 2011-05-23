@@ -83,13 +83,13 @@ static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
    * Check that either there are no vertices, or that both start and end are defined.
    */
   if( (fl->start == 0) ^ (fl->end == 0) ) {
-    fprintf(stderr, "world_check ERROR: fluxon %d has inconsistent start & end vertices (%d vs %d)!\n",fl->label, fl->start, fl->end);
+    fprintf(stderr, "world_check ERROR: fluxon %ld has inconsistent start & end vertices (%d vs %d)!\n",fl->label, fl->start, fl->end);
     world_check_code = -1;
     return 0;
   }
 
   if( (fl->start != 0 && fl->start == fl->end) ) {
-    fprintf(stderr, "world_check ERROR: fluxon %d has only one VERTEX (%d) - start & end must be different.\n",fl->label, fl->start->label);
+    fprintf(stderr, "world_check ERROR: fluxon %ld has only one VERTEX (%ld) - start & end must be different.\n",fl->label, fl->start->label);
     world_check_code = -1;
     return 0;
   }
@@ -103,12 +103,12 @@ static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
     if( sqrt(cart2_3d(v->x, v->next->x) / (norm2_3d(v->x)+norm2_3d(v->next->x))) < EPSILON ) {
 
       if(!v->prev && !v->next->next) {
-	fprintf(stderr,"world_check ERROR: fluxon %d has only two verts (%d & %d) and they are at the same location!\n\tCan't delete either without invalidating the fluxon.\n",fl->label, v->label, v->next->label);
+	fprintf(stderr,"world_check ERROR: fluxon %ld has only two verts (%ld & %ld) and they are at the same location!\n\tCan't delete either without invalidating the fluxon.\n",fl->label, v->label, v->next->label);
 	world_check_code = -1;
 	return 0;
       }
       
-      fprintf(stderr,"world_check WARNING: fluxon %4d: verts %4d (%s) & %4d (%s) are at the same location - deleted %4d...\n",fl->label, v->label, (v->prev ? "mid" : "beg"), v->next->label, (v->next->next ? "mid" : "end"), (v->next->next ? v->next->label : v->label));
+      fprintf(stderr,"world_check WARNING: fluxon %4ld: verts %4ld (%s) & %4ld (%s) are at the same location - deleted %4ld...\n",fl->label, v->label, (v->prev ? "mid" : "beg"), v->next->label, (v->next->next ? "mid" : "end"), (v->next->next ? v->next->label : v->label));
       delete_vertex( v->next->next ? v->next : v );
       if(world_check_code == 0) 
 	world_check_code = 1;
@@ -234,7 +234,7 @@ void fluxon_auto_open(FLUXON *f) {
 
     // Trivial U-loops...
     if(f->v_ct < 4) {
-      printf(" Fluxon %d is a trivial U-loop.  Deleting...\n",f->label);
+      printf(" Fluxon %ld is a trivial U-loop.  Deleting...\n",f->label);
       delete_fluxon(f);
       return;
     } 
@@ -259,7 +259,7 @@ void fluxon_auto_open(FLUXON *f) {
     fflush(stdout);
     
     if( norm2_3d(x0) > r2 ) {
-     printf("v%d (on %d) ",v->label,f->label);
+     printf("v%ld (on %ld) ",v->label,f->label);
       printf("Open!  ");
       fflush(stdout);
       
@@ -293,7 +293,7 @@ void fluxon_auto_open(FLUXON *f) {
 	 * All the vertices were outside -- delete the fluxon.
          */
 	if(vn==vp) {
-	  printf("Deleting fluxon %d\n",f->label);
+	  printf("Deleting fluxon %ld\n",f->label);
 	  delete_fluxon(f);
 	  return;
 	}
@@ -500,7 +500,7 @@ void fluxon_auto_open(FLUXON *f) {
 	    }
 	    
 	    // Now we should have Vprev->a->b->Vnext.
-	    printf("Vprev is %d; next is %d; next is %d; next is %d; Vnext is %d\n",
+	    printf("Vprev is %ld; next is %ld; next is %ld; next is %ld; Vnext is %ld\n",
 	       Vprev->label, Vprev->next->label, Vprev->next->next->label, Vprev->next->next->next->label, Vnext->label);
 	    
 	    /* Now reposition the intermediate vertices approximately
@@ -669,7 +669,7 @@ static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
 
   if(fl->fc0->world->verbosity >= 5) dump_all_fluxon_tree(gl_a->lines);
   if(fl->fc0->world->verbosity) {
-    printf(" %d",fl->label);
+    printf(" %ld",fl->label);
     fflush(stdout);
   }
   return fluxon_update_neighbors(fl, gl_gl);
@@ -710,7 +710,7 @@ static long f_w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
 
   if(fl->fc0->world->verbosity >= 5) dump_all_fluxon_tree(gl_a->lines);
   if(fl->fc0->world->verbosity) {
-    printf(" %d",fl->label);
+    printf(" %ld",fl->label);
     fflush(stdout);
   }
   return fast_fluxon_update_neighbors(fl, gl_gl);
@@ -874,7 +874,7 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
   VERTEX *v =fl->start;
   int verbosity = fl->fc0->world->verbosity;
 
-  if(verbosity>=2) printf("fluxon_update_neighbors... (gl=%d), fluxon %d\n",global,fl->label);
+  if(verbosity>=2) printf("fluxon_update_neighbors... (gl=%d), fluxon %ld\n",global,fl->label);
 
   if(FL_ISDUMMY(fl))
     return 0;
@@ -890,7 +890,7 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
   // v=v->next;
 
   while(v->next) {   
-    if(verbosity>=3)  printf("\tfluxon_update_neighbors... vertex %d\n",v->label);
+    if(verbosity>=3)  printf("\tfluxon_update_neighbors... vertex %ld\n",v->label);
 
     vertex_update_neighbors(v,global || (v->neighbors.n == 0));
     if(verbosity>=4)   fdump_fluxon(stdout,fl,0);
@@ -922,7 +922,7 @@ int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
   int verbosity = w->verbosity;
   VERTEX *v = fl->start;
 
-  if(verbosity >= 2)  printf("fluxon_update_mag (fluxon %d): %c",fl->label,(verbosity==2?' ':'\n'));
+  if(verbosity >= 2)  printf("fluxon_update_mag (fluxon %ld): %c",fl->label,(verbosity==2?' ':'\n'));
 
   /*
    * Set forces on the end vertex to zero, since it has no 
@@ -944,7 +944,7 @@ int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
     NUM r;
     int ii;
     HULL_VERTEX *vertices;
-    if(verbosity >= 3) { printf("V%4d ",v->label); fflush(stdout); }
+    if(verbosity >= 3) { printf("V%4ld ",v->label); fflush(stdout); }
 
     /* Update neighbor map and establish neighbors' (r,a) variables, 
      *  which will be used by the physics funcs! */
@@ -994,7 +994,7 @@ int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
 
   /* Find closest approach radius, and calculate total forces */
   
-  if(verbosity >= 2) printf("Radius - fluxon %d: %c",fl->label,(verbosity==2?' ':'\n'));
+  if(verbosity >= 2) printf("Radius - fluxon %ld: %c",fl->label,(verbosity==2?' ':'\n'));
 
   for(v=fl->start;v->next;v=v->next) {
     NUM f[3], fns, fnv, fn;
@@ -1195,7 +1195,7 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
     d1 = norm_3d(foo);
 
     if(r_cl <= 0) {
-      fprintf(stderr,"ASSERTION FAILED!  Negative distance %g on vertex %d!\n",r_cl,v->label);
+      fprintf(stderr,"ASSERTION FAILED!  Negative distance %g on vertex %ld!\n",r_cl,v->label);
       fprintf(stderr,"vertex has %d neighbors\n",v->neighbors.n);
       r_cl = 1; /* hope the problem goes away */
     }
@@ -1205,10 +1205,10 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
     stiffness = calc_stiffness(v);
     if(stiffness == 0) stiffness = 1e-7;
 
-    if(verbosity >= 3)  printf("fluxon %d, vertex %d: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  stiffness = %g, f_t=(%g,%g,%g)[%g]\t",f->label,v->label, v->x[0],v->x[1],v->x[2], v->r_cl, r_cl, stiffness, norm_3d(v->f_t), v->f_t[0],v->f_t[1],v->f_t[2],norm_3d(v->f_t));
+    if(verbosity >= 3)  printf("fluxon %ld, vertex %ld: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  stiffness = %g, f_t=(%g,%g,%g)[%g]\t",f->label,v->label, v->x[0],v->x[1],v->x[2], v->r_cl, r_cl, stiffness, norm_3d(v->f_t), v->f_t[0],v->f_t[1],v->f_t[2],norm_3d(v->f_t));
     
     if(stiffness > 1.00001) {
-      fprintf(stderr,"fluxon %d, vertex %d: stiffness = %g, >1!  This is allegedly impossible! You've got trouble, gov\n",f->label,v->label,stiffness);
+      fprintf(stderr,"fluxon %ld, vertex %ld: stiffness = %g, >1!  This is allegedly impossible! You've got trouble, gov\n",f->label,v->label,stiffness);
       fflush(stdout);
       fflush(stderr);
     }
@@ -1495,7 +1495,7 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
     workspace = new_dumblist(); 
 
   if(!v) {
-    fprintf(stderr,"WARNING: fluxon_relax_step called with a fluxon (%d) that has no start vertex!\n",f->label);
+    fprintf(stderr,"WARNING: fluxon_relax_step called with a fluxon (%ld) that has no start vertex!\n",f->label);
     return;
   }
     
@@ -1568,7 +1568,7 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
     if(finite(step[0]) && finite(step[1]) &&finite(step[2])) {
       sum_3d(v->x,v->x,step);
     } else {
-	printf("NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%d (ignoring)\n",v->f_t[0],v->f_t[1],v->f_t[2],v->label);
+	printf("NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%ld (ignoring)\n",v->f_t[0],v->f_t[1],v->f_t[2],v->label);
     }
 
     vertex_enforce_photosphere( v, &(world->photosphere) );
@@ -1670,10 +1670,10 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
 
 
   if(verbosity >= 3) {
-    printf("vertex_update_neighbors: Vertex %d has %d candidates: ",v->label,dl->n);
+    printf("vertex_update_neighbors: Vertex %ld has %d candidates: ",v->label,dl->n);
     if(verbosity >= 4)
       for(i=0;i<dl->n;i++)
-	printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
+	printf("  %ld",((VERTEX *)((dl->stuff)[i]))->label);
     printf("\n");
   }
 
@@ -1683,7 +1683,7 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
     printf("Hull_neighbors returned %d neighbors: ",dl->n);
     if(verbosity >= 4)
       for(i=0;i<dl->n;i++) 
-	printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
+	printf("  %ld",((VERTEX *)((dl->stuff)[i]))->label);
     printf("\n");
   }
   
@@ -1828,7 +1828,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   //printf(". ");
 
   if(verbosity >= 2) {
-    printf("passno=%d...  ",passno);
+    printf("passno=%ld...  ",passno);
   }
 
   if(!v)        /* Paranoia */
@@ -1930,7 +1930,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
             int i;
             printf("gather_neighbor_candidates:  global neighbor add gives:\n\t");
             for(i=0;i<workspace->n;i++)
-      	printf("%d ",((VERTEX *)(workspace->stuff[i]))->label);
+      	printf("%ld ",((VERTEX *)(workspace->stuff[i]))->label);
             printf("\n");
           }
 
@@ -2232,7 +2232,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
     printf(".");
     
     if(verbosity >= 5)
-      printf("V%4d: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
+      printf("V%4ld: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
   }
 
   /* Find the 2-D hull.  Don't want rejects. */
@@ -2240,13 +2240,13 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   hull_2d_us(voronoi_buf, horde, v);
   
   if(horde->n==0) {
-    printf("VERTEX %d: hull_2d gave up! That's odd....\n",v->label);
+    printf("VERTEX %ld: hull_2d gave up! That's odd....\n",v->label);
   }
 
   if(verbosity >= 5){
     printf("hull_neighbors:  hull trimming gives:\n");
     for(i=0;i<horde->n;i++) 
-      printf("%d ",((VERTEX *)(horde->stuff[i]))->label); fflush(stdout);
+      printf("%ld ",((VERTEX *)(horde->stuff[i]))->label); fflush(stdout);
     printf("\n");
   }
   
@@ -2325,11 +2325,11 @@ int fluxon_fix_proximity(FLUXON *F, NUM scale_thresh) {
   VERTEX *V = F->start;
   int verbosity = F->fc0->world->verbosity;
 
-  if(verbosity >= 2) printf("fluxon_fix_proximity: fluxon %d\n",F->label);
+  if(verbosity >= 2) printf("fluxon_fix_proximity: fluxon %ld\n",F->label);
 
   while(V && V != F->end) {
     VERTEX *Vnext = V->next;
-     if(verbosity >= 3) printf("  vertex %d\n",V->label);
+     if(verbosity >= 3) printf("  vertex %ld\n",V->label);
     ret += fix_proximity(V,scale_thresh);
     V=Vnext;
   }
@@ -2477,7 +2477,7 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
 	   offset_dist < V->r_cl && 
 	   offset_dist < V->next->r_ncl) {
 	  if(V->line->fc0->world->verbosity > 3){
-	    printf("fix_curvature: unlinking %d from line %d\n",V->label,V->line->label);
+	    printf("fix_curvature: unlinking %ld from line %ld\n",V->label,V->line->label);
 	  }
 	  delete_vertex(V);
 	  return -1;
@@ -2494,11 +2494,11 @@ int fluxon_fix_curvature(FLUXON *f, NUM curve_thresh_high, NUM curve_thresh_low)
   VERTEX *V = f->start;
   int verbosity = f->fc0->world->verbosity;
 
-  if(verbosity >= 2) printf("fluxon_fix_curvature: fluxon %d\n",f->label);
+  if(verbosity >= 2) printf("fluxon_fix_curvature: fluxon %ld\n",f->label);
   
   while(V && V != f->end) {
     VERTEX *Vnext = V->next;
-    if(verbosity >= 3) printf("  vertex %d\n",V->label);
+    if(verbosity >= 3) printf("  vertex %ld\n",V->label);
     ret += fix_curvature(V,curve_thresh_high, curve_thresh_low);
     V=Vnext;
   }
@@ -2579,7 +2579,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     firstv = 0;
     lastv = 0;
 
-    printf("(self case): Reconnecting (%d; l=%d%s) -- (%d; l=%d%s)\n",
+    printf("(self case): Reconnecting (%ld; l=%ld%s) -- (%ld; l=%ld%s)\n",
 	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
 	   v2->label, v2->line->label, v2->line->plasmoid?" P":""
 	   );
@@ -2605,7 +2605,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     }
 
     if(firstv->next==lastv || firstv->next->next==lastv) {
-      fprintf(stderr,"Error in plasmoid reconnection code: must be more than two vertices between the two reconnecting vertices! Ignoring (vertices = (%d, l=%d; %d, l=%d).\n",v1->label,v1->line->label,v2->label,v2->line->label);
+      fprintf(stderr,"Error in plasmoid reconnection code: must be more than two vertices between the two reconnecting vertices! Ignoring (vertices = (%ld, l=%ld; %ld, l=%ld).\n",v1->label,v1->line->label,v2->label,v2->line->label);
       return;
     }
 
@@ -2658,7 +2658,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
       v->line = Fnew;
     
     if(i != Fnew->v_ct) {
-      fprintf(stderr, "Error in plasmoid reconnection case - v_ct is %d, i is %d!\n", Fnew->v_ct, i);
+      fprintf(stderr, "Error in plasmoid reconnection case - v_ct is %ld, i is %ld!\n", Fnew->v_ct, i);
       Fnew->v_ct = i;
     }
 
@@ -2681,7 +2681,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
       f2=v2->line;
     }
 
-    printf("(plasmoid case): Reconnecting (%d; l=%d%s) -- (%d; l=%d%s)\n",
+    printf("(plasmoid case): Reconnecting (%ld; l=%ld%s) -- (%ld; l=%ld%s)\n",
 	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
 	   v2->label, v2->line->label, v2->line->plasmoid?" P":""
 	   );
@@ -2691,10 +2691,10 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
      */
     // If it's the very first VERTEX, switch to second-to-last (equivalent in a plasmoid)...
     if( ! v2->prev ) {
-      printf("v2 was at the start of the plasmoid: v%d -> v%d\n",v2->label,v2->line->end->prev->label);
+      printf("v2 was at the start of the plasmoid: v%ld -> v%ld\n",v2->label,v2->line->end->prev->label);
       v2 = v2->line->end->prev;
     } else if(!v2->next->next) {
-      printf("v2 was at the end of the plasmoid: v%d -> v%d\n",v2->label,v2->line->end->prev->label);
+      printf("v2 was at the end of the plasmoid: v%ld -> v%ld\n",v2->label,v2->line->end->prev->label);
       v2 = v2->line->start->next;
     }
 
@@ -2739,7 +2739,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
      * Non-self-reconnection - normal case 
      */
 
-    printf("(normal case): Reconnecting (%d; l=%d%s) -- (%d; l=%d%s), pos (%.3g,%.3g,%.3g)\n",
+    printf("(normal case): Reconnecting (%ld; l=%ld%s) -- (%ld; l=%ld%s), pos (%.3g,%.3g,%.3g)\n",
 	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
 	   v2->label, v2->line->label, v2->line->plasmoid?" P":"",v1->x[0],v1->x[1],v1->x[2]
 	   );
@@ -2780,7 +2780,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     f2->end->line = f2;
     
     if(i+j != f1->v_ct + f2->v_ct) {
-      fprintf(stderr,"Hmmm -- something's funny with the vertex count.  Reconnected %d(fl %d) to %d (fl %d), final total vertex count is %d, previously %d\n",v1->label,f1->label,v2->label,f2->label,i+j,f1->v_ct+f2->v_ct);
+      fprintf(stderr,"Hmmm -- something's funny with the vertex count.  Reconnected %ld(fl %ld) to %ld (fl %ld), final total vertex count is %d, previously %ld\n",v1->label,f1->label,v2->label,f2->label,i+j,f1->v_ct+f2->v_ct);
     }
     f1->v_ct = i;
     f2->v_ct = j;
@@ -2831,7 +2831,7 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
 
   if(rv) {
     if( w->verbosity) {
-      printf("Reconnecting vertices %d (on %d at [%.3g,%.3g,%.3g]) and %d (on %d at [%.3g,%.3g,%.3g]): satisfied condition %d\n",
+      printf("Reconnecting vertices %ld (on %ld at [%.3g,%.3g,%.3g]) and %ld (on %ld at [%.3g,%.3g,%.3g]): satisfied condition %d\n",
 	     v1->label,  v1->line->label,    v1->x[0], v1->x[1], v1->x[2],
 	     rv->label,  rv->line->label,    rv->x[0], rv->x[1], rv->x[2],
 	     i-1
@@ -2852,7 +2852,7 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
        !v1->prev ||
        !v1->prev->prev ||
        !v1->prev->prev->prev ) {
-       fprintf(stderr,"    reconnect_vertices: error -- too close to the photosphere v1 %d\n",v1->label);
+       fprintf(stderr,"    reconnect_vertices: error -- too close to the photosphere v1 %ld\n",v1->label);
       return 0;
     }
 
@@ -2863,7 +2863,7 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
        !rv->prev ||
        !rv->prev->prev ||
        !rv->prev->prev->prev ) {
-       fprintf(stderr,"    reconnect_vertices: error -- too close to the photosphere rv %d\n",rv->label);
+       fprintf(stderr,"    reconnect_vertices: error -- too close to the photosphere rv %ld\n",rv->label);
       return 0;
     }
 
@@ -2971,7 +2971,7 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
   int v = w->verbosity;
 
 
-  if(v) printf("fc_cancel: %d and %d\n",fc0->label,fc1->label);
+  if(v) printf("fc_cancel: %ld and %ld\n",fc0->label,fc1->label);
   
   // Handle the trivial cases.
   if(!fc0->lines && !fc1->lines) {
@@ -3008,36 +3008,36 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
   if(fc1->lines->end_links.n < n_min)
     n_min = fc1->lines->end_links.n;
 
-  if(v) printf("fc_cancel: fc0.n is %d; fc1.n is %d; n_min is %d\n",
+  if(v) printf("fc_cancel: fc0.n is %ld; fc1.n is %ld; n_min is %ld\n",
 	       fc0->lines->start_links.n,
 	       fc1->lines->end_links.n,
 	       n_min
 	       );
 
   while( n_min  ) {
-    printf("%d: ",n_min);
+    printf("%ld: ",n_min);
 
     if(!fc0->lines || !fc1->lines) {
-      fprintf(stderr, "cancel: accounting error! (n_min=%d, fc0 has %d, fc1 has %d)\n",n_min, (fc0->lines? fc0->lines->start_links.n : 0), (fc1->lines ? fc1->lines->end_links.n : 0) );
+      fprintf(stderr, "cancel: accounting error! (n_min=%ld, fc0 has %ld, fc1 has %ld)\n",n_min, (fc0->lines? fc0->lines->start_links.n : 0), (fc1->lines ? fc1->lines->end_links.n : 0) );
       return 3;
     }
     
     if( fc0->lines->fc1 == fc1 ) {
-      if(v) printf("fc_cancel: fluxon %d (top of fc0) goes fc0->fc1\n",fc0->lines->label);
+      if(v) printf("fc_cancel: fluxon %ld (top of fc0) goes fc0->fc1\n",fc0->lines->label);
       delete_fluxon( fc0->lines );
       goto cancel_loop_end;
     } 
 
     if( fc1->lines->fc0 == fc0 ) {
-      if(v) printf("fc_cancel: fluxon %d (top of fc1) goes fc0->fc1\n",fc1->lines->label);
+      if(v) printf("fc_cancel: fluxon %ld (top of fc1) goes fc0->fc1\n",fc1->lines->label);
       delete_fluxon( fc1->lines );
       goto cancel_loop_end;
     } 
 
-    if(v) printf("No fc0->fc1 found. Reconnecting %d and %d...\n",fc0->lines->label,fc1->lines->label);
+    if(v) printf("No fc0->fc1 found. Reconnecting %ld and %ld...\n",fc0->lines->label,fc1->lines->label);
     reconnect_vertices( fc0->lines->start, fc1->lines->end->prev, ++(fc0->world->passno));
     if(fc0->lines->fc1 != fc1) {
-      fprintf(stderr, "cancel: reconnection didn't work out like we hoped for fluxon %d...\n",fc0->lines->label);
+      fprintf(stderr, "cancel: reconnection didn't work out like we hoped for fluxon %ld...\n",fc0->lines->label);
       return 4;
     }
     delete_fluxon(fc0->lines);
@@ -3046,12 +3046,12 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
   }
 
   if(!fc0->lines) {
-    printf("Deleting fc0 (%d) ",fc0->label);
+    printf("Deleting fc0 (%ld) ",fc0->label);
     delete_flux_concentration(fc0);
   }
 
   if(!fc1->lines) {
-    printf("Deleting fc1 (%d) ",fc1->label);
+    printf("Deleting fc1 (%ld) ",fc1->label);
     delete_flux_concentration(fc1);
   }
 
@@ -3431,7 +3431,7 @@ void parallel_prep(WORLD *a) {
     fluxon_batch = new_dumblist();
 
   if(a->concurrency > 1000) {
-    fprintf(stderr,"parallel_prep: WARNING - concurrency is ludicrous! (%d)\n",a->concurrency);
+    fprintf(stderr,"parallel_prep: WARNING - concurrency is ludicrous! (%ld)\n",a->concurrency);
   }
 
   sbdi = sbd = (SUBPROC_DESC *)localmalloc(sizeof(SUBPROC_DESC) * a->concurrency, MALLOC_MISC);
@@ -3491,7 +3491,7 @@ static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int
       close(p[1]);
 
       if(fl->fc0->world->verbosity) {
-	printf("spawned %d at %d (thresh %d)...",pid,v_ct,v_thresh);
+	printf("spawned %d at %ld (thresh %ld)...",pid,v_ct,v_thresh);
 	fflush(stdout);
       }
       
@@ -3540,11 +3540,11 @@ int parallel_daughter(int p) {
   for(i=0; i<fluxon_batch->n; i++) {
     FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
     if(f->fc0->world->verbosity) {
-      printf("pid %d: processing fluxon %d (%d of %d)\n",pid,f->label,i,fluxon_batch->n);
+      printf("pid %d: processing fluxon %ld (%d of %d)\n",pid,f->label,i,fluxon_batch->n);
       fflush(stdout);
     }
     if((*work_springboard)( f )) {
-      printf("pid %d: fluxon %d failed its springboard! Exiting early.\n",pid,f->label);
+      printf("pid %d: fluxon %ld failed its springboard! Exiting early.\n",pid,f->label);
       fflush(stdout);
       return(1);
     }
@@ -3575,7 +3575,7 @@ int parallel_finish(WORLD *a) {
   for(sbdii=sbd; sbdii < sbdi; sbdii++) {
     WORLD *brd_ret;
     if(a->verbosity) {
-      printf("Reading dumpfile for pid %d...",sbdii->pid);
+      printf("Reading dumpfile for pid %ld...",sbdii->pid);
       fflush(stdout);
     }
     brd_ret = binary_read_dumpfile( sbdii->pipe, a );
@@ -3591,7 +3591,7 @@ int parallel_finish(WORLD *a) {
 
       fprintf(stderr,"parallel_finish: Oh noes! Daughter failed for fluxons");
       for(i=0; i < fluxon_batch->n; i++) {
-	fprintf(stderr," %d",( ((FLUXON **)(fluxon_batch->stuff))[i] )->label );
+	fprintf(stderr," %ld",( ((FLUXON **)(fluxon_batch->stuff))[i] )->label );
       }
       fprintf(stderr,"!\n     This is sometimes caused by a system interrupt damaging the pipe. Re-trying in the parent...\n");
       
@@ -3605,7 +3605,7 @@ int parallel_finish(WORLD *a) {
     }
 
     if(a->verbosity) {
-      printf("finished pid %d dump..\n",sbdii->pid);
+      printf("finished pid %ld dump..\n",sbdii->pid);
     }
   }
 
@@ -3805,14 +3805,14 @@ DUMBLIST *gather_photosphere_neighbor_candidates(VERTEX *v, char global){
   v->passno = passno; //identifier for current vertex
   
   if(verbosity >= 2) {
-    printf("passno=%d...  ",passno);
+    printf("passno=%ld...  ",passno);
   }
 
   if(!v)        /* Paranoia */
     return;
 
   if(v != v->line->start && v != v->line->end){
-    printf("Oops, gather_photosphere_neighbor_candidates got a non begin/end vertex (label %d) \n",v->label);
+    printf("Oops, gather_photosphere_neighbor_candidates got a non begin/end vertex (label %ld) \n",v->label);
     return;
   }
 
@@ -3849,7 +3849,7 @@ DUMBLIST *gather_photosphere_neighbor_candidates(VERTEX *v, char global){
             int i;
             printf("gather_photosphere_neighbor_candidates:  global neighbor add gives:\n\t");
             for(i=0;i<workspace->n;i++)
-      	printf("%d ",((VERTEX *)(workspace->stuff[i]))->label);
+      	printf("%ld ",((VERTEX *)(workspace->stuff[i]))->label);
             printf("\n");
           }
 
@@ -3896,7 +3896,7 @@ HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde) {
     printf("Entering photosphere hull_neighbors...\n");
 
   if(v != v->line->start && v != v->line->end){
-    printf("Oops, photosphere_hull_neighbors got a non begin/end vertex (label %d) \n",v->label);
+    printf("Oops, photosphere_hull_neighbors got a non begin/end vertex (label %ld) \n",v->label);
     return 0;
   }
 
@@ -3935,7 +3935,7 @@ HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde) {
     printf(".");
     
     if(verbosity >= 5)
-      printf("V%4d: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
+      printf("V%4ld: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
   }
 
   /* Find the 2-D hull.  Don't want rejects. */
@@ -3956,13 +3956,13 @@ HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   }
   
   if(horde->n==0) {
-    printf("VERTEX %d: hull_2d gave up! That's odd....\n",v->label);
+    printf("VERTEX %ld: hull_2d gave up! That's odd....\n",v->label);
   }
 
   if(verbosity >= 5){
     printf("hull_neighbors_photosphere:  hull trimming gives:\n");
     for(i=0;i<horde->n;i++) 
-      printf("%d ",((VERTEX *)(horde->stuff[i]))->label); fflush(stdout);
+      printf("%ld ",((VERTEX *)(horde->stuff[i]))->label); fflush(stdout);
     printf("\n");
   }
   
@@ -3996,12 +3996,12 @@ HULL_VERTEX *photosphere_vertex_update_neighbors(VERTEX *v, char global, int *n_
   }
 
    if(v != v->line->start && v != v->line->end){
-    printf("Oops, photosphere_vertex_update_neighbors got a non begin/end vertex (label %d) \n",v->label);
+    printf("Oops, photosphere_vertex_update_neighbors got a non begin/end vertex (label %ld) \n",v->label);
     return 0;
   }
 
  if(v->line->fc0->world->photosphere.type != 1) {
-    printf("Oops, photosphere_vertex_update_neighbors got a vertex (label %d) that was not on a planar surface \n",v->label);
+    printf("Oops, photosphere_vertex_update_neighbors got a vertex (label %ld) that was not on a planar surface \n",v->label);
     return 0;
   }
 
@@ -4011,10 +4011,10 @@ HULL_VERTEX *photosphere_vertex_update_neighbors(VERTEX *v, char global, int *n_
 
 
   if(verbosity >= 3) {
-    printf("photosphere_vertex_update_neighbors: Vertex %d has %d candidates: ",v->label,dl->n);
+    printf("photosphere_vertex_update_neighbors: Vertex %ld has %d candidates: ",v->label,dl->n);
     if(verbosity >= 4)
       for(i=0;i<dl->n;i++)
-	printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
+	printf("  %ld",((VERTEX *)((dl->stuff)[i]))->label);
     printf("\n");
   }
 
@@ -4024,7 +4024,7 @@ HULL_VERTEX *photosphere_vertex_update_neighbors(VERTEX *v, char global, int *n_
     printf("Hull_neighbors returned %d neighbors: ",dl->n);
     if(verbosity >= 4)
       for(i=0;i<dl->n;i++) 
-	printf("  %d",((VERTEX *)((dl->stuff)[i]))->label);
+	printf("  %ld",((VERTEX *)((dl->stuff)[i]))->label);
     printf("\n");
   }
 

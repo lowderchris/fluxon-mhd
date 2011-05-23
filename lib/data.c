@@ -545,7 +545,7 @@ void delete_fluxon ( FLUXON *f ) {
   VERTEX *v;
 
   if(f->fc0->world->verbosity>=2) 
-    printf("deleting fluxon %d (%d under it)...\n",f->label,f->all_links.n);
+    printf("deleting fluxon %ld (%ld under it)...\n",f->label,f->all_links.n);
 
   if(f->start) {
     for(v=f->start->next; v && v != f->end; ) {
@@ -562,7 +562,7 @@ void delete_fluxon ( FLUXON *f ) {
   {
     int v = f->fc0->world->verbosity;
     if(v>=3)
-      printf("freeing the fluxon (%d)...\n",f->label);
+      printf("freeing the fluxon (%ld)...\n",f->label);
     if(f->label >= 0 || f->label <= -10)
       localfree(f);
     if(v>=3)
@@ -581,7 +581,7 @@ void delete_flux_concentration ( FLUX_CONCENTRATION *fc ) {
   }
 
   if(w->verbosity>=2)
-    printf("delete_flux_concentration: deleting myself (%d)...\n",fc->label);
+    printf("delete_flux_concentration: deleting myself (%ld)...\n",fc->label);
   
   fc->world->concentrations = tree_unlink( fc, fc_lab_of, fc_ln_of );
 
@@ -707,11 +707,11 @@ void unlink_vertex(VERTEX *v) {
   }
 
   if((!v->prev || !v->next) && v->line->fc0->world->verbosity) {	/* if one of the links is missing */
-    fprintf(stderr,"unlink_vertex: warning - vertex %d is a fluxon endpoint. Proceeding anyway...\n",v->label);
+    fprintf(stderr,"unlink_vertex: warning - vertex %ld is a fluxon endpoint. Proceeding anyway...\n",v->label);
   }
 
   if(!v->line) {		/* if it doesn't belong to a fluxon */
-    fprintf(stderr,"unlink_vertex: warning - vertex %d has no fluxon!  Proceeding anyway...!\n",v->label);
+    fprintf(stderr,"unlink_vertex: warning - vertex %ld has no fluxon!  Proceeding anyway...!\n",v->label);
     return;
   }
 
@@ -745,7 +745,7 @@ void unlink_vertex(VERTEX *v) {
       long n = a->nearby.n;
       dumblist_delete( &(a->nearby), v);
       if(n == a->nearby.n) {
-  	printf("WHOA THERE! doomed vertex %d's neighbor %d had no nearby link back!\n",v->label,a->label);
+  	printf("WHOA THERE! doomed vertex %ld's neighbor %ld had no nearby link back!\n",v->label,a->label);
       }
 
       if(v->next && a != v->next && a != v->next->next ) {
@@ -771,7 +771,7 @@ void unlink_vertex(VERTEX *v) {
       long n = a->neighbors.n;
       dumblist_delete(&(a->neighbors), v);
       if(n == a->neighbors.n) {
-	printf("WHOA THERE! doomed vertex %d's nearby %d had no neighbor link back!\n",v->label,a->label);
+	printf("WHOA THERE! doomed vertex %ld's nearby %ld had no neighbor link back!\n",v->label,a->label);
       }
       
       if(v->next && a != v->next && a != v->next->next ) {
@@ -807,7 +807,7 @@ void unlink_vertex(VERTEX *v) {
 #endif
 
   if(v->line->fc0->world->verbosity>=3) {
-    printf("Unlinking vertex %d (up=%d)...\n",v->label,v->world_links.up?((VERTEX *)(v->world_links.up))->label:0);
+    printf("Unlinking vertex %ld (up=%ld)...\n",v->label,v->world_links.up?((VERTEX *)(v->world_links.up))->label:0);
   }
 
   {
@@ -832,7 +832,7 @@ void unlink_vertex(VERTEX *v) {
 	printf("\n");  
     } else {
       if(w->verbosity >= 3)
-	printf("no unlinking here... (derived root is %d; actual root is %d)\n",root?((VERTEX *)root)->label:0,v->line->fc0->world->vertices?v->line->fc0->world->vertices->label:0);
+	printf("no unlinking here... (derived root is %ld; actual root is %ld)\n",root?((VERTEX *)root)->label:0,v->line->fc0->world->vertices?v->line->fc0->world->vertices->label:0);
     }
 
     if(w->verbosity>=4){
@@ -896,7 +896,7 @@ void delete_vertex(VERTEX *v) {
   }
 
   if(v->world_links.up || v->world_links.left || v->world_links.right) {
-    fprintf(stderr,"WARNING: NOT freeing vertex %d (still linked into the world tree!)\n",v->label);
+    fprintf(stderr,"WARNING: NOT freeing vertex %ld (still linked into the world tree!)\n",v->label);
     return;
   }
 
@@ -1016,7 +1016,7 @@ int add_vertex_after(FLUXON *f, VERTEX *lucy, VERTEX *v) {
 
   else {		   /* if there is a <lucy> */
     if(lucy && (lucy->line != f)) {  /* if <lucy> isn't on same fluxon */
-      fprintf(stderr,"add_vertex_after: adding %d to f%d after %d: %d is on f%d (0x%x), not f%d (0x%x)!\n",v->label,f->label,lucy?lucy->label:0,lucy?lucy->label:0,lucy?lucy->line->label:0,lucy?lucy->line:0,f->label,f);
+      fprintf(stderr,"add_vertex_after: adding %ld to f%ld after %ld: %ld is on f%ld (0x%x), not f%ld (0x%x)!\n",v->label,f->label,lucy?lucy->label:0,lucy?lucy->label:0,lucy?lucy->line->label:0,lucy?lucy->line:0,f->label,f);
       return 1;
     }
     
@@ -1073,15 +1073,15 @@ int vertex_renumber(VERTEX *v, long newlab) {
     return 1;
   }
   if(!v->line) {
-    fprintf(stderr,"vertex_renumber: vertex %d has no fluxon!\n",v->label);
+    fprintf(stderr,"vertex_renumber: vertex %ld has no fluxon!\n",v->label);
     return 2;
   }
   if(!v->line->fc0) {
-    fprintf(stderr,"vertex_renumber: vertex %d's fluxon (%d) needs a flux concentration!\n",v->label,v->line->label);
+    fprintf(stderr,"vertex_renumber: vertex %ld's fluxon (%ld) needs a flux concentration!\n",v->label,v->line->label);
     return 3;
   } 
   if(!v->line->fc0->world) {
-    fprintf(stderr,"vertex_renumber: vertex %d (fluxon %d, fc %d) seems not to have a world!",v->label, v->line->label, v->line->fc0->label);
+    fprintf(stderr,"vertex_renumber: vertex %ld (fluxon %ld, fc %ld) seems not to have a world!",v->label, v->line->label, v->line->fc0->label);
     return 4;
   }
   w = v->line->fc0->world;
@@ -1092,7 +1092,7 @@ int vertex_renumber(VERTEX *v, long newlab) {
 
   v2 = (VERTEX *)(tree_find(w->vertices, newlab, v_lab_of, v_ln_of));
   if(v2) {
-    fprintf(stderr,"vertex_renumber: %d -> %d no can do: vertex %d already exists!\n",v->label,newlab,newlab);
+    fprintf(stderr,"vertex_renumber: %ld -> %ld no can do: vertex %ld already exists!\n",v->label,newlab,newlab);
     return -1;
   }
   
@@ -1112,11 +1112,11 @@ int fluxon_renumber(FLUXON *f, long newlab) {
     return 1;
   } 
   if(!f->fc0) {
-    fprintf(stderr,"fluxon_renumber: fluxon %d needs a flux concentration!\n",f->label);
+    fprintf(stderr,"fluxon_renumber: fluxon %ld needs a flux concentration!\n",f->label);
     return 2;
   }
   if(!f->fc0->world) {
-    fprintf(stderr,"fluxon_renumber: fluxon %d (fc %d) seems not to have a world!",f->label, f->fc0->label);
+    fprintf(stderr,"fluxon_renumber: fluxon %ld (fc %ld) seems not to have a world!",f->label, f->fc0->label);
     return 3;
   }
   w = f->fc0->world;
@@ -1129,7 +1129,7 @@ int fluxon_renumber(FLUXON *f, long newlab) {
 
   f2 = (FLUXON *)(tree_find(w->lines, newlab, fl_lab_of, fl_all_ln_of));
   if(f2) {
-    fprintf(stderr,"fluxon_renumber: %d->%d no can do: fluxon %d already exists!\n",f->label,newlab, newlab);
+    fprintf(stderr,"fluxon_renumber: %ld->%ld no can do: fluxon %ld already exists!\n",f->label,newlab, newlab);
     return -1;
   }
   
@@ -1153,14 +1153,14 @@ int concentration_renumber(FLUX_CONCENTRATION *fc, long newlab) {
     return 1;
   }
   if(!fc->world) {
-    fprintf(stderr,"concentration_renumber: fc %d seems to have no world!\n",fc->label);
+    fprintf(stderr,"concentration_renumber: fc %ld seems to have no world!\n",fc->label);
     return 2;
   }
   w = fc->world;
   
   fc2 = (FLUX_CONCENTRATION *)(tree_find(w->concentrations, newlab, fc_lab_of, fc_ln_of));
   if(fc2) {
-    fprintf(stderr,"concentration_renumber: %d->%d no can do: concentration %d already exists!\n",fc->label, newlab, newlab);
+    fprintf(stderr,"concentration_renumber: %ld->%ld no can do: concentration %ld already exists!\n",fc->label, newlab, newlab);
     return -1;
   }
   
@@ -1954,7 +1954,7 @@ void dumblist_grow(DUMBLIST *dl, int size) {
     }
     else {
       int a,b=0;
-      fprintf(stderr,"dumblist_grow: Warning -- size is %d!\n",newsize);
+      fprintf(stderr,"dumblist_grow: Warning -- size is %ld!\n",newsize);
       /* j      a /= b;  throw an arithmetic exception */
     }
   }
@@ -2296,7 +2296,7 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
   void **c;
   
   if( !dest || !source || dest==source) {
-    fprintf(stderr,"dumblist_snarf: Got null src or dest, or dest==src! (d=%d, s=%d)\n",dest,source);
+    fprintf(stderr,"dumblist_snarf: Got null src or dest, or dest==src! (d=%ld, s=%ld)\n",dest,source);
     fflush(stderr);
     return;
   }
@@ -2349,7 +2349,7 @@ void dumblist_clean(DUMBLIST *foo) {
  */
 
 void dd_vertex_printer(void *a) {
-  printf("vertex #%d",((VERTEX *)a)->label);
+  printf("vertex #%ld",((VERTEX *)a)->label);
 }
 
 /**********************************************************************
@@ -2363,7 +2363,7 @@ void dd_vertex_printer(void *a) {
   if(!foo) {
     printf("dumblist_dump got a null list!\n");
   } else {
-      printf("list has %D elements\n");
+      printf("list has %d elements\n");
       for (i=0;i<foo->n;i++) {
 	printf("\t%d: ",i);
 	if(printer)

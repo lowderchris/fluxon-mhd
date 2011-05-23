@@ -1040,7 +1040,7 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
     return 1e50;
 
   if (vb>= 6) {
-    printf("\nfl_segment_deluxe_dist: v0=%d,v1=%d; Plen is %g\n",v0->label,v1->label,Plen);
+    printf("\nfl_segment_deluxe_dist: v0=%ld,v1=%ld; Plen is %g\n",v0->label,v1->label,Plen);
     printf("P0=(%g,%g,%g); P1=(%g,%g,%g)\n",P0[0],P0[1],P0[2],P1[0],P1[1],P1[2]);
   }
 
@@ -1329,7 +1329,7 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
 						 p1*/
 
     if((v->line->fc0->world->verbosity - (r>=0))>=6)
-      printf("\nfl_segment_deluxe_dist returned %g for vertex %d\n",r,v1->label);
+      printf("\nfl_segment_deluxe_dist returned %g for vertex %ld\n",r,v1->label);
 
     if(r<=0 || !finite(r)) {
       horde->stuff[i] = 0;
@@ -1347,12 +1347,12 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
       len = norm_2d(v1->scr);      /* * 2-D * length of vector */
 
       if(v->line->fc0->world->verbosity >= 5) 
-	printf("len=%g for vertex %d\n",len,v1->label);
+	printf("len=%g for vertex %ld\n",len,v1->label);
 
       if(len <= 0) {
 
 	if(v->line->fc0->world->verbosity == 4) 
-	  printf("len=%g for vertex %d\n",len,v1->label);
+	  printf("len=%g for vertex %ld\n",len,v1->label);
 
 	horde->stuff[i] = 0;
 	crunch=1;
@@ -1530,7 +1530,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     printf("candidate order:\n");
     for (i=0;i<horde->n;i++) {
       VERTEX *v = ((VERTEX **)(horde->stuff))[i];
-      printf("pos %3.3d: (x,y)=(%5.2g,%5.2g); a=%5.2g; r=%5.2g; label=%d\n",
+      printf("pos %3.3d: (x,y)=(%5.2g,%5.2g); a=%5.2g; r=%5.2g; label=%ld\n",
 	     i,
 	     v->scr[0],
 	     v->scr[1],
@@ -1820,7 +1820,7 @@ int check_hullpoint(VERTEX *v,
   // (Why is this here?  The passno mechanism, below, should prevent ever triggering it)
   if(v==pv || v==nv) {
     if (v->line->fc0->world->verbosity >= 1) {
-    fprintf(stderr,"Hmmm, check_hullpoint duplication check activated, pv:%d, v:%d, nv:%d. Could be nearly cospatial.\n",pv->label,v->label,nv->label);
+    fprintf(stderr,"Hmmm, check_hullpoint duplication check activated, pv:%ld, v:%ld, nv:%ld. Could be nearly cospatial.\n",pv->label,v->label,nv->label);
     /* This gets caught in for the third horde vertex. The problem
        initially occured in the second horde bvertex where the first
        and second horde vertices were nearly cospatial. The colinear
@@ -2726,7 +2726,7 @@ NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offse
   dl = find_simplex_by_location(x, w, v, global);
   printf("found %d vertices: ",dl->n);
   for(i=0;i<dl->n;i++) {
-    printf(" %d ",((VERTEX **)dl->stuff)[i]->label);
+    printf(" %ld ",((VERTEX **)dl->stuff)[i]->label);
   }
   printf("\n");
 
@@ -2830,7 +2830,7 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
 				      matrices*/
 
       if (len != r){
-	printf("Oops! len!=r in project_n_fill_photsphere, v %d, neighbor %d,len=%f,r=%f \n",v->label, v1->label,len,r);
+	printf("Oops! len!=r in project_n_fill_photsphere, v %ld, neighbor %ld,len=%f,r=%f \n",v->label, v1->label,len,r);
 	printf("pm is ((%f,%f,%f),(%f,%f,%f),(%f,%f,%f)) \n",pm[0],pm[1],pm[2],pm[3],pm[4],pm[5],pm[6],pm[7],pm[8]);
 	
       } /*else {
@@ -2838,12 +2838,12 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
 	}*/
 
       if(v->line->fc0->world->verbosity >= 5) 
-	printf("len=%g for vertex %d\n",len,v1->label);
+	printf("len=%g for vertex %ld\n",len,v1->label);
 
       if(len <= 0) {
 
 	if(v->line->fc0->world->verbosity == 4) 
-	  printf("len=%g for vertex %d\n",len,v1->label);
+	  printf("len=%g for vertex %ld\n",len,v1->label);
 
 	horde->stuff[i] = 0;
 	crunch=1;

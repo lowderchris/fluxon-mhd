@@ -121,7 +121,7 @@ int footpoint_action(WORLD *world, char *s) {
 	     * FINAL 
 	     */
     if(toupper(s[1])=='R') {
-      n=sscanf(s,"%*s %ld",&i);
+      n=sscanf(s,"%*s %d",&i);
       if(n != 1) 
 	badstr = "Bad parse in FRAME line";
       else {
@@ -392,7 +392,7 @@ int footpoint_action(WORLD *world, char *s) {
 	  badstr = "Tried to add a vertex to a nonexistent field line";
 	} else {
 	  v0 = new_vertex(vertex_label, x0[0], x0[1], x0[2], f);
-	  if(world->verbosity > 2) printf("vertex_label = %d; v0->label = %d\n",vertex_label, v0->label);
+	  if(world->verbosity > 2) printf("vertex_label = %ld; v0->label = %ld\n",vertex_label, v0->label);
 	  if(add_vertex_pos(f, l1, v0))
 	    badstr = "VERTEX: add_vertex_pos returned error";
 	}
@@ -414,11 +414,11 @@ int footpoint_action(WORLD *world, char *s) {
 	v = tree_find(world->vertices, vlab, v_lab_of, v_ln_of);
 	n = tree_find(world->vertices, nlab, v_lab_of, v_ln_of);
 	if(!v || !n) {
-	  fprintf(stderr,"Warning: V_NEIGHBOR line asked for targets %d and %d; at least one of 'em isn't defined...\n",vlab,nlab);
+	  fprintf(stderr,"Warning: V_NEIGHBOR line asked for targets %ld and %ld; at least one of 'em isn't defined...\n",vlab,nlab);
 	} else {
 	  dumblist_add( &(v->neighbors), n );
 	  dumblist_add( &(n->nearby),    v );
-	  printf("%d: added %d (n=%d)\n",v->label, n->label, v->neighbors.n);
+	  printf("%ld: added %ld (n=%d)\n",v->label, n->label, v->neighbors.n);
 	}
       }
     } else {
@@ -839,7 +839,7 @@ int footpoint_action(WORLD *world, char *s) {
 	    break;
 
 	  case 'T': case 't': /* GLOBAL STATE */
-	    sscanf(s+off,"%d",&(world->state)) || 
+	    sscanf(s+off,"%ld",&(world->state)) || 
 	      (badstr="couldn't parse GLOBAL STATE");
 	    break;
 
@@ -932,7 +932,7 @@ WORLD *read_world(FILE *file, WORLD *a) {
     if(seekable && reporting) {
       pos = ftell(file);
       if(last_report==startpos || (pos - last_report >= 1024 * 100)) {
-	printf("\r%4.2f%% completed (%5.2f MB), %d fluxons, %d vertices  ",100 * (double)(pos - startpos)/(double)(endpos - startpos), (double)(pos - startpos) / 1024 / 1024, a->lines->all_links.n, a->vertices->world_links.n);
+	printf("\r%4.2f%% completed (%5.2f MB), %ld fluxons, %ld vertices  ",100 * (double)(pos - startpos)/(double)(endpos - startpos), (double)(pos - startpos) / 1024 / 1024, a->lines->all_links.n, a->vertices->world_links.n);
 	fflush(stdout);
 	last_report = pos;
       }
@@ -1001,7 +1001,7 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   }
   fprintf(file,"\n");
 
-  fprintf(file, "GLOBAL STATE %d  (%s)\n",world->state,world_state_name(world));
+  fprintf(file, "GLOBAL STATE %ld  (%s)\n",world->state,world_state_name(world));
 
   /* global boundary type and location */
   {
@@ -1036,17 +1036,17 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   
   /*  ARD 020207 Added writing code fgor RSTEP and DTAU */
 
-  fprintf(file,"GLOBAL RSTEP %d\n", world->rel_step);
+  fprintf(file,"GLOBAL RSTEP %ld\n", world->rel_step);
   fprintf(file,"GLOBAL DTAU %lf\n", world->dtau);
 
   /* ARD Added code for writing out global coefficients */
  
-  fprintf(file,"GLOBAL COEFFICIENTS %d", world->n_coeffs);
+  fprintf(file,"GLOBAL COEFFICIENTS %ld", world->n_coeffs);
   for (i=0;i<world->n_coeffs;i++) {
     fprintf(file, " %f",  world->coeffs[i]); 
   }
   fprintf(file,"\n");
-  fprintf(file,"GLOBAL OPEN %g %g %g %g %d\n",
+  fprintf(file,"GLOBAL OPEN %g %g %g %g %ld\n",
 	  world->fc_ob->x[0],
 	  world->fc_ob->x[1],
 	  world->fc_ob->x[2],
@@ -1056,7 +1056,7 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
 
   fprintf(file,"GLOBAL SKEW_HANDLING %d\n", world->handle_skew);
 
-  fprintf(file,"GLOBAL CONCURRENCY %d\n",world->concurrency);
+  fprintf(file,"GLOBAL CONCURRENCY %ld\n",world->concurrency);
   
   fprintf(file,"\n\n"); /* leave an extra space after the globals */
     
@@ -1123,7 +1123,7 @@ void fprint_node(FILE *f, void *foo,int indent, int label_offset, int link_offse
   *(bend) = '\0';
   
   fprintf(f 
-	 , "%s%s links: %3.3d  label:%8.8d  total:%8.2g  flux:%8.2g\n"
+	 , "%s%s links: %3.3ld  label:%8.8ld  total:%8.2g  flux:%8.2g\n"
 	 , buf
 	 , buf
 	 , ((LINKS *)(foo + link_offset))->n
@@ -1192,7 +1192,7 @@ void fdump_fluxon(FILE *f, FLUXON *foo, int indent) {
   fprint_all_fluxon_node(f,foo,indent);
 
   for((i=0),(v = foo->start); v ; v=v->next) {
-    fprintf(f,"%s v %3d: lab %11d, loc %x x:(%6.3g, %6.3g, %6.3g) neigh: %3d, near: %3d, next: %x, prev: %x\n"
+    fprintf(f,"%s v %3d: lab %11ld, loc %x x:(%6.3g, %6.3g, %6.3g) neigh: %3d, near: %3d, next: %x, prev: %x\n"
 	    ,buf
 	    , i
 	    , v->label
@@ -1208,7 +1208,7 @@ void fdump_fluxon(FILE *f, FLUXON *foo, int indent) {
     fprintf(f,"\tNeighbors: ");
 
     for(j=0;j<v->neighbors.n;j++) 
-      fprintf(f,"V%4d ",((VERTEX *)v->neighbors.stuff[j])->label);
+      fprintf(f,"V%4ld ",((VERTEX *)v->neighbors.stuff[j])->label);
     fprintf(f,"\n");
 
     if(v==foo->end) 
@@ -1467,7 +1467,7 @@ static int check_binary_buf( long desired_len ) {
     binary_buffer = (char *)malloc(desired_len * 2);
     binary_buflen = desired_len * 2;
     if(!binary_buffer) {
-      fprintf(stderr,"Failed to grow the binary I/O buffer - tried for %d bytes",binary_buflen);
+      fprintf(stderr,"Failed to grow the binary I/O buffer - tried for %ld bytes",binary_buflen);
       exit(1);
     }
   }
@@ -1503,12 +1503,12 @@ int binary_read_header(long size, char *buf, WORLD *w) {
     return 1;
   }
   if(foo[1] != 1) {
-    fprintf(stderr,"%s, version check: expected %d, got %d (oops)\n",me, 1,foo[1]);
+    fprintf(stderr,"%s, version check: expected %d, got %ld (oops)\n",me, 1,foo[1]);
     return 2;
   }
 
   if(foo[2] != sizeof(NUM)) {
-    fprintf(stderr,"%s, precision check: sizeof(NUM) is %d, but file claims %d (oops)\n",me, sizeof(NUM), foo[2]);
+    fprintf(stderr,"%s, precision check: sizeof(NUM) is %d, but file claims %ld (oops)\n",me, sizeof(NUM), foo[2]);
     return 3;
   }
   
@@ -1638,14 +1638,14 @@ int binary_read_WORLD(long size, char *buf, WORLD *w) {
   int i,j;
   
   if( *(long *)ptr != 1 ) {
-    fprintf(stderr,"%s: expected WORLD dump version %d, got %d\n",me,1,*(long *)ptr);
+    fprintf(stderr,"%s: expected WORLD dump version %d, got %ld\n",me,1,*(long *)ptr);
     return 1;
   }
   ptr += sizeof(long);
 
 
   if( *(long *)ptr != sizeof(WORLD) ) {
-    fprintf(stderr,"%s: expected WORLD with a size of %d; found %d (oops)\n",me, sizeof(WORLD), *(long *)ptr);
+    fprintf(stderr,"%s: expected WORLD with a size of %d; found %ld (oops)\n",me, sizeof(WORLD), *(long *)ptr);
     return 2;
   }
   ptr += sizeof(long);
@@ -1874,13 +1874,13 @@ int binary_read_CONCENTRATION(long size, char *buf, WORLD *w) {
   char new_conc;
 
   if( *(long *)ptr != 1 ) { // Check for version
-    fprintf(stderr,"%s: version number is wrong (expected %d, got %d)\n",me, 1, *(long *)ptr);
+    fprintf(stderr,"%s: version number is wrong (expected %d, got %ld)\n",me, 1, *(long *)ptr);
     return 1;
   }
   ptr += sizeof(long);
 
   if( *(long *)ptr != sizeof(FLUX_CONCENTRATION)) {
-    fprintf(stderr,"%s: size of FLUX_CONCENTRATION is wrong (expected %d, got %d)\n",me, sizeof(FLUX_CONCENTRATION), *(long *)ptr);
+    fprintf(stderr,"%s: size of FLUX_CONCENTRATION is wrong (expected %d, got %ld)\n",me, sizeof(FLUX_CONCENTRATION), *(long *)ptr);
     return 2;
   }
   ptr += sizeof(long);
@@ -1986,7 +1986,7 @@ int binary_dump_FLUXON(int fd, FLUXON *f) {
       *(ptr++) = 0;
   }
   if(i != f->v_ct || v) {
-    fprintf(stderr,"%s: inconsistent vertex count in fluxon %d; giving up (i=%d)\n",me, f->label,i);
+    fprintf(stderr,"%s: inconsistent vertex count in fluxon %ld; giving up (i=%d)\n",me, f->label,i);
     return 3;
   }
 
@@ -2011,21 +2011,21 @@ int binary_read_FLUXON(long size, char *buf, WORLD *w) {
 
   // Check for version
   if( *(long *)ptr != 1) {
-    fprintf(stderr,"%s: version number is wrong (expected %d, got %d)\n",me,1,*(long *)ptr);
+    fprintf(stderr,"%s: version number is wrong (expected %d, got %ld)\n",me,1,*(long *)ptr);
     return 1;
   }
   ptr += sizeof(long);
 
   // Check for size of a fluxon
   if( *(long *)ptr != sizeof(FLUXON)) {
-    fprintf(stderr,"%s: FLUXON structure has wrong size (expected %d, got %d)\n",me, sizeof(FLUXON), *(long *)ptr);
+    fprintf(stderr,"%s: FLUXON structure has wrong size (expected %ld, got %ld)\n",me, sizeof(FLUXON), *(long *)ptr);
     return 2;
   }
   ptr += sizeof(long);
 
   // Check for size of a vertex
   if( *(long *)ptr != sizeof(VERTEX)) {
-    fprintf(stderr,"%s: VERTEX structure has wrong size (expected %d, got %d)\n",me, sizeof(VERTEX), *(long *)ptr);
+    fprintf(stderr,"%s: VERTEX structure has wrong size (expected %ld, got %ld)\n",me, sizeof(VERTEX), *(long *)ptr);
     return 3;
   }
   ptr += sizeof(long);
@@ -2034,7 +2034,7 @@ int binary_read_FLUXON(long size, char *buf, WORLD *w) {
   fc0lab = *(long *)ptr;
   fc0 = tree_find(w->concentrations, fc0lab, fc_lab_of, fc_ln_of);
   if(!fc0) {
-    fprintf(stderr,"%s: couldn't find start concentration %d in existing WORLD!\n",me, fc0lab);
+    fprintf(stderr,"%s: couldn't find start concentration %ld in existing WORLD!\n",me, fc0lab);
     return 4;
   }
   ptr += sizeof(long);
@@ -2043,7 +2043,7 @@ int binary_read_FLUXON(long size, char *buf, WORLD *w) {
   fc1lab = *(long *)ptr;
   fc1 = tree_find(w->concentrations, fc1lab, fc_lab_of, fc_ln_of);
   if(!fc1) {
-    fprintf(stderr,"%s: couldn't find end concentration %d in existing WORLD!\n",me, fc1lab);
+    fprintf(stderr,"%s: couldn't find end concentration %ld in existing WORLD!\n",me, fc1lab);
     return 5;
   }
   ptr += sizeof(long);
@@ -2163,7 +2163,7 @@ int binary_read_FLUXON(long size, char *buf, WORLD *w) {
   f->end = v;
 
   if( *(long *)ptr  != WORLD_END_FENCE ) {
-    fprintf(stderr,"%s: missed final fence in fluxon %d, arena may be corrupted.\n",me, f->label);
+    fprintf(stderr,"%s: missed final fence in fluxon %ld, arena may be corrupted.\n",me, f->label);
     for(i=-10; i<=10; i++) {
       fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
     }
@@ -2191,7 +2191,7 @@ int binary_dump_neighbors(int fd, FLUXON *f) {
   }
 
   if(j != f->v_ct)  {
-    fprintf(stderr,"%s: inconsistent vertex count in fluxn %d (v_ct is %d, counted %d neighbors); giving up\n", me, f->label, f->v_ct, j);
+    fprintf(stderr,"%s: inconsistent vertex count in fluxn %ld (v_ct is %ld, counted %d neighbors); giving up\n", me, f->label, f->v_ct, j);
     return 1;
   }
   
@@ -2242,7 +2242,7 @@ int binary_read_neighbors(long size, char *buf, WORLD *w) {
   VERTEX *v;
  
   if( *(long *)ptr != 1 ) { // Check version number
-    fprintf(stderr,"%s: wrong version (expected %d, got %d)\n",me, 1, *(long *)ptr);
+    fprintf(stderr,"%s: wrong version (expected %d, got %ld)\n",me, 1, *(long *)ptr);
     return 1;
   }
   ptr += sizeof(long);
@@ -2250,14 +2250,14 @@ int binary_read_neighbors(long size, char *buf, WORLD *w) {
   // Read fluxon label, and find it in the tree...
   f = tree_find( w->lines, *(long *)ptr, fl_lab_of, fl_all_ln_of );
   if(!f) {
-    fprintf(stderr, "%s: couldn't find fluxon %d! I give up.\n",me, *(long *)ptr);
+    fprintf(stderr, "%s: couldn't find fluxon %ld! I give up.\n",me, *(long *)ptr);
     return 2;
   }
   ptr += sizeof(long);
 
   // Check number of vertices
   if( (*(long *)ptr) != f->v_ct ) {
-    fprintf(stderr, "%s: fluxon %d thinks it has %d vertices, not %d as advertised in the file...\n",me, f->label, f->v_ct, *(long *)ptr);
+    fprintf(stderr, "%s: fluxon %ld thinks it has %ld vertices, not %ld as advertised in the file...\n",me, f->label, f->v_ct, *(long *)ptr);
     
     {
       VERTEX *vv;
@@ -2278,13 +2278,13 @@ int binary_read_neighbors(long size, char *buf, WORLD *w) {
 
   for( v=f->start, i=0; v; v=v->next, i++ ) {
     if( *(long *)ptr != NEIGHBOR_FENCE ) {
-      fprintf(stderr,"%s: missed neighbor fence on vertex #%d of fluxon %d; giving up\n",me, i, f->label);
+      fprintf(stderr,"%s: missed neighbor fence on vertex #%ld of fluxon %ld; giving up\n",me, i, f->label);
       return 4;
     }
     ptr += sizeof(long);
 
     if( *(long *)ptr != v->label ) {
-      fprintf(stderr,"%s: file has vertex %d at position #%d of fluxon %d, we have %d instead.  Giving up.\n",me, *(long *)ptr, i, f->label, v->label);
+      fprintf(stderr,"%s: file has vertex %ld at position #%ld of fluxon %ld, we have %ld instead.  Giving up.\n",me, *(long *)ptr, i, f->label, v->label);
       return 5;
     }
     ptr += sizeof(long);
@@ -2298,7 +2298,7 @@ int binary_read_neighbors(long size, char *buf, WORLD *w) {
     for(j=0; j<ct; j++) {
       VERTEX *vn = tree_find(w->vertices, *(long *)ptr, v_lab_of, v_ln_of );
       if(!vn) {
-	fprintf(stderr,"%s: vertex %d is called out as a neighbor to %d (fluxon %d, pos. #%d) but doesn't exist!\n",me, *(long *)ptr, v->label, f->label, j);
+	fprintf(stderr,"%s: vertex %ld is called out as a neighbor to %ld (fluxon %ld, pos. #%ld) but doesn't exist!\n",me, *(long *)ptr, v->label, f->label, j);
 	return 6;
       }
       vertex_add_neighbor( v, vn);
@@ -2397,12 +2397,12 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
       v_ct_max = v->neighbors.n;
 
     if(v->neighbors.n > MAX_AV_NEIGHBORS) {
-      fprintf(stderr,"binary_dump_fluxon_pipe: WARNING - vertex %d is wonky (%d neighbors!)",v->label, v->neighbors.n);
+      fprintf(stderr,"binary_dump_fluxon_pipe: WARNING - vertex %ld is wonky (%d neighbors!)",v->label, v->neighbors.n);
     }
 
     // i is just for error checking - complain here
     if( i >= f->v_ct ) {
-      fprintf(stderr,"binary_dump_fluxon_pipe: Wonky fluxon %d - has more vertices than v_ct (%d)! I quit\n",f->label, f->v_ct);
+      fprintf(stderr,"binary_dump_fluxon_pipe: Wonky fluxon %ld - has more vertices than v_ct (%ld)! I quit\n",f->label, f->v_ct);
       return 1;
     }
 
@@ -2433,7 +2433,7 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
 
     neighbors_found += v->neighbors.n;
     if(neighbors_found > neighbors_allowed_for){
-      fprintf(stderr,"binary_dump_fluxon_pipe: Whoa!  Never expected to see this.  Found %d neighbors along fluxon %d (which has %d vertices)- that's over %d per vertex! I give up.\n",neighbors_found, f->label, f->v_ct, MAX_AV_NEIGHBORS);
+      fprintf(stderr,"binary_dump_fluxon_pipe: Whoa!  Never expected to see this.  Found %ld neighbors along fluxon %ld (which has %ld vertices)- that's over %d per vertex! I give up.\n",neighbors_found, f->label, f->v_ct, MAX_AV_NEIGHBORS);
       fflush(stderr);
       return 2;
     }
@@ -2494,7 +2494,7 @@ WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
     // Parse header: check for fence, and get data type and length
     pos += ct;
     if(hdrbuf[0] != BD_FENCE) {
-      fprintf(stderr,"%s: failed to find fence (expected %x, got %x), position %d", me, BD_FENCE, hdrbuf[0]);
+      fprintf(stderr,"%s: failed to find fence (expected %x, got %x), position %ld", me, BD_FENCE, hdrbuf[0]);
       if(allocated_world)
 	free_world(w);
       return 0;
@@ -2519,7 +2519,7 @@ WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
 	ct2= read(fd, binary_buffer+ct, len-ct);
       
       if(ct2+ct != len)  {
-	fprintf(stderr,"%s: failed to read %d bytes (got %d bytes from position %d, type %d; second try yielded %d bytes for %d total)\n",me,len,ct, pos, type,ct2,ct+ct2);
+	fprintf(stderr,"%s: failed to read %ld bytes (got %d bytes from position %d, type %ld; second try yielded %d bytes for %d total)\n",me,len,ct, pos, type,ct2,ct+ct2);
 	perror("read returned the error");
 	if(allocated_world)
 	  free_world(w);
@@ -2530,7 +2530,7 @@ WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
     pos += len;
 
     if(w->verbosity>1) {
-      printf("read_dumpfile: found fence; type=%d, len=%d\n",hdrbuf[1],hdrbuf[2]);
+      printf("read_dumpfile: found fence; type=%ld, len=%ld\n",hdrbuf[1],hdrbuf[2]);
     }
 
     ///// Dispatch read to the correct reader...
@@ -2564,7 +2564,7 @@ WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
 	reader = binary_read_flstep;
 	break;
       default:
-	fprintf(stderr,"WARNING: typecode %d not implemented - you should never see this message from binary_read_dumpfile, in io.c...\n",type);
+	fprintf(stderr,"WARNING: typecode %ld not implemented - you should never see this message from binary_read_dumpfile, in io.c...\n",type);
 	return 0;
 	break;
       }
@@ -2631,12 +2631,12 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
 
 
   if(size< 3*sizeof(long)) {
-    fprintf(stderr, "%s: inconceivable packet size %d is too small!\n",me,size);
+    fprintf(stderr, "%s: inconceivable packet size %ld is too small!\n",me,size);
     return 1;
   }
 
   if( (*(long *)dex) != 3) { // Check version number
-    fprintf(stderr, "%s: packet is the wrong version (%d, I am version %d)\n",me,*(long *)dex,3);
+    fprintf(stderr, "%s: packet is the wrong version (%ld, I am version %d)\n",me,*(long *)dex,3);
     return 2;
   }
   dex+= sizeof(long);
@@ -2648,7 +2648,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
   dex += sizeof(FLUXON *);
   
   if(f->label != f_lab) {
-    fprintf(stderr,"%s: found bogus fluxon pointer in dump! (expected fluxon %d, got %d)",me,f_lab, f->label);
+    fprintf(stderr,"%s: found bogus fluxon pointer in dump! (expected fluxon %ld, got %ld)",me,f_lab, f->label);
     return 3;
   }
 
@@ -2656,12 +2656,12 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
   dex += sizeof(long);
   
   if(f->v_ct != v_ct) {
-    fprintf(stderr,"%s: vertex count doesn't agree in fluxon %d (expected %d from file, found %d in fluxon)\n",me,f_lab,v_ct, f->v_ct);
+    fprintf(stderr,"%s: vertex count doesn't agree in fluxon %ld (expected %ld from file, found %ld in fluxon)\n",me,f_lab,v_ct, f->v_ct);
     return 4;
   }
 
   if(w->verbosity>1) {
-    printf(" r: f=%d,vct=%d    ",f->label,f->v_ct);
+    printf(" r: f=%ld,vct=%ld    ",f->label,f->v_ct);
     fflush(stdout);
   }
 
@@ -2670,7 +2670,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     dex += sizeof(VERTEX_PIPE_FIXED);
 
     if(!vd || !v || vd->label != v->label) {
-      fprintf(stderr,"%s: vertex label mismatch in fluxon %d, pos %d - file expected %d, found %d\n",me,f_lab,i,vd?vd->label:-1,v?v->label:-1);
+      fprintf(stderr,"%s: vertex label mismatch in fluxon %ld, pos %d - file expected %ld, found %ld\n",me,f_lab,i,vd?vd->label:-1,v?v->label:-1);
       return 5;
     }
 
@@ -2696,7 +2696,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     // nothing has a passno higher than the current world passno....)
 
     if(w->verbosity>1) {
-      printf("vertex %d: found %d neighbors...\n",v->label,vd->neighbors_n);
+      printf("vertex %ld: found %ld neighbors...\n",v->label,vd->neighbors_n);
     }
 
     /* Accumulate force and angle.  We lag by one vertex, to get the curvature right. */
@@ -2714,7 +2714,7 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
 
     // Next - check the fence!
     if( *(long *)dex != VERTEX_END_FENCE ) {
-      fprintf(stderr,"%s: missed end fence while copying vertex %d (label %d) into fluxon %d - giving up!\n",me, i, v->label, f->label);
+      fprintf(stderr,"%s: missed end fence while copying vertex %d (label %ld) into fluxon %ld - giving up!\n",me, i, v->label, f->label);
       return 6;
     }
     dex += sizeof(long);
@@ -2856,12 +2856,12 @@ int binary_dump_flpos( int fd, FLUXON *f) {
 
   for(v=f->start, i=0; v; v=v->next,i++) {
     if(i >= f->v_ct) {
-      fprintf(stderr,"binary_dump_positions: fluxon %d v_ct is incorrect!\n", f->label);
+      fprintf(stderr,"binary_dump_positions: fluxon %ld v_ct is incorrect!\n", f->label);
       return 1;
     }
 
     if(verbosity >= 2) {
-      printf("  dumping position for fluxon %d, vertex %d: (%g,%g,%g)\n",f->label, v->label, v->x[0],v->x[1],v->x[2]);
+      printf("  dumping position for fluxon %ld, vertex %ld: (%g,%g,%g)\n",f->label, v->label, v->x[0],v->x[1],v->x[2]);
     }
 
     *(NUM *)dex = v->x[0];
@@ -2875,10 +2875,10 @@ int binary_dump_flpos( int fd, FLUXON *f) {
   }
 
   if(verbosity >= 1)
-    printf("Dumping %d bytes of position data for fluxon %d...\n",len,f->label);
+    printf("Dumping %ld bytes of position data for fluxon %ld...\n",len,f->label);
 
   if(dex - binary_buffer != len) {
-    printf("binary_dump_flpos: expected %d bytes, but offset is %d\n",len, dex - binary_buffer);
+    printf("binary_dump_flpos: expected %ld bytes, but offset is %ld\n",len, dex - binary_buffer);
   }
 
   binary_dump_field(fd, BD_POSITION, len, binary_buffer);
@@ -2895,7 +2895,7 @@ int binary_read_flpos( long size, char *buf, WORLD *w) {
   long verbosity = w->verbosity;
 
   if ( *(long *)ptr != 1 ) { // Check version number
-    fprintf(stderr,"%s: wrong version  (expected %d, got %d)\n", me, 1, *(long *)ptr);
+    fprintf(stderr,"%s: wrong version  (expected %d, got %ld)\n", me, 1, *(long *)ptr);
     return 1;
   }
   ptr += sizeof(long);
@@ -2908,14 +2908,14 @@ int binary_read_flpos( long size, char *buf, WORLD *w) {
 
 
   if( f->label != label ) { 
-    fprintf(stderr, "%s: fluxon mismatch! Followed pointer, didn't get the label %d\n",me, label);
+    fprintf(stderr, "%s: fluxon mismatch! Followed pointer, didn't get the label %ld\n",me, label);
     return 1;
   }
 
   v_ct = *(long *)ptr;  // Read expected number of vertices
   ptr += sizeof(long);
   if(v_ct != f->v_ct) {
-    fprintf(stderr,"%s: fluxon %d has %d vertices, not %d as advertised...\n",me, label, f->v_ct, v_ct);
+    fprintf(stderr,"%s: fluxon %ld has %ld vertices, not %ld as advertised...\n",me, label, f->v_ct, v_ct);
     return 1;
   }
 
@@ -2927,7 +2927,7 @@ int binary_read_flpos( long size, char *buf, WORLD *w) {
 
 
   if(w->verbosity > 1)
-    printf("Reading data for %d vertices in fluxon %d\n",f->v_ct,f->label);
+    printf("Reading data for %ld vertices in fluxon %ld\n",f->v_ct,f->label);
 
   for(v=f->start, i=0; i<v_ct; v=v->next,i++) {
 
@@ -2942,7 +2942,7 @@ int binary_read_flpos( long size, char *buf, WORLD *w) {
     ptr += sizeof(NUM);
 
     if(verbosity >= 2) {
-      printf("  reading fluxon %d, vertex %d: (%g,%g,%g)\n",f->label, v->label, v->x[0],v->x[1],v->x[2]);
+      printf("  reading fluxon %ld, vertex %ld: (%g,%g,%g)\n",f->label, v->label, v->x[0],v->x[1],v->x[2]);
     }
 
     
@@ -3016,12 +3016,12 @@ int binary_dump_flstep( int fd, FLUXON *f) {
   dex += sizeof(long);
 
   if(verbosity >= 2) {
-    printf("binary_dump_flstep: dumping shifts for fluxon %d:", f->label);
+    printf("binary_dump_flstep: dumping shifts for fluxon %ld:", f->label);
   }
 
   for(v=f->start, i=0; v; v=v->next,i++) {
     if(i >= f->v_ct) {
-      fprintf(stderr,"binary_dump_flstep: fluxon %d v_ct is incorrect!\n", f->label);
+      fprintf(stderr,"binary_dump_flstep: fluxon %ld v_ct is incorrect!\n", f->label);
       return 1;
     }
 
@@ -3042,10 +3042,10 @@ int binary_dump_flstep( int fd, FLUXON *f) {
     printf("\n");
   }
   if(verbosity >= 1)
-    printf("binary_dump_flstep: dumping %d bytes of position data for fluxon %d...\n",len,f->label);
+    printf("binary_dump_flstep: dumping %ld bytes of position data for fluxon %ld...\n",len,f->label);
 
   if( dex - binary_buffer  != len) {
-    printf("binary_dump_flstep: len was %d, offset is %d\n",len, dex - binary_buffer);
+    printf("binary_dump_flstep: len was %ld, offset is %ld\n",len, dex - binary_buffer);
   }
 
   binary_dump_field(fd, BD_STEP, len, binary_buffer);
@@ -3062,7 +3062,7 @@ int binary_read_flstep( long size, char *buf, WORLD *w) {
   long i;
 
   if ( *(long *)ptr != 1 ) { // Check version number
-    fprintf(stderr,"%s: wrong version  (expected %d, got %d)\n", me, 1, *(long *)ptr);
+    fprintf(stderr,"%s: wrong version  (expected %d, got %ld)\n", me, 1, *(long *)ptr);
     return 1;
   }
   ptr += sizeof(long);
@@ -3075,14 +3075,14 @@ int binary_read_flstep( long size, char *buf, WORLD *w) {
 
 
   if( f->label != label ) { 
-    fprintf(stderr, "%s: fluxon mismatch! Followed pointer, didn't get the label %d\n",me, label);
+    fprintf(stderr, "%s: fluxon mismatch! Followed pointer, didn't get the label %ld\n",me, label);
     return 1;
   }
 
   v_ct = *(long *)ptr;  // Read expected number of vertices
   ptr += sizeof(long);
   if(v_ct != f->v_ct) {
-    fprintf(stderr,"%s: fluxon %d has %d vertices, not %d as advertised...\n",me, label, f->v_ct, v_ct);
+    fprintf(stderr,"%s: fluxon %ld has %ld vertices, not %ld as advertised...\n",me, label, f->v_ct, v_ct);
     return 1;
   }
 
@@ -3132,7 +3132,7 @@ int binary_read_flstep( long size, char *buf, WORLD *w) {
   ptr += sizeof(long);
 
   if(verbosity > 1)
-    printf("binary_read_flstep: Reading data for %d vertices in fluxon %d\n",f->v_ct,f->label);
+    printf("binary_read_flstep: Reading data for %ld vertices in fluxon %ld\n",f->v_ct,f->label);
 
   for(v=f->start, i=0; i<v_ct; v=v->next,i++) {
 

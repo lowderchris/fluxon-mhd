@@ -352,15 +352,15 @@ void f_pressure_equi(VERTEX *V, HULL_VERTEX *verts, int segflag) {
     // printf("vertex %d (%d): deltaphi=%g\t",V->label,N->label,deltaphi*180/3.14159);
 
     if(deltaphi < -EPSILON) {
-      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi, vertex %d, neighbor %d (%18.12g deg); correcting to %18.12g\n",V->label, i, deltaphi*180/M_PI,deltaphi*180/M_PI + 360);
+      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi, vertex %ld, neighbor %d (%18.12g deg); correcting to %18.12g\n",V->label, i, deltaphi*180/M_PI,deltaphi*180/M_PI + 360);
       deltaphi += M_PI+M_PI;
 
-      printf("(Vertex %d --  neighbors are:\n",V->label);
+      printf("(Vertex %ld --  neighbors are:\n",V->label);
       {
 	int ii;
 	for(ii=0;ii<V->neighbors.n;ii++) {
 	  VERTEX *vv= (VERTEX *)(V->neighbors.stuff[ii]);
-	  printf("\t%d -\tx=(%g,%g,%g),\tprojx = (%g,%g), a=%g,\tr=%g, lefthull a_l=%g, righthull a_r=%g, open: l=%d, r=%d\n",
+	  printf("\t%ld -\tx=(%g,%g,%g),\tprojx = (%g,%g), a=%g,\tr=%g, lefthull a_l=%g, righthull a_r=%g, open: l=%d, r=%d\n",
 		 vv->label,
 		 vv->x[0],vv->x[1],vv->x[2],
 		 vv->scr[0],vv->scr[1],
@@ -507,13 +507,13 @@ void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts, int segflag) {
       /* Scale to the proper f  orce */
       NUM a = norm_3d(f_i);
       if(a==0) {
-	fprintf(stderr,"Assertion failed in physics.c!  f_i has 0 norm (vertex %d on %d (next is %d, prev is %d), neighbor %d on %d (next is %d, prev is %d), i=%d, V->neighbors.n=%d)\n",V->label,V->line->label, V->next?V->next->label:0, V->prev?V->prev->label:0, N->label, N->line->label , N->next?N->next->label:0, N->prev?N->prev->label:0,V->neighbors.n);
+	fprintf(stderr,"Assertion failed in physics.c!  f_i has 0 norm (vertex %ld on %ld (next is %ld, prev is %ld), neighbor %ld on %ld (next is %ld, prev is %ld), i=%d, V->neighbors.n=%d)\n",V->label,V->line->label, V->next?V->next->label:0, V->prev?V->prev->label:0, N->label, N->line->label , N->next?N->next->label:0, N->prev?N->prev->label:0,i,V->neighbors.n);
 	{
 	  int j,k;
 	  VERTEX *vn;
 	  for(j=0;j<V->neighbors.n;j++) {
 	    vn = ((VERTEX *)(V->neighbors.stuff[j]));
-	    fprintf(stderr,"Neighbor #%d: label is %d\n",j,vn->label);
+	    fprintf(stderr,"Neighbor #%d: label is %ld\n",j,vn->label);
 	    //	    for(k=0;k<vn->nearby.n;k++) {
 	    //  fprintf(stderr,"  nearby #%d: %d\n",k,((VERTEX *)(vn->nearby.stuff[k]))->label);
 	    //}
@@ -713,7 +713,7 @@ void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts, int segflag) {
     TRIM_ANGLE(deltaphi); //normalize to between -PI and PI
     
     if(deltaphi < -EPSILON) {
-      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi2b (%18.12g deg; vertex %d; neighbor %d); correcting to %18.12g\n",deltaphi*180/M_PI,V->label,((VERTEX *)(V->neighbors.stuff[i]))->label,deltaphi*180/M_PI + 360);
+      fprintf(stderr,"Assertion failed!  deltaphi <0 in f_pressure_equi2b (%18.12g deg; vertex %ld; neighbor %ld); correcting to %18.12g\n",deltaphi*180/M_PI,V->label,((VERTEX *)(V->neighbors.stuff[i]))->label,deltaphi*180/M_PI + 360);
       deltaphi += M_PI+M_PI;
     }
     
@@ -1160,7 +1160,7 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   /* Stick the force where it belongs in the VERTEX's force vector.*/
 
   if (!finite(norm_3d(force))) {
-    printf("something is wrong with the vertex4 force on vertex %d on fl%d (non-finite). ln is %d on %d, nn is %d on %d, l1=%g,l2=%g,lnn=%g,lpp=%g,x=(%g,%g,%g),xn=(%g,%g,%g),xnn=(%g,%g,%g)\n",V->label,V->line->label,V->next->label,V->next->line->label, V->next->next->label,V->next->next->line->label,l1,l2,lnn,lpp,V->x[0],V->x[1],V->x[2],V->next->x[0],V->next->x[1],V->next->x[2],V->next->next->x[0],V->next->next->x[1],V->next->next->x[2]);
+    printf("something is wrong with the vertex4 force on vertex %ld on fl%ld (non-finite). ln is %ld on %ld, nn is %ld on %ld, l1=%g,l2=%g,lnn=%g,lpp=%g,x=(%g,%g,%g),xn=(%g,%g,%g),xnn=(%g,%g,%g)\n",V->label,V->line->label,V->next->label,V->next->line->label, V->next->next->label,V->next->next->line->label,l1,l2,lnn,lpp,V->x[0],V->x[1],V->x[2],V->next->x[0],V->next->x[1],V->next->x[2],V->next->next->x[0],V->next->next->x[1],V->next->next->x[2]);
       }
 
 
@@ -1265,7 +1265,7 @@ void f_vertex5(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   if( !finite(norm_3d(force)) ) {
     //printf("vertex %d: vertex force was (%g,%g,%g); f_vertex5 is (%g,%g,%g) (total %g); i1 is %g\n",V->label,V->f_v[0],V->f_v[1],V->f_v[2],force[0],force[1],force[2],fabs((fn2+fn3)/i1),i1);
     // printf("\tfn2 is %g; fn3 is %g; V->prev->r_cl is %g; V->next->r_cl is %g; l1 is %g; l2 is %g; lpp is %g; lnn is %g; alpha_p is %g; alpha_n is %g; alpha_p arg is %g; alpha_n arg is %g\n",fn2, fn3, V->prev->r_cl, V->next->r_cl, l1, l2, lpp, lnn, alpha_p, alpha_n, (inner_3d(dpp,d1))/(l1*lpp),(inner_3d(dnn,d2))/(l2*lnn));
-    printf("vertex %d: f_vertex5 is (%g,%g,%g) (total %g);fn1 is %g, fn2 is %g fn3 is %g \n",V->label,force[0],force[1],force[2],norm_3d(force), fn1,fn2,fn3);
+    printf("vertex %ld: f_vertex5 is (%g,%g,%g) (total %g);fn1 is %g, fn2 is %g fn3 is %g \n",V->label,force[0],force[1],force[2],norm_3d(force), fn1,fn2,fn3);
 	   }
   
     
@@ -1378,7 +1378,7 @@ void e_simple (VERTEX *V, HULL_VERTEX *verts, int segflag) {
   }
 
   if(Area < 0) {
-    fprintf(stderr,"Hey!  Area is less than zero in e_simple (vertex %d!)\n",V->label);
+    fprintf(stderr,"Hey!  Area is less than zero in e_simple (vertex %ld!)\n",V->label);
     fflush(stderr);
     Area = fabs (Area);
   }
@@ -1446,7 +1446,7 @@ void e_simple2 (VERTEX *V, HULL_VERTEX *verts, int segflag) {
   }
 
   if(pseudo_energy < 0) {
-    fprintf(stderr,"Hey!  energy is less than zero in e_simple2 (vertex %d!)\n",V->label);
+    fprintf(stderr,"Hey!  energy is less than zero in e_simple2 (vertex %ld!)\n",V->label);
     fflush(stderr);
     pseudo_energy = fabs (pseudo_energy);
   }
@@ -1517,8 +1517,8 @@ void e_open (VERTEX *V, HULL_VERTEX *verts, int segflag) {
     pseudo_energy += ienergy/(ro*ro);
 
     if (ienergy/(ro*ro) < 0) {
-      fprintf(stderr,"Hey!  energy is less than zero in e_open at ith hull (vertex %d!)\n",V->label);
-      fprintf(stderr,"cur_h=%3.3f,%d;next_h=%3.3f,%d;cur_n=%3.3f;ro=%3.3f,ei=%3.3f,i=%d,vertex=%d \n",
+      fprintf(stderr,"Hey!  energy is less than zero in e_open at ith hull (vertex %ld!)\n",V->label);
+      fprintf(stderr,"cur_h=%3.3f,%d;next_h=%3.3f,%d;cur_n=%3.3f;ro=%3.3f,ei=%3.3f,i=%d,vertex=%ld \n",
 	      chull,   current_h->open,
 	      nhull,         next_h->open,
 	      cneigh,
@@ -1571,7 +1571,7 @@ void e_eqa(VERTEX *V, HULL_VERTEX *verts, int segflag) {
     TRIM_ANGLE(deltaphi);
 
     if(deltaphi<0) {
-      printf("ASSERTION FAILED in e_eqa - lefta should be >= righta, is not. vertex %d, hullpoint %d, lefta=%g deg, righta=%g deg\n",V->label,i,lefta*180/3.14159,righta*180/3.14159);
+      printf("ASSERTION FAILED in e_eqa - lefta should be >= righta, is not. vertex %ld, hullpoint %d, lefta=%g deg, righta=%g deg\n",V->label,i,lefta*180/3.14159,righta*180/3.14159);
     }
     
     R = ((VERTEX *)(V->neighbors.stuff[i]))->r * 0.5;
@@ -1627,7 +1627,7 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts, int segflag) {
     TRIM_ANGLE(lefta);
 
     if(righta > lefta) {
-      printf("ASSERTION FAILED in b_eqa: left rel. angle %7.3g(%c) > right rel. angle %7.3g(%c), vertex %d (neighbor %d, %d of %d)\n",lefta*180/PI,left->open?'o':'c', righta*180/PI, right->open?'o':'c',V->label, v->label, i, n);
+      printf("ASSERTION FAILED in b_eqa: left rel. angle %7.3g(%c) > right rel. angle %7.3g(%c), vertex %ld (neighbor %ld, %d of %d)\n",lefta*180/PI,left->open?'o':'c', righta*180/PI, right->open?'o':'c',V->label, v->label, i, n);
 
       {
 	int j;
@@ -1636,7 +1636,7 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts, int segflag) {
       }
     }
     
-    if(V->line->fc0->world->verbosity >= 4) {printf("b_eqa force: VERTEX %5d, neighbor %5d, a=%7.3g, r=%7.3g, righta = %7.3g(%c), lefta=%7.3g(%c)\n",V->label, v->label,v->a*180/PI, v->r, righta*180/PI,right->open?'o':'c',lefta*180/PI,left->open?'o':'c');
+    if(V->line->fc0->world->verbosity >= 4) {printf("b_eqa force: VERTEX %5ld, neighbor %5ld, a=%7.3g, r=%7.3g, righta = %7.3g(%c), lefta=%7.3g(%c)\n",V->label, v->label,v->a*180/PI, v->r, righta*180/PI,right->open?'o':'c',lefta*180/PI,left->open?'o':'c');
     }
 
     /* formula wants \frac{1}{2r_p^2}; but VERTEX r is 2r, so
@@ -1659,7 +1659,7 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   diff_3d(vec1,V->next->x,V->x);
   scale_3d(V->b_vec,vec1,Bmag/norm_3d(vec1));
 
-  if(V->line->fc0->world->verbosity >= 3) { fprintf(stderr,"b_eqa: VERTEX %4d (fluxon %4d); magnetic field mag. is %7.3g (vec is %7.3g, %7.3g, %7.3g)\n", V->label, V->line->label, V->b_mag, V->b_vec[0],V->b_vec[1],V->b_vec[2]); }
+  if(V->line->fc0->world->verbosity >= 3) { fprintf(stderr,"b_eqa: VERTEX %4ld (fluxon %4ld); magnetic field mag. is %7.3g (vec is %7.3g, %7.3g, %7.3g)\n", V->label, V->line->label, V->b_mag, V->b_vec[0],V->b_vec[1],V->b_vec[2]); }
 
 
 }
@@ -1833,7 +1833,7 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts, int segflag) {
       scr2d[1] += s * fperp +  c * fpar;
     }
 
-    if(V->line->fc0->world->verbosity >= 4) {printf("f_p_eqa_radial: VERTEX %4d, neighbor %5d, a=%7.3g, r=%7.3g, righta=%7.3g(%c), lefta=%7.3g(%c), fperp=%7.3g, fpar=%7.3g\n",V->label,v->label,v->a*180/PI,v->r,lefta*180/PI,left->open?'o':'c',righta*180/PI,right->open?'o':'c',fperp,fpar);
+    if(V->line->fc0->world->verbosity >= 4) {printf("f_p_eqa_radial: VERTEX %4ld, neighbor %5ld, a=%7.3g, r=%7.3g, righta=%7.3g(%c), lefta=%7.3g(%c), fperp=%7.3g, fpar=%7.3g\n",V->label,v->label,v->a*180/PI,v->r,lefta*180/PI,left->open?'o':'c',righta*180/PI,right->open?'o':'c',fperp,fpar);
     }
 
 
@@ -1842,7 +1842,7 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts, int segflag) {
    vec_mmult_3d(scr3d,pmatrix,scr2d); /* Convert to 3-D */
    //  mat_vmult_3d(scr3d,pmatrix,scr2d); /* COnvert to 3-D */
 
-  if(V->line->fc0->world->verbosity >= 3) { printf("f_p_eqa_radial: VERTEX %4d (fluxon %4d); total force is %7.3g, %7.3g, %7.3g\n", V->label, V->line->label, scr3d[0],scr3d[1],scr3d[2]); }
+  if(V->line->fc0->world->verbosity >= 3) { printf("f_p_eqa_radial: VERTEX %4ld (fluxon %4ld); total force is %7.3g, %7.3g, %7.3g\n", V->label, V->line->label, scr3d[0],scr3d[1],scr3d[2]); }
 
 
   sum_3d(V->f_s,V->f_s,scr3d);
@@ -1886,9 +1886,9 @@ VERTEX *rc_a_ad2(VERTEX *v, NUM *params) {
     return 0;
 
   if(verbosity > 1) {
-    printf("Vertex %d: neighbors are: %d",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
+    printf("Vertex %ld: neighbors are: %ld",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
     for(i=1;i<v->neighbors.n; i++) 
-      printf(", %d",((VERTEX *)(v->neighbors.stuff[i]))->label);
+      printf(", %ld",((VERTEX *)(v->neighbors.stuff[i]))->label);
     printf("\n");
   }
 
@@ -1921,7 +1921,7 @@ VERTEX *rc_a_ad2(VERTEX *v, NUM *params) {
       a = acos( inner_2d( v->scr , v2->scr )  /  l1l2 );
 
       if(verbosity>1) {
-	printf( "vertices %d-%d: norm2(v->scr)=%.2g, norm2(v2->scr)=%.2g, l1l2=%.2g, inner=%.2g, a=%.2g, d=%.2g, ad2=%.2g, ath=%.2g, ad2th=%.2g\n",
+	printf( "vertices %ld-%ld: norm2(v->scr)=%.2g, norm2(v2->scr)=%.2g, l1l2=%.2g, inner=%.2g, a=%.2g, d=%.2g, ad2=%.2g, ath=%.2g, ad2th=%.2g\n",
 		v->label,
 		v2->label,
 		norm2_2d(v->scr),
@@ -1965,9 +1965,9 @@ VERTEX *rc_a_ad2_h(VERTEX *v, NUM *params) {
     return 0;
 
   if(verbosity > 1) {
-    printf("Vertex %d: neighbors are: %d",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
+    printf("Vertex %ld: neighbors are: %ld",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
     for(i=1;i<v->neighbors.n; i++) 
-      printf(", %d",((VERTEX *)(v->neighbors.stuff[i]))->label);
+      printf(", %ld",((VERTEX *)(v->neighbors.stuff[i]))->label);
     printf("\n");
   }
 
@@ -2003,7 +2003,7 @@ VERTEX *rc_a_ad2_h(VERTEX *v, NUM *params) {
 
       sh_fac = exp(v->x[2]/h); // scale height factor
       if(verbosity>1 || ( a > ath  &&   sh_fac * ad2 > ad2th ) ) {
-	printf( "vertices %d-%d: norm2(v->scr)=%.2g, norm2(v2->scr)=%.2g, l1l2=%.2g, inner=%.2g, a=%.2g, d=%.2g, ad2=%.2g, ath=%.2g, ad2th=%.2g\n",
+	printf( "vertices %ld-%ld: norm2(v->scr)=%.2g, norm2(v2->scr)=%.2g, l1l2=%.2g, inner=%.2g, a=%.2g, d=%.2g, ad2=%.2g, ath=%.2g, ad2th=%.2g\n",
 		v->label,
 		v2->label,
 		norm2_2d(v->scr),
@@ -2048,9 +2048,9 @@ VERTEX *rc_a_ad2_loc(VERTEX *v, NUM *params) {
     return 0;
 
   if(verbosity > 1) {
-    printf("Vertex %d: neighbors are: %d",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
+    printf("Vertex %ld: neighbors are: %ld",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
     for(i=1;i<v->neighbors.n; i++) 
-      printf(", %d",((VERTEX *)(v->neighbors.stuff[i]))->label);
+      printf(", %ld",((VERTEX *)(v->neighbors.stuff[i]))->label);
     printf("\n");
   }
 
@@ -2182,9 +2182,9 @@ VERTEX *rc_a_ad2_h_ad2hmax(VERTEX *v, NUM *params) {
 
   if(verbosity > 1) {
     int i;
-    printf("Vertex %d: neighbors are: %d",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
+    printf("Vertex %ld: neighbors are: %ld",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
     for(i=1;i<v->neighbors.n; i++) 
-      printf(", %d",((VERTEX *)(v->neighbors.stuff[i]))->label);
+      printf(", %ld",((VERTEX *)(v->neighbors.stuff[i]))->label);
     printf("\n");
   }
 
@@ -2226,9 +2226,9 @@ VERTEX *rc_a_ad2_r_max(VERTEX *v, NUM *params) {
 
   if(verbosity > 1) {
     int i;
-    printf("Vertex %d: neighbors are: %d",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
+    printf("Vertex %ld: neighbors are: %ld",v->label, ((VERTEX *)(v->neighbors.stuff[0]))->label);
     for(i=1;i<v->neighbors.n; i++) 
-      printf(", %d",((VERTEX *)(v->neighbors.stuff[i]))->label);
+      printf(", %ld",((VERTEX *)(v->neighbors.stuff[i]))->label);
     printf("\n");
   }
 
@@ -2272,7 +2272,7 @@ VERTEX *rc_a_ad2_r_max(VERTEX *v, NUM *params) {
 	}	
 	
 	//printf("v1->nnn=%d, v1->ppp=%d, v2->nnn=%d, v2->ppp=%d \n",v->next->next->next->label, v->prev->prev->prev->label, v2->next->next->next->label, v2->prev->prev->prev->label);
-	printf("vertex %d, angle=%f, a/d^2=%f, ath=%f, ad2th=%f \n",v->label,amax,ad2max,at,ad2t);
+	printf("vertex %ld, angle=%f, a/d^2=%f, ath=%f, ad2th=%f \n",v->label,amax,ad2max,at,ad2t);
 	return v2;
       }
     }
