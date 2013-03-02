@@ -32,6 +32,7 @@
 #define NUMCHAR "l"
 
 #include <stdlib.h>
+#include <stddef.h>
 
 /* MD5 hashing is now used for new VERTEX ID's CED 10-Feb-2009 */
 #include <time.h>
@@ -323,25 +324,22 @@ long new_vertex_label(long request);
 long hash_vertex_label(long request, WORLD *w);
 
 /* Offsets defined here... */
-static const FLUXON f__samp;
-static const fl_lab_of  = (long)&(f__samp.label) - (long)&f__samp;
-static const fl_all_ln_of = (long)&(f__samp.all_links) - (long)&f__samp;
-static const fl_start_ln_of = (long)&(f__samp.start_links) - (long)&f__samp;
-static const fl_end_ln_of = (long)&(f__samp.end_links) - (long)&f__samp;
+static const long fl_lab_of      = offsetof(FLUXON,label);
+static const long fl_all_ln_of   = offsetof(FLUXON, all_links);
+static const long fl_start_ln_of = offsetof(FLUXON, start_links);
+static const long fl_end_ln_of   = offsetof(FLUXON, end_links);
 
-static const FLUX_CONCENTRATION fc__samp;
-static const fc_lab_of = (long)&(fc__samp.label) - (long)&fc__samp;
-static const fc_ln_of = (long)&(fc__samp.links) - (long)&fc__samp;
+static const long fc_lab_of      = offsetof(FLUX_CONCENTRATION, label);
+static const long fc_ln_of       = offsetof(FLUX_CONCENTRATION, links);
 
-static const TREE tree__samp;
-static const tree_lab_of = (long)&(tree__samp.node) - (long)&tree__samp;
-static const tree_ln_of  = (long)&(tree__samp.links) - (long)&tree__samp;
+static const long tree_lab_of = offsetof(TREE, node);
+static const long tree_ln_of  = offsetof(TREE, links);
 
-static const VERTEX v__samp;
-static const v_neighbor_of = (long)&(v__samp.neighbors) - (long)&(v__samp);
-static const v_nearby_of = (long)&(v__samp.nearby) - (long)&(v__samp);
-static const v_ln_of = (long)&(v__samp.world_links) - (long)&(v__samp);
-static const v_lab_of = (long)&(v__samp.label) - (long)&(v__samp);
+static const long v_neighbor_of = offsetof(VERTEX, neighbors);
+static const long v_nearby_of   = offsetof(VERTEX, nearby);
+static const long v_ln_of       = offsetof(VERTEX, world_links);
+static const long v_lab_of      = offsetof(VERTEX, label);
+
  FLUXON *new_fluxon(NUM flux,  
 			 FLUX_CONCENTRATION *c0,
 			 FLUX_CONCENTRATION *c1,

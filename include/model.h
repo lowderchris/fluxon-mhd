@@ -67,6 +67,9 @@ NUM calc_stiffness(VERTEX *v);
 void fluxon_calc_step(FLUXON *fl, NUM t);
 void fluxon_relax_step(FLUXON *fl, NUM t);
 
+void expand_lengthwise(DUMBLIST *workspace, int start_idx, long passno);
+void expand_via_neighbors(DUMBLIST *workspace, int start_idx, long passno);
+
 HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global);
 
 DUMBLIST *gather_neighbor_candidates(VERTEX *v,char global);

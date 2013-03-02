@@ -25,27 +25,28 @@
 #include "data.h"
 
 
- NUM norm_2d(NUM *x);
- NUM norm_3d(NUM *x);
+NUM norm_2d(NUM *x);
+NUM norm_3d(NUM *x);
 
- NUM norm2_2d(NUM *x);
- NUM norm2_3d(NUM *x);
+NUM norm2_2d(NUM *x);
+NUM norm2_3d(NUM *x);
 
- NUM inner_2d(NUM *p0, NUM *p1);
- NUM inner_3d(NUM *p0, NUM *p1);
+NUM inner_2d(NUM *p0, NUM *p1);
+NUM inner_3d(NUM *p0, NUM *p1);
 
- NUM cross_2d(NUM *p0, NUM *p1);
+NUM cross_2d(NUM *p0, NUM *p1);
 #define cross_3d cross
- void cross(NUM *out, NUM *p0, NUM *p1);
+void cross(NUM *out, NUM *p0, NUM *p1);
 
- void scale_2d(NUM *out, NUM *a, NUM alpha);
- void scale_3d(NUM *out, NUM *a, NUM alpha);
+void scale_2d(NUM *out, NUM *a, NUM alpha);
+void scale_3d(NUM *out, NUM *a, NUM alpha);
 
- void sum_3d(NUM *out, NUM *a, NUM *b);
- void diff_3d(NUM *out, NUM *a, NUM *b);
+void diff_2d(NUM *out, NUM *a, NUM *b);
 
- void cp_3d(NUM *out, NUM *a);
+void sum_3d(NUM *out, NUM *a, NUM *b);
+void diff_3d(NUM *out, NUM *a, NUM *b);
 
+void cp_3d(NUM *out, NUM *a);
 
 /**********************************************************************
  * Matrix manipulation & rotation matrix generation
@@ -78,7 +79,7 @@
  * Projection functions
  */
  void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3);
-
+ void reflect(NUM out[3], NUM point[3], PLANE *plane);
 /**********************************************************************
  * Distance functions
  */
@@ -91,7 +92,7 @@
  NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1);  /* point-line dist */
  NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1); /* point-line segment dist */
  NUM l_l_dist( NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]); /* line-line dist */
- NUM p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]);
+ void p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]);
  void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]);
  NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]); /* seg-seg dist */
 

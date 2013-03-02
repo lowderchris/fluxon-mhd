@@ -26,6 +26,9 @@
 #include "data.h"
 #include "geometry.h"
 
+// model.h is needed only for find_simplex, which pulls expand_lengthwise and expand_via_neighbors.
+// Should find_simplex be moved to model.c?
+#include "model.h"    
 
 #ifndef NAN
 #define NAN (nan("NAN"))
@@ -38,7 +41,8 @@ char *code_info_geometry="%%%FILE%%% (new unsorted hull routine)";
  *****  Vector basics
  *****  norm, inner product, cross product, scalar product, sum, 
  *****  difference, copy.
- 
+ */
+
 /**********************************************************************
  * norm - find the length of a vector.  2-d or 3-d.
  */
@@ -159,6 +163,7 @@ void cp_3d(NUM *a, NUM *b) {
 /**********************************************************************
  **********************************************************************
  ***** Matrix handling routines
+ */
 
 /**********************************************************************
  * rotmat_2d - Return a 2x2 matrix containing the specified rotation.
@@ -629,7 +634,7 @@ NUM l_l_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
  * 
  */
 
-NUM p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
+void p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
   NUM c[3];
   NUM r;
 
@@ -865,7 +870,6 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
   sum_3d(p1, p1, scr);
   return;
   
-  
 }
 
   
@@ -1016,7 +1020,6 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   NUM a,b,Plen;
   NUM P[3], seg[3], cr[3];
   WORLD *w = v0->line->fc0->world;
-  int vb = w->verbosity;
 
   /* Exclude trivial cases, adjacent-segment case, and next-nearest-segment case. */
   /* (farther segments aren't as likely to cause trouble) */
@@ -1026,23 +1029,12 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   if(v0==v1 ||   (v0->next == v1) ||  (v1->next == v0) )
     return 1e50;
 
-  if(vb >= 5) 
-    printf("fl_segment_dist: calling ls_closest_approach...\n");
-
   ls_closest_approach(P0,P1,v0->x,v0->next->x,v1->x,v1->next->x);
-
-  if(vb >= 5) 
-    printf("fl_segment_dist: got back... P1=%d; P0=%d\n",P1,P0);
 
   diff_3d(P,P1,P0);
   Plen = norm_3d(P);
   if(Plen==0)
     return 1e50;
-
-  if (vb>= 6) {
-    printf("\nfl_segment_deluxe_dist: v0=%ld,v1=%ld; Plen is %g\n",v0->label,v1->label,Plen);
-    printf("P0=(%g,%g,%g); P1=(%g,%g,%g)\n",P0[0],P0[1],P0[2],P1[0],P1[1],P1[2]);
-  }
 
   // inverse square sine...
   /* Scale by the inverse square sine of the projection angle:  */
@@ -1403,13 +1395,20 @@ static int angle_cmp(void *a, void *b) {
   TRIM_ANGLE( ((VERTEX *)a)->a );
   TRIM_ANGLE( ((VERTEX *)b)->a );
 
-  if(((VERTEX *)a)->a == ((VERTEX *)b)->a )
-    if( ((VERTEX *)a)->r==((VERTEX *)b)->r )
+  if(((VERTEX *)a)->a == ((VERTEX *)b)->a ) {
+
+
+    if( ((VERTEX *)a)->r==((VERTEX *)b)->r ) {
       return 0;
-    else 
+    }
+    else {
       return ( ((VERTEX *)a)->r < ((VERTEX *)b)->r ) ? -1 : 1;
-	    
-  return ( ((VERTEX *)a)->a < ((VERTEX *)b)->a ) ? -1 : 1;
+    }
+
+
+  } else {
+    return ( ((VERTEX *)a)->a < ((VERTEX *)b)->a ) ? -1 : 1;
+  }
 }
 
 void sort_by_angle_2d(DUMBLIST *horde) {
@@ -1494,7 +1493,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   int n = horde->n;
   int i, i_r, i_l; /* Current, right, and left indices */
   int terminus; /* When we get here, we are done (moving target) */
-  int verbosity;
   char been_there;
   VERTEX *iv, *rv, *lv;
   NUM a;
@@ -1513,35 +1511,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     return;
   }
 
-  /* Sort out debugging level. Kind of a kludge, but what the hey... */
-  { 
-    WORLD *w = 0;
-    for(i=0;!w && i<horde->n; i++) 
-      if( (((VERTEX **)(horde->stuff))[i])->line )
-	w = (((VERTEX **)(horde->stuff))[i])->line->fc0->world;
-    verbosity = w?w->verbosity:0;
-  }
-
   sort_by_angle_2d(horde);
-
-  if(verbosity >= 4) 
-    printf("hull_2d: got %d candidates...\n",horde->n);
-  if(verbosity >= 5) {
-    printf("candidate order:\n");
-    for (i=0;i<horde->n;i++) {
-      VERTEX *v = ((VERTEX **)(horde->stuff))[i];
-      printf("pos %3.3d: (x,y)=(%5.2g,%5.2g); a=%5.2g; r=%5.2g; label=%ld\n",
-	     i,
-	     v->scr[0],
-	     v->scr[1],
-	     v->a*180/3.14159,
-	     v->r,
-	     v->label
-	     );
-    }
-  }
-
-
 
   /* Get ready for main loop -- on entry, the first two candidates
    * need their perpendicular bisectors calculated...
@@ -1563,9 +1533,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   } else
     out[i_r].open = 0;
 
-  if(verbosity >= 5) {
-    printf("Entering main loop: n=%d; horde->n=%d; i_r=%d; i_l=%d\n",n,horde->n,i_r,i_l);
-  }
   /* Main loop */
   do {
     NUM a,b;
@@ -1585,10 +1552,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       if(!been_there)
 	perp_bisector_2d( out[i_l].bisector, 0, lv->scr );
       
-      if(verbosity >= 5) 
-	printf("\tpos %3d: i_r=%3d, i_l=%3d, l_scr:%5.3g,%5.3g (%5.3g deg), scr:%5.3g,%5.3g (%5.3g deg), r_scr:%5.3g,%5.3g (%5.3g deg)\n\t\t",i,i_r,i_l,lv->scr[0],lv->scr[1],lv->a*180/3.14159,iv->scr[0],iv->scr[1],iv->a*180/3.14159,rv->scr[0],rv->scr[1],rv->a*180/3.14159);
-
-
       /*** Check for pathologies ***/
       if(i_r == i || i_l == i) {
 	abort = 1;
@@ -1609,8 +1572,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       b = iv->a - rv->a;
       TRIM_ANGLE(b);
       if( b < EPSILON && b > -EPSILON && rv->r < iv->r ) {
-	if(verbosity>=5)
-	  printf("REJECT: colinear and more distant than right side");
 	goto reject; /* Colinear with (and farther than) right-side vertex */
       }
 
@@ -1618,8 +1579,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
       TRIM_ANGLE(a);
       if( a < EPSILON && a > -EPSILON && lv->r <= iv->r ) {
-	if(verbosity>=5)
-	  printf("REJECT: colinear and more distant than left side");
 	goto reject;  /* Colinear with (and farther than) left-side vertex */
       }
 
@@ -1643,15 +1602,12 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
 	  /*** If intersections were in the wrong order, reject the point ***/
 	  if(a < 0) {
-	    if(verbosity>=5)
-	      printf("REJECT: wrong order");
 	    goto reject;
 	  }
 	}
 
       } else {
 	/* Line is open on the left -- set the left point to zero */
-	if(verbosity >= 5) printf(" looks open... ");
 	out[i].p[0] = out[i].p[1] = 0;
 	out[i].open = 1;
       }
@@ -1664,9 +1620,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       rv = iv;
       iv = lv;
 
-      if(verbosity>=5) 
-	printf("Accept.");
-      
+      /*** The only way to get to the rejection code is to goto it! ***/
       if(0) {
       reject: 
 	/*** rejection code ***/
@@ -1709,13 +1663,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	    out[i_r].open = 0;
 	  }
 	}
-	
-
       }
-
-      if(verbosity >= 5) 
-	printf(" terminus=%d; been_there=%d\n",terminus,been_there);
-
     } /* end of non-zeroed-out check */
     
   } while(!abort && (!been_there || i != terminus));  /* End of main loop */
@@ -1728,7 +1676,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       VERTEX *hsi = (VERTEX *)(horde->stuff[i]);
       if(hsi) {
 	if(i != j) {
-	  if(verbosity >5) printf("  %d:%d->%d ",hsi,i,j);
 	  horde->stuff[j] = hsi;
 	  out[j] = out[i];
 	}
@@ -1736,7 +1683,6 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       }
     }
     horde->n = j;
-    if(verbosity>5) printf("\n");
   }
 
   /* Finally - insert appropriate atan2 angular fields into the output */
@@ -1749,11 +1695,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	hv->a_l =(((VERTEX *)(horde->stuff[i]))->a ) + PI/2;
 	hv->a_r =(((VERTEX *)(horde->stuff[MOD_NEXT(i,horde->n)]))->a) - PI/2;
       }
-      if(verbosity>5) 
-	printf(" %d(%c):a_l=%.3g,a_r=%.3g,p1=%.3g,p2=%.3g  ",i,(hv->open)?'o':'c',180/PI*hv->a_l,180/PI*hv->a_r,hv->p[0],hv->p[1]);
     }
-    if(verbosity>5)
-      printf("\n");
   }
 }
 
@@ -2428,7 +2370,7 @@ static DUMBLIST *fsbl_cache = 0;
 
 DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
   VERTEX *vv;
-  static VERTEX *(simplex[3]);  // Gets the VERTEXes of the simplex
+  static VERTEX *(simplex[4]);  // Gets the VERTEXes of the simplex
   POINT3D a0, a1, a2, a3;       // These get the vectors relative to the desired point
   static POINT3D origin = {0,0,0};
   NUM *p0, *p1, *p2, *p3;       // These get the x vectors of the VERTEXes we're dealing with

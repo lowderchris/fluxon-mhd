@@ -139,7 +139,7 @@ void *recon_str_to_ptr(char *s) {
  * all, for reference.  But they are deprecated.  So instead of 
  * f_curvature and f_pressure_equi, use f_curv and f_p_eqa
  *
- *
+ */
 
 /**********************************************************************
  * f_curvature

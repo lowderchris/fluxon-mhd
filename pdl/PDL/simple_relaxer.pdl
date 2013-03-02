@@ -145,8 +145,9 @@ sub simple_relaxer {
 		printf("computing inital fast neighbor search...\n");
 		$w->update_neighbors(-1);
 	    }
-	    print "parallel... ";
+	    print "parallel update_force... ";
 	    $fmax = $w->update_force_parallel($global);
+	    print "parallel relax_step... ";
 	    $w->relax_step_parallel($dt);
 	} else {
 	    ##problem here!

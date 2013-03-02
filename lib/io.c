@@ -102,9 +102,9 @@ int footpoint_action(WORLD *world, char *s) {
   long l0,l1,fl0;
   NUM x0[3],x1[3],flux0,flux1;
 
-  /* Skip over initial whitespace and comment characters */
+  /* Skip over initial whitespace */
   while(*s && isspace(*s))
-    *s++;
+    s++;
 
   /* Return on blank line or comment */
   if(!*s || *s=='#') return 0;
@@ -296,12 +296,12 @@ int footpoint_action(WORLD *world, char *s) {
 	  //printf("line %d: fc %d (%x) - fc %d (%x)\n",fl0,l0,fc0,l1,fc1);
 	  if(!fc0 || !fc1) {
 	    char *badbuf = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-	    sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,fc0,fc1,BUFSIZ);
+	    sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,(long)fc0,(long)fc1,BUFSIZ);
 	    badstr = badbuf;
 	    
 	  } else if(fc0->flux * fc1->flux >= 0) {
 	    badstr = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
-	    sprintf(badstr,"This fluxon connects two flux concentrations of the same sign flux, or\none of its flux tubes has zero flux. Line %ld; concentrations %ld (%g) and %ld (%g)\n",fl0, flux0, l0, fc0->flux, l1, fc1->flux);
+	    sprintf(badstr,"This fluxon connects two flux concentrations of the same sign flux, or\none of its flux tubes has zero flux. Line %ld (flux %g); concentrations %ld (%g) and %ld (%g)\n",fl0, flux0, l0, fc0->flux, l1, fc1->flux);
 	    break;
 	  }	else {
 	    /* Check if the field line exists in either of the two 
@@ -378,7 +378,7 @@ int footpoint_action(WORLD *world, char *s) {
        *  <pos> (0 means start; -1 means end) along the existing one.
        */
       if(!*vscan) {
-	sprintf(vscan,"%%*s %%ld %%ld %%ld %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+	sprintf(vscan,"%%*s %%ld %%ld %%ld %%%sf %%%sf %%%sf",NUMCHAR,NUMCHAR,NUMCHAR);
       }
       
       n = sscanf(s,vscan,&l0,&vertex_label,&l1,x0,x0+1,x0+2);
@@ -486,8 +486,8 @@ int footpoint_action(WORLD *world, char *s) {
 	      if(FLUX_FORCES[j].func) {
 		f_funcs[i] = FLUX_FORCES[j].func;
 	      } else {
-		long foo;
-		if( sscanf(fname,"0x%x",&foo) )
+		unsigned long foo;
+		if( sscanf(fname,"0x%lx",&foo) )
 		  f_funcs[i] = (void *)foo;
 		else {
 		  static char bstr[160];
@@ -785,7 +785,7 @@ int footpoint_action(WORLD *world, char *s) {
 	  }
 	  break;
 	case 'R':  /* ARD Added - read rel_step */
-	  if (sscanf(s, "%*s %*s %d", &(world->rel_step)) != 1) {
+	  if (sscanf(s, "%*s %*s %ld", &(world->rel_step)) != 1) {
 	    badstr = "Couldn't parse world->rel_step";
 	  }
 	  break;
@@ -828,9 +828,10 @@ int footpoint_action(WORLD *world, char *s) {
 	      }
 
 	      if(ok_to_scan) {
-		char mscan[100];
-		sprintf(mscan,"%%*s %%%sf",NUMCHAR);
-		sscanf(mscan,scanvar);
+		//		char mscan[100];
+		//		sprintf(mscan,"%%*s %%%sf",NUMCHAR);
+		//		sscanf(mscan,scanvar);
+		sscanf(s+off,"%*s %"NUMCHAR"f", (double *)scanvar);
 	      } else {
 		badstr = s;
 	      }
@@ -925,7 +926,7 @@ WORLD *read_world(FILE *file, WORLD *a) {
       a = new_world();
     }
 
-    if(s = next_line(file)) {
+    if( (s = next_line(file)) ) {       // assignment
       error = footpoint_action(a, s);
     }
 
@@ -997,7 +998,7 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
     if(FLUX_FORCES[j].func)
       fprintf(file,"%s ",FLUX_FORCES[j].name);
     else 
-      fprintf(file,"0x%x ",world->f_funcs[i]);
+      fprintf(file,"0x%lx ",(unsigned long)(world->f_funcs[i]));
   }
   fprintf(file,"\n");
 
@@ -1070,6 +1071,8 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   /* Output neighbor relations */
   fputc('\n',file);
   fprint_tree(file, world->vertices, v_lab_of, v_ln_of, 0, fprint_v_nbors);
+
+  return 1;
 }    
     
 /**********************************************************************
@@ -1192,18 +1195,18 @@ void fdump_fluxon(FILE *f, FLUXON *foo, int indent) {
   fprint_all_fluxon_node(f,foo,indent);
 
   for((i=0),(v = foo->start); v ; v=v->next) {
-    fprintf(f,"%s v %3d: lab %11ld, loc %x x:(%6.3g, %6.3g, %6.3g) neigh: %3d, near: %3d, next: %x, prev: %x\n"
+    fprintf(f,"%s v %3d: lab %11ld, loc %lx x:(%6.3g, %6.3g, %6.3g) neigh: %3d, near: %3d, next: %lx, prev: %lx\n"
 	    ,buf
 	    , i
 	    , v->label
-	    , v
+	    , (unsigned long)v
 	    , v->x[0]
 	    , v->x[1]
 	    , v->x[2]
 	    , v->neighbors.n
 	    , v->nearby.n
-	    , v->next
-	    , v->prev
+	    , (unsigned long)v->next
+	    , (unsigned long)v->prev
 	    );
     fprintf(f,"\tNeighbors: ");
 
@@ -1366,7 +1369,7 @@ void print_dumblist(DUMBLIST *foo, void ((*item_printer)())) {
   printf("Dumblist has %d items (size is %d):\n",foo->n, foo->size);
   for(i=0;i<foo->n;i++) {
     if(!item_printer) {
-      printf("\t%d: %d\n",i,foo->stuff[i]);
+      printf("\t%d: %lx\n",i,(unsigned long)(foo->stuff[i]));
     }
     else {
       (*item_printer)(i,foo);
@@ -1471,6 +1474,7 @@ static int check_binary_buf( long desired_len ) {
       exit(1);
     }
   }
+  return 1;
 }
 
 /******************************
@@ -1490,16 +1494,18 @@ int binary_dump_header(int fd) {
   foo[0] = 0xAABBCCDD;
   foo[1] = 1;
   foo[2] = sizeof(NUM);
-  foo[3] = 3.1416;
+  *(float *)(&(foo[3])) = 3.1416;
   binary_dump_field(fd, BD_HDR, 4 * sizeof(long), binary_buffer);
+  return 1;
 }
 
 int binary_read_header(long size, char *buf, WORLD *w) {
   char *me = "binary_read_header";
   long *foo = (long *)buf;
+  float f;
 
   if(foo[0] != 0xAABBCCDD) {
-    fprintf(stderr,"%s, endian check: expected %x, got %x (NUXI problem?)\n",me, 0xAABBCCDD,foo[0]);
+    fprintf(stderr,"%s, endian check: expected %lx, got %lx (NUXI problem?)\n",me, (unsigned long)(0xAABBCCDD),(unsigned long)(foo[0]));
     return 1;
   }
   if(foo[1] != 1) {
@@ -1508,12 +1514,13 @@ int binary_read_header(long size, char *buf, WORLD *w) {
   }
 
   if(foo[2] != sizeof(NUM)) {
-    fprintf(stderr,"%s, precision check: sizeof(NUM) is %d, but file claims %ld (oops)\n",me, sizeof(NUM), foo[2]);
+    fprintf(stderr,"%s, precision check: sizeof(NUM) is %ld, but file claims %ld (oops)\n",me, sizeof(NUM), foo[2]);
     return 3;
   }
   
-  if(foo[3] != 3.1416) {
-    fprintf(stderr,"%s, binary format check: expected 3.1416, got %g",me,foo[3]);
+  f = *(float *)(&(foo[3]));
+  if(f != 3.1416) {
+    fprintf(stderr,"%s, binary format check: expected 3.1416, got %g",me,f);
     return 4;
   }
   return 0;
@@ -1555,7 +1562,8 @@ int binary_dump_WORLD(int fd, WORLD *w) {
 
 
   // Leave a fence before the variable part
-  *(long *)ptr = WORLD_VAR_FENCE; ptr += sizeof(long);
+  *(long *)ptr = WORLD_VAR_FENCE; 
+  ptr += sizeof(long);
 
   // skip the concentration, line, and vertex trees...
 
@@ -1645,7 +1653,7 @@ int binary_read_WORLD(long size, char *buf, WORLD *w) {
 
 
   if( *(long *)ptr != sizeof(WORLD) ) {
-    fprintf(stderr,"%s: expected WORLD with a size of %d; found %ld (oops)\n",me, sizeof(WORLD), *(long *)ptr);
+    fprintf(stderr,"%s: expected WORLD with a size of %ld; found %ld (oops)\n",me, sizeof(WORLD), *(long *)ptr);
     return 2;
   }
   ptr += sizeof(long);
@@ -1730,9 +1738,9 @@ int binary_read_WORLD(long size, char *buf, WORLD *w) {
 
   // Check fence
   if( *(long *)ptr != WORLD_VAR_FENCE ) {
-    fprintf(stderr,"%s: missed variable fence! (expected 0x%x, got 0x%x)\n",me,WORLD_VAR_FENCE, *(long *)ptr);
+    fprintf(stderr,"%s: missed variable fence! (expected 0x%lx, got 0x%lx)\n",me,WORLD_VAR_FENCE, *(long *)ptr);
     for(i=-16; i<=16; i++) {
-      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+      fprintf(stderr, "rel. pos %d: 0x%lx\n",i, *((long *)ptr + i));
     }
     return 3;
   }
@@ -1799,9 +1807,9 @@ int binary_read_WORLD(long size, char *buf, WORLD *w) {
   
   // final fence
   if( *(long *)ptr != WORLD_END_FENCE ) {
-    fprintf(stderr,"%s: missed end-of-WORLD fence! (expectex 0x%x, got 0x%x)\n",me, WORLD_END_FENCE, *(long *)ptr);
+    fprintf(stderr,"%s: missed end-of-WORLD fence! (expected 0x%lx, got 0x%lx)\n",me, WORLD_END_FENCE, *(long *)ptr);
     for(i=-80; i<=80; i++) {
-      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+      fprintf(stderr, "rel. pos %d: 0x%lx\n",i, *((long *)ptr + i));
     }
     return 4;
   }
@@ -1880,7 +1888,7 @@ int binary_read_CONCENTRATION(long size, char *buf, WORLD *w) {
   ptr += sizeof(long);
 
   if( *(long *)ptr != sizeof(FLUX_CONCENTRATION)) {
-    fprintf(stderr,"%s: size of FLUX_CONCENTRATION is wrong (expected %d, got %ld)\n",me, sizeof(FLUX_CONCENTRATION), *(long *)ptr);
+    fprintf(stderr,"%s: size of FLUX_CONCENTRATION is wrong (expected %ld, got %ld)\n",me, sizeof(FLUX_CONCENTRATION), *(long *)ptr);
     return 2;
   }
   ptr += sizeof(long);
@@ -1891,9 +1899,9 @@ int binary_read_CONCENTRATION(long size, char *buf, WORLD *w) {
     *(ptr++) = 0;
 
   if(*(long *)ptr != WORLD_VAR_FENCE) {
-    fprintf(stderr,"%s: Missed variable field fence! (expected 0x%x, got 0x%x)\n",WORLD_VAR_FENCE, *(long *)ptr);
+    fprintf(stderr,"%s: Missed variable field fence! (expected 0x%lx, got 0x%lx)\n",me,WORLD_VAR_FENCE, *(long *)ptr);
     for(i=-10; i<=10; i++) {
-      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+      fprintf(stderr, "rel. pos %d: 0x%lx\n",i, *((long *)ptr + i));
     }
     return 3;
   }
@@ -1903,9 +1911,9 @@ int binary_read_CONCENTRATION(long size, char *buf, WORLD *w) {
   ptr += 80;
   
   if(*(long *)ptr != WORLD_END_FENCE) {
-    fprintf(stderr,"%s: Missed end-of-concentration fence! (expected 0x%x, got 0x%x)\n",WORLD_VAR_FENCE, *(long *)ptr);
+    fprintf(stderr,"%s: Missed end-of-concentration fence! (expected 0x%lx, got 0x%lx)\n",me,WORLD_VAR_FENCE, *(long *)ptr);
     for(i=-10; i<=10; i++) {
-      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+      fprintf(stderr, "rel. pos %d: 0x%lx\n",i, *((long *)ptr + i));
     }
     return 4;
   }
@@ -2165,7 +2173,7 @@ int binary_read_FLUXON(long size, char *buf, WORLD *w) {
   if( *(long *)ptr  != WORLD_END_FENCE ) {
     fprintf(stderr,"%s: missed final fence in fluxon %ld, arena may be corrupted.\n",me, f->label);
     for(i=-10; i<=10; i++) {
-      fprintf(stderr, "rel. pos %d: 0x%x\n",i, *((long *)ptr + i));
+      fprintf(stderr, "rel. pos %d: 0x%lx\n",i, *((long *)ptr + i));
     }
 
     return 7; 
@@ -2322,6 +2330,7 @@ int binary_read_neighbors(long size, char *buf, WORLD *w) {
 int binary_dump_end(int fd) {
   binary_dump_field( fd, BD_END, 0, 0 );
   close(fd);
+  return 1;
 }
 
 
@@ -2451,6 +2460,7 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
   
   /** Dump the buffer to the file **/
   binary_dump_field( fd, BD_FLUXON_PIPE, dex - binary_buffer, binary_buffer );
+  return 1;
 }
 
 /**********************************************************************
@@ -2494,7 +2504,7 @@ WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
     // Parse header: check for fence, and get data type and length
     pos += ct;
     if(hdrbuf[0] != BD_FENCE) {
-      fprintf(stderr,"%s: failed to find fence (expected %x, got %x), position %ld", me, BD_FENCE, hdrbuf[0]);
+      fprintf(stderr,"%s: failed to find fence (expected %lx, got %lx), position %d", me, BD_FENCE, hdrbuf[0],pos);
       if(allocated_world)
 	free_world(w);
       return 0;
@@ -2503,7 +2513,7 @@ WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
     type = hdrbuf[1];
     len = hdrbuf[2];
     if(type <=0 || type > BD_MAX_TYPENO) {
-      fprintf(stderr,"%s: failed to find valid type (expected 1-%d, got %d), position %d",me,BD_MAX_TYPENO,type);
+      fprintf(stderr,"%s: failed to find valid type (expected 1-%d, got %ld), position %d",me,BD_MAX_TYPENO,type,pos);
       if(allocated_world)
 	free_world(w);
       return 0;
@@ -2571,7 +2581,7 @@ WORLD *binary_read_dumpfile ( int fd, WORLD *w ) {
 	
       if(reader) {
 	if( (*reader)(len, binary_buffer, w) ) {
-	  fprintf(stderr,buf);
+	  fprintf(stderr,"%s",buf);
 	  if(allocated_world)
 	    free_world(w);
 	  return 0;
@@ -2882,6 +2892,8 @@ int binary_dump_flpos( int fd, FLUXON *f) {
   }
 
   binary_dump_field(fd, BD_POSITION, len, binary_buffer);
+
+  return 1;
 }
 
 int binary_read_flpos( long size, char *buf, WORLD *w) {
@@ -3049,6 +3061,7 @@ int binary_dump_flstep( int fd, FLUXON *f) {
   }
 
   binary_dump_field(fd, BD_STEP, len, binary_buffer);
+  return 1;
 }
 
 int binary_read_flstep( long size, char *buf, WORLD *w) {

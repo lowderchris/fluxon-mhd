@@ -57,6 +57,9 @@ void print_node(void *foo, int indent, int lab_o, int lk_o);
 
 /* Fieldline output functions for print_tree */
 void fdump_fluxon(FILE *f, FLUXON *foo, int indent);
+void dump_all_fluxon_tree(FLUXON *foo);
+void fdump_all_fluxon_tree(FILE *F, FLUXON *foo);
+
 void fprint_all_fluxon_node(FILE *f, FLUXON *foo, int indent);
 void fprint_all_fluxon_tree(FILE *f, FLUXON *foo);
 void print_all_fluxon_tree(FLUXON *foo);
@@ -85,11 +88,11 @@ WORLD *read_world(FILE *file, WORLD *a);
  */
 
 // Some fences - unusual numbers with funny names 
-#define BD_FENCE         0xAB5C155A
-#define NEIGHBOR_FENCE   0xBED57EAD
-#define VERTEX_END_FENCE 0x5AFEB055
-#define WORLD_VAR_FENCE  0x5AFEBEEF
-#define WORLD_END_FENCE  0x5AFED00D
+#define BD_FENCE         ((long)(0xAB5C155A))
+#define NEIGHBOR_FENCE   ((long)(0xBED57EAD))
+#define VERTEX_END_FENCE ((long)(0x5AFEB055))
+#define WORLD_VAR_FENCE  ((long)(0x5AFEBEEF))
+#define WORLD_END_FENCE  ((long)(0x5AFED00D))
 
 // Assign type codes sequentially, and set BD_MAX_TYPENO to the value of the highest one.
 #define BD_END                       1

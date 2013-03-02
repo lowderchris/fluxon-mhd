@@ -83,7 +83,7 @@ static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
    * Check that either there are no vertices, or that both start and end are defined.
    */
   if( (fl->start == 0) ^ (fl->end == 0) ) {
-    fprintf(stderr, "world_check ERROR: fluxon %ld has inconsistent start & end vertices (%d vs %d)!\n",fl->label, fl->start, fl->end);
+    fprintf(stderr, "world_check ERROR: fluxon %ld has inconsistent start & end vertices (%ld vs %ld)!\n",fl->label, (long)(fl->start), (long)(fl->end));
     world_check_code = -1;
     return 0;
   }
@@ -122,7 +122,7 @@ static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
 int world_check(WORLD *a) {
   world_check_code = 0;
   
-  safe_tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_c_springboard, 0);
+  return safe_tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_c_springboard, 0);
 }
 
 
@@ -713,7 +713,7 @@ static long f_w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
     printf(" %ld",fl->label);
     fflush(stdout);
   }
-  return fast_fluxon_update_neighbors(fl, gl_gl);
+  return fluxon_update_neighbors(fl, gl_gl);
 }
 
 void fast_world_update_neighbors(WORLD *a, char global) {
@@ -1205,7 +1205,16 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
     stiffness = calc_stiffness(v);
     if(stiffness == 0) stiffness = 1e-7;
 
-    if(verbosity >= 3)  printf("fluxon %ld, vertex %ld: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  stiffness = %g, f_t=(%g,%g,%g)[%g]\t",f->label,v->label, v->x[0],v->x[1],v->x[2], v->r_cl, r_cl, stiffness, norm_3d(v->f_t), v->f_t[0],v->f_t[1],v->f_t[2],norm_3d(v->f_t));
+    if(verbosity >= 3)  
+      printf("fluxon %ld, vertex %ld: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  stiffness = %g, f_t=(%g,%g,%g)[%g]\t",
+	     f->label,
+	     v->label, 
+	     v->x[0],v->x[1],v->x[2],
+	     v->r_cl, 
+	     r_cl, 
+	     stiffness,
+	     v->f_t[0],v->f_t[1],v->f_t[2],
+	     norm_3d(v->f_t));
     
     if(stiffness > 1.00001) {
       fprintf(stderr,"fluxon %ld, vertex %ld: stiffness = %g, >1!  This is allegedly impossible! You've got trouble, gov\n",f->label,v->label,stiffness);
@@ -1831,8 +1840,10 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
     printf("passno=%ld...  ",passno);
   }
 
-  if(!v)        /* Paranoia */
-    return;
+  if(!v) {        /* Paranoia */
+    fprintf(stderr,"Gather_neighbor_candidates: got a null VERTEX! Returning 0\n");
+    return 0;   
+  }
 
   if(!workspace) 
     workspace = new_dumblist();
@@ -3107,8 +3118,8 @@ char *boundary_ptr_to_name(void *f) {
     }
   }
   {
-    char buf[80];
-    sprintf(buf,"Unknown boundary condition 0x%x",f);
+    static char buf[80];
+    sprintf(buf,"Unknown boundary condition 0x%lx",(long)f);
     return buf;
   }
 }
@@ -3670,15 +3681,18 @@ void world_relax_step_parallel(WORLD *a, NUM t) {
   }
 
   init_minmax_accumulator(a);
-
+  printf("calling parallel_prep...\n");
   parallel_prep(a);                       // Get ready
-
   gl_t = t;                               // Set up global dtau variable for springboarding                                 
   work_springboard = fluxon_calc_step_sb; // This is the parallelized operation
   gl_binary_dumper = binary_dump_flstep;  
+  
+
+  printf("calling tree_walker...\n");
 
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0); 
 
+  printf("calling parallel_finish...\n");
   parallel_finish(a);     // Snarf up our state again
 
   finalize_minmax_accumulator(a);
@@ -3729,15 +3743,6 @@ int world_update_mag_parallel(WORLD *a, char global) {
 
   return 0;
 }
-
-/******************************
- * world_step_parallel
- * 
-
-
-
-
-
 
 
 
@@ -3808,12 +3813,14 @@ DUMBLIST *gather_photosphere_neighbor_candidates(VERTEX *v, char global){
     printf("passno=%ld...  ",passno);
   }
 
-  if(!v)        /* Paranoia */
-    return;
+  if(!v) {       /* Paranoia */
+    fprintf(stderr,"Hey! gather_photosphere_neighbor_candidates got a NULL vertex.  Returning NULL.\n");
+    return 0;
+  }
 
   if(v != v->line->start && v != v->line->end){
-    printf("Oops, gather_photosphere_neighbor_candidates got a non begin/end vertex (label %ld) \n",v->label);
-    return;
+    fprintf(stderr,"Oops, gather_photosphere_neighbor_candidates got a non begin/end vertex (label %ld) \n",v->label);
+    return 0;
   }
 
   if(!workspace) 

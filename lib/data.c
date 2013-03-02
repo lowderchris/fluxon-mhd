@@ -1016,7 +1016,7 @@ int add_vertex_after(FLUXON *f, VERTEX *lucy, VERTEX *v) {
 
   else {		   /* if there is a <lucy> */
     if(lucy && (lucy->line != f)) {  /* if <lucy> isn't on same fluxon */
-      fprintf(stderr,"add_vertex_after: adding %ld to f%ld after %ld: %ld is on f%ld (0x%x), not f%ld (0x%x)!\n",v->label,f->label,lucy?lucy->label:0,lucy?lucy->label:0,lucy?lucy->line->label:0,lucy?lucy->line:0,f->label,f);
+      fprintf(stderr,"add_vertex_after: adding %ld to f%ld after %ld: %ld is on f%ld (0x%x), not f%ld (0x%x)!\n",v->label,f->label,lucy?lucy->label:0,lucy?lucy->label:0,lucy?lucy->line->label:0,(unsigned int)(lucy?lucy->line:0),f->label,(unsigned int)f);
       return 1;
     }
     
@@ -1396,7 +1396,7 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
       (item_links->right != NULL) ||
       (item_links->up != NULL) ||
       (item_links->n > 1)) {
-       fprintf(stderr,"HEY!  tree_insert got item #%ld, which is a tree! I refuse to insert this.\n");
+    fprintf(stderr,"HEY!  tree_insert got item #%ld, which is a tree! I refuse to insert this.\n",(long)item_links);
     return root;
   }
   
@@ -1453,7 +1453,7 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
       break; /* Item is already in tree... */
     else {
       /* Item is not already in tree but label is not unique. */
-      fprintf(stderr,"tree_insert: Hey! Label %ld(%ld) is not unique! Proceeding anyway, but this is a real problem for you.\n");
+      fprintf(stderr,"tree_insert: Hey! Label %ld(%ld) is not unique! Proceeding anyway, but this is a real problem for you.\n",foo_label, (long)foo);
 
       if(foo_links->left == NULL) {
 	foo_links->left = item;
@@ -1479,7 +1479,7 @@ void *tree_insert(void *root, void *item, int label_offset, int link_offset) {
   /* If it's already in the tree, return. */
   if(item_links->up == foo) {
     printf("Hey! tree_insert found that this item is already in the tree!\n");
-    return;
+    return root;
   }
 
   /* Link it up! (and notate the item as a leaf) */
@@ -1698,7 +1698,7 @@ void *tree_balance(void *tree, int label_offset, int link_offset) {
       r_tree = tree_insert(r_tree, tree, label_offset, link_offset);
 
 
-      for(foo = l_tree; f = ((LINKS *)(foo + link_offset))->right; foo = f) ;
+      for(foo = l_tree; (f = ((LINKS *)(foo + link_offset))->right); (foo = f)) ;
       l_tree = tree_unlink(foo, label_offset, link_offset);
 
       tree = foo;
@@ -1711,7 +1711,7 @@ void *tree_balance(void *tree, int label_offset, int link_offset) {
       
       l_tree = tree_insert(l_tree, tree, label_offset, link_offset);
       
-      for(foo = r_tree; f = ((LINKS *)(foo + link_offset))->left; foo = f) ;
+      for(foo = r_tree; (f = ((LINKS *)(foo + link_offset))->left); (foo = f) );
       r_tree = tree_unlink(foo, label_offset, link_offset);
 
       tree = foo;
@@ -1811,6 +1811,7 @@ DUMBLIST *new_dumblist() {
   foo->n = 0;
   foo->size = 0;
   foo->stuff = 0;
+  return foo;
 }
 
 /**********************************************************************
@@ -2296,7 +2297,7 @@ void dumblist_snarf(DUMBLIST *dest, DUMBLIST *source) {
   void **c;
   
   if( !dest || !source || dest==source) {
-    fprintf(stderr,"dumblist_snarf: Got null src or dest, or dest==src! (d=%ld, s=%ld)\n",dest,source);
+    fprintf(stderr,"dumblist_snarf: Got null src or dest, or dest==src! (d=%ld, s=%ld)\n",(long)dest,(long)source);
     fflush(stderr);
     return;
   }
@@ -2363,13 +2364,13 @@ void dd_vertex_printer(void *a) {
   if(!foo) {
     printf("dumblist_dump got a null list!\n");
   } else {
-      printf("list has %d elements\n");
+    printf("list has %d elements\n",foo->n);
       for (i=0;i<foo->n;i++) {
 	printf("\t%d: ",i);
 	if(printer)
 	  (*printer)(foo->stuff[i]);
         else 
-	  printf("element ptr=%d",foo->stuff[i]);
+	  printf("element ptr=%ld",(long)(foo->stuff[i]));
 	printf("\n");
       }
   }
