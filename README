@@ -26,14 +26,14 @@ The authors gratefully acknowledge support from NASA's Living With A
 Star and Solar/Heliospheric Physics programs, and from the Southwest
 Research Institute.
 
-All source files are copyright (C) 2004-2008 by the authors
-unless otherwise marked.  You may modify and/or make copies of this
-software under the terms of the Gnu Public License, version 2 (GPL
-v2).  You should have received a copy of the GPL v2 with this
-software; it is present in the file "COPYING".  If you do not have a
-copy you may obtain one online from "http://www.gnu.org" or by writing
-to the Free Software Foundation, 59 Temple Place, Suite 330, Boston,
-MA 0211-1307 USA.
+All source files are copyright (C) 2004-2008 by the authors unless
+otherwise marked.  You may modify and/or make copies of this software
+under the terms of the Gnu Public License, version 2 (GPL v2).  You
+should have received a copy of the GPL v2 with this software; it is
+present in the file "COPYING".  If you do not have a copy you may
+obtain one online from "http://www.gnu.org/licenses/gpl-2.0.html" or
+by writing to the Free Software Foundation, 59 Temple Place, Suite
+330, Boston, MA 0211-1307 USA.
 
 THIS SOFTWARE COMES WITH NO WARRANTY OF ANY KIND.
 
