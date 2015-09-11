@@ -1,5 +1,5 @@
 use ExtUtils::MakeMaker;
-
+use Config;
 
 # Find the pdlcore.h and pdl.h include files 
 @inc = ();
@@ -17,7 +17,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile( NAME => 'Flux::Core',
 	       INC=>join(" ",map { "-I$_"} @inc),
-	       CCFLAGS=> '-no-inline',
+	       CCFLAGS=> $Config{cc} =~ /clang/ ? '' : '-no-inline',
 	       OBJECT => '$(BASEEXT)$(OBJ_EXT) /usr/local/lib/libflux.a'
 	       );
 
