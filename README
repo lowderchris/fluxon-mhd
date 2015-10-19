@@ -49,6 +49,35 @@ Contributors (gratefully acknowledged):
 	     Christopher Plumberg
 
 --------
+INSTALLATION INSTRUCTIONS
+
+There are two components to FLUX: a C simulation library (libflux.a)
+and a Perl module (Flux.pm, etc). Unfortunately, automake and Perl's
+ExtUtils::MakeMaker don't play nicely together.  Additionally, Flux.pm
+needs to have libflux.a installed during build, so we build and
+install the components separately.
+
+1) The first line builds the simulation library.
+2) The second line installs libflux.a and some header files into /usr/local/lib and /usr/local/include/flux, respectively. These locations are currently hard-coded.
+3) The third line builds the Perl module (and prepares it to install in the location given by PL_PREFIX).
+4) The fourth line installs Flux.pm, etc.
+Note the 'sudo' on lines 2 and [if required based on PL_PREFIX] 4
+
+$ make libbuild
+$ sudo make libinstall
+$ PL_PREFIX=~/local make pdlbuild
+$ [sudo] make pdlinstall
+
+IFF both the library and the module are going to be installed in root-owned or user-owned locations, you can shortcut the above with
+
+$ [sudo] [PL_PREFIX=~/local] [FL_PREFIX=~/local] make everything
+
+for example, to install everything into your home directory ~/local/lib, ~/local/include, etc., you could do
+
+$ PL_PREFIX=~/local FL_PREFIX=~/local make everything
+
+
+--------
 
 This is the FLUX top-level directory.
 

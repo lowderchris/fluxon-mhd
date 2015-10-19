@@ -35,10 +35,10 @@ libflux.a: $(MODULES) $(HEADERS) Makefile
 	ranlib libflux.a
 
 install: $(HEADERS) libflux.a
-	install libflux.a /usr/local/lib
-	ranlib /usr/local/lib/libflux.a
-	install -d /usr/local/include/flux/
-	install ../include/*.h /usr/local/include/flux/
+	install libflux.a $(FL_PREFIX)/lib
+	ranlib $(FL_PREFIX)/lib/libflux.a
+	install -d $(FL_PREFIX)/include/flux/
+	install $(ID)/*.h $(FL_PREFIX)/include/flux/
 
 lib: libflux.a 
 	echo "libflux.a is now up-to-date"
