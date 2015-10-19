@@ -500,7 +500,7 @@ CODE:
 	if(np) {	
 		pdl *p;
 		PDL_Double *d;
-		PDL_Long dim=3;
+		PDL_Indx dim=3;
 
 		p = PDL->create(PDL_PERM);
 		PDL->setdims(p,&dim,1);

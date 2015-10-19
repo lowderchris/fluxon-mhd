@@ -853,7 +853,7 @@ PREINIT:
    PDL_Double *pd;
    NUM *d;
    pdl *p;
-   int dims[2];
+   PDL_Indx dims[2];
 CODE:
 /*******************************
  * _projmatrix: interface to the geometry.c projmatrix code
@@ -901,7 +901,7 @@ PREINIT:
 	NUM a[3],b[3],m[9];
 	pdl *p;
 	PDL_Double *pd;
-	int dims[2];
+	PDL_Indx dims[2];
 CODE:
  a[0] = a_0; a[1] = a_1; a[2] = a_2;
  m[0] = m_0; m[1] = m_1; m[2] = m_2;
@@ -940,7 +940,7 @@ PREINIT:
 	NUM a[3],b[3],m[9];
 	pdl *p;
 	PDL_Double *pd;
-	int dims[2];
+	PDL_Indx dims[2];
 CODE:
  a[0] = a_0; a[1] = a_1; a[2] = a_2;
  m[0] = m_0; m[1] = m_1; m[2] = m_2;
@@ -1034,7 +1034,7 @@ FLUX->hull_2d(hull,horde,rejects=new_dumblist());
  */
 o = PDL->create(PDL_PERM);
 {
- PDL_Long dims[2];
+ PDL_Indx dims[2];
  dims[0]=6;
  dims[1]=horde->n;
  PDL->setdims(o, dims, 2);
@@ -1230,7 +1230,7 @@ PREINIT:
  DUMBLIST *dl;
  pdl *opdl;
  NUM *pd;
- int dims[2];
+ PDL_Indx dims[2];
  int i;
 CODE:
  w = SvWorld(wsv, "_interpolate_value",1);

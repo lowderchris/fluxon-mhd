@@ -5,7 +5,7 @@ use Flux::Vertex;
 use Flux::Concentration;
 
 package Flux;
-use PDL;
+use PDL 2.007; #2.007 required for PDL_Indx type
 
 BEGIN {
     package Flux;

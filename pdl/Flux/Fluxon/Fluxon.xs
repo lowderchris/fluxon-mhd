@@ -125,7 +125,7 @@ PREINIT:
  pdl *p;
  SV *psv;
  int i;
- PDL_Long dims[2];
+ PDL_Indx dims[2];
 /**********************************************************************
  * polyline - return a 3xn PDL containing the coordinates of each 
  * VERTEX in the fluxon.  Useful for rendering.
@@ -166,7 +166,7 @@ PREINIT:
  pdl *p;
  SV *psv;
  int i;
- PDL_Long dims[2];
+ PDL_Indx dims[2];
 /**********************************************************************
  * bfield - return a 6xN PDL containing the coordinates of each VERTEX
  * in the fluxon, together with the B-field components at that
@@ -211,7 +211,7 @@ PREINIT:
  pdl *p;
  SV *psv;
  int i;
- PDL_Long dims[2];
+ PDL_Indx dims[2];
 /**********************************************************************
  * dump_vecs - return a 17xN PDL containing the coordinates of each VERTEX
  * in the fluxon, together with the B-field components at that
@@ -491,4 +491,3 @@ BOOT:
 	Perl_croak(aTHX_ "Flux needs to be recompiled against the newly installed FLUX libraries");
 }
 
- 

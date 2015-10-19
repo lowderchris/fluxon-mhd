@@ -254,7 +254,7 @@ PREINIT:
  VERTEX *v;
  pdl *p;
  HULL_VERTEX *hull_verts;
- PDL_Long dims[2];
+ PDL_Indx dims[2];
  int i;
  PDL_Double *d;
 CODE:
@@ -297,7 +297,7 @@ PREINIT:
  VERTEX *v;
  pdl *p;
  HULL_VERTEX *hull_verts;
- PDL_Long dims[2];
+ PDL_Indx dims[2];
  int i;
  int n = 0;
  PDL_Double *d;
@@ -337,7 +337,7 @@ SV *svrt
 PREINIT:
  VERTEX *v;
  pdl *p;
- int dims[2];
+ PDL_Indx dims[2];
  double *d,*d2;
  NUM x0[3],x1[3];
  NUM mat[9];
@@ -382,7 +382,7 @@ PREINIT:
  VERTEX *v;
  pdl *p;
  DUMBLIST *dl;
- PDL_Long dims[2];
+ PDL_Indx dims[2];
  int i;
  PDL_Double *d;
 CODE:
@@ -444,7 +444,7 @@ SV *svrt
 PREINIT:
  pdl *p;
  VERTEX *v;
- PDL_Long dims[1];
+ PDL_Indx dims[1];
 CODE:
  v = SvVertex(svrt,"Flux::Vertex::x",1);
  p = PDL->create(PDL_PERM);
