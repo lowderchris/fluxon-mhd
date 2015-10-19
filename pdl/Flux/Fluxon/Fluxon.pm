@@ -46,7 +46,8 @@ bootstrap Flux::Fluxon;
 
 package Flux::Fluxon;
 use overload '""' => \&stringify;
-
+use strict;
+use warnings;
 
 =pod
 

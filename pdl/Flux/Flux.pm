@@ -14,6 +14,8 @@ BEGIN {
     bootstrap Flux;
 }
 
+use strict;
+use warnings;
 
 =head1 NAME
 

@@ -43,7 +43,8 @@ bootstrap Flux::Vertex;
 package Flux::Vertex;
 
 use overload '""' => \&stringify;
-
+use strict;
+use warnings;
 
 =pod
 
@@ -209,22 +210,22 @@ sub plot_neighbors {
     if($hull) {
 	my $hul = $me->hull();
 	$Flux::hul = $hul;
-	for $i(0..$hul->dim(1)-1) {
+	for my $i(0..$hul->dim(1)-1) {
 	    my $row = $hul->(:,($i));
 	    my $r2 = $hul->range([0,$i+1],[7,0],'p')->sever;
 	    if($row->((4))) {
 		print "open before\n";
 		# open vertex
-		$x0 = cos($row->at(6))*1000;
-		$y0 = sin($row->at(6))*1000;
+		my $x0 = cos($row->at(6))*1000;
+		my $y0 = sin($row->at(6))*1000;
 		$window->line([$x0,$r2->at(2)],[$y0,$r2->at(3)],{color=>2});
 	    } elsif($r2->((4))) {
 		print "open after\n";
-		$x0 = cos($r2->at(5))*1000;
-		$y0 = sin($r2->at(5))*1000;
+		my $x0 = cos($r2->at(5))*1000;
+		my $y0 = sin($r2->at(5))*1000;
 		$window->line([$row->at(2),$x0],[$row->at(3),$y0],{color=>2});
 	    } else {
-		$hv = $hul->range([2,$i],[2,2],'p');
+		my $hv = $hul->range([2,$i],[2,2],'p');
 		$window->line($hv->((0)),$hv->((1)),{color=>2});
 	    }
 	}

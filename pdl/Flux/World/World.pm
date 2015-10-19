@@ -57,7 +57,8 @@ bootstrap Flux::World;
 
 package Flux::World;
 use overload '""' => \&_stringify;
-
+use strict;
+use warnings;
 
 =pod
 
@@ -87,7 +88,7 @@ sub read_world {
   } else {
       my $tmpfile = "/tmp/world-$$-tmp.flux";
       `gunzip < $file > $tmpfile`;
-      $w = _read_world($tmpfile);
+      my $w = _read_world($tmpfile);
       unlink $tmpfile;
       return $w;
   }
@@ -189,7 +190,7 @@ sub string {
     eval {unlink $tmpfile;};
     write_world($me,$tmpfile);
     open FLUXSYSTEM_TMPFILE,"<$tmpfile" || die "Couldn't open temp. file\n";
-    @lines = <FLUXSYSTEM_TMPFILE>;
+    my @lines = <FLUXSYSTEM_TMPFILE>;
 
     return join("",@lines) unless wantarray;
     return @lines;
@@ -222,8 +223,8 @@ sub _stringify {
 		   );
     my @ph = $me->photosphere;
     my @ph2 = $me->photosphere2;
-    $btype = $ph[6];
-    $btype2 = $ph2[6];
+    my $btype = $ph[6];
+    my $btype2 = $ph2[6];
 
     my $scalehash = $me->step_scales();
 
@@ -684,7 +685,7 @@ sub emerge {
 
     if( ref $vertices eq 'PDL' && $vertices->dim(0)==3) {
 
-	$fl = $fc0->new_fluxon($fc1, 1, 0, $verts);
+	$fl = $fc0->new_fluxon($fc1, 1, 0, $vertices);
 	print "emerge: after fluxon origination, ref count is $world->{refct}\n" if($world->{verbosity});
 
     } else {
@@ -707,7 +708,7 @@ sub emerge {
 		    ### Planar photosphere -- if it's below the photosphere, move it up to the surface
 		    ### plus 10% of the separation between the footpoints.
 
-		    $vertcoord = (($loc - $ph->{origin}) * ($ph->{normal}))->sumover;
+		    my $vertcoord = (($loc - $ph->{origin}) * ($ph->{normal}))->sumover;
 		    if($vertcoord < 0) {
 			$loc -= $vertcoord * $ph->{normal};
 			$loc += $sep * 0.1 * $ph->{normal};
@@ -717,7 +718,7 @@ sub emerge {
 		    ### Spherical photosphere -- if it's below the photosphere, move it outward to 
 		    ### the surface plus 1% of the separation between the footpoints.
 		    
-		    $radius = (($loc - $ph->{origin}) * ($loc - $ph->{origin}))->sumover->sqrt;
+		    my $radius = (($loc - $ph->{origin}) * ($loc - $ph->{origin}))->sumover->sqrt;
 		    if($radius < $ph->{normal}->((0))) {
 			my $rhat = ($loc - $ph->{origin}) / $radius;
 			my $disp = $ph->{normal}->((0)) + 0.1 * $sep - $radius;
@@ -847,7 +848,7 @@ sub photosphere {
     return @{Flux::_photosphere(@_)};
 }
 sub photosphere2 {
-    return @{Flux::_photosphere(@_[0],@_[1]||undef,@_[2]||undef,32)};
+    return @{Flux::_photosphere($_[0],$_[1]||undef,$_[2]||undef,32)};
 }
 
 
@@ -1069,7 +1070,7 @@ sub render {
     print "foo...\n" if($Flux::debug);
 
 
-    my @rgb,@prgb;
+    my (@rgb,@prgb);
     print "Defining RGB..." if($Flux::debug);
     my @fluxons = ();
     for my $id($w->fluxon_ids) {
@@ -1198,7 +1199,7 @@ sub render {
 	my @dips = list which($mask);
 	my @mw = ();
 
-	for $dip(@dips) {
+	for my $dip(@dips) {
 	    my ($before, $after) = ($dip, $dip);
 	    while($before >= 2 && $poly->(2,$before-1)>$poly->(2,$before)) {
 		$before--;
@@ -1255,11 +1256,11 @@ sub render {
     }
 
     print "Defining polygons...\n" if($Flux::debug);
-    $poly = pdl(0,0,0)->glue(1,@poly);
+    my $poly = pdl(0,0,0)->glue(1,@poly);
     print "a...\n" if($Flux::debug);
-    $rgb = pdl(0,0,0)->glue(1,@rgb);
+    my $rgb = pdl(0,0,0)->glue(1,@rgb);
     print "b...\n" if($Flux::debug);
-    $prgb = pdl(0,0,0)->glue(1,@prgb);
+    my $prgb = pdl(0,0,0)->glue(1,@prgb);
     print "range_by_fluxon...\n" if($Flux::debug);
     my $range_by_fluxon = zeroes(2, 0+@fluxons);
     my $loc = 1;
@@ -1289,17 +1290,17 @@ sub render {
     my $shift =($boxmax-$boxmin)*0.05;
     $boxmin -= $shift;
     $boxmax += $shift;
-    my $shift =($boxmax-$boxmin)*0.05;
+    $shift =($boxmax-$boxmin)*0.05;
     $boxmin -= $shift;
     $boxmax += $shift;
 
     print "Clipping polys...\n" if($Flux::debug);
-    $pol2 = $poly->copy;
+    my $pol2 = $poly->copy;
     $poly->((0)) .= $poly->((0))->clip($range->((0))->minmax);
     $poly->((1)) .= $poly->((1))->clip($range->((1))->minmax);
     $poly->((2)) .= $poly->((2))->clip($range->((2))->minmax);
     
-    $ok = ($pol2 == $poly)->prodover;
+    my $ok = ($pol2 == $poly)->prodover;
     $rgb *= $ok->(*3);
     $prgb *= $ok->(*3);
     
@@ -1371,8 +1372,8 @@ sub render {
 	    }
 		    
 	    label:for my $j(0..$#labels) {
-		unless( all($normal_coords->(:,($j)) >= $range->transpose->minimum &
-			$normal_coords->(:,($j)) <= $range->transpose->maximum)
+		unless( all(($normal_coords->(:,($j)) >= $range->transpose->minimum) &
+			($normal_coords->(:,($j)) <= $range->transpose->maximum))
 			){
 		    next label;
 		}
@@ -1423,14 +1424,14 @@ sub render {
 	    
 
     print "Neighbors?\n" if($Flux::debug);
-    $nscale = $opt->{'nscale'} || 0.25;
+    my $nscale = $opt->{'nscale'} || 0.25;
 
     if($opt->{'neighbors'}){
 	my @neighbors;
 
 	for my $v (map { $_->vertices } $w->fluxons) {
 	    next unless($v->next);
-	    $xcen = 0.5 * ($v->x + $v->next->x);
+	    my $xcen = 0.5 * ($v->x + $v->next->x);
 
 	    my $pm = $v->projmatrix;
 
@@ -1459,16 +1460,16 @@ sub render {
 	nokeeptwiddling3d();
 	
       print "hullrgb...\n";
-	$hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
+	my $hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
 
       print "hullopen...\n";
-	$hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
+	my $hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
 	my $zz = 0;
 	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
 	    next unless($v->next);
 	    twiddle3d() unless ($zz++ % 50);
 
-	    $xcen = 0.5 * ($v->x + $v->next->x);
+	    my $xcen = 0.5 * ($v->x + $v->next->x);
 	    
 	    my $pm = $v->projmatrix;
 	    
@@ -1483,7 +1484,7 @@ sub render {
 		    my $x = zeroes(3);
 		    $x->(0:1) .= $rows->(2:3,(0));
 		    $x *= $nscale;
-		    $xx = $x x $pm;
+		    my $xx = $x x $pm;
 		    $xx += $xcen;
 		    push(@hpoints,$xx);
 
@@ -1510,7 +1511,7 @@ sub render {
 		    $x->(0) .= $rows->((2),(1)) + $hullopen * cos($rows->((6),(0)));
 		    $x->(1) .= $rows->((3),(1)) + $hullopen * sin($rows->((6),(0)));
 		    $x *= $nscale;
-		    $xx = $x x $pm;
+		    my $xx = $x x $pm;
 		    $xx += $xcen;
 		    push(@hpoints,$xx);
 		    
@@ -1525,7 +1526,7 @@ sub render {
 		    my $x = zeroes(3);
 		    $x->(0:1) .= $rows->(2:3,(0));
 		    $x *= $nscale;
-		    $xx = $x x $pm;
+		    my $xx = $x x $pm;
 		    $xx += $xcen;
 		    push(@hpoints,$xx);
 
@@ -1580,9 +1581,9 @@ Dumps a giant polyline for all fluxons in the simulation.
 sub polyline {
     my $w = shift;
     my $id_list = shift;
-    my @l,$l1;
+    my (@l,$l1);
     @l = map { $_->polyline } (defined($id_list) ? @$id_list : $w->fluxons);
-    $l1 = @l[0];
+    $l1 = $l[0];
     return $l1->glue(1,@l[1..$#l]);
 }
 
@@ -1598,9 +1599,9 @@ Dumps the magnetic field value for all fluxons in the simulation
 
 sub bfield {
     my $w = shift;
-    my @l,$l1;
+    my (@l,$l1);
     @l = map { $_->bfield } $w->fluxons;
-    $l1 = @l[0];
+    $l1 = $l[0];
     return $l1->glue(1,@l[1..$#l]);
 }
 
@@ -1646,9 +1647,9 @@ Dumps all vectors for all fluxons (see Flux::Fluxon::dump_vecs)
 
 sub dump_vecs {
     my $w = shift;
-    my @l,$l1;
+    my (@l,$l1);
     @l = map { $_->dump_vecs } $w->fluxons;
-    $l1 = @l[0];
+    $l1 = $l[0];
     return $l1->glue(1,@l[1..$#l]);
 }
 
@@ -1797,7 +1798,7 @@ sub _plot_hull {
     if(defined $points) {
 	$win->points($points->((0)),$points->((1)),{color=>2});
 	$win->hold;
-	for $i(0..$points->dim(1)-1){
+	for my $i(0..$points->dim(1)-1){
 	    $win->text($i,$points->((0),($i)),$points->((1),($i)),{color=>2});
 	}
     }
@@ -1805,7 +1806,7 @@ sub _plot_hull {
     # Plot all points in neighbors.
     $win->points($hull->((0)),$hull->((1)),{color=>3});
     $win->hold;
-    for $i(0..$hull->dim(1)-1){
+    for my $i(0..$hull->dim(1)-1){
 	$win->text($hull->at(5,$i),$hull->at(0,$i),$hull->at(1,$i),{color=>3});
 	$win->line(pdl(0,$hull->at(0,$i)),pdl(0,$hull->at(1,$i)),{color=>3});
     }
