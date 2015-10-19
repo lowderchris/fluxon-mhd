@@ -13,6 +13,7 @@ use ExtUtils::MakeMaker;
       last incfoo;
     }
   }
+  print STDERR "############\nWARNING: Flux::Vertex could not find pdl.h\n#########\n" unless @inc;
 }
 
 WriteMakefile( NAME => 'Flux::Vertex',

@@ -12,6 +12,7 @@ use ExtUtils::MakeMaker;
       last incfoo;
     }
   }
+  print STDERR "#############\nWARNING: Flux::Fluxon could not find pdl.h\n###########\n" unless @inc;
 }
 
 WriteMakefile( NAME => 'Flux::Fluxon',
