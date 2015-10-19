@@ -1,0 +1,10 @@
+*~
+*.a
+*.o
+\#*
+core
+a.out
+$(OBJECTS)
+*.OOGL
+sample_output.txt
+*.cf.c
