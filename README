@@ -1,8 +1,7 @@
-This is FLUX, the Field Line Universal Relaxer, v. 2.3
+This is FLUX, the Field Line Universal Relaxer, v. 2.3_devel
 
 For full documentation visit the FLUX wiki:
-     http://flux.boulder.swri.edu/
-
+     https://github.com/d-lamb/fluxon-mhd/wiki
 
 FLUX is a prototype MHD solver that is currently able to find
 nonlinear force-free fields with an exactly specified topology in a
@@ -85,7 +84,7 @@ Subdirectories include:
         lib -- the central libflux.a core simulation library
 		    (this gets installed into /usr/local/lib/)
 
-	doc -- some docs (deprecated; see http://flux.boulder.swri.edu 
+	doc -- some docs (deprecated; see https://github.com/d-lamb/fluxon-mhd/wiki
 		for more up-to-date information.)
 
 	include -- 'c' header files 

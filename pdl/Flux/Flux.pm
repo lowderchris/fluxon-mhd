@@ -156,7 +156,7 @@ surrounded with angle-brackets.
 All entities receive numeric labels that should be unique.  
 
 For more information, examine the FLUX wiki at 
-  http://flux.boulder.swri.edu/wiki/User_Manual
+  https://github.com/d-lamb/fluxon-mhd/wiki/User_Manual
 
 =head2 AUTHOR
 
