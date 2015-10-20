@@ -271,7 +271,7 @@ void fluxon_auto_open(FLUXON *f) {
       
       if( f->plasmoid ) {
 	/* Plasmoid case - turn it into a U-loop.  This gets 
-	 * a little complex becasue we have to rotate
+	 * a little complex because we have to rotate
 	 * the endpoint of the plasmoid around to the new 
 	 * true endpoints.
 	 */
