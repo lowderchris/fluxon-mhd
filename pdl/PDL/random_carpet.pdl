@@ -14,6 +14,9 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+
 sub random_carpet {
   my $num = shift;
   my $n = shift;
@@ -23,21 +26,21 @@ sub random_carpet {
 
   for my $i(1..$num) {
 
-    $from = random(3);
+    my $from = random(3);
     $from->((2)) .= 0;
-    $to = random(3);
+    my $to = random(3);
     $to->((2)) .= 0;
-    $steps = 30;
-    $nm = floor(random(2)*$n)+1;
-    $spacing = 0.01,
-    $twist = random(1)*$a*2 - 0.5;
+    my $steps = 30;
+    my $nm = floor(random(2)*$n)+1;
+    my $spacing = 0.01,
+    my $twist = random(1)*$a*2 - 0.5;
     
-    $fclab = pdl($i*100);
-    $flab = pdl($i*10000+100);
-    $v1 = pdl(0,0,rand(0.8)+0.1);
+    my $fclab = pdl($i*100);
+    my $flab = pdl($i*10000+100);
+    my $v1 = pdl(0,0,rand(0.8)+0.1);
 
     $s .= twisted_loop($from,$to,$steps,$nm,$spacing,$twist,$fclab,$flab,$v1);
-    $ss = $s;
+    my $ss = $s;
   }
 
   $a = str2world($s);

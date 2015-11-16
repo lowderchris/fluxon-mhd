@@ -9,6 +9,10 @@
 Generate a Lundquist flux tube to seed a fluxon relaxation.
 
 =cut
+
+use strict;
+use warnings;
+use PDL::NiceSlice;
 use PDL::GSLSF::BESSEL;
 
 sub lundquist_tube {
@@ -16,27 +20,28 @@ sub lundquist_tube {
     my @lines;
     $r1 = 2 unless defined($r1);
     $dr = 0.1 unless defined($dr);
-    $phi0 = 1;
+    my $phi0 = 1;
 
     $a = 1 unless defined($a);
-    $k = 1;
+    my $k = 1;
 
-    $theta = 0;
+    my $theta = 0;
 
-    $dex = xvals($steps+1)/$steps;
-    $z = $zlen * $dex;
-    $resid = 0;
+    my $dex = xvals($steps+1)/$steps;
+    my $z = $zlen * $dex;
+    my $resid = 0;
 
-    for ($r=0;$r<$r1;$r += $dr) {
+    for (my $r=0;$r<$r1;$r += $dr) {
 	print "r=$r\n";
 	
 	# Figure how many fluxons on this circle...
+	my ($j0,$j1,$e);
 	($j0,$e) = gsl_sf_bessel_Jn($r * $k , 0);
-
-	$da = $dr * 2 * 3.14159 * $r;
 	
-	$ct = $da * $a * $j0 / $phi0 ;
-	$dir = ($ct<0?-1:1);
+	my $da = $dr * 2 * 3.14159 * $r;
+
+	my $ct = $da * $a * $j0 / $phi0 ;
+	my $dir = ($ct<0?-1:1);
 	$ct = abs($ct);
 	$ct += $resid;
 
@@ -48,17 +53,17 @@ sub lundquist_tube {
 	
 	print "\tThis ring has $ct fluxons\n";
 	$theta += 2;
-	$dtheta = 2*3.14159/($ct + ($ct==0));
+	my $dtheta = 2*3.14159/($ct + ($ct==0));
 	# Figure the slant slope
 	($j1,$e) = gsl_sf_bessel_Jn($r * $k , 1);
 	
 	next if($j0==0);
 	
-	$slope = $j1/$j0 * $dir;
+	my $slope = $j1/$j0 * $dir;
 
 	print "\tj0=$j0; j1=$j1; slope=$slope\n";
 
-	$locations = pdl($r * cos($j1 * $dex * $zlen),
+	my $locations = pdl($r * cos($j1 * $dex * $zlen),
 			 $r * sin($j1 * $dex * $zlen),
 			 $dex * $zlen
 			 )->transpose;
@@ -66,14 +71,14 @@ sub lundquist_tube {
 	  $locations->((2)) .= $locations->((2),-1:0:-1)->copy;
 	}
 
-	for($n=0; $n<$ct; $n++) {
+	for(my $n=0; $n<$ct; $n++) {
 	    $theta += $dtheta;
 	    $theta /= (2*3.1415926535897);
 	    $theta -= floor(pdl($theta));
 	    $theta *= 2*3.1415926535897;
 	    
-	    $m = pdl([cos($theta),-sin($theta),0],[sin($theta),cos($theta),0],[0,0,1]);
-	    $locs = ($locations->(:,*1) x $m) ->(:,(0));
+	    my $m = pdl([cos($theta),-sin($theta),0],[sin($theta),cos($theta),0],[0,0,1]);
+	    my $locs = ($locations->(:,*1) x $m) ->(:,(0));
 	    push(@lines,$locs);
 	}
     }

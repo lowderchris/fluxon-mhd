@@ -9,23 +9,26 @@
 
 =cut
 
+use strict;
+use warnings;
+
 sub twisted_straight_tube {
     my ($zlen,$steps,$n,$dx,$twist) = @_;
     my @lines;
 
-    $dex = xvals($steps+1)/$steps;
+    my $dex = xvals($steps+1)/$steps;
 
-    $theta = $dex * $twist * 2 * 3.14159265;
-    $z = $zlen * $dex;
+    my $theta = $dex * $twist * 2 * 3.14159265;
+    my $z = $zlen * $dex;
 
-    $cos = cos($theta);
-    $sin = sin($theta);
+    my $cos = cos($theta);
+    my $sin = sin($theta);
     
-    $m = pdl([$cos,$sin,0],[-$sin,$cos,0],[0,0,1])->mv(0,-1);
+    my $m = pdl([$cos,$sin,0],[-$sin,$cos,0],[0,0,1])->mv(0,-1);
     
-    for $i(0..$n) {
-      for $j(0..$n) {
-	$xyz = ($m x (pdl($dx*($i-$n/2),$dx*($j-$n/2),0)->(*1)))->((0));
+    for my $i(0..$n) {
+      for my $j(0..$n) {
+	my $xyz = ($m x (pdl($dx*($i-$n/2),$dx*($j-$n/2),0)->(*1)))->((0));
 	$xyz->((2)) .= $z;
 	push(@lines,$xyz);
       }

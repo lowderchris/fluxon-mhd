@@ -10,6 +10,10 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub make_world {
   my $opt = pop;
   my @lines = @_;
@@ -22,7 +26,7 @@ sub make_world {
   ##2,3,4:origin of the plane or sphere
   ##5,6,7:normal to origin for a plane or radius,0,0 for a sphere
   
-  my @lines = @_;
+  @lines = @_;
   push(@lines,$opt) and undef $opt unless UNIVERSAL::isa($opt,'HASH');
   ##push it back onto @lines if it isn't a hash
 
@@ -37,9 +41,9 @@ sub make_world {
   my $ln=0;
   ##define $radius
 
-  foreach $l(@lines) {
+  foreach my $l(@lines) {
       my $line=$l->copy;
-      my $fc0, $fc1, $fl;
+      my ($fc0, $fc1, $fl);
 
     ##photosphere is a plane
     ##if ($phot->((0)) == 1) {
@@ -47,8 +51,8 @@ sub make_world {
 			       
     
 
-    $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
-    $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
+    my $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
+    my $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
 
     
 
@@ -73,9 +77,9 @@ sub make_world {
 ##	$line->(:,(-1)) /= sqrt(sum($line->(:,(-1))*$line->(:,(-1))));
 ##    }
 
-    $open_start = ($opt->{rmax} && $rstart >= $opt->{rmax});
-    $open_end   = ($opt->{rmax} && $rend   >= $opt->{rmax});
-      p $open_start, $open_end, "\n";
+    my $open_start = ($opt->{rmax} && $rstart >= $opt->{rmax});
+    my $open_end   = ($opt->{rmax} && $rend   >= $opt->{rmax});
+      print $open_start, $open_end, "\n";
 
     unless($open_start){
       push(@out,sprintf("NEW %d %9.3g %9.3g %9.3g 1",
@@ -100,7 +104,7 @@ sub make_world {
 		      )
 	 );
     $ln++;
-    for $k(1..$line->dim(1)-2) {
+    for my $k(1..$line->dim(1)-2) {
      ## print "line $ln; k=$k\n";
       push(@out,sprintf("VERTEX %d %d %d %9.3g %9.3g %9.3g",
 			$fl,

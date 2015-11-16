@@ -48,6 +48,10 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub fluxon_placement_fs {
   my $bgram = shift;
   my $fluxon_count = shift;
@@ -72,30 +76,30 @@ sub fluxon_placement_fs {
       $flux = $sm_us_sum / $fluxon_count;
   }
 
-  $gridsperpixel = ceil(sqrt($sm_max/$flux));
+  my $gridsperpixel = ceil(sqrt($sm_max/$flux));
   $fluxon_count= $smooth->abs->sum / $flux;
   print "grids per pixel is $gridsperpixel; estimated total count is $fluxon_count\n";
 
-  $expanded = $bgram->double->match([$gridsperpixel * $bgram->dim(0), $gridsperpixel * $bgram->dim(1)]);
+  my $expanded = $bgram->double->match([$gridsperpixel * $bgram->dim(0), $gridsperpixel * $bgram->dim(1)]);
   $expanded *= $fluxon_count / $sm_us_sum / $gridsperpixel / $gridsperpixel;
-  $exp = $expanded->copy->(:,-1:0:-1);
+  my $exp = $expanded->copy->(:,-1:0:-1);
 
-  $xl=[];
-  $yl=[];
+  my $xl=[];
+  my $yl=[];
 
   PDL::_fl_pl_fs_helper($expanded, $xl, $yl);
 
-  $xl2=[];
-  $yl2=[];
+  my $xl2=[];
+  my $yl2=[];
   PDL::_fl_pl_fs_helper($exp, $xl2, $yl2);
-  $o2 = pdl($xl2,$yl2)->transpose;
+  my $o2 = pdl($xl2,$yl2)->transpose;
   $o2 = $o2->glue(0,ones(1,$o2->dim(1)));
-  $wn = which( ($o2->((1))<0) | ($o2->((0))<0));
+  my $wn = which( ($o2->((1))<0) | ($o2->((0))<0));
   $o2->(:,$wn) *= -1;
   $o2->((1)) *= -1;
   $o2->((1)) += $exp->dim(1)-1;
 
-  $out = pdl($xl, $yl)->transpose;
+  my $out = pdl($xl, $yl)->transpose;
   $out /= $gridsperpixel;
   $out = $out->glue(0,ones(1,$out->dim(1)));
   $wn= which(($out->((1))<0) | ($out->((0))<0));

@@ -20,6 +20,10 @@ sph_r:radius of outer sphere
 
 =cut
 
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub make_world_gh {
 
   my $epsilon = 1e-5;
@@ -74,11 +78,11 @@ sub make_world_gh {
   my $ln=0;
   my $i=0;
 
-  foreach $l(@lines) {
+  foreach my $l(@lines) {
       my $line=$l->copy;
-      my $fc0, $fc1, $fl;
+      my ($fc0, $fc1, $fl);
       
-      $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
+      my $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
       if ($rend >= ($sph_r-$epsilon)){
 	  ##the outer point is beyond the sphere
 	  while (sqrt(sum($line->(:,(-2)) * $line->(:,(-2)))) >= ($sph_r-$epsilon)){
@@ -93,7 +97,7 @@ sub make_world_gh {
 	  ##matter where on the boundary it is
       }
 
-      $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
+      my $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
       if ($rstart >= ($sph_r-$epsilon)){
 	  ##the outer point is beyond the sphere
 	  while (sqrt(sum($line->(:,(1)) * $line->(:,(1)))) >= ($sph_r-$epsilon)){
@@ -172,7 +176,7 @@ sub make_world_gh {
 	   )
 	  );
       $ln++;
-      for $k(1..$line->dim(1)-2) {
+      for my $k(1..$line->dim(1)-2) {
 	  ## print "line $ln; k=$k\n";
 	  push(@out,sprintf("VERTEX %d %d %d %f %f %f",
 			    $fl,

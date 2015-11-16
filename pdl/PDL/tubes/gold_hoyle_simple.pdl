@@ -10,6 +10,10 @@ Generate a simple Gold-Hoyle flux tube to seed a fluxon relaxation.
 
 =cut
 
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub gold_hoyle_simple {
   my ($zlen,$steps,$t, $n,$dx) = @_;
 
@@ -19,13 +23,13 @@ sub gold_hoyle_simple {
   my $locations;
   my @locations;
   
-  for $i(-($n-1)/2..($n-1)/2) {
-    for $j(-($n-1)/2..($n-1)/2) {
+  for my $i(-($n-1)/2..($n-1)/2) {
+    for my $j(-($n-1)/2..($n-1)/2) {
       $locations = zeroes(3,$z->nelem);
       $locations->((2),:) .= $z;
 
-      $xy0 = pdl($dx*$i,$dx*$j);
-      $xy = ($rmat x $xy0->(*1))->((0))->sever;
+      my $xy0 = pdl($dx*$i,$dx*$j);
+      my $xy = ($rmat x $xy0->(*1))->((0))->sever;
       $locations->(0:1) .= $xy;
       push(@locations,$locations);
     }

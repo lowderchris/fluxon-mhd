@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 use PDL::Transform;
 use PDL::NiceSlice;
 
@@ -19,13 +21,13 @@ sub rotate_starts {
  my $center = shift;
  my $angle = shift;
  
- $t = t_linear(pre=>-$center,post=>$center,matrix=>pdl([cos($angle),sin($angle),0],[-sin($angle),cos($angle),0],[0,0,1]));
+ my $t = t_linear(pre=>-$center,post=>$center,matrix=>pdl([cos($angle),sin($angle),0],[-sin($angle),cos($angle),0],[0,0,1]));
  
- @starts = map { $_->vertex(0) } $world->fluxons;
- $duction = pdl(map { $_->{x} } @starts)->(:,*2,:)->copy;
+ my @starts = map { $_->vertex(0) } $world->fluxons;
+ my $duction = pdl(map { $_->{x} } @starts)->(:,*2,:)->copy;
  $duction->(:,(1),:) .= $duction->(:,(0),:)->apply($t);
  
- for $v($world->vertices) {
+ for my $v($world->vertices) {
    $v->{x} = interp_duction($duction,$v->{x});
  }
 }

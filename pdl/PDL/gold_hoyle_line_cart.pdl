@@ -27,8 +27,12 @@ The returned $line is a 3xn piddle where the positions are given in
 xyz.
 
 =cut
+
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub gold_hoyle_line_cart {
-    use PDL::NiceSlice;
 
     my $start = shift;
     my $q = shift;
@@ -44,12 +48,12 @@ sub gold_hoyle_line_cart {
     my $deriv0=zeroes(3);
     my $deriv1=zeroes(3);
     
-    $line=$start; ##line accumulator
+    my $line=$start; ##line accumulator
    ## p $start;
 
     ##p $start, $startxyz;
     
-    $t=0;
+    my $t=0;
     ##$dt=0.01;
  
     until ($next2->at(2) > $endz){

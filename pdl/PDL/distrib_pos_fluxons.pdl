@@ -32,7 +32,11 @@ gauss-pixels!  (or, more precisely, gauss-mag-DN)
 This file is part of FLUX 2.0, released 31-Oct-2007. 
 
 =cut
+
+use strict;
+use warnings;
 use Carp;
+use PDL::NiceSlice;
 
 sub distrib_pos_fluxons{
   my($im,$fluxperline) = @_;

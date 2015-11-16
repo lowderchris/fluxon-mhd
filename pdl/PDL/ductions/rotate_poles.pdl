@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 use PDL::Transform;
 use PDL::NiceSlice;
 
@@ -26,22 +28,22 @@ sub rotate_poles {
 
  my $t_s = t_linear(pre=>-$center_south,post=>$center_south,matrix=>pdl([cos($angle_south),sin($angle_south),0],[-sin($angle_south),cos($angle_south),0],[0,0,1]));  ##south
 
- @starts = map { $_->vertex(0) } $world->fluxons; ##north
- @ends = map { $_->{end} } $world->fluxons;  ##south
+ my @starts = map { $_->vertex(0) } $world->fluxons; ##north
+ my @ends = map { $_->{end} } $world->fluxons;  ##south
 
- $duction_n = pdl(map { $_->{x} } @starts)->(:,*2,:)->copy; ##north
+ my $duction_n = pdl(map { $_->{x} } @starts)->(:,*2,:)->copy; ##north
  $duction_n->(:,(1),:) .= $duction_n->(:,(0),:)->apply($t_n);
  
- $duction_s = pdl(map { $_->{x} } @ends)->(:,*2,:)->copy; ##south
+ my $duction_s = pdl(map { $_->{x} } @ends)->(:,*2,:)->copy; ##south
  $duction_s->(:,(1),:) .= $duction_s->(:,(0),:)->apply($t_s);
  
- $duction=$duction_n->glue(2,$duction_s);
+ my $duction=$duction_n->glue(2,$duction_s);
 
- for $v($world->vertices) {
+ for my $v($world->vertices) {
    $v->{x} = interp_duction($duction,$v->{x});
  }
  
- for $c($world->concentrations) {
+ for my $c($world->concentrations) {
    $c->{x} = interp_duction($duction,$c->{x});
  }
 

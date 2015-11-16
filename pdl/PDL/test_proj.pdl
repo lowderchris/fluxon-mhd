@@ -8,17 +8,21 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub _test_proj_ {
-	$v = shift;
-	$pm = Flux::World::_projmatrix(0,0,0,$v->list); 
-	$vp=($pm x $v->(*1))->((0));
-	$dpvp = ($vp x $pm) -> (:,(0)); 
-	$vp1 = Flux::World::_mat_vmult_3d($pm->list,$v->list);
-	$dpvp1=Flux::World::_vec_mmult_3d($pm->list,$vp1->list);
+	my $v = shift;
+	my $pm = Flux::World::_projmatrix(0,0,0,$v->list);
+	my $vp=($pm x $v->(*1))->((0));
+	my $dpvp = ($vp x $pm) -> (:,(0));
+	my $vp1 = Flux::World::_mat_vmult_3d($pm->list,$v->list);
+	my $dpvp1=Flux::World::_vec_mmult_3d($pm->list,$vp1->list);
 	print "v=$v; vp=$vp; dpvp=$dpvp\tvp1=$vp1; dpvp1=$dpvp1\n";
 }
 
-for $p( [0,0,0],
+for my $p( [0,0,0],
 	[0,0,1],
 	[0,1,0],
 	[0,1,1],

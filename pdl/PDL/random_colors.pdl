@@ -38,6 +38,8 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
 use PDL::NiceSlice;
 
 sub random_colors {
@@ -47,6 +49,8 @@ sub random_colors {
     $opt = {} unless defined($opt);
     $opt->{old} = {} unless defined($opt->{old});
 
+    my $rgb_out = {};
+
     for my $f(map { $_->{label} } $world->fluxons) {
 	if( exists $opt->{old}->{$f} ) {
 	    $rgb_out->{$f} = $opt->{old}->{$f}->copy;
@@ -55,7 +59,7 @@ sub random_colors {
 	}
     }
 
-    $hr_lookup = {
+    my $hr_lookup = {
 	red=>[0.33,0.43],
 	blue=>[0,0.1],
 	green=>[0.8,0.9]
@@ -66,8 +70,6 @@ sub random_colors {
     my $sr = $opt->{sr} || [0,1.0];
     my $vr = $opt->{vr} || [0.5,1.0];
 
-    my $rgb_out = {};
-    
     my $hsvr = pdl($hr,$sr,$vr);
 
     my $hsv = random(3,0+@$fluxons) * ($hsvr->((1))-$hsvr->((0))) + $hsvr->((0));

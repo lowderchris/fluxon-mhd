@@ -33,6 +33,10 @@ error diffusion.
 
 =cut
 
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub fluxon_placement_hilbert {
     my $bgram = shift;
     my $fluxon_count = shift;
@@ -47,7 +51,7 @@ sub fluxon_placement_hilbert {
 	$fluxon_count = 250;;
     }
     
-#    my $flux;
+    my $flux;
     
     if($fluxon_count < 0) {
 	$flux = -$fluxon_count;
@@ -58,9 +62,9 @@ sub fluxon_placement_hilbert {
     
     $fluxon_count= $smooth->abs->sum / $flux;
     
-    $siz = pdl($bgram->dims)->(0:1)->maximum;
+    my $siz = pdl($bgram->dims)->(0:1)->maximum;
 
-    $density_mult = 2 * ($sm_max / ($sm_us_sum/$smooth->nelem)) * ($fluxon_count / $smooth->nelem);
+    my $density_mult = 2 * ($sm_max / ($sm_us_sum/$smooth->nelem)) * ($fluxon_count / $smooth->nelem);
     $density_mult = 1 unless($density_mult > 1);
     $density_mult = sqrt($density_mult);
     print "density_mult is $density_mult\n";
@@ -69,16 +73,16 @@ sub fluxon_placement_hilbert {
     $siz = 2 ** (( log($siz * $density_mult)/log(2) )->ceil->at(0)) ;
 	print "siz is $siz\n";
     
-    $path = hilbert($siz,$siz);
+    my $path = hilbert($siz,$siz);
     $path->((0)) *= $bgram->dim(0)/$siz;
     $path->((1)) *= $bgram->dim(1)/$siz;
 
-    $bg2 = $bgram * $fluxon_count / $sm_us_sum * $bgram->dim(0) * $bgram->dim(1) / $siz / $siz;
-    $bgseries = $bg2->interpND($path)->sever;
+    my $bg2 = $bgram * $fluxon_count / $sm_us_sum * $bgram->dim(0) * $bgram->dim(1) / $siz / $siz;
+    my $bgseries = $bg2->interpND($path)->sever;
 
-    $plist = [];
+    my $plist = [];
     PDL::fl_hi_helper($bgseries,$plist);
-    $points = pdl($plist);
+    my $points = pdl($plist);
     $points = ($path->(:,$points->abs))->glue(0, (1 - 2*($points->(*1) < 0)));
 }
 

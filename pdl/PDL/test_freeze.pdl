@@ -9,7 +9,9 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
-
+use strict;
+use warnings;
+use PDL;
 use Flux;
 $a = read_world('menagerie/simple-8.flux');
 $a->verbosity(1);

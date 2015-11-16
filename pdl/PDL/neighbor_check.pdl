@@ -12,6 +12,9 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+
 sub neighbor_check {
     my $w = shift;
     my @f = $w->fluxons;

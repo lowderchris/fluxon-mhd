@@ -29,7 +29,11 @@ gauss-pixels!  (or, more precisely, gauss-mag-DN)
 This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
+
+use strict;
+use warnings;
 use Carp;
+use PDL::NiceSlice;
 
 sub anneal_pos_fluxons {
   my($im,$dist_in) = @_;
@@ -52,7 +56,7 @@ sub anneal_pos_fluxons {
   my($xdist) = $dist->((0),)->dummy(0,$h)->dummy(0,$w);
   my($ydist) = $dist->((1),)->dummy(0,$h)->dummy(0,$w);
 
-  $make_im = sub {
+  my $make_im = sub {
     my($x0) = ($x - $xdist);
     my($y0) = ($y - $ydist);
     my($r2) = $x0*$x0 + $y0*$y0;
@@ -66,19 +70,19 @@ sub anneal_pos_fluxons {
   my($im0,$im1);
 
   $im0 = &$make_im;
-  $diff0 = sum(($im0-$im)*($im0-$im));
+  my $diff0 = sum(($im0-$im)*($im0-$im));
   $dist0 = $dist->copy;
 
   print "entering loop...\n";
   do {
     my($z) = $dist->(,(floor(rand($npoints)))) ;
-      help $z;
+#      help $z;
     $z += 10 * random(2) - 5 ;
     print "making image...\n";
     $im1 = &$make_im;
     
     print "summing...";
-    $diff1 = pdl(sum(($im1-$im)*($im1-$im)));
+    my $diff1 = pdl(sum(($im1-$im)*($im1-$im)));
 
     print "diff1=$diff1; diff0=$diff0\n";
     if($diff1 < $diff0) {

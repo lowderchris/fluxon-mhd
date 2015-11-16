@@ -36,8 +36,13 @@ hilbert uses the Inline::Pdlpp package to do the heavy lifting in C.
 
 =cut
 
+use strict;
+use warnings;
+use PDL;
+use PDL::NiceSlice;
+
 sub hilbert {
-  my $w, $h, $keep;
+  my ($w, $h, $keep);
   if(UNIVERSAL::isa($_[0], 'PDL')) {
       $w=$_[0]->dim(0);
       $h=$_[1]->dim(1);
@@ -48,10 +53,10 @@ sub hilbert {
 
   my $dim = ( $w>$h ? $w : $h );
 
-  $n = (log(pdl($dim))/log(2))->ceil;
-  $siz = 2 ** $n;
+  my $n = (log(pdl($dim))/log(2))->ceil;
+  my $siz = 2 ** $n;
 
-  $coords = zeroes(long, 2, $siz*$siz);
+  my $coords = zeroes(long, 2, $siz*$siz);
 
   PDL::hpp($coords,$n);
   
@@ -61,7 +66,7 @@ sub hilbert {
       return $coords - $of;
   } else {
       $coords -= $of;
-      $c2w = which( ($coords->((0)) < $w) & ($coords->((1)) < $h) &
+      my $c2w = which( ($coords->((0)) < $w) & ($coords->((1)) < $h) &
 		    ($coords->((0)) >= 0) & ($coords->((1)) >= 0));
       return $coords->(:,$c2w)->sever;
   }

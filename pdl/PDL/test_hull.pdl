@@ -8,34 +8,38 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+use PDL;
+use PDL::NiceSlice;
 use Flux;
 
-$a = read_world('menagerie/simple-8.flux') unless defined($a);
-$a->verbosity(3);
+my $w = read_world('menagerie/simple-8.flux');# unless defined($w);
+$w->verbosity(3);
 
-foreach $v(map { $_->vertices } $a->fluxons) {
-#	$v = $a->vertex(14);
+foreach my $v(map { $_->vertices } $w->fluxons) {
+#	$v = $w->vertex(14);
 	next unless($v->next);
-	$w=pgwin(xs,size=>[14,7],nx=>2) unless defined($w);
-	#$w = pgwin(dev=>"hull-neighbors.ps/cps",size=>[10,5],nx=>2);
+	my $win=pgwin('xs',size=>[14,7],nx=>2);# unless defined($win);
+	#$win = pgwin(dev=>"hull-neighbors.ps/cps",size=>[10,5],nx=>2);
 
-	$a->update_neighbors(1);
-	$a->verbosity(9);
-	$v->plot_neighbors($w,0,1,{xr=>[-0.25,0.25],yr=>[-0.25,0.25],j=>1});
-	$a->verbosity(0);
-	$xyl0 = $v->proj_neighbors();
-	$xyl = $v->proj_neighbors(1);
+	$w->update_neighbors(1);
+	$w->verbosity(9);
+	$v->plot_neighbors($win,0,1,{xr=>[-0.25,0.25],yr=>[-0.25,0.25],j=>1});
+	$w->verbosity(0);
+	my $xyl0 = $v->proj_neighbors();
+	my $xyl = $v->proj_neighbors(1);
 	print "==Local neighbors:\n$xyl0\n";
 	print "==Global neighbors:\n$xyl\n";
-	$xy = $xyl->(0:1)->copy;
-	$h = Flux::World::_hull_points($xy);
-	$w->env(-0.25,0.25,-0.25,0.25,{j=>1,title=>"direct hull"});
-	Flux::World::_plot_hull($w,$h,$xy);
+	my $xy = $xyl->(0:1)->copy;
+	my $h = Flux::World::_hull_points($xy);
+	$win->env(-0.25,0.25,-0.25,0.25,{j=>1,title=>"direct hull"});
+	Flux::World::_plot_hull($win,$h,$xy);
 
 	print "This is vertex $v\nPress RETURN\n";
-	$s= <STDIN>;
+	<STDIN>;
 }
-undef $w;
+#undef $win;
 
 
 1;

@@ -28,6 +28,9 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+use PDL;
 
 sub twisted_loop {
   my @args = @_;
@@ -42,16 +45,16 @@ sub twisted_loop {
   $v0 /= $r0;
 
   # Ensure that $v1 is a unit vector perpendicular to $v0.
-  $v1_orig=$v1->copy;
+  my $v1_orig=$v1->copy;
   $v1 /= sqrt( ($v1*$v1)->sumover );
   $v1 -= $v0 * (($v1*$v0)->sumover);
   barf "top and line are colinear - not allowed.\n"
     if(($v1*$v1)->sumover == 0) ;
-  $v1hat = $v1->copy;
+  my $v1hat = $v1->copy;
   $v1hat /= sqrt( ($v1*$v1)->sumover );
 
   # Generate the third unit vector.
-  $v2 = crossp($v0,$v1hat); 
+  my $v2 = crossp($v0,$v1hat);
 
   # Construct the conversion matrix.  Stick this on the right side
   # of a row vector to convert from loop space to 3-space.
@@ -61,24 +64,24 @@ sub twisted_loop {
 
   my @out;
   
-  my $i,$j;
+  my ($i,$j);
   $nm -= 1;
   for($i = -$nm->at(0) * 0.5; $i<=($nm->at(0) * 0.5+1e-5); $i+= 1) {
     for($j = -$nm->at(1) * 0.5; $j<=($nm->at(1) * 0.5+1e-5); $j+= 1) {
-      my $fc0lab, $fc1lab,$fl_lab;
+      my ($fc0lab, $fc1lab,$fl_lab);
 
-      $xy0 = pdl($i,$j)*$spacing;
+      my $xy0 = pdl($i,$j)*$spacing;
 #      print "****************i=$i, j=$j, $xy0=$xy0\n";
 
 #      print "xy0=$xy0\n";
-      $theta1 = atan2($xy0->at(1),$xy0->at(0));
+      my $theta1 = atan2($xy0->at(1),$xy0->at(0));
 
-      $r1 = sqrt( ($xy0*$xy0)->sumover );
+      my $r1 = sqrt( ($xy0*$xy0)->sumover );
 #      print "r1=$r1\n";
 
       push(@out,"");
 
-      $xyz = $x0 + place_loop_vertex($r0,0,$r1,$theta1) x $mat;
+      my $xyz = $x0 + place_loop_vertex($r0,0,$r1,$theta1) x $mat;
       $fc0lab = (++$fclab)->copy;
       $fc1lab = (++$fclab)->copy;
 

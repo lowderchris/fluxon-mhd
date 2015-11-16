@@ -23,6 +23,10 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub interp_duction {
   my ($ducts,$locations) = @_;
   
@@ -31,9 +35,9 @@ sub interp_duction {
   ##p ".";
   my $lvecs = $locations->(:,*1) - $duct_anchors;  # 3 x n x m
   ##p "|";
-  $over_r2 = 1.0/(1e-9+(($lvecs * $lvecs)->sumover));     # n x m
+  my $over_r2 = 1.0/(1e-9+(($lvecs * $lvecs)->sumover));     # n x m
   ##p ",";
-  $wgt = $over_r2->sumover;                        # m 
+  my $wgt = $over_r2->sumover;                        # m
   my $vects = ($duct_vects * $over_r2->(*1))       # 3 x n x m
                 ->mv(1,0)                          # n x 3 x m
 		->sumover;                         # 3 x m

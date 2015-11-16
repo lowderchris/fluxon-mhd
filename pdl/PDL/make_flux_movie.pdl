@@ -11,6 +11,10 @@ render options in $opt.
 
 =cut
 
+use strict;
+use warnings;
+use PDL;
+use PDL::NiceSlice;
 use Flux;
 
 sub make_flux_movie {
@@ -46,7 +50,7 @@ sub make_flux_movie {
     $a->render(1,$range->copy,$opt);
 
     my $coords = undef;
-    for $i(0..$#f) {
+    for my $i(0..$#f) {
 	print "Processing $i of $#f....\n";
 	$a = read_world($f[$i]);
 	$a->render(0,$range->copy,$opt);

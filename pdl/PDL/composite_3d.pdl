@@ -1,3 +1,7 @@
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub composite_3d {
     my $left = shift;
     my $right = shift;

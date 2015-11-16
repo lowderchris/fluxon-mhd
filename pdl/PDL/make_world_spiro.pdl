@@ -10,6 +10,10 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub make_world_spiro {
 
   my $epsilon = 1e-9;
@@ -80,12 +84,12 @@ sub make_world_spiro {
   my $ln=0;
   my $i=0;
 
-  foreach $l(@lines) {
+  foreach my $l(@lines) {
       my $line=$l->copy;
-    my $fc0, $fc1, $fl;
+      my ($fc0, $fc1, $fl);
 
-    $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
-    $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
+    my $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
+    my $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
 
     ##print $rend."\n";
     ##print "begin $rstart, end $rend, ";
@@ -161,8 +165,8 @@ sub make_world_spiro {
 ##implicitly and don't need to be declared. The first nontrivial
 ##vertex is at position 1.
 
-    $open_start = ($rstart >= $height-$epsilon);
-    $open_end   = ($rend   >= $height-$epsilon);
+    my $open_start = ($rstart >= $height-$epsilon);
+    my $open_end   = ($rend   >= $height-$epsilon);
     ##print "$open_start, $open_end\n";
 
 
@@ -192,7 +196,7 @@ sub make_world_spiro {
 		      )
 	 );
     $ln++;
-    for $k(1..$line->dim(1)-2) {
+    for my $k(1..$line->dim(1)-2) {
      ## print "line $ln; k=$k\n";
       push(@out,sprintf("VERTEX %d %d %d %f %f %f",
 			$fl,

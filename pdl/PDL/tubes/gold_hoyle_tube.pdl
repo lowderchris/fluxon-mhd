@@ -10,12 +10,16 @@ Generate a Gold-Hoyle flux tube to seed a fluxon relaxation.
 
 =cut
 
+use strict;
+use warnings;
+use PDL::NiceSlice;
+
 sub gold_hoyle_tube {
     my ($zlen,$steps,$r1,$dr,$a,$mu) = @_;
     my @lines;
     $r1 = 2 unless defined($r1);
     $dr = 0.1 unless defined($dr);
-    $phi0 = 1;
+    my $phi0 = 1;
 
     $a = 1 unless(defined($a));
     print "a=$a\n";
@@ -24,42 +28,42 @@ sub gold_hoyle_tube {
     
     $theta = 0;
 
-    $dex = xvals($steps+1)/$steps;
-    $z = $zlen * $dex;
+    my $dex = xvals($steps+1)/$steps;
+    my $z = $zlen * $dex;
 
-    for ($r=0;$r<$r1;$r += $dr) {
+    for (my $r=0;$r<$r1;$r += $dr) {
 	print "r=$r ";
 	
 	# Figure how many fluxons on this circle...
-	$da = $dr * 2 * 3.14159 * $r;
+	my $da = $dr * 2 * 3.14159 * $r;
 	
-	$amt = $da * $a / (1 + $mu*$mu*$r*$r) / $phi0 ; 
+	my $amt = $da * $a / (1 + $mu*$mu*$r*$r) / $phi0 ;
 	$amt += $resid;
-	$ct = int($amt);
+	my $ct = int($amt);
 	$resid = $amt-$ct;
 	print "ct=$ct; resid=$resid\n";
 	next if ($ct==0);
-	$dir = ($ct<0?-1:1);
+	my $dir = ($ct<0?-1:1);
 	$ct = abs($ct);
 	
 	print "\tThis ring has $ct fluxons\n";
 	$theta += rand(628)/100;
-	$dtheta = 2*3.14159/($ct + ($ct==0));
+	my $dtheta = 2*3.14159/($ct + ($ct==0));
 
-	$locations = pdl($r * cos($dex * $mu * $zlen),
+	my $locations = pdl($r * cos($dex * $mu * $zlen),
 			 $r * sin($dex * $mu * $zlen),
 			 $dex * $zlen
 			 )->transpose;
 
 
-	for($n=0; $n<$ct; $n++) {
+	for(my $n=0; $n<$ct; $n++) {
 	    $theta += $dtheta;
 	    $theta /= (2*3.1415926535897);
 	    $theta -= floor(pdl($theta));
 	    $theta *= 2*3.1415926535897;
 	    
-	    $m = pdl([cos($theta),-sin($theta),0],[sin($theta),cos($theta),0],[0,0,1]);
-	    $locs = ($locations->(:,*1) x $m) ->(:,(0));
+	    my $m = pdl([cos($theta),-sin($theta),0],[sin($theta),cos($theta),0],[0,0,1]);
+	    my $locs = ($locations->(:,*1) x $m) ->(:,(0));
 	    push(@lines,$locs);
 	}
     }

@@ -22,6 +22,9 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use strict;
+use warnings;
+
 sub place_loop_vertex {
   my ($r0, $theta0, $r1, $theta1) = @_;
   map { $_ = $_->at(0) if(ref $_ && $_->nelem==1) } ($r0,$theta0,$r1,$theta1);
@@ -34,7 +37,7 @@ sub place_loop_vertex {
 		[ 0,            1,              0             ],
 		[ -sin($theta1), 0,              cos($theta1)  ] );
 
-  $offset = pdl($r1,0,0) x $rm2;
+  my $offset = pdl($r1,0,0) x $rm2;
 
 
   my $out = (( $r0 * pdl(1,0,0) + $offset ) x $rm1);
