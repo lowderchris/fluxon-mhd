@@ -48,8 +48,8 @@ sub distrib_pos_fluxons{
   my($fluxconv) = 1;  # FIX THIS LATER
 
   # Calculate total no. of fluxons
-  my($totalflux) = sum($a) * $fluxconv;
-  my($count) = floor( $fluxconv / $fluxperline  + 0.5);
+  my($totalflux) = sum($im>0) * $fluxconv;
+  my($count) = floor( $totalflux / $fluxperline  + 0.5);
   my($out) = zeroes(2,$count);
   
   # Generate random distribution of flux lines using rejection method
@@ -61,7 +61,7 @@ sub distrib_pos_fluxons{
   print "w=$w; n=$n\n";
 
   if($MAIN::DEBUG) {
-    print "Laying down $f fluxons...\n";
+    print "Laying down $count fluxons...\n";
   }
 
   for(my($f)=0;$f<$count;$f++) {
