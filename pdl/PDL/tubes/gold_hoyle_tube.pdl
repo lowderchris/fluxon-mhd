@@ -26,7 +26,8 @@ sub gold_hoyle_tube {
 
     $mu = 1 unless defined($mu);
     
-    $theta = 0;
+    my $theta = 0;
+    my $resid = 0;
 
     my $dex = xvals($steps+1)/$steps;
     my $z = $zlen * $dex;
