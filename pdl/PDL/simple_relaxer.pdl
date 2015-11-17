@@ -134,7 +134,8 @@ sub simple_relaxer {
       open LOG,">$opt->{log}";
       print LOG $opt->{loghdr};
     }
-
+    my $t=0;
+    my $dt0;
     while(!$final_step || $step<$final_step) {
 
 
@@ -174,8 +175,8 @@ sub simple_relaxer {
 
 	if($@) { print "printf err:", $@; $@='';}
 
-	push(@f_av,$h->{f_av});
-	push(@fs_av,$h->{fs_av});
+#	push(@f_av,$h->{f_av});
+#	push(@fs_av,$h->{fs_av});
 	
 	if($auto) {	
 	   $dt0 = $dt unless(defined $dt0);
