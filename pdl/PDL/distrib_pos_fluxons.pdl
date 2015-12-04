@@ -48,7 +48,7 @@ sub distrib_pos_fluxons{
   my($fluxconv) = 1;  # FIX THIS LATER
 
   # Calculate total no. of fluxons
-  my($totalflux) = sum($im>0) * $fluxconv;
+  my($totalflux) = sum($im->lclip(0)) * $fluxconv;
   my($count) = floor( $totalflux / $fluxperline  + 0.5);
   my($out) = zeroes(2,$count);
   
