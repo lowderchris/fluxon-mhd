@@ -100,8 +100,6 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
-use strict;
-use warnings;
 
 sub simple_relaxer {
     my $w = shift;
@@ -119,8 +117,8 @@ sub simple_relaxer {
     my $conv = 180.0 / (atan2(1,1)*4.);
     $range=$range->copy if (defined $range);
 
-    my $step = $w->{rel_step} || 0;
-    my $final_step=$n;
+    $step = $w->{rel_step} || 0;	
+    $final_step=$n;
     $final_step = $step + $n if $final_step <= $step; 
 
 #    $w = read_world($w)
@@ -134,8 +132,7 @@ sub simple_relaxer {
       open LOG,">$opt->{log}";
       print LOG $opt->{loghdr};
     }
-    my $t=0;
-    my $dt0;
+
     while(!$final_step || $step<$final_step) {
 
 
@@ -143,8 +140,7 @@ sub simple_relaxer {
 	    $w->f_length_check($global);
 	}
 
-	my $fmax;
-	if($w->{concurrency}) {
+	if($a->{concurrency}) {
 	    if ($w->{rel_step} == 0){
 		printf("computing inital fast neighbor search...\n");
 		$w->update_neighbors(-1);
@@ -165,7 +161,7 @@ sub simple_relaxer {
 	$t += $dt;
         $w->{rel_step}++;
 
-	my $h = $w->stats;
+	$h = $w->stats;
 
 
 	eval { printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av},$w->{max_angle}, $w->{mean_angle}); };
@@ -175,12 +171,12 @@ sub simple_relaxer {
 
 	if($@) { print "printf err:", $@; $@='';}
 
-#	push(@f_av,$h->{f_av});
-#	push(@fs_av,$h->{fs_av});
+	push(@f_av,$h->{f_av});
+	push(@fs_av,$h->{fs_av});
 	
 	if($auto) {	
 	   $dt0 = $dt unless(defined $dt0);
-	   my $ratio = $h->{f_av}/$h->{fs_av};
+	   $ratio = $h->{f_av}/$h->{fs_av};
 	   $dt = $dt0 * $ratio;
 	   print "\t\tratio=$ratio; new dt=$dt\n";
 	}
