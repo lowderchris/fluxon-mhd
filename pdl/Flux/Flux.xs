@@ -850,7 +850,7 @@ CODE:
 		strcat(buf, FLUX->FLUX_FORCES[i].name);
 	}
 	strcat(buf,")\n");
-        croak(buf);
+        croak("%s",buf);
    } else {
       printf("Match: %s at %d\n",FLUX->FLUX_FORCES[j].name,i);
       new_f_funcs[i] = FLUX->FLUX_FORCES[j].func;
@@ -932,7 +932,7 @@ CODE:
 			strcat(buf, FLUX->F_B_NAMES[j].name);
 	        }
 		strcat(buf,")\n");
-		croak(buf);
+		croak("%s",buf);
 	 } else {
 	     *field = (void*)(FLUX->F_B_NAMES[j].func);
 	 }
@@ -1031,19 +1031,19 @@ CODE:
 
 	if(!field) {
 		sprintf(errbuf,"_wrecon: error - null field in field %d of input\n",i);
-		croak(errbuf);
+		croak("%s",errbuf);
 	}
 	
 	if(!SvROK( *field ) || SvTYPE(SvRV(*field)) != SVt_PVAV) {
 		sprintf(errbuf,"_wrecon: error - field %d of input isn't a list ref\n",i);
-		croak(errbuf);
+		croak("%s",errbuf);
 	}
 	f_av= (AV *)SvRV(*field);
 
 	svp = av_fetch(f_av, 0, 0);
 	if(!svp) {
 		sprintf(errbuf,"_wrecon: error - null name in field %d\n",i);
-		croak(errbuf);
+		croak("%s",errbuf);
 	}
 	name = SvPV_nolen(*svp);
 	
@@ -1061,7 +1061,7 @@ CODE:
 			strcat(errbuf, FLUX->FLUX_RECON[k].name);
 		}
 		strcat(errbuf,".\n");
-		croak(errbuf);
+		croak("%s",errbuf);
 	}
 	// There -- set the function in our stash.
 	rc_funcs[i]=FLUX->FLUX_RECON[j].func;

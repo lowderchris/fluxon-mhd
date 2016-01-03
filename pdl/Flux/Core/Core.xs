@@ -53,7 +53,7 @@ void *SvFluxPtr( SV *sv, char *name, char *tstr, char wflag, char croak_on_null 
     sv = SvRV(sv);
   } else if(croak_on_null) {
     sprintf(errbuf,"%s requires a %s.\n",name,tstr);
-    croak(errbuf);
+    croak("%s",errbuf);
   } else {
     return 0;
   }
@@ -76,7 +76,7 @@ void *SvFluxPtr( SV *sv, char *name, char *tstr, char wflag, char croak_on_null 
     if( !w ) {
 	if(croak_on_null) {
 		sprintf(errbuf, "SvFluxPtr (%s): got a null WORLD!",name);
-		croak(errbuf);
+		croak("%s",errbuf);
 	} else {
 		return (void *)0;
 	}
@@ -99,18 +99,18 @@ void *SvFluxPtr( SV *sv, char *name, char *tstr, char wflag, char croak_on_null 
 		out = tree_find( w->concentrations, label, fc_lab_of, fc_ln_of ); break;
 	default:
 		sprintf(errbuf,"SvFluxPtr (%s): unknown type code %d!",name,type);
-		croak(errbuf);
+		croak("%s",errbuf);
 		break;
     }
   
     if(!out && croak_on_null) {
 	sprintf(errbuf,"SvFluxPtr (%s): Failed to find a %s (type %d) with label %d!",name,classnames[type],type,label);
-	croak(errbuf);
+	croak("%s",errbuf);
     }
     return out;
   } else {
     sprintf(errbuf,"SvFluxPtr (%s): big trouble - couldn't find the expected deep list ref!",name);
-    croak(errbuf);
+    croak("%s",errbuf);
   }
 }
 
@@ -126,7 +126,7 @@ long SvLabel( SV *sv, char *name, char *tstr ) {
     sv = SvRV(sv);
   } else {
     sprintf(errbuf,"%s requires a %s.\n",name,tstr);
-    croak(errbuf);
+    croak("%s",errbuf);
   }
 
   // Unpack tied hashes
@@ -147,7 +147,7 @@ long SvLabel( SV *sv, char *name, char *tstr ) {
 
   } else {
     sprintf(errbuf,"SvLabel (%s): big trouble - couldn't find the expected deep list ref!",name);
-    croak(errbuf);
+    croak("%s",errbuf);
   }
 }
 
@@ -163,7 +163,7 @@ void SvChangeLabel( SV *sv, long newlabel, char *tstr ) {
      sv = SvRV(sv);
    } else {
      sprintf(errbuf,"SvChangeLabel failed looking for a %s.\n",tstr);
-     croak(errbuf);
+     croak("%s",errbuf);
    }
 
    // Unpack tied hashes
@@ -177,7 +177,7 @@ void SvChangeLabel( SV *sv, long newlabel, char *tstr ) {
    // Now we should have an AV.
    if(SvTYPE(sv) != SVt_PVAV) {
      sprintf(errbuf,"SvChangeLabel: big trouble - couldn't find the expected deep list ref!");
-     croak(errbuf);
+     croak("%s",errbuf);
    } else {
      SV **svp;
      SV *newsv;
