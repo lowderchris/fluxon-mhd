@@ -149,7 +149,7 @@ CODE:
 
 
 	if(w) {
-		printf("Read '%s': %d vertices, %d fluxons, %d concentrations\n", 
+		printf("Read '%s': %ld vertices, %ld fluxons, %ld concentrations\n",
 			s,
 			w->vertices->world_links.n,
 			w->lines->all_links.n,
@@ -566,7 +566,7 @@ CODE:
      sv = newSVpv(FLUX->FLUX_FORCES[j].name,strlen(FLUX->FLUX_FORCES[j].name));
    } else {
      char s[80];
-     sprintf(s,"0x%x",(unsigned long)(w->f_funcs[i]));
+     sprintf(s,"0x%lx",(unsigned long)(w->f_funcs[i]));
      sv = newSVpv(s,strlen(s));
    }
    av_store(RETVAL, av_len(RETVAL)+1, sv) || svREFCNT_dec(sv);
@@ -606,7 +606,7 @@ CODE:
      if(!FLUX->FLUX_FORCES[j].func) {
        if(what[0]=='0' && what[1]=='x') {
 	 unsigned long ul;
-	 sscanf(what+2,"%x",&ul);
+	 sscanf(what+2,"%lx",&ul);
 	 ((void **)(w->f_funcs))[where] = (void *)ul;
 	 RETVAL = 3;
        } else {
@@ -652,7 +652,7 @@ CODE:
 		sv = newSVpv(FLUX->FLUX_RECON[j].name,strlen(FLUX->FLUX_RECON[j].name));
 	} else {
 		char s[80];
-		sprintf(s,"0x%x",(unsigned long)(w->rc_funcs[i]));
+		sprintf(s,"0x%lx",(unsigned long)(w->rc_funcs[i]));
 		sv=newSVpv(s,strlen(s));
 	}
 	if(w->verbosity)
@@ -1297,6 +1297,6 @@ BOOT:
  if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required by Flux::World)");
  FLUX = INT2PTR(FluxCore*, SvIV(FluxCoreSV));
  if(FLUX->CoreVersion != FLUX_CORE_VERSION) {
-	printf("FLUX->CoreVersion is %d; FLUX_%s is %d\n",FLUX->CoreVersion,"CORE_VERSION",FLUX_CORE_VERSION);
+	printf("FLUX->CoreVersion is %ld; FLUX_%s is %d\n",FLUX->CoreVersion,"CORE_VERSION",FLUX_CORE_VERSION);
 	Perl_croak(aTHX_ "Flux needs to be recompiled against the newly installed FLUX libraries");
 }

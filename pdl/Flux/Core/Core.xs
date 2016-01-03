@@ -98,13 +98,13 @@ void *SvFluxPtr( SV *sv, char *name, char *tstr, char wflag, char croak_on_null 
 	case FT_CONC:
 		out = tree_find( w->concentrations, label, fc_lab_of, fc_ln_of ); break;
 	default:
-		sprintf(errbuf,"SvFluxPtr (%s): unknown type code %d!",name,type);
+		sprintf(errbuf,"SvFluxPtr (%s): unknown type code %ld!",name,type);
 		croak("%s",errbuf);
 		break;
     }
   
     if(!out && croak_on_null) {
-	sprintf(errbuf,"SvFluxPtr (%s): Failed to find a %s (type %d) with label %d!",name,classnames[type],type,label);
+	sprintf(errbuf,"SvFluxPtr (%s): Failed to find a %s (type %ld) with label %ld!",name,classnames[type],type,label);
 	croak("%s",errbuf);
     }
     return out;

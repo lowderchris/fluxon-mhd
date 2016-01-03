@@ -130,6 +130,6 @@ BOOT:
  if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required by Flux::Concentration)");
  FLUX = INT2PTR(FluxCore*, SvIV(FluxCoreSV));
  if(FLUX->CoreVersion != FLUX_CORE_VERSION) {
-	printf("FLUX->CoreVersion is %d; FLUX_%s is %d\n",FLUX->CoreVersion,"CORE_VERSION",FLUX_CORE_VERSION);
+	printf("FLUX->CoreVersion is %ld; FLUX_%s is %d\n",FLUX->CoreVersion,"CORE_VERSION",FLUX_CORE_VERSION);
 	Perl_croak(aTHX_ "Flux needs to be recompiled against the newly installed FLUX libraries");
 }

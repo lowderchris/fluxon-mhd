@@ -72,10 +72,10 @@ PREINIT:
 CODE: 
   f = SvFluxon(flx,"Flux::Fluxon::_stringify",1);
   if(f) {
-	  sprintf(str,"Fluxon %5.5d: start-fc %d, end-fc %d   %d vertices\n",f->label,f->fc0->label,f->fc1->label,f->v_ct);
+	  sprintf(str,"Fluxon %5.5ld: start-fc %ld, end-fc %ld   %ld vertices\n",f->label,f->fc0->label,f->fc1->label,f->v_ct);
   } else {
 	  long label = FLUX->SvLabel(flx, "Flux::Fluxon::_stringify", "Flux::Fluxon");
-	  sprintf(str,"Fluxon %d not found - stale Perl link?\n",label);
+	  sprintf(str,"Fluxon %ld not found - stale Perl link?\n",label);
   }
   RETVAL = str;
 OUTPUT:
