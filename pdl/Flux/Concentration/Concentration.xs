@@ -118,16 +118,16 @@ BOOT:
  **** modules and core functions.   **/
  require_pv("PDL/Core.pm");
  CoreSV = perl_get_sv("PDL::SHARE",FALSE);
- if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux::Fluxon)");
+ if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux::Concentration)");
 
  PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
  if (PDL->Version != PDL_CORE_VERSION)
-    Perl_croak(aTHX_ "Flux::Fluxon needs to be recompiled against the newly installed PDL");
+    Perl_croak(aTHX_ "Flux::Concentration needs to be recompiled against the newly installed PDL");
 
  
  require_pv("Flux/Core.pm");
  FluxCoreSV = perl_get_sv("Flux::Core::FLUX",FALSE);
- if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required b Flux)");
+ if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required by Flux::Concentration)");
  FLUX = INT2PTR(FluxCore*, SvIV(FluxCoreSV));
  if(FLUX->CoreVersion != FLUX_CORE_VERSION) {
 	printf("FLUX->CoreVersion is %d; FLUX_%s is %d\n",FLUX->CoreVersion,"CORE_VERSION",FLUX_CORE_VERSION);

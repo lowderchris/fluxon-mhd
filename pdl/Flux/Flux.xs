@@ -1595,7 +1595,7 @@ BOOT:
  **** modules and core functions.   **/
  require_pv("PDL/Core.pm");
  CoreSV = perl_get_sv("PDL::SHARE",FALSE);
- if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux::Fluxon)");
+ if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux)");
 
  PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
  if (PDL->Version != PDL_CORE_VERSION)
@@ -1603,7 +1603,7 @@ BOOT:
 
  require_pv("Flux/Core.pm");
  FluxCoreSV = perl_get_sv("Flux::Core::FLUX",FALSE);
- if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required b Flux)");
+ if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required by Flux)");
  
  FLUX = INT2PTR(FluxCore*, SvIV(FluxCoreSV));
  if(FLUX->CoreVersion != FLUX_CORE_VERSION) {

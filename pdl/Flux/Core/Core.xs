@@ -292,10 +292,10 @@ BOOT:
 /**** modules and core functions.   **/
  require_pv("PDL/Core.pm");
  CoreSV = perl_get_sv("PDL::SHARE",FALSE);
- if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux::Fluxon)");
+ if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux::Core)");
  PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
  if (PDL->Version != PDL_CORE_VERSION)
-    Perl_croak(aTHX_ "Flux::Fluxon needs to be recompiled against the newly installed PDL");
+    Perl_croak(aTHX_ "Flux::Core needs to be recompiled against the newly installed PDL");
 /**********************************************************************/
 /**********************************************************************/
 /**** FLUX bootstrap code -- allocate and populate the FluxCore struct. */

@@ -484,7 +484,7 @@ BOOT:
 
  require_pv("Flux/Core.pm");
  FluxCoreSV = perl_get_sv("Flux::Core::FLUX",FALSE);
- if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required b Flux)");
+ if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required by Flux::Fluxon)");
  
  FLUX = INT2PTR(FluxCore*, SvIV(FluxCoreSV));
  if(FLUX->CoreVersion != FLUX_CORE_VERSION) {
