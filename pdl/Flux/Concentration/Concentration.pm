@@ -294,10 +294,18 @@ sub TIEHASH {
     return bless($me,$class);
 }
 
+=pod
+
+=begin comment
+
 sub EXISTS {
     my ($me, $field)=@_;
     return ($FLUX::codes->{concentration}->{$field});
 }
+
+=end comment
+
+=cut
 
 sub FETCH {
     my($me, $field)=@_;
