@@ -897,22 +897,23 @@ to 0.3-0.5 in the early stages of most relaxations.
 
 =pod
 
-=head2 stats
+=head2 fw_stats
 
 =for usage
 
-print $a->stats->{n_av};
+print $a->fw_stats->{n_av};
 
 =for ref
 
 Produces a statistical overview of the simulation, in a hash:  average force
 per unit length on each vertex, average unsigned-total force on each vertex,
 and average number of neighbors per vertex.  The answer comes back in a perl hash ref.
+Mnemonic: Flux World stats.
 
 =cut
 
 # Implemented in World.xs
-*stats = \&_stats;
+*fw_stats = \&_stats;
 
 =pod
 

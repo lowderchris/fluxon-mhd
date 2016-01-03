@@ -161,7 +161,7 @@ sub simple_relaxer {
 	$t += $dt;
         $w->{rel_step}++;
 
-	$h = $w->stats;
+	$h = $w->fw_stats;
 
 
 	eval { printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av},$w->{max_angle}, $w->{mean_angle}); };
