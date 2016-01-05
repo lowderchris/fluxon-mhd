@@ -795,7 +795,7 @@ CODE:
      sv = newSVpv(s,strlen(s));
    }
    if(!av_store(av, av_len(av)+1, sv))
-    svREFCNT_dec(sv);
+    SvREFCNT_dec(sv);
  }
  rv = newRV_noinc((SV *)av);
  SvREFCNT_inc(rv);
@@ -1414,13 +1414,13 @@ CODE:
      PLANE *p;
      av_extend(RETVAL,6);
      p = ph->plane;
-     sv=newSVnv(p->origin[0]); if(!av_store(RETVAL,0,sv)) { svREFCNT_dec(sv); };
-     sv=newSVnv(p->origin[1]); if(!av_store(RETVAL,1,sv)) { svREFCNT_dec(sv); };
-     sv=newSVnv(p->origin[2]); if(!av_store(RETVAL,2,sv)) { svREFCNT_dec(sv); };
-     sv=newSVnv(p->normal[0]); if(!av_store(RETVAL,3,sv)) { svREFCNT_dec(sv); };
-     sv=newSVnv(p->normal[1]); if(!av_store(RETVAL,4,sv)) { svREFCNT_dec(sv); };
-     sv=newSVnv(p->normal[2]); if(!av_store(RETVAL,5,sv)) { svREFCNT_dec(sv); };
-     sv=newSViv(ph->type);     if(!av_store(RETVAL,6,sv)) { svREFCNT_dec(sv); };
+     sv=newSVnv(p->origin[0]); if(!av_store(RETVAL,0,sv)) { SvREFCNT_dec(sv); };
+     sv=newSVnv(p->origin[1]); if(!av_store(RETVAL,1,sv)) { SvREFCNT_dec(sv); };
+     sv=newSVnv(p->origin[2]); if(!av_store(RETVAL,2,sv)) { SvREFCNT_dec(sv); };
+     sv=newSVnv(p->normal[0]); if(!av_store(RETVAL,3,sv)) { SvREFCNT_dec(sv); };
+     sv=newSVnv(p->normal[1]); if(!av_store(RETVAL,4,sv)) { SvREFCNT_dec(sv); };
+     sv=newSVnv(p->normal[2]); if(!av_store(RETVAL,5,sv)) { SvREFCNT_dec(sv); };
+     sv=newSViv(ph->type);     if(!av_store(RETVAL,6,sv)) { SvREFCNT_dec(sv); };
    }
  } else {
   PLANE *newp;

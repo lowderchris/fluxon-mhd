@@ -109,7 +109,8 @@ static SV* CoreSV;/* gets perl var holding the core structures */
 static AV *fluxons_av;
 static long fluxons_helper(void *tree, int lab_of, int ln_of, int depth) {
  SV *sv = newSViv(((FLUXON *)tree)->label);
- av_store(fluxons_av, av_len(fluxons_av)+1, sv) || svREFCNT_dec(sv);
+ if(!av_store(fluxons_av, av_len(fluxons_av)+1, sv))
+   SvREFCNT_dec(sv);
  return 0;
 }
 
@@ -117,7 +118,9 @@ static AV *vertices_av;
 /** vertices_helper: callback to stuff a vertex label into a list **/
 static long vertices_helper(void *tree, int lab_of, int ln_of, int depth) {
  SV *sv = newSViv(((VERTEX *)tree)->label);
- av_store(vertices_av, av_len(vertices_av)+1, sv) || svREFCNT_dec(sv);
+ if(!av_store(vertices_av, av_len(vertices_av)+1, sv))
+   SvREFCNT_dec(sv);
+
  return 0;
 }
 
@@ -569,7 +572,8 @@ CODE:
      sprintf(s,"0x%lx",(unsigned long)(w->f_funcs[i]));
      sv = newSVpv(s,strlen(s));
    }
-   av_store(RETVAL, av_len(RETVAL)+1, sv) || svREFCNT_dec(sv);
+   if(!av_store(RETVAL, av_len(RETVAL)+1, sv))
+     SvREFCNT_dec(sv);
    }
 OUTPUT:
  RETVAL
@@ -658,14 +662,17 @@ CODE:
 	if(w->verbosity)
 		printf("x...");
 	
-	av_store(RETVAL, av_len(RETVAL)+1, sv) || svREFCNT_dec(sv);
+	if (!av_store(RETVAL, av_len(RETVAL)+1, sv))
+	  SvREFCNT_dec(sv);
 	av_clear((AV *)(sv2 = (SV *)newAV()));
 	for( j=0; j<N_RECON_PARAMS; j++ )  {
 		sv = newSVnv(w->rc_params[i][j]);
-		av_store((AV *)sv2, av_len((AV *)sv2)+1, sv) || svREFCNT_dec(sv);
+		if (!av_store((AV *)sv2, av_len((AV *)sv2)+1, sv))
+		  SvREFCNT_dec(sv);
 	}
 	sv2 = newRV_noinc(sv2);
-	av_store(RETVAL, av_len(RETVAL)+1, sv2) || svREFCNTT_dec(sv2);
+	if (!av_store(RETVAL, av_len(RETVAL)+1, sv2))
+	  SvREFCNT_dec(sv2);
   }
 OUTPUT:
  RETVAL
@@ -1161,7 +1168,8 @@ CODE:
   av_extend(RETVAL,dl->n);
   for(i=0;i<dl->n;i++) {
     SV *sv = FLUX->new_sv_from_ptr(w, FT_VERTEX, ((VERTEX **)(dl->stuff))[i]->label);
-    av_store(RETVAL, i, sv) || svREFCNT_dec(sv);
+    if (!av_store(RETVAL, i, sv))
+      SvREFCNT_dec(sv);
   }
 OUTPUT:
  RETVAL  
