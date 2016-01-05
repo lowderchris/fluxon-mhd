@@ -1264,7 +1264,7 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
         fac *= fastpow( 2.0/(pfrac + nfrac), w->step_scale.ds_power );
       }
 
-      if(finite(fac)) 
+      if(isfinite(fac))
 	scale_3d(a, v->f_t, dt * fac );	
       else 
 	if(verbosity >= 3) 
@@ -1574,7 +1574,7 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
     //    fflush(stdout);
 
 
-    if(finite(step[0]) && finite(step[1]) &&finite(step[2])) {
+    if(isfinite(step[0]) && isfinite(step[1]) &&isfinite(step[2])) {
       sum_3d(v->x,v->x,step);
     } else {
 	printf("NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%ld (ignoring)\n",v->f_t[0],v->f_t[1],v->f_t[2],v->label);

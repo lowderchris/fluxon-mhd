@@ -894,7 +894,7 @@ NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
   NUM dist;
   ls_closest_approach(foo,bar,a0,b0,c0,d0);
   dist = cart_3d(foo,bar);
-  if(!finite(dist))
+  if(!isfinite(dist))
     printf( "dist is nan\n");
   if(!dist)
     printf("dist is 0\n");
@@ -1198,7 +1198,7 @@ int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
     out[1] = Q[1]/2;
     
     out[2] = - Q[0]/Q[1]; /* Perp. slope = (- delta-X / delta-Y). */
-    return !finite(out[2]);
+    return !isfinite(out[2]);
   }    
 
   /* P-not-the-origin case */
@@ -1207,7 +1207,7 @@ int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
   
   /* Slope is negative reciprocal */
   out[2] = - ( (Q[0]-P[0]) / (Q[1]-P[1]) );
-  return !finite(out[2]);
+  return !isfinite(out[2]);
 }
 
 
@@ -1244,11 +1244,11 @@ int intersection_2d(NUM *out, NUM *L1, NUM *L2) {
     out[1] = L1[1] + delta_x * L1[2];
     return 0;
   }
-  else if( finite(L1[2]) ) {  /* L2 is vertical; L1 is not */
+  else if( isfinite(L1[2]) ) {  /* L2 is vertical; L1 is not */
     out[0] = L2[0];
     out[1] = L1[1] + (L2[0] - L1[0]) * L1[2];
     return 0;
-  } else if( finite(L2[2]) ) { /* L1 is vertical; L2 is not */
+  } else if( isfinite(L2[2]) ) { /* L1 is vertical; L2 is not */
     out[0] = L1[0];
     out[1] = L2[1] + (L1[0] - L2[0]) * L2[2];
     return 0;
@@ -1323,7 +1323,7 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
     if((v->line->fc0->world->verbosity - (r>=0))>=6)
       printf("\nfl_segment_deluxe_dist returned %g for vertex %ld\n",r,v1->label);
 
-    if(r<=0 || !finite(r)) {
+    if(r<=0 || !isfinite(r)) {
       horde->stuff[i] = 0;
       crunch=1;
     }
@@ -1417,7 +1417,7 @@ void sort_by_angle_2d(DUMBLIST *horde) {
   /* Do finiteness checking... */
   for(i=0;i<horde->n;i++) {
     VERTEX *v1 = (VERTEX *)(horde->stuff[i]);
-    if(!v1 || !finite(v1->a) || !finite(v1->r)) {
+    if(!v1 || !isfinite(v1->a) || !isfinite(v1->r)) {
       //      printf("sort_by_angle_2d: v1 is bad (label %d)\n",v1?v1->label:0);
       /*** Break the symmetry ***/
       v1->r=1e50; v1->a=0;
@@ -1527,7 +1527,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   intersection_2d( out[i_r].p, out[i_r].bisector, out[ i ].bisector );
   a = iv->a - rv->a; TRIM_ANGLE(a);
   if(a < 0 ||
-     !finite(out[i_r].p[0]) || !finite(out[i_r].p[1])) {
+     !isfinite(out[i_r].p[0]) || !isfinite(out[i_r].p[1])) {
     out[i_r].p[0] = out[i_r].p[1] = 0;
     out[i_r].open = 1;
   } else
@@ -1561,7 +1561,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	//	return;
       }
 
-      if(!finite(iv->r) || !finite(iv->a))
+      if(!isfinite(iv->r) || !isfinite(iv->a))
 	goto reject;
 
       if(iv->r == 0)
@@ -1593,7 +1593,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	  /* Line isn't open on the right either, so compare intersections */
 	  a = cross_2d( out[i_r].p, out[ i ].p );
 
-	  if( !finite(a) ) {
+	  if( !isfinite(a) ) {
 	    printf("ASSERTION FAILED in hull_2d: intersection should exist (but doesn't)\n\t\tleft_p: %5.2g, %5.2g ;   right_p: %5.2g, %5.2g",out[i].p[0],out[i].p[1],out[i_r].p[0],out[i_r].p[1]);
 	    printf("\n\t\tleft_b: %5.2g, %5.2g, %5.2g;  this_b: %5.2g, %5.2g, %5.2g; right_b: %5.2g, %5.2g, %5.2g\n",out[i_l].bisector[0],out[i_l].bisector[1],out[i_l].bisector[2],out[i].bisector[0],out[i].bisector[1],out[i].bisector[2],out[i_r].bisector[0],out[i_r].bisector[1],out[i_r].bisector[2]);
 	    printf("\t\tlv->a=%5.2g, iv->a=%5.2g, rv->a=%5.2g,   lv-iv: %5.2g,   iv-rv: %5.2g\n",lv->a*180/PI,iv->a*180/PI,rv->a*180/PI,(lv->a-iv->a)*180/PI,(iv->a-rv->a)*180/PI);
@@ -2754,7 +2754,7 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
 
     r = norm_3d(X0); 
 
-    if(r<=0 || !finite(r)) { /*not sure what these circumstance would be*/
+    if(r<=0 || !isfinite(r)) { /*not sure what these circumstance would be*/
       horde->stuff[i] = 0;
       crunch=1;
     }

@@ -1159,7 +1159,7 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts, int segflag) {
 
   /* Stick the force where it belongs in the VERTEX's force vector.*/
 
-  if (!finite(norm_3d(force))) {
+  if (!isfinite(norm_3d(force))) {
     printf("something is wrong with the vertex4 force on vertex %ld on fl%ld (non-finite). ln is %ld on %ld, nn is %ld on %ld, l1=%g,l2=%g,lnn=%g,lpp=%g,x=(%g,%g,%g),xn=(%g,%g,%g),xnn=(%g,%g,%g)\n",V->label,V->line->label,V->next->label,V->next->line->label, V->next->next->label,V->next->next->line->label,l1,l2,lnn,lpp,V->x[0],V->x[1],V->x[2],V->next->x[0],V->next->x[1],V->next->x[2],V->next->next->x[0],V->next->next->x[1],V->next->next->x[2]);
       }
 
@@ -1262,7 +1262,7 @@ void f_vertex5(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   sum_3d(force,d1n, d2n);
   scale_3d(force, force, (fn1 + fn2 + fn3) / norm_3d(force) / (l1+l2) / 2);
 
-  if( !finite(norm_3d(force)) ) {
+  if( !isfinite(norm_3d(force)) ) {
     //printf("vertex %d: vertex force was (%g,%g,%g); f_vertex5 is (%g,%g,%g) (total %g); i1 is %g\n",V->label,V->f_v[0],V->f_v[1],V->f_v[2],force[0],force[1],force[2],fabs((fn2+fn3)/i1),i1);
     // printf("\tfn2 is %g; fn3 is %g; V->prev->r_cl is %g; V->next->r_cl is %g; l1 is %g; l2 is %g; lpp is %g; lnn is %g; alpha_p is %g; alpha_n is %g; alpha_p arg is %g; alpha_n arg is %g\n",fn2, fn3, V->prev->r_cl, V->next->r_cl, l1, l2, lpp, lnn, alpha_p, alpha_n, (inner_3d(dpp,d1))/(l1*lpp),(inner_3d(dnn,d2))/(l2*lnn));
     printf("vertex %ld: f_vertex5 is (%g,%g,%g) (total %g);fn1 is %g, fn2 is %g fn3 is %g \n",V->label,force[0],force[1],force[2],norm_3d(force), fn1,fn2,fn3);
