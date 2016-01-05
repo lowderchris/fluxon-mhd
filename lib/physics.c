@@ -1710,7 +1710,7 @@ void f_curv_hm(VERTEX *V, HULL_VERTEX *verts, int segflag) {
 
   V->f_v_tot += norm_3d(curve);
 
-  if(V->a < 0 || V->a > (len = ( (recip_l2 > recip_l1) ? (1.0/recip_l2) : (1.0/recip_l1) ) ) );
+  if(V->a < 0 || V->a > (len = ( (recip_l2 > recip_l1) ? (1.0/recip_l2) : (1.0/recip_l1) ) ) )
     V->a = len;
 }
 
