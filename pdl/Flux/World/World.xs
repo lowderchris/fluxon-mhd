@@ -259,7 +259,7 @@ PREINIT:
 CODE:
  w = SvWorld(wsv,"Flux::World::update_force",1);
  FLUX->world_update_mag(w,global);
- w->f_max;
+ RETVAL = w->f_max;
 OUTPUT:
  RETVAL
 
