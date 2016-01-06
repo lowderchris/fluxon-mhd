@@ -470,7 +470,8 @@ FLUX->destroy_sv		= destroy_sv;
 FLUX->vertex_renumber           = vertex_renumber;
 FLUX->fluxon_renumber           = fluxon_renumber;
 FLUX->concentration_renumber    = concentration_renumber;
-sv_setiv(perl_get_sv("Flux::Core::FLUX",TRUE), PTR2IV(FLUX));
+/*GV_ADDMULTI marks the variable as multiply-defined.  See perlguts. */
+sv_setiv(get_sv("Flux::Core::FLUX",TRUE|GV_ADDMULTI), PTR2IV(FLUX));
 
 
 	
