@@ -291,7 +291,7 @@ BOOT:
 /**** bootstrap code -- load-time dynamic linking to pre-loaded PDL   */
 /**** modules and core functions.   **/
  require_pv("PDL/Core.pm");
- CoreSV = perl_get_sv("PDL::SHARE",FALSE);
+ CoreSV = get_sv("PDL::SHARE",FALSE);
  if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux::Core)");
  PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
  if (PDL->Version != PDL_CORE_VERSION)

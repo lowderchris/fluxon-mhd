@@ -1594,7 +1594,7 @@ BOOT:
  **** bootstrap code -- load-time dynamic linking to pre-loaded PDL
  **** modules and core functions.   **/
  require_pv("PDL/Core.pm");
- CoreSV = perl_get_sv("PDL::SHARE",FALSE);
+ CoreSV = get_sv("PDL::SHARE",FALSE);
  if(CoreSV==NULL)     Perl_croak(aTHX_ "Can't load PDL::Core module (required by Flux)");
 
  PDL = INT2PTR(Core*, SvIV( CoreSV ));  /* Core* value */
@@ -1602,7 +1602,7 @@ BOOT:
     Perl_croak(aTHX_ "Flux needs to be recompiled against the newly installed PDL");
 
  require_pv("Flux/Core.pm");
- FluxCoreSV = perl_get_sv("Flux::Core::FLUX",FALSE);
+ FluxCoreSV = get_sv("Flux::Core::FLUX",FALSE);
  if(FluxCoreSV == NULL)      Perl_croak(aTHX_ "Can't load Flux::Core module (required by Flux)");
  
  FLUX = INT2PTR(FluxCore*, SvIV(FluxCoreSV));
