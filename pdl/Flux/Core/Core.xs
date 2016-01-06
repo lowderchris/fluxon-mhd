@@ -183,7 +183,7 @@ void SvChangeLabel( SV *sv, long newlabel, char *tstr ) {
      SV *newsv;
      av_delete((AV *)sv, 2, G_DISCARD);
      newsv = newSViv(newlabel);
-     svp = av_store(sv, 2, newsv);
+     svp = av_store((AV *)sv, 2, newsv);
      if(!svp) 
        SvREFCNT_dec(newsv);
    }
@@ -225,7 +225,7 @@ SV *new_sv_from_ptr( WORLD *wptr, int type, long label ) {
   hv = newHV();
   hv_magic(hv, (GV*)rv, PERL_MAGIC_tied);
 
-  out = newRV_noinc(hv);
+  out = newRV_noinc((SV *)hv);
   sv_bless(out,stash);
   wptr->refct++;
   
