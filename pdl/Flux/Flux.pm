@@ -5,7 +5,8 @@ use Flux::Vertex;
 use Flux::Concentration;
 
 package Flux;
-use PDL 2.007; #2.007 required for PDL_Indx type
+use PDL 2.007_13; #2.007 required for PDL_Indx type.
+#_13 required for IND_FLAG printf conversion flag macro.
 
 BEGIN {
     package Flux;

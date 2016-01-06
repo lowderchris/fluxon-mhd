@@ -597,7 +597,7 @@ PREINIT:
 CODE:
  w = SvWorld(wsv,"Flux::World::_set_force",1);
  if(where >= N_FORCE_FUNCS-1)
-   croak("force index %d not allowed 0<i<%d\n",where,N_FORCE_FUNCS-1);
+   croak("force index %"IVdf" not allowed 0<i<%d\n",where,N_FORCE_FUNCS-1);
 
  if(*what==0) {
    w->f_funcs[where]=0;
@@ -697,7 +697,7 @@ CODE:
 	* and set the pointer appropriately.
 	*/
 	if(where >= N_RECON_FUNCS-1)
-	  croak("reconnection criterion %d not allowed 0<i<%d\n",where,N_RECON_FUNCS-1);
+	  croak("reconnection criterion %"IVdf" not allowed 0<i<%d\n",where,N_RECON_FUNCS-1);
 
 	if(!what || !*what){
 		w->rc_funcs[where]=0;
@@ -1011,7 +1011,7 @@ if(p->ndims != 2 || p->dims[0] != 2) {
 PDL->converttype(&p,PDL_D,1);
 PDL->make_physdims(p);
 PDL->make_physical(p);
-printf("p is a %d-dim PDL (%d x %d)\n",p->ndims,p->dims[0],p->dims[1]);
+printf("p is a %d-dim PDL (%"IND_FLAG" x %"IND_FLAG")\n",p->ndims,p->dims[0],p->dims[1]);
 /******************************
  * Stuff the PDL values into a collection of spankin'-new vertices
  */
@@ -1107,7 +1107,7 @@ PREINIT:
 	int global;
 CODE:
   w = SvWorld(wsv, "closest_vertex",1);
-  printf("v is %d\n PL_sv_undef is %d\n",v,&PL_sv_undef);
+  printf("v is %d\n PL_sv_undef is %"IVdf"\n",v,SvIV(&PL_sv_undef)); /*DAL: or should this conversion be to UVs? (UVuf or UVxf & SvUV)*/
   v = (!vsv || vsv==&PL_sv_undef) ? 0 : SvVertex(vsv, "closest_vertex",0);
   xpdl = PDL->SvPDLV(xsv);
   PDL->converttype(&xpdl,PDL_D,1);
