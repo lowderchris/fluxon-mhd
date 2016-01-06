@@ -36,8 +36,8 @@ static Core* PDL; /* PDL core functions (run-time linking)     */
 static SV* CoreSV;/* gets perl var holding the core structures */
 
 /******************************
- * Some helper routines used internally to this file...
-/** fluxons_helper: callback to stuff a fluxon label into a list **/
+** Some helper routines used internally to this file...
+** fluxons_helper: callback to stuff a fluxon label into a list **/
 static AV *fluxons_av;
 static long fluxons_helper(void *tree, int lab_of, int ln_of, int depth) {
  SV *sv = newSViv(((FLUXON *)tree)->label);
