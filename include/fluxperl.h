@@ -126,7 +126,7 @@ typedef struct FluxCore {
   void (*world_relax_step_parallel) (WORLD *a, NUM t);
 
   int (*fluxon_update_neighbors)(FLUXON *fl, char gl);
-  NUM (*fluxon_update_mag)      (FLUXON *fl, char gl, void ((**f_funcs)()), NUM *minmax);
+  NUM (*fluxon_update_mag)      (FLUXON *fl, char gl, void ((**f_funcs)()));
 
   void (*fluxon_calc_step) (FLUXON *fl, NUM t);
   void (*fluxon_relax_step)(FLUXON *fl, NUM t);
@@ -134,7 +134,7 @@ typedef struct FluxCore {
   HULL_VERTEX *(*vertex_update_neighbors)(VERTEX *v, char global);
 
   DUMBLIST *(*gather_neighbor_candidates)(VERTEX *v,char global);
-  void (*image_find)(PHOTOSPHERE *phot,PLANE *p, VERTEX *image, VERTEX *v);
+  void (*image_find)(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v);
 
   int  (*winnow_cmp_1)(void *a, void *b);
   void (*winnow_neighbor_candidates)(VERTEX *v, DUMBLIST *horde);
@@ -162,7 +162,7 @@ typedef struct FluxCore {
   void (*fluxon_auto_open)(FLUXON *f);
   DUMBLIST *(*gather_photosphere_neighbor_candidates)(VERTEX *v, char global);
   HULL_VERTEX *(*photosphere_hull_neighbors)(VERTEX *v, DUMBLIST *horde);
-  HULL_VERTEX *(*photosphere_vertex_update_neighbors)(VERTEX *v, char global, int n);
+  HULL_VERTEX *(*photosphere_vertex_update_neighbors)(VERTEX *v, char global, int *n_ptr);
 
   /************  routines from geometry.h */
   NUM (*norm_2d)(NUM *x);
