@@ -125,8 +125,8 @@ typedef struct FluxCore {
   void (*world_relax_step)       (WORLD *a, NUM t);
   void (*world_relax_step_parallel) (WORLD *a, NUM t);
 
-  void (*fluxon_update_neighbors)(FLUXON *fl, char gl);
-  NUM *(*fluxon_update_mag)      (FLUXON *fl, char gl, void ((**f_funcs)()), NUM *minmax);
+  int (*fluxon_update_neighbors)(FLUXON *fl, char gl);
+  NUM (*fluxon_update_mag)      (FLUXON *fl, char gl, void ((**f_funcs)()), NUM *minmax);
 
   void (*fluxon_calc_step) (FLUXON *fl, NUM t);
   void (*fluxon_relax_step)(FLUXON *fl, NUM t);
@@ -205,7 +205,7 @@ typedef struct FluxCore {
   NUM (*p_l_dist)(NUM *p0, NUM *x0, NUM *x1); 
   NUM (*p_ls_dist)(NUM *p0, NUM *x0, NUM *x1);
   NUM (*l_l_dist)( NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]);
-  NUM (*p_ls_closest_approach)(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]);
+  void (*p_ls_closest_approach)(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]);
   void (*ls_closest_approach)(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]);
   NUM (*ls_ls_dist)(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]);
   NUM (*fl_segment_masked_dist)(VERTEX *v0, VERTEX *v1); 

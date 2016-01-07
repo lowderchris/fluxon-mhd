@@ -914,9 +914,11 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
  * Returns the largest and smallest forces and 
  * force/neighbor-distance ratios (in that order) in an array of four
  * NUMs (useful for computing timesteps).
+ * DAL: last sentence (about the return value) doesn't appear to be true:
+ * the function actually returns 0.
  */
 
-int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
+NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
   int i=0;
   WORLD *w = fl->fc0->world;
   int verbosity = w->verbosity;

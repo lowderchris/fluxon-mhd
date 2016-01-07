@@ -57,7 +57,7 @@ void world_relax_step_parallel(WORLD *a, NUM t);
 void world_fluxon_length_check(WORLD *a, char global);
 
 int fluxon_update_neighbors(FLUXON *fl, char global);
-int fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()));
+NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)()));
 
 void init_minmax_accumulator(WORLD *w);
 void vertex_accumulate_f_minmax(VERTEX *v, WORLD *w);
