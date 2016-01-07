@@ -1107,7 +1107,7 @@ PREINIT:
 	int global;
 CODE:
   w = SvWorld(wsv, "closest_vertex",1);
-  printf("v is %d\n PL_sv_undef is %"IVdf"\n",v,SvIV(&PL_sv_undef)); /*DAL: or should this conversion be to UVs? (UVuf or UVxf & SvUV)*/
+  printf("v is %p\n PL_sv_undef is %"IVdf"\n",v,SvIV(&PL_sv_undef)); /*DAL: or should this conversion be to UVs? (UVuf or UVxf & SvUV)*/
   v = (!vsv || vsv==&PL_sv_undef) ? 0 : SvVertex(vsv, "closest_vertex",0);
   xpdl = PDL->SvPDLV(xsv);
   PDL->converttype(&xpdl,PDL_D,1);
