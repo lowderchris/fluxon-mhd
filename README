@@ -18,7 +18,7 @@ FLUX consists of two parts: a relaxation engine, written in C, and a
 control interface in Perl.  The control interface is intended to be
 used with Perl Data Language (PDL).  If you do not have PDL on your
 system, you can get it for free from http://pdl.perl.org.  PDL
-compiles "out of the box" on most UNIX systems, and a "native" 
+compiles "out of the box" on most UNIX systems, and a "native"
 version exists for Microsoft Windows.
 
 The authors gratefully acknowledge support from NASA's Living With A
@@ -87,9 +87,9 @@ Subdirectories include:
 	doc -- some docs (deprecated; see https://github.com/d-lamb/fluxon-mhd/wiki
 		for more up-to-date information.)
 
-	include -- 'c' header files 
+	include -- 'c' header files
 	           (these get installed into /usr/local/include/flux/)
-	
+
         pdl -- PDL glue code and perl modules
 
 	pdl/PDL -- PDL autoload subroutines
@@ -105,7 +105,7 @@ RELEASE NOTES FOR v2.2 (22-Nov-2008):
   - There is better support for motion and interaction of flux concentrations.
 
 RELEASE NOTES FOR v2.1 (3-Apr-2008):
-	
+
   - Many, many bug fixes
   - Photospheres and other refs handled correctly by hash interface
   - Reworked Perl hash interface to eliminate stale pointers altogether
@@ -121,7 +121,7 @@ RELEASE NOTES FOR v2.0 (1-Nov-2007):
   - Full open-field boundary support, including omega and U loop
 	interactions with the boundary
   - Includes a Floyd-Steinberg ditherer for footpoint placement
-  - Includes techniques ("ductions") for moving footpoints in 
+  - Includes techniques ("ductions") for moving footpoints in
 	time-dependent simulations
   - Better control over relaxation parameters
   - Emergence/cancellation support
