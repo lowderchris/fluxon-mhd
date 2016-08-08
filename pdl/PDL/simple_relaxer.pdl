@@ -50,7 +50,7 @@ how the relaxation is to proceed.
 In addition, three global variables are used: $dt, $auto, and $step.  $dt keeps
 track of delta-tau between steps.  $auto adjust delta-tau with a slightly more
 sophisticated algorithm than the C library -- it shouldn't be necessary in most
-cases.  $step keeps track of the current step number.  Setting it to zero causes a 
+cases.  $step keeps track of the current step number.  Setting it to zero causes a
 global neighbor find to be done before the first step takes place.
 
 The following options are useful in the options hash:
@@ -70,9 +70,9 @@ formatting.  The default value is "flux-movie-%4.4d.png".  The
 formatted string is fed to L<wim|wim>, so the suffix determines the
 file type of the images.
 
-=item disp_n 
+=item disp_n
 
-Sets how often the on-screen rendering should be updated.  Set this to 0 
+Sets how often the on-screen rendering should be updated.  Set this to 0
 to disable on-screen rendering.  (Default value is 10).
 
 =item save_f
@@ -117,17 +117,17 @@ sub simple_relaxer {
     my $conv = 180.0 / (atan2(1,1)*4.);
     $range=$range->copy if (defined $range);
 
-    $step = $w->{rel_step} || 0;	
+    $step = $w->{rel_step} || 0;
     $final_step=$n;
-    $final_step = $step + $n if $final_step <= $step; 
+    $final_step = $step + $n if $final_step <= $step;
 
 #    $w = read_world($w)
 #      unless(ref $w) ;
 
     $w->render_lines unless($disp_n==0);
-    
+
     my $dt = $w->{dtau} || 0.1;
-    
+
     if($opt->{log}) {
       open LOG,">$opt->{log}";
       print LOG $opt->{loghdr};
@@ -173,8 +173,8 @@ sub simple_relaxer {
 
 	push(@f_av,$h->{f_av});
 	push(@fs_av,$h->{fs_av});
-	
-	if($auto) {	
+
+	if($auto) {
 	   $dt0 = $dt unless(defined $dt0);
 	   $ratio = $h->{f_av}/$h->{fs_av};
 	   $dt = $dt0 * $ratio;
@@ -190,7 +190,7 @@ sub simple_relaxer {
 	      print "wrote $fname...\n";
 	    }
 	}
-	
+
 	unless($save_n==0 || $step % $save_n) {
 	    my $s = sprintf($save_f,$step);
 	    print "saving %s...\n";
@@ -199,11 +199,11 @@ sub simple_relaxer {
 ;
 	$step++;
 ;
-	
+
     }
 # ARD Update world
     $w->{dtau} = $dt;
-    $w->{rel_step} = $step;	
+    $w->{rel_step} = $step;
 }
 
 1;
