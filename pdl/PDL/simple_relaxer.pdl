@@ -128,9 +128,8 @@ sub simple_relaxer {
     my $movie_n = $opt->{movie_n};
     my $movie_f = $opt->{movie_f} || "flux-movie-%5.5d.png";
     my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
-    my $range = $opt->{range};
+    my $range = defined($opt->{range})? $opt->{range} : undef;
     my $conv = 180.0 / (atan2(1,1)*4.);
-    $range=$range->copy if (defined $range);
 
     $step = $w->{rel_step} || 0;
     $final_step=$n;
@@ -197,7 +196,7 @@ sub simple_relaxer {
 	}
 
 	unless($disp_n==0 || $step % $disp_n ) {
-	    $w->render_lines($interactive,defined($range)?$range->copy:undef,$opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
+	    $w->render_lines($interactive,$range,$opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
 	    if($movie_n) {
 	      my $pic = grabpic3d();
 	      my $fname = sprintf($movie_f,$step);

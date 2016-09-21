@@ -1283,15 +1283,12 @@ sub render {
 	$range->(:,(0)) .= $rctr - $rsize/2;
 	$range->(:,(1)) .= $rctr + $rsize/2;
     }
-	
-    print "box definitions...\n" if($Flux::debug);
-    $boxmax = $range->(:,(1));
-    $boxmin = $range->(:,(0));
 
-    my $shift =($boxmax-$boxmin)*0.05;
-    $boxmin -= $shift;
-    $boxmax += $shift;
-    $shift =($boxmax-$boxmin)*0.05;
+    print "box definitions...\n" if($Flux::debug);
+    $boxmax = $range->(:,(1))->sever;
+    $boxmin = $range->(:,(0))->sever;
+
+    my $shift =($boxmax-$boxmin)*0.105; #the same as two successive 5% increases (on each side). MATH!
     $boxmin -= $shift;
     $boxmax += $shift;
 
