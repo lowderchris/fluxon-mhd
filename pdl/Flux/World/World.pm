@@ -927,7 +927,7 @@ Mnemonic: Flux World stats.
 
 Produces a simple 3-D plot of all the field lines in a World, using PDL::TriD.
 
-The C<$interactive> argument is a flag indicating whether the eventt loop should
+The C<$interactive> argument is a flag indicating whether the event loop should
 be run to position and angle the output.  C<$range>, if present, is a 3x2 PDL containing
 the (minimum, maximum) corners of the 3-cube to render.  C<$opt> is an options hash.
 Currently useful options are:
@@ -1108,28 +1108,28 @@ sub render {
 	}
 
 	print "fluxon $i: spec is $spec...\n" if($Flux::debug);
-	
+
 	if(ref $spec eq 'PDL') {
-	  
+
 	  push(@rgb, $spec * ones($poly[$i]));
-	  
+
 	} elsif(ref $spec eq 'ARRAY') {
-	  
+
 	  if( @$spec == 1 ) {
 	    push(@rgb, $spec->[0] * ones($poly[$i]));
-	    
+
 	  } elsif( @$spec == 2 ) {
 	    my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
 	    my $beta = 1.0 - $alpha;
 	    push(@rgb,  ($alpha * $spec->[0] +
 			 $beta  * $spec->[1]
 			 ));
-	    
+
 	  } elsif( @$spec >= 3 ) {
 	    my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
 	    my $beta = 1.0-$alpha;
 	    my $gamma = sin($alpha * 3.14159);
-	    push(@rgb, ($alpha * $spec->[0] + 
+	    push(@rgb, ($alpha * $spec->[0] +
 			$beta  * $spec->[2] +
 			$gamma * $spec->[1]
 			)

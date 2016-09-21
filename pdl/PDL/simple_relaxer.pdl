@@ -42,7 +42,7 @@ below for how steps are kept track of.
 
 =item $opt
 
-Thhe fifth argument, if present, is a hash ref containing options about
+The fifth argument, if present, is a hash ref containing options about
 how the relaxation is to proceed.
 
 =back
@@ -60,13 +60,13 @@ The following options are useful in the options hash:
 =item movie_n
 
 Specifies that a relaxation movie is to be made by capturing 3-D
-renders evern <n> time steps.
+renders every <n> time steps.
 
 =item movie_f
 
 This is the format string to be used to name relaxation movie frames.
 The format string acts on a single integer -- the step number -- for
-formatting.  The default value is "flux-movie-%4.4d.png".  The
+formatting.  The default value is "flux-movie-%5.5d.png".  The
 formatted string is fed to L<wim|wim>, so the suffix determines the
 file type of the images.
 
@@ -87,6 +87,21 @@ If this is specified, the state of the simulation is saved every n frames.
 
 Contains a hash ref to be fed to Flux::World::render() when the field is
 rendered.
+
+=item range
+
+A 3x2 PDL containing the (minimum, maximum) corners of the 3-cube to
+render.  See L<Flux::World::render>.
+
+=item log
+
+Name of a log file. Number of vertices, stiffness, and information
+about the forces is written here.
+
+=item loghdr
+
+Some text to go at the beginning of the log file. Has no effect if
+C<log> is not set.
 
 =back
 
