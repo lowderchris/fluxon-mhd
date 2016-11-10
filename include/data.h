@@ -131,9 +131,10 @@ typedef struct VERTEX {
 
 
   /* Single-fluid data -- these are valid halfway down the following segment. */
-  NUM rho;         // Density 
-  NUM T;           // Internal energy
-  POINT3D p;       // Momentum
+  NUM rho;         // Density (measured in particles (electrons) per unit volume)
+  NUM T;           // Internal energy (sort-of-Kelvin; see conversion in World object)
+  POINT3D p;       // Momentum (particle-distances per unit time)
+  NUM A;           // Cross-sectional area (for conservation of stuff)
 
 } VERTEX;
 
@@ -297,7 +298,11 @@ typedef struct WORLD {
   NUM ca_ct;
 
   // Switch use of mass
-  int use_fluid;
+  long use_fluid;
+  NUM k_b; /* Boltzmann's constant in (n_e dist^2 / time^2) / K (settable but initialized) */
+  long gravity_type;
+  POINT3D gravity_origin;
+  NUM g;   /* space / time^2  OR  space^3/time^2 */
 
   // temporary dumblist used for I/O (vertex number translation)
   DUMBLIST *tmplist;

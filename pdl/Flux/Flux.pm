@@ -263,7 +263,8 @@ Really Know What You're Doing.
 	    f_v_ps=>        [34,'vec'],
 	    rho=>           [35,'num'],
 	    T=>             [36,'num'],
-	    p=>             [37,'vec']
+	    A=>             [37,'num'],
+	    p=>             [38,'vec']
 	},
 	fluxon => {
 	    flux=>	          [1,'num'],
@@ -333,6 +334,12 @@ Really Know What You're Doing.
 	    ca_max=>            [40,'num'],
 	    ca_acc=>            [41,'num'],
 	    ca_ct=>             [42,'num'],
+	    use_fluid=>         [43,'long'],
+	    k_b =>              [44,'num'],
+	    gravity_type =>     [45,'long'],
+	    gravity_origin =>   [46,'vec'],
+	    g =>                [47,'num']
+	    
 	},
 	concentration => {
 	    world=>		 [1,'World'],

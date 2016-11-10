@@ -164,7 +164,8 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 	case 34: return (void *)&(v->f_v_ps);           break;
 	case 35: return (void *)&(v->rho);              break;
 	case 36: return (void *)&(v->T);                break;
-	case 37: return (void *)&(v->p);                break;
+        case 37: return (void *)&(v->A);                break;
+	case 38: return (void *)&(v->p);                break;
 	default: fprintf(stderr,"Unknown type,field (%ld,%ld) in Flux::World::fieldptr!\n",
 	                 typeno,fieldno);
 	         return (void *)0;
@@ -253,7 +254,12 @@ void *fieldptr(void *foo, long typeno, long fieldno) {
 		case 40: return (void *)&(w->ca_max);                   break;
 		case 41: return (void *)&(w->ca_acc);                   break;
 		case 42: return (void *)&(w->ca_ct);                    break;
-		default: fprintf(stderr,"Unknown type,field (%ld,%ld) in Flux::World::fieldptr!\n",
+	        case 43: return (void *)&(w->use_fluid);                break;
+	        case 44: return (void *)&(w->k_b);                      break;
+ 	        case 45: return (void *)&(w->gravity_type);             break;
+	        case 46: return (void *)&(w->gravity_origin);           break;
+	        case 47: return (void *)&(w->g);                        break;
+	default: fprintf(stderr,"Unknown type,field (%ld,%ld) in Flux::World::fieldptr!\n",
 				typeno, fieldno);		
 			 return (void *)0;
 		         break;

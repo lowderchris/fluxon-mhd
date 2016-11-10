@@ -533,6 +533,13 @@ WORLD *new_world() {
   a->ca_ct = 0;
 
   a->use_fluid = 0;  // Ignore mass by default
+  a->k_b = 1.3807e-23 / (1.67e-27 * (1 * 0.87 + 4*0.13) / (2 * 0.87 + 3 * 0.13)); // particle-K.E / kelvin for coronal plasma, 13% He by number, fully ionized
+  a->gravity_type = 0; // no gravity, by default.  1 = sphere, 2 = plane
+  a->gravity_origin[0] = 0;
+  a->gravity_origin[1] = 0;
+  a->gravity_origin[2] = 0;
+  a->g = 274.2 / 6.96e8 / 6.96e8 / 6.96e8 * 3600 * 3600; // default: time in hours, distance in solar radii
+  
 
   return a;
 }
