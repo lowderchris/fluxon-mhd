@@ -13,6 +13,7 @@
  * Routines in here:
  *   PERL INTERFACE        FLUX SUBROUTINE / FUNCTION
  *
+ *   new                  
  *   _read_world           read_world (io.c) (leading '_' for ref in World.pm)
  *   write_world       	   write_world (io.c)
  *
@@ -133,6 +134,14 @@ static long vertices_helper(void *tree, int lab_of, int ln_of, int depth) {
  ***/
 MODULE = Flux::World    PACKAGE = Flux::World
 
+SV *
+_new_world()
+CODE:
+  RETVAL = FLUX->new_sv_from_ptr(FLUX->new_world(), FT_WORLD, 0);
+OUTPUT:
+  RETVAL
+
+  
 SV *
 _read_world(s)
  char *s

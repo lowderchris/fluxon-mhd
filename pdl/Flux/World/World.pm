@@ -62,6 +62,18 @@ use warnings;
 
 =pod
 
+=head2 new
+
+=for usage
+
+$world = new Flux::World;
+
+=cut
+
+sub new {
+    return _new_world();
+}
+
 =head2 read_world
 
 =for usage
@@ -228,11 +240,14 @@ sub _stringify {
 
     my $scalehash = $me->step_scales();
 
+
+    no warnings;    # shut up about undefined elements while printing
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n"
 	."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
 	."\tGlobal b2: ".&{$bounds[$btype2]}(@ph2)."\n"
 	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash))."\n\n"
 	;
+    use warnings;
 
 }
 
