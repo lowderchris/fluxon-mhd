@@ -115,7 +115,7 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
-use PDL::Graphics::Gnuplot;
+use PDL::Graphics::Gnuplot 2.006_001;
 
 sub simple_relaxer {
     my $w = shift;

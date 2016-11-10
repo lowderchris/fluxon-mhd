@@ -42,7 +42,7 @@ This file is part of the FLUX 2.2 release (22-Nov-2008)
 
 BEGIN {
 
-use PDL::Graphics::Gnuplot;
+use PDL::Graphics::Gnuplot 2.006_001;
 
 package Flux::World;
 use PDL;
