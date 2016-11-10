@@ -17,8 +17,8 @@ use Config;
 }
 
 WriteMakefile( NAME => 'Flux::Core',
-	       INC=>join(" ",map { "-I$_"} @inc),
-	       CCFLAGS=> $Config{cc} =~ /clang/ ? '' : '-no-inline',
+	       INC=> $inc,
+	       CCFLAGS=> $ccflags,
 	       OBJECT => '$(BASEEXT)$(OBJ_EXT) /usr/local/lib/libflux.a'
 	       );
 

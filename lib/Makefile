@@ -13,6 +13,7 @@
 
 INCLUDE_DIR = ../include
 ID = $(INCLUDE_DIR)
+FL_PREFIX ?= /usr/local
 
 # DFLAGS = -DUSE_DEBUGGING_MALLOC
 # DFLAGS = -I/usr/lib/perl5/5.8.5/i686-linux/CORE -DUSE_PERL_MALLOC
