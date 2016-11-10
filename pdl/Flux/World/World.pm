@@ -42,7 +42,7 @@ This file is part of the FLUX 2.2 release (22-Nov-2008)
 
 BEGIN {
 
-use PDL::Graphics::TriD; 
+use PDL::Graphics::Gnuplot;
 
 package Flux::World;
 use PDL;
@@ -925,7 +925,7 @@ Mnemonic: Flux World stats.
 
 =for ref
 
-Produces a simple 3-D plot of all the field lines in a World, using PDL::TriD.
+Produces a simple 3-D plot of all the field lines in a World, using PDL::Graphics::Gnuplot.
 
 The C<$interactive> argument is a flag indicating whether the event loop should
 be run to position and angle the output.  C<$range>, if present, is a 3x2 PDL containing
@@ -1013,7 +1013,7 @@ using a Points object.  (Default is 1).
 =item psize
 
 Flag indicating the size, in screen pixels, of the points as rendered.
-(Default is 4; 0 is not allowed)
+(Default is 1; 0 is not allowed, but fractional values are)
 
 =item linewidth
 
@@ -1049,7 +1049,7 @@ of detail and separation of neighborhood tracings.
 =cut
 
 use PDL;
-use PDL::Graphics::TriD;
+use PDL::Graphics::Gnuplot;
 use PDL::NiceSlice;
 
 *render_lines = \&render;
@@ -1058,6 +1058,7 @@ sub render {
     my $w = shift;
     my $twiddle = shift;
     my $range=shift;
+#    my $w3d = shift;
     my $opt=shift;
 
     if(!defined $opt && ref $range eq 'HASH') {
@@ -1065,11 +1066,8 @@ sub render {
 	undef $range;
     }
     $opt= {} unless defined($opt);
-
-    print "Releasing...\n" if($Flux::debug);
-    release3d;
-    print "foo...\n" if($Flux::debug);
-
+#    barf "Flux::World::render (or render_lines) now requires a plot object parameter that is a PDL::Graphics::Gnuplot object" unless (defined $w3d and UNIVERSAL::isa($w3d,'PDL::Graphics::Gnuplot'));
+    PDL::Graphics::Gnuplot::options(trid=>1);
 
     my (@rgb,@prgb);
     print "Defining RGB..." if($Flux::debug);
@@ -1257,12 +1255,13 @@ sub render {
     }
 
     print "Defining polygons...\n" if($Flux::debug);
-    my $poly = pdl(0,0,0)->glue(1,@poly);
+    my $poly = null->glue(1,@poly);
     print "a...\n" if($Flux::debug);
-    my $rgb = pdl(0,0,0)->glue(1,@rgb);
+    my $rgb = null->glue(1,@rgb);
     print "b...\n" if($Flux::debug);
-    my $prgb = pdl(0,0,0)->glue(1,@prgb);
+    my $prgb = null->glue(1,@prgb);
     print "range_by_fluxon...\n" if($Flux::debug);
+    #DAL: $range_by_fluxon not used anywhere other than this for-loop, could it be removed?
     my $range_by_fluxon = zeroes(2, 0+@fluxons);
     my $loc = 1;
     print "Running 0..$#fluxons (poly count is $#poly)..." if($Flux::debug);
@@ -1272,8 +1271,6 @@ sub render {
 	$loc += $poly[$i]->nelem;
     }
 
-    print "nokeeptwiddling3d...\n" if($Flux::debug);
-    nokeeptwiddling3d;
     my ($boxmax,$boxmin);
 
     unless(defined($range)) {
@@ -1292,27 +1289,25 @@ sub render {
     $boxmin -= $shift;
     $boxmax += $shift;
 
+    my @clist = ('xrange','yrange','zrange');
+    my %h = map{$clist[$_],[$boxmin->at($_),$boxmax->at($_)]}(0,1,2);
+    PDL::Graphics::Gnuplot::options(%h); #this little 'at' dance is to make sure only scalars (not single-element piddles) are passed, so that P::G::G doesn't trigger a bunch of PDL::IO::Storable diagnostic print messages.
+
     print "Clipping polys...\n" if($Flux::debug);
     my $pol2 = $poly->copy;
     $poly->((0)) .= $poly->((0))->clip($range->((0))->minmax);
     $poly->((1)) .= $poly->((1))->clip($range->((1))->minmax);
     $poly->((2)) .= $poly->((2))->clip($range->((2))->minmax);
-    
+
     my $ok = ($pol2 == $poly)->prodover;
     $rgb *= $ok->(*3);
     $prgb *= $ok->(*3);
-    
-    print "Calling points3d...\n" if($Flux::debug);
-    points3d($range,zeroes($range),{PointSize=>0});
-    hold3d;
-    
-    my $w3d = PDL::Graphics::TriD::get_current_window();
 
+    my @plot;
     my $nc = ($poly - $boxmin)/($boxmax-$boxmin);
 
     if($opt->{points} || !defined($opt->{points})) {
-      my $p = new PDL::Graphics::TriD::Points($nc,$prgb,{PointSize=>($opt->{psize}||4)});
-      $w3d->add_object($p);
+	push @plot,{with=>'points',lc=>'rgb variable',pointsize=>($opt->{psize}||1)},$nc->xchg(0,1)->dog,$prgb->(-1:0)->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
     }
 
     ##############################
@@ -1327,24 +1322,14 @@ sub render {
 	my $fp = $w->fluxon($id[$i])->polyline;
 	my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
 
-	my $l = new PDL::Graphics::TriD::LineStrip($normal_coords,$rgb[$i],{LineWidth=>($opt->{linewidth}||1)});
-	$w3d->add_object($l);
-
-#	line3d($fp,$rgb[$i]);
+	push @plot,{with=>'lines',lc=>'rgb variable',lw=>($opt->{linewidth}||1)},$normal_coords->xchg(0,1)->dog,$rgb[$i]->(-1:0)->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+	#DL3D could do this and the 'points' in one step with a switch between 'lines' or 'linespoints'? Yes, except for the prgb/rgb duplication
 
 	##############################
 	# Label fluxon endpoints if desired
 	if($opt->{label_fluxons}) {
-	    my $l1 = new PDL::Graphics::TriD::Labels($normal_coords->(:,(0)),
-						    {Strings=>["N-$id[$i]-N"],
-						     Font=>$PDL::Graphics::TriD::GL::fontbase,
-						 });
-	    $w3d->add_object($l1);
-	    my $l2 = new PDL::Graphics::TriD::Labels($normal_coords->(:,(-1)),
-						    {Strings=>["S-$id[$i]-S"],
-						     Font=>$PDL::Graphics::TriD::GL::fontbase
-						     });
-	    $w3d->add_object($l2);
+	    PDL::Graphics::Gnuplot::options(label=>["N-$id[$i]-N",at=>join(',',$normal_coords->(:,(0))->list),'front']);
+	    PDL::Graphics::Gnuplot::options(label=>["S-$id[$i]-S",at=>join(',',$normal_coords->(:,(-1))->list),'front']);
 	}
 
 	##############################
@@ -1362,7 +1347,6 @@ sub render {
 	    # and I can't seem to figure the interface for normalizing plot coordinates.
 	    # The normalization is done by start_scale, add_scale, and finish_scale in
 	    # Graphics/TriD/Graph.pm within PDL, but they are somewhat opaque to me.
-	    use PDL::Graphics::TriD::Labels;
 	    my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
 
 	    if(ref $opt->{label} eq 'ARRAY') {
@@ -1375,10 +1359,7 @@ sub render {
 			){
 		    next label;
 		}
-		my $l = new PDL::Graphics::TriD::Labels($normal_coords->(:,($j)),
-							{Strings=>["$labels[$j]"],
-							 Font=>$PDL::Graphics::TriD::GL::fontbase});
-		$w3d->add_object($l);
+		PDL::Graphics::Gnuplot::options(label=>[qq/"$labels[$j]"/,at=>join(',',$normal_coords->(:,($j))->list),'front']);
 	    }
 	}
 
@@ -1410,13 +1391,12 @@ sub render {
 		    }
 		}
 	    }
-	    if(@fc_points) {
-		my $fc_points = cat(@fc_points);
-		my $fc_rgb = cat(@fc_rgb);
-		my $normal_coords = ($fc_points - $boxmin)/($boxmax-$boxmin);
-		my $p = new PDL::Graphics::TriD::Points($normal_coords,$fc_rgb,{PointSize=>8});
-		$w3d->add_object($p);
-	    }
+	}
+	if(@fc_points) {
+	    my $fc_points = cat(@fc_points);
+	    my $fc_rgb = cat(@fc_rgb);
+	    my $normal_coords = ($fc_points - $boxmin)/($boxmax-$boxmin);
+	    push @plot,{with=>'points',lc=>'rgb variable',pointsize=>2},$normal_coords->xchg(0,1)->dog,$fc_rgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
 	}
     }
 	    
@@ -1447,16 +1427,12 @@ sub render {
 	
 	my $fp = cat(@neighbors);
 	my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
-	my $p = new PDL::Graphics::TriD::Points($normal_coords,{PointSize=>2});
-	$w3d->add_object($p);
-#	points3d(cat(@neighbors),{PointSize=>2});
+	push @plot,{with=>'points',pointsize=>2},$normal_coords->xchg(0,1)->dog; #DL3D: color?
 
     }
 
     if($opt->{'hull'}) {
 
-	nokeeptwiddling3d();
-	
       print "hullrgb...\n";
 	my $hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
 
@@ -1465,7 +1441,7 @@ sub render {
 	my $zz = 0;
 	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
 	    next unless($v->next);
-	    twiddle3d() unless ($zz++ % 50);
+#DL3D	    twiddle3d() unless ($zz++ % 50);
 
 	    my $xcen = 0.5 * ($v->x + $v->next->x);
 	    
@@ -1497,9 +1473,8 @@ sub render {
 			my $fp = cat(@hpoints)->(:,(0),:);
 
 			my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
-			my $l = new PDL::Graphics::TriD::LineStrip($normal_coords,$hullrgb->dummy(1,$fp->dim(1))->copy);
+			push @plot, {with=>'points',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$normal_coords->xchg(0,1)->dog; #DL3D have not checked this yet
 
-			$w3d->add_object($l);
 
 			@hpoints = ();
 		    }
@@ -1539,27 +1514,20 @@ sub render {
 
 	    if(@hpoints) {
 
-		hold3d;
 		my $fp = cat(@hpoints)->(:,(0),:);
 		my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
-
-
-		my $l = new PDL::Graphics::TriD::LineStrip($normal_coords,$hullrgb->dummy(1,$fp->dim(1))->copy);
-		$w3d->add_object($l);
+		push @plot,{with=>'lines',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$normal_coords->xchg(0,1)->dog;
 	    }
 	}    
     }
 
 
-
-    print "ok.  twiddling...\n" if($twiddle);
-
-    release3d;
-    keeptwiddling3d  if($twiddle);
-    print "twiddling...\n";
-    twiddle3d();
-    print "ok\n";
-    nokeeptwiddling3d;
+    gplot(@plot);
+#DL3D    keeptwiddling3d  if($twiddle);
+#DL3D    print "twiddling...\n";
+#DL3D    twiddle3d();
+#DL3D    print "ok\n";
+#DL3D    nokeeptwiddling3d;
 
 #    print "returning...\n";
 

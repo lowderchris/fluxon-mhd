@@ -115,6 +115,7 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 
 =cut
 
+use PDL::Graphics::Gnuplot;
 
 sub simple_relaxer {
     my $w = shift;
@@ -138,7 +139,10 @@ sub simple_relaxer {
 #    $w = read_world($w)
 #      unless(ref $w) ;
 
-    $w->render_lines unless($disp_n==0);
+    my ($display_term,$png_term) = gnuplot_terms();
+
+    PDL::Graphics::Gnuplot::options(terminal=>$display_term);
+    $w->render_lines(0,$range) unless($disp_n==0);
 
     my $dt = $w->{dtau} || 0.1;
 
@@ -197,10 +201,18 @@ sub simple_relaxer {
 
 	unless($disp_n==0 || $step % $disp_n ) {
 	    $w->render_lines($interactive,$range,$opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
-	    if($movie_n) {
-	      my $pic = grabpic3d();
+	    if($movie_n) { #DAL: this doesn't agree with the description of movie_n in the POD.
 	      my $fname = sprintf($movie_f,$step);
-	      wpic($pic,$fname);
+#	      PDL::Graphics::Gnuplot::options(terminal=>$png_term,output=>$fname);
+	      PDL::Graphics::Gnuplot::output($png_term,output=>$fname);
+#	      $w3d->output($png_term,output=>$fname);
+	      PDL::Graphics::Gnuplot::replot();
+#	      sleep 3;
+#	      $w3d->replot();
+	      PDL::Graphics::Gnuplot::close();
+	      PDL::Graphics::Gnuplot::output($display_term);
+#	      PDL::Graphics::Gnuplot::options(terminal=>$display_term);
+#	      $w3d->output($display_term);
 	      print "wrote $fname...\n";
 	    }
 	}
@@ -218,6 +230,54 @@ sub simple_relaxer {
 # ARD Update world
     $w->{dtau} = $dt;
     $w->{rel_step} = $step;
+}
+
+
+=pod
+
+=head2 gnuplot_terms
+
+=for ref
+
+Get the preferred display and png gnuplot terminals
+
+=for example
+
+my ($display,$png) = gnuplot_terms();
+PDL::Graphics::Gnuplot::options(terminal=>$display);
+PDL::Graphics::Gnuplot::options(terminal=>$png,output=>'file.png');
+
+=for method
+
+This is not super-portable, but should at least not break terribly on MacOS, Linux, and Windows. We prefer the wxt driver for interactivity since it is the most cross-platform. (The 'windows' driver has not been tested at all, since the authors do not have a Windows machine with Gnuplot installed.)
+
+This is also really dumb.  Could be done using $PDL::Graphics::Gnuplot::globalPlot->{validterms}. Or through $Alien::Gnuplot::terms (preferred).
+
+=cut
+
+sub gnuplot_terms{
+
+    my (@display_terms,@png_terms,$display_term,$png_term);
+    my @terminfo_lines = split "\n", PDL::Graphics::Gnuplot::terminfo(undef,undef,1); #the '1' sets the "don't print" flag
+    shift @terminfo_lines until $terminfo_lines[0] =~ /DISPLAY TERMINALS/;
+    shift @terminfo_lines;
+    while ($terminfo_lines[0] =~ m/^\s*(\w*):/) {push @display_terms,$1; shift @terminfo_lines;};
+    shift @terminfo_lines until $terminfo_lines[0] =~ /FILE TERMINALS/;
+    shift @terminfo_lines;
+    foreach (@terminfo_lines){if($_ =~ /^\s*(png\w*):/) {push @png_terms,$1;}}
+    foreach my $iterm('wxt','x11','aqua','windows'){ #in order of preference
+	if (grep {$_ eq $iterm} @display_terms){
+	    $display_term = $iterm;
+	    last;
+	}
+    }
+    foreach my $pterm('pngcairo','png'){ #in order of preference
+	if (grep {$_ eq $pterm} @png_terms){
+	    $png_term = $pterm;
+	    last;
+	}
+    }
+    return ($display_term,$png_term);
 }
 
 1;
