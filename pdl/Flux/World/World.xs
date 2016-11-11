@@ -197,6 +197,15 @@ CODE:
   FLUX->fprint_world(f,w,"");
   fclose(f);
 
+void
+_print_world(wsv)
+     SV *wsv
+PREINIT:
+      WORLD *w;
+CODE:
+     w = SvWorld(wsv,"_print_world",1);
+     FLUX->print_world(w,"");
+   
 
 int
 fix_proximity(wsv,alpha)
