@@ -132,18 +132,17 @@ int world_check(WORLD *a) {
  */
 static long w_u_e_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
+  
   if( FL_ISDUMMY(fl) )
     return 0 ;
 
   fluxon_update_ends(fl);
-  //if(fl->fc0->world->verbosity)
-  //  printf("world_update_ends - fluxon %d\n",fl->label);
+
   return 0;
 }
 
 void world_update_ends(WORLD *a) {
   safe_tree_walker(a->lines,fl_lab_of, fl_all_ln_of, w_u_e_springboard,0);
-  //tree_walker(a->lines,fl_lab_of, fl_all_ln_of, w_u_e_springboard,0);
 }
 
 /**********************************************************************
@@ -172,12 +171,16 @@ void fluxon_update_ends(FLUXON *f) {
      (*(f->fc1->world->default_bound))(f->end);
    }
 
-   if(w->auto_open) {
-     fluxon_auto_open(f);
-   }
-
-   if(f->plasmoid) {
-     fluxon_plasmoid_cleanup(f);
+   /* Auto-open field lines and auto-remove trivial plasmoids, but only if we're actually relaxing. */
+   /* During/after load, don't do this because geometric setup is not yet finished. */
+   if(w->state != WORLD_STATE_NEW && w->state != WORLD_STATE_LOADING && w->state != WORLD_STATE_LOADED) {
+     if(w->auto_open) {
+       fluxon_auto_open(f);
+     }
+     
+     if(f->plasmoid) {
+       fluxon_plasmoid_cleanup(f);
+     }
    }
 }
 
@@ -242,6 +245,7 @@ void fluxon_auto_open(FLUXON *f) {
     // Tiny U-loops...
     //    printf("Checking fluxon %d for triviality (start is at (%g,%g,%g))\n",
     //   f->label, f->start->x[0], f->start->x[1], f->start->x[2]);
+
     if(trivloop(f)) { // trivloop is in geometry.c
       //printf("Deleting %d...\n",f->label);
       delete_fluxon(f);
