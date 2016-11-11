@@ -1066,23 +1066,17 @@ of detail and separation of neighborhood tracings.
 use PDL;
 use PDL::Graphics::Gnuplot;
 use PDL::NiceSlice;
+use PDL::Options;
 
 *render_lines = \&render;
+our $window;
 
 sub render {
     my $w = shift;
-    my $twiddle = shift;
-    my $range=shift;
-#    my $w3d = shift;
-    my $opt=shift;
+    my $opt=shift // {};
+    my $gpwin = shift // $opt->{window} // $window // ($window=gpwin('wxt',size=>[9,9],dashed=>0));
 
-    if(!defined $opt && ref $range eq 'HASH') {
-	$opt = $range;
-	undef $range;
-    }
-    $opt= {} unless defined($opt);
-#    barf "Flux::World::render (or render_lines) now requires a plot object parameter that is a PDL::Graphics::Gnuplot object" unless (defined $w3d and UNIVERSAL::isa($w3d,'PDL::Graphics::Gnuplot'));
-    PDL::Graphics::Gnuplot::options(trid=>1);
+    $gpwin->options(trid=>1);
 
     my (@rgb,@prgb);
     print "Defining RGB..." if($Flux::debug);
@@ -1167,8 +1161,8 @@ sub render {
 	my $alpha = double yvals($_);
 	$alpha /= max($alpha);
 	    my $beta = 1.0 - $alpha;
-	    my $gamma = sin($alpha*3.14159);
-	    my $prgb = $alpha * pdl(1,0,0) + $beta * pdl(0,0,1) + $gamma * pdl(0,1,0);
+	    my $gamma = sin($alpha*3.14159)**2;
+	    my $prgb = $beta * pdl(1,0,0) + $alpha * pdl(0,0,1) + $gamma * pdl(0,1,0);
 	    $prgb;
 	} @poly;
     }
@@ -1188,8 +1182,8 @@ sub render {
 	my $alpha = double yvals($_);
 	$alpha /= max($alpha);
 	my $beta = 1.0 - $alpha;
-	my $gamma = sin($alpha*3.14159);
-	my $prgb = $alpha * pdl(1,0,0) + $beta * pdl(0,0,1) + $gamma * pdl(0,1,0);
+	my $gamma = sin($alpha*3.14159)**2;
+	my $prgb = $beta * pdl(1,0,0) + $alpha * pdl(0,0,1) + $gamma * pdl(0,1,0);
 	$prgb;
       } @poly;
     }
@@ -1275,54 +1269,13 @@ sub render {
     my $rgb = null->glue(1,@rgb);
     print "b...\n" if($Flux::debug);
     my $prgb = null->glue(1,@prgb);
-    print "range_by_fluxon...\n" if($Flux::debug);
-    #DAL: $range_by_fluxon not used anywhere other than this for-loop, could it be removed?
-    my $range_by_fluxon = zeroes(2, 0+@fluxons);
-    my $loc = 1;
-    print "Running 0..$#fluxons (poly count is $#poly)..." if($Flux::debug);
-    for my $i(0..$#fluxons) {
-	print "$i " if($Flux::debug);
-	$range_by_fluxon->(:,($i)) .= pdl($loc,$loc+$poly[$i]->nelem-1);
-	$loc += $poly[$i]->nelem;
-    }
 
-    my ($boxmax,$boxmin);
-
-    unless(defined($range)) {
-	$range = cat($poly->mv(-1,0)->minimum, $poly->mv(-1,0)->maximum);
-	my $rctr = $range->mv(-1,0)->average;
-	my $rsize = ($range->(:,(1))-$range->(:,(0)))->max;
-	$range->(:,(0)) .= $rctr - $rsize/2;
-	$range->(:,(1)) .= $rctr + $rsize/2;
-    }
-
-    print "box definitions...\n" if($Flux::debug);
-    $boxmax = $range->(:,(1))->sever;
-    $boxmin = $range->(:,(0))->sever;
-
-    my $shift =($boxmax-$boxmin)*0.105; #the same as two successive 5% increases (on each side). MATH!
-    $boxmin -= $shift;
-    $boxmax += $shift;
-
-    my @clist = ('xrange','yrange','zrange');
-    my %h = map{$clist[$_],[$boxmin->at($_),$boxmax->at($_)]}(0,1,2);
-    PDL::Graphics::Gnuplot::options(%h); #this little 'at' dance is to make sure only scalars (not single-element piddles) are passed, so that P::G::G doesn't trigger a bunch of PDL::IO::Storable diagnostic print messages.
-
-    print "Clipping polys...\n" if($Flux::debug);
-    my $pol2 = $poly->copy;
-    $poly->((0)) .= $poly->((0))->clip($range->((0))->minmax);
-    $poly->((1)) .= $poly->((1))->clip($range->((1))->minmax);
-    $poly->((2)) .= $poly->((2))->clip($range->((2))->minmax);
-
-    my $ok = ($pol2 == $poly)->prodover;
-    $rgb *= $ok->(*3);
-    $prgb *= $ok->(*3);
+    $gpwin->options($opt->{popt}) if(ref($opt->{popt}) eq 'HASH');
 
     my @plot;
-    my $nc = ($poly - $boxmin)/($boxmax-$boxmin);
 
     if($opt->{points} || !defined($opt->{points})) {
-	push @plot,{with=>'points',lc=>'rgb variable',pointsize=>($opt->{psize}||1)},$nc->xchg(0,1)->dog,$prgb->(-1:0)->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+	push @plot,{with=>'points',lc=>'rgb variable',pointsize=>($opt->{psize}||1)},$poly->using(0,1,2),$prgb->(-1:0)->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
     }
 
     ##############################
@@ -1335,16 +1288,15 @@ sub render {
     print "Defining line strips...\n" if($Flux::debug);
     for my $i(0..$#id) {
 	my $fp = $w->fluxon($id[$i])->polyline;
-	my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
 
-	push @plot,{with=>'lines',lc=>'rgb variable',lw=>($opt->{linewidth}||1)},$normal_coords->xchg(0,1)->dog,$rgb[$i]->(-1:0)->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+	push @plot,{with=>'lines',lc=>'rgb variable',lw=>($opt->{linewidth}||1)},$fp->using(0,1,2),$rgb[$i]->(-1:0)->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
 	#DL3D could do this and the 'points' in one step with a switch between 'lines' or 'linespoints'? Yes, except for the prgb/rgb duplication
 
 	##############################
 	# Label fluxon endpoints if desired
 	if($opt->{label_fluxons}) {
-	    PDL::Graphics::Gnuplot::options(label=>["N-$id[$i]-N",at=>join(',',$normal_coords->(:,(0))->list),'front']);
-	    PDL::Graphics::Gnuplot::options(label=>["S-$id[$i]-S",at=>join(',',$normal_coords->(:,(-1))->list),'front']);
+	    $gpwin->options(label=>["N-$id[$i]-N",at=>join(',',$fp->(:,(0) )->list),'front']);
+	    $gpwin->options(label=>["S-$id[$i]-S",at=>join(',',$fp->(:,(-1))->list),'front']);
 	}
 
 	##############################
@@ -1356,12 +1308,6 @@ sub render {
 		    );
 
 		
-	    ##############################
-	    # Label each point in the fluxon...
-	    # This is really cheesy since label seems to take normalized coordinates 
-	    # and I can't seem to figure the interface for normalizing plot coordinates.
-	    # The normalization is done by start_scale, add_scale, and finish_scale in
-	    # Graphics/TriD/Graph.pm within PDL, but they are somewhat opaque to me.
 	    my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
 
 	    if(ref $opt->{label} eq 'ARRAY') {
@@ -1369,12 +1315,7 @@ sub render {
 	    }
 		    
 	    label:for my $j(0..$#labels) {
-		unless( all(($normal_coords->(:,($j)) >= $range->transpose->minimum) &
-			($normal_coords->(:,($j)) <= $range->transpose->maximum))
-			){
-		    next label;
-		}
-		PDL::Graphics::Gnuplot::options(label=>[qq/"$labels[$j]"/,at=>join(',',$normal_coords->(:,($j))->list),'front']);
+		$gpwin->options(label=>[qq/"$labels[$j]"/,at=>join(',',$fp->(:,($j))->list),'front']);
 	    }
 	}
 
@@ -1410,8 +1351,7 @@ sub render {
 	if(@fc_points) {
 	    my $fc_points = cat(@fc_points);
 	    my $fc_rgb = cat(@fc_rgb);
-	    my $normal_coords = ($fc_points - $boxmin)/($boxmax-$boxmin);
-	    push @plot,{with=>'points',lc=>'rgb variable',pointsize=>2},$normal_coords->xchg(0,1)->dog,$fc_rgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+	    push @plot,{with=>'points',lc=>'rgb variable',pointsize=>2},$fc_points->using(0,1,2),$fc_rgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
 	}
     }
 	    
@@ -1441,8 +1381,7 @@ sub render {
 	}
 	
 	my $fp = cat(@neighbors);
-	my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
-	push @plot,{with=>'points',pointsize=>2},$normal_coords->xchg(0,1)->dog; #DL3D: color?
+	push @plot,{with=>'points',pointsize=>2},$fp->using(0,1,2);
 
     }
 
@@ -1456,7 +1395,6 @@ sub render {
 	my $zz = 0;
 	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
 	    next unless($v->next);
-#DL3D	    twiddle3d() unless ($zz++ % 50);
 
 	    my $xcen = 0.5 * ($v->x + $v->next->x);
 	    
@@ -1487,8 +1425,7 @@ sub render {
 		    if(@hpoints) {
 			my $fp = cat(@hpoints)->(:,(0),:);
 
-			my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
-			push @plot, {with=>'points',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$normal_coords->xchg(0,1)->dog; #DL3D have not checked this yet
+			push @plot, {with=>'points',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$fp->using(0,1,2); 
 
 
 			@hpoints = ();
@@ -1530,21 +1467,19 @@ sub render {
 	    if(@hpoints) {
 
 		my $fp = cat(@hpoints)->(:,(0),:);
-		my $normal_coords = ($fp-$boxmin)/($boxmax-$boxmin);
-		push @plot,{with=>'lines',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$normal_coords->xchg(0,1)->dog;
+
+		push @plot,{with=>'lines',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$fp->using(0,1,2);
 	    }
 	}    
     }
 
+    @Flux::World::plotlist = @plot;
 
-    gplot(@plot);
-#DL3D    keeptwiddling3d  if($twiddle);
-#DL3D    print "twiddling...\n";
-#DL3D    twiddle3d();
-#DL3D    print "ok\n";
-#DL3D    nokeeptwiddling3d;
-
-#    print "returning...\n";
+    unless($gpwin) {
+	$gpwin = gpwin("wxt",size=>[9,9]);
+    }
+    $gpwin->plot3d(@plot);
+    $window = $gpwin;
 
 }
 

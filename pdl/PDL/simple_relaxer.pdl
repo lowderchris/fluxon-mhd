@@ -129,7 +129,6 @@ sub simple_relaxer {
     my $movie_n = $opt->{movie_n};
     my $movie_f = $opt->{movie_f} || "flux-movie-%5.5d.png";
     my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
-    my $range = defined($opt->{range})? $opt->{range} : undef;
     my $conv = 180.0 / (atan2(1,1)*4.);
 
     $step = $w->{rel_step} || 0;
@@ -142,7 +141,7 @@ sub simple_relaxer {
     my ($display_term,$png_term) = gnuplot_terms();
 
     PDL::Graphics::Gnuplot::options(terminal=>$display_term);
-    $w->render_lines(0,$range) unless($disp_n==0);
+    $w->render_lines() unless($disp_n==0);
 
     my $dt = $w->{dtau} || 0.1;
 
@@ -200,7 +199,7 @@ sub simple_relaxer {
 	}
 
 	unless($disp_n==0 || $step % $disp_n ) {
-	    $w->render_lines($interactive,$range,$opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
+	    $w->render_lines($opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
 	    if($movie_n) { #DAL: this doesn't agree with the description of movie_n in the POD.
 	      my $fname = sprintf($movie_f,$step);
 #	      PDL::Graphics::Gnuplot::options(terminal=>$png_term,output=>$fname);
