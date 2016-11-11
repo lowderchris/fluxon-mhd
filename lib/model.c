@@ -858,6 +858,7 @@ static long w_r_s_springboard(FLUXON *fl, int lab, int link, int depth) {
 
 void world_relax_step(WORLD *a, NUM t) {
   gl_t=t;
+  a->state = WORLD_STATE_WORKING;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_ca_s_springboard, 0);
   gl_t=t;
   init_minmax_accumulator(a);
@@ -3685,7 +3686,8 @@ void world_relax_step_parallel(WORLD *a, NUM t) {
     world_relax_step(a, t);
     return;
   }
-
+  a->state = WORLD_STATE_WORKING;
+  
   init_minmax_accumulator(a);
   printf("calling parallel_prep...\n");
   parallel_prep(a);                       // Get ready
