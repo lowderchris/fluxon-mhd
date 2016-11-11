@@ -322,7 +322,8 @@ void fluxon_auto_open(FLUXON *f) {
 	f->end->prev->next   = f->start->next;
 	f->start->next->prev = f->end->prev;
 
-	// Unlink the dummy first and last vertices from the plasmoid
+	// Unlink the dummy first and last vertices from the plasmoid.
+	f->v_ct--;  // Not accounted for in the bookkeeping below.
 	f->start->next = NULL;
 	f->start->prev = NULL;
 	f->end->next=NULL;
