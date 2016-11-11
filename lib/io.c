@@ -293,7 +293,7 @@ int footpoint_action(WORLD *world, char *s) {
 	  FLUX_CONCENTRATION *fc0, *fc1;
 	  fc0 = tree_find(world->concentrations, l0, fc_lab_of, fc_ln_of);
 	  fc1 = tree_find(world->concentrations, l1, fc_lab_of, fc_ln_of);
-	  //printf("line %d: fc %d (%x) - fc %d (%x)\n",fl0,l0,fc0,l1,fc1);
+	  
 	  if(!fc0 || !fc1) {
 	    char *badbuf = (char *)localmalloc(BUFSIZ,MALLOC_MISC);
 	    sprintf(badbuf,"Found a fluxon specifier between concentrations %ld and %ld, but they \ncame up %ld and %ld in tree_find (one doesn't exist)!  \nThis error message leaked %d bytes (don't let it happen again!)\n",l0,l1,(long)fc0,(long)fc1,BUFSIZ);
@@ -418,7 +418,6 @@ int footpoint_action(WORLD *world, char *s) {
 	} else {
 	  dumblist_add( &(v->neighbors), n );
 	  dumblist_add( &(n->nearby),    v );
-	  printf("%ld: added %ld (n=%d)\n",v->label, n->label, v->neighbors.n);
 	}
       }
     } else {
@@ -611,7 +610,6 @@ int footpoint_action(WORLD *world, char *s) {
 			    )
 		 ) {
 		badstr = "Couldn't parse cylindrical radius for GLOBAL B2 CYLINDER";
-		printf("s+off: %s\nphscan: %s\n",s+off,phscan);
 	      }
 	      type_code = PHOT_CYL;
 	      break;
@@ -705,7 +703,6 @@ int footpoint_action(WORLD *world, char *s) {
 			    )
 		 ) {
 		badstr = "Couldn't parse cylindrical radius for GLOBAL B2 CYLINDER";
-		printf("s+off: %s\nphscan: %s\n",s+off,phscan);
 	      }
 	      type_code = PHOT_CYL;
 	      break;
@@ -944,8 +941,10 @@ WORLD *read_world(FILE *file, WORLD *a) {
   if(seekable && reporting) {
     printf("done\n");
   }
-  
+
+
   world_update_ends(a);
+
   a->vertices = tree_balance(a->vertices, v_lab_of, v_ln_of);
 
   world_check(a);
