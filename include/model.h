@@ -48,6 +48,9 @@ enum neighbor_global {
   gonzo_neighbors =4
 };
 
+/* magic ID number for daughter processes in parallel simulations */
+#define FLUXON_DAUGHTER_PGID 5001
+
 int world_check(WORLD *a);  
 void world_update_neighbors(WORLD *a, char global);
 int world_update_mag(WORLD *a, char global);
