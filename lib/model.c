@@ -237,7 +237,7 @@ void fluxon_auto_open(FLUXON *f) {
 
     // Trivial U-loops...
     if(f->v_ct < 4) {
-      printf(" Fluxon %ld is a trivial U-loop.  Deleting...\n",f->label);
+      //printf(" Fluxon %ld is a trivial U-loop.  Deleting...\n",f->label);
       delete_fluxon(f);
       return;
     } 
@@ -263,9 +263,9 @@ void fluxon_auto_open(FLUXON *f) {
     fflush(stdout);
     
     if( norm2_3d(x0) > r2 ) {
-     printf("v%ld (on %ld) ",v->label,f->label);
-      printf("Open!  ");
-      fflush(stdout);
+      //printf("v%ld (on %ld) ",v->label,f->label);
+      //printf("Open!  ");
+      //fflush(stdout);
       
       /******************************
        * Cut the fluxon into two.  The new 
@@ -297,7 +297,7 @@ void fluxon_auto_open(FLUXON *f) {
 	 * All the vertices were outside -- delete the fluxon.
          */
 	if(vn==vp) {
-	  printf("Deleting fluxon %ld\n",f->label);
+	  //printf("Deleting fluxon %ld\n",f->label);
 	  delete_fluxon(f);
 	  return;
 	}
@@ -356,9 +356,9 @@ void fluxon_auto_open(FLUXON *f) {
 	  WORLD *w;
 	  w = f->fc0->world;
 	  if(f->fc0 != w->fc_pb) 
-	    printf("Hey! plasmoid beginning wasn't the world plasmoid start\n");
+	    fprintf(stderr,"Hey! plasmoid beginning wasn't the world plasmoid start\n");
 	  if(f->fc1 != w->fc_pe) 
-	    printf("Hey! plasmoid end wasn't the world plasmoid end\n");
+	    fprintf(stderr,"Hey! plasmoid end wasn't the world plasmoid end\n");
 
 	  // Unlink from the plasmoid flux concentration placeholders
 	  f->fc0->lines = tree_unlink(f, fl_lab_of, fl_start_ln_of);
@@ -402,8 +402,6 @@ void fluxon_auto_open(FLUXON *f) {
 	
 	if(!Vnext) {
 	  
-	  printf("Hmmmm, no Vnext --- purging to end of fluxon...\n");
-
 	  /****************************************
 	   * The whole rest of the fluxon is open.  Truncate it and connect it to the 
 	   * open end vertex.
@@ -442,8 +440,6 @@ void fluxon_auto_open(FLUXON *f) {
 	  
 	  if(rp_n > 1) {
 
-	    printf("Hmmm .. no previous vertex.  Opening start of fluxon...\n");
-	    
 	    /* If there are no previous inside vertices, but there are following 
 	     * inside vertices, then we need to open the beginning...
              *
@@ -505,8 +501,6 @@ void fluxon_auto_open(FLUXON *f) {
 	    }
 	    
 	    // Now we should have Vprev->a->b->Vnext.
-	    printf("Vprev is %ld; next is %ld; next is %ld; next is %ld; Vnext is %ld\n",
-	       Vprev->label, Vprev->next->label, Vprev->next->next->label, Vprev->next->next->next->label, Vnext->label);
 	    
 	    /* Now reposition the intermediate vertices approximately
 	       on the sphere, by truncating their respective segments. */
@@ -686,12 +680,12 @@ void world_update_neighbors(WORLD *a, char global) {
   if (gl_gl == -1) { 
     /*do fast neighbor search then do 2 iterations of regular neighbor search. */
     tree_walk(a->vertices,v_lab_of,v_ln_of,fast_world_gather_neighbors);
-    printf("done with fast gather neighbors\n");
+    if(a->verbosity) printf("done with fast gather neighbors\n");
     gl_gl = 0;
     tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_n_springboard, 0);
-    printf("done with first gather neighbors\n");
+    if(a->verbosity) printf("done with first gather neighbors\n");
     tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_n_springboard, 0);
-    printf("done with second gather neighbors\n");
+    if(a->verbosity) printf("done with second gather neighbors\n");
     gl_gl = -1;
   } else {
     tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_u_n_springboard, 0);
@@ -756,13 +750,8 @@ int world_update_mag(WORLD *a, char global) {
  * have 2 vertices and there aren't any that only have 1.
  */
 static long check_fluxon_length(FLUXON *f, int lab, int link, int depth){
-  //printf("in the function upper\n");
-    //printf("fluxon %d, count is %d\n",f->label,f->v_ct);
-    fflush(stdout);
   if (f->v_ct == 3) { //fix_curvature on the middle vertex
     fix_curvature(f->start->next,1e-9,1e-10);
-    //printf("in the function lower\n");
-    fflush(stdout);
   }
   return 0;
 }
@@ -770,9 +759,7 @@ static long check_fluxon_length(FLUXON *f, int lab, int link, int depth){
 void world_fluxon_length_check(WORLD *w, char global){
   gl_a = w;
   gl_gl = global;  
-  //printf("in world_fluxon_length_check\n");
-  fflush(stdout);
-  //tree_walker(tree, label offset, link offset, function, depth)
+
   tree_walker(w->lines, fl_lab_of, fl_all_ln_of, check_fluxon_length,0);
 }
 
@@ -1360,23 +1347,15 @@ void expand_via_neighbors(DUMBLIST *workspace, int start_idx, long passno) {
     nlist = &(v->neighbors);
     for(j=0; j<nlist->n; j++) {
       VERTEX *vv;
-      //printf("j=%d, ",j);
+
       vv = ((VERTEX *)(nlist->stuff[j]));
-      //printf,("j=%d workspace.n=%d, neighbors.n=%d, neighbors.size=%d, workspace.size=%d \n",j,n,v->neighbors.n,v->neighbors.size, workspace->size);
-      //printf("vv=%d, ",vv->label);
-      //printf("vv->line=%d, ",vv->line->label);
-      //printf("vv->passno=%d, ",vv->passno);
-      //printf("passno=%d\n",passno);
+
       if(vv->line && vv->passno != passno) {
-	//printf("here1 ");
 	vv->passno = passno;
-	//printf("here2 ");
 	dumblist_quickadd(workspace, vv);
-	//printf("here3 ");
       }
     }
 
-    //printf("here4 ");
     nlist = &(v->nearby);
     for(j=0;j<nlist->n;j++) {
       VERTEX *vv;
@@ -1570,22 +1549,16 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	// The if clause avoids division-by-zero if none exist at this tier.
 	if(n_found) {
 	  scale_3d(tmp_step, tmp_step, (world->coeffs[i] / (n_found)));
-    	
-	//	printf("step:   %lf %lf %lf\ntmp_step: %lf %lf %lf\n\n", step[0], step[1], step[2], tmp_step[0], tmp_step[1], tmp_step[2]);
-	
 	  sum_3d(step, step, tmp_step);
 	}
       }
     }
      
-    //printf("step:   fl%d, v%d: %g %g %g\tfrom %g,%g,%g\n", v->line->label, v->label, step[0], step[1], step[2], v->x[0],v->x[1],v->x[2]);
-    //    fflush(stdout);
-
-
-    if(isfinite(step[0]) && isfinite(step[1]) &&isfinite(step[2])) {
+    if(isfinite(step[0]) && isfinite(step[1]) && isfinite(step[2])) {
       sum_3d(v->x,v->x,step);
     } else {
-	printf("NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%ld (ignoring)\n",v->f_t[0],v->f_t[1],v->f_t[2],v->label);
+      fprintf(stderr,"NON_FINITE OFFSET! f_t=(%g,%g,%g), vertex=%ld (ignoring)\n",v->f_t[0],v->f_t[1],v->f_t[2],v->label);
+      fflush(stderr);
     }
 
     vertex_enforce_photosphere( v, &(world->photosphere) );
@@ -1670,7 +1643,8 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
     for (i=1;i<vn->n;i++)
       for(j=0;j<i;j++)
 	if(vn->stuff[i]==vn->stuff[j]) {
-	  printf("ZOINKS! Vertex %d came in with dup neighbor %d (in locations %d and %d)\n",v->label,((VERTEX **)(vn->stuff))[i]->label,i,j);
+	  fprintf(stderr,"ZOINKS! Vertex %d came in with dup neighbor %d (in locations %d and %d)\n",v->label,((VERTEX **)(vn->stuff))[i]->label,i,j);
+	  fflush(stderr);
 	}
   }
 #endif
@@ -1723,7 +1697,8 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
     for (i=1;i<vn->n;i++)
       for(j=0;j<i;j++)
 	if(vn->stuff[i]==vn->stuff[j]) {
-	  printf("ZOINKS! Vertex %d left with dup neighbor %d (in locations %d and %d)\n",v->label,((VERTEX **)(vn->stuff))[i]->label,i,j);
+	  fprintf(stderr,"ZOINKS! Vertex %d left with dup neighbor %d (in locations %d and %d)\n",v->label,((VERTEX **)(vn->stuff))[i]->label,i,j);
+	  fflush(stderr);
 	}
   }
 #endif
@@ -1835,7 +1810,6 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   int n;
   int verbosity = v->line->fc0->world->verbosity;
   long passno = ++(v->line->fc0->world->passno);
-  //printf(". ");
 
   if(verbosity >= 2) {
     printf("passno=%ld...  ",passno);
@@ -1843,6 +1817,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 
   if(!v) {        /* Paranoia */
     fprintf(stderr,"Gather_neighbor_candidates: got a null VERTEX! Returning 0\n");
+    fflush(stderr);
     return 0;   
   }
 
@@ -1942,7 +1917,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
             int i;
             printf("gather_neighbor_candidates:  global neighbor add gives:\n\t");
             for(i=0;i<workspace->n;i++)
-      	printf("%ld ",((VERTEX *)(workspace->stuff[i]))->label);
+	      printf("%ld ",((VERTEX *)(workspace->stuff[i]))->label);
             printf("\n");
           }
 
@@ -2227,8 +2202,6 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   if(voronoi_bufsiz <= horde->n*2) {
     voronoi_bufsiz = horde->n*4;
 
-    //fprintf(stderr,"   expanding voronoi_buf: horde->n is %d; new bufsiz is %d   ",horde->n,voronoi_bufsiz);
-
     if(voronoi_buf)
       localfree(voronoi_buf);
     voronoi_buf = (HULL_VERTEX *)localmalloc((voronoi_bufsiz)*sizeof(HULL_VERTEX),MALLOC_VL);
@@ -2252,7 +2225,8 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   hull_2d_us(voronoi_buf, horde, v);
   
   if(horde->n==0) {
-    printf("VERTEX %ld: hull_2d gave up! That's odd....\n",v->label);
+    fprintf(stderr,"VERTEX %ld: hull_2d gave up! That's odd....\n",v->label);
+    fflush(stderr);
   }
 
   if(verbosity >= 5){
@@ -2551,32 +2525,6 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
   FLUX_CONCENTRATION *fc;
   int i,j;
 
-  /*  
-   if(!v1 || !v2 || !v1->next || !v2->next || v1->line->label <0 || v2->line->label <0) {
-    fprintf(stderr,"reconnect_vertices: error -- got a null or end or image vertex!\n");
-    return;
-  }
-
-  if(v1->passno ==passno || 
-     v2->passno == passno || 
-     v1->next->passno == passno || 
-     v2->next->passno == passno ||
-     (v1->prev && v1->prev->passno==passno) ||
-     (v2->prev && v2->prev->passno==passno) ||
-     (v1->next->next && v1->next->next->passno==passno) ||
-     (v2->next->next && v2->next->next->passno==passno)
-     ) {
-    fprintf(stderr,"reconnect_vertices: tried to reconnect an already-reconnected vertex -- nope.\n");
-    return;
-  }
-  
-  if(v1==v2) {
-    fprintf(stderr,"reconnect_vertices: error -- tried to reconnect a vertex to itself!\n");
-    return;
-  }
-
-  */
-
   f1 = v1->line;
   f2 = v2->line;
   
@@ -2692,11 +2640,6 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
       f1=v1->line; 
       f2=v2->line;
     }
-
-    printf("(plasmoid case): Reconnecting (%ld; l=%ld%s) -- (%ld; l=%ld%s)\n",
-	   v1->label, v1->line->label, v1->line->plasmoid?" P":"",
-	   v2->label, v2->line->label, v2->line->plasmoid?" P":""
-	   );
 
     /******************************
      * Rectify the plasmoid linked list...
@@ -2951,7 +2894,8 @@ long global_recon_check(WORLD *w) {
 
   tree_walker( w->vertices, v_lab_of, v_ln_of, grc_tramp, 0);
 
-  printf("global_recon_check: found %d vertices to check...\n",grc_vertexlist->n);
+  if(w->verbosity)
+    printf("global_recon_check: found %d vertices to check...\n",grc_vertexlist->n);
 
   for(i=0;i<grc_vertexlist->n;i++) 
     recon_ct += vertex_recon_check((VERTEX *)(grc_vertexlist->stuff[i]) , passno);
@@ -3027,7 +2971,7 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
 	       );
 
   while( n_min  ) {
-    printf("%ld: ",n_min);
+    if(v) printf("%ld: ",n_min);
 
     if(!fc0->lines || !fc1->lines) {
       fprintf(stderr, "cancel: accounting error! (n_min=%ld, fc0 has %ld, fc1 has %ld)\n",n_min, (fc0->lines? fc0->lines->start_links.n : 0), (fc1->lines ? fc1->lines->end_links.n : 0) );
@@ -3058,12 +3002,12 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
   }
 
   if(!fc0->lines) {
-    printf("Deleting fc0 (%ld) ",fc0->label);
+    if(v) printf("Deleting fc0 (%ld) ",fc0->label);
     delete_flux_concentration(fc0);
   }
 
   if(!fc1->lines) {
-    printf("Deleting fc1 (%ld) ",fc1->label);
+    if(v) printf("Deleting fc1 (%ld) ",fc1->label);
     delete_flux_concentration(fc1);
   }
 
@@ -3462,7 +3406,6 @@ void parallel_prep(WORLD *a) {
 
 
   v_thresh = v_ct / a->concurrency;
-  //  printf("v_ct is %d, v_thresh is %d\n",v_ct,v_thresh);
   fflush(stdout);
   
   dumblist_clear(fluxon_batch);
@@ -3634,9 +3577,9 @@ int parallel_finish(WORLD *a) {
     int pid;
     for(sbdii=sbd; sbdii<sbdi; sbdii++) {
       pid=waitpid(sbdii->pid, &status, 0);
-      printf("pid=%d...",pid); fflush(stdout);
+
       if(status) {
-	printf("Whoa! pid %d terminated with status %d (%s)\n",pid,status,strerror(status));
+	fprintf(stderr,"Whoa! pid %d terminated with status %d (%s)\n",pid,status,strerror(status));
       }
     }
   }
@@ -3667,7 +3610,7 @@ int parallel_finish(WORLD *a) {
    * This can't be parallelized without extending the position/neighbor i/o to daughter processes:
    * in the auto_open case it can create new fluxons.
    */
-  world_update_ends($a);
+  world_update_ends(a);
 
   return throw_err;
 }
@@ -3710,18 +3653,15 @@ void world_relax_step_parallel(WORLD *a, NUM t) {
   a->state = WORLD_STATE_WORKING;
   
   init_minmax_accumulator(a);
-  printf("calling parallel_prep...\n");
+
   parallel_prep(a);                       // Get ready
   gl_t = t;                               // Set up global dtau variable for springboarding                                 
   work_springboard = fluxon_calc_step_sb; // This is the parallelized operation
   gl_binary_dumper = binary_dump_flstep;  
   
 
-  printf("calling tree_walker...\n");
-
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0); 
 
-  printf("calling parallel_finish...\n");
   parallel_finish(a);     // Snarf up our state again
 
   finalize_minmax_accumulator(a);
@@ -3751,7 +3691,6 @@ int world_update_mag_parallel(WORLD *a, char global) {
 
 
   if(a->concurrency < 1) {
-    printf("Warning - using single threaded mag...\n");
     return world_update_mag(a,global);
   }
 
