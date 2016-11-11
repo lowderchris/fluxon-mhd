@@ -202,16 +202,8 @@ sub simple_relaxer {
 	    $w->render_lines($opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
 	    if($movie_n) { #DAL: this doesn't agree with the description of movie_n in the POD.
 	      my $fname = sprintf($movie_f,$step);
-#	      PDL::Graphics::Gnuplot::options(terminal=>$png_term,output=>$fname);
-	      PDL::Graphics::Gnuplot::output($png_term,output=>$fname);
-#	      $w3d->output($png_term,output=>$fname);
-	      PDL::Graphics::Gnuplot::replot();
-#	      sleep 3;
-#	      $w3d->replot();
-	      PDL::Graphics::Gnuplot::close();
-	      PDL::Graphics::Gnuplot::output($display_term);
-#	      PDL::Graphics::Gnuplot::options(terminal=>$display_term);
-#	      $w3d->output($display_term);
+	      $w->render_lines($opt->{movie_opt} // $opt->{render_opt}, $gpw=gpwin($png_term, output=>$fname));
+	      $gpw->close;
 	      print "wrote $fname...\n";
 	    }
 	}
