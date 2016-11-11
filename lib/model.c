@@ -1599,13 +1599,6 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
       printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
   }
   
-  /******************************
-   * Done with mid-fluxon update -- now adjust the start and end positions 
-   * depending on boundary condition.  (Currently only line-tied, open-sphere, and
-   * open-plane boundary conditions are supported).
-   */
-
-  fluxon_update_ends(f);
 }
     
   
@@ -3664,7 +3657,18 @@ int parallel_finish(WORLD *a) {
   if(a->verbosity >= 2){
     printf("done..\n");
   }
-  
+
+
+   /******************************
+   * Done with mid-fluxon update -- now adjust the start and end positions 
+   * depending on boundary condition.  (Currently only line-tied, open-sphere, and
+   * open-plane boundary conditions are supported).
+   *
+   * This can't be parallelized without extending the position/neighbor i/o to daughter processes:
+   * in the auto_open case it can create new fluxons.
+   */
+  world_update_ends($a);
+
   return throw_err;
 }
 
