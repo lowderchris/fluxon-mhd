@@ -3507,30 +3507,33 @@ static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int
     if(pid) {
 
       /** parent process **/
+
+      /* parent: close write end of pipe */
       close(p[1]);
 
       if(fl->fc0->world->verbosity) {
 	printf("spawned %d at %ld (thresh %ld)...",pid,v_ct,v_thresh);
 	fflush(stdout);
       }
-      
-      /* Clear the batch list */
-      v_ct = 0;
-      dumblist_clear( fluxon_batch );
-      
-      /* Store the pid information including re-do batch list in case we have to, er, redo.
+
+      /* parent: Store the pid information including re-do batch list in case we have to, er, redo.
        */
       sbdi->pid = pid;
       sbdi->pipe = p[0];
       dumblist_snarf(&(sbdi->batch), fluxon_batch);
 
       sbdi++;
+
+      /* parent: Clear the batch list for next time */
+      v_ct = 0;
+      dumblist_clear( fluxon_batch );
       
       return 0;
 
     } else {
-
       /*** daughter process ***/
+
+      /* daughter: close read end of pipe, then do the work and exit. */
       close(p[0]);
       exit(parallel_daughter(p[1]));
 
@@ -3597,6 +3600,7 @@ int parallel_finish(WORLD *a) {
       printf("Reading dumpfile for pid %ld...",sbdii->pid);
       fflush(stdout);
     }
+    /* Get the return data, and free the pipe. */
     brd_ret = binary_read_dumpfile( sbdii->pipe, a );
     close(sbdii->pipe);
 
@@ -3629,14 +3633,22 @@ int parallel_finish(WORLD *a) {
   }
 
   /* Clean up the mess of the daughters... */
+  if(a->verbosity){
+    printf("Cleaning up subs...\n");
+  }
   {
     int status;
     int pid;
-    while(  (pid = wait(&status)) > 0) { // assignment
+    for(sbdii=sbd; sbdii<sbdi; sbdii++) {
+      pid=waitpid(sbdii->pid, &status, 0);
+      printf("pid=%d...",pid); fflush(stdout);
       if(status) {
 	printf("Whoa! pid %d terminated with status %d (%s)\n",pid,status,strerror(status));
       }
     }
+  }
+  if(a->verbosity >= 2){
+    printf("Cleaned up.  Now clear the batch dumblist...\n");
   }
 
 
@@ -3649,6 +3661,10 @@ int parallel_finish(WORLD *a) {
     dumblist_clean(&(sbdii->batch));
   localfree(sbd);
 
+  if(a->verbosity >= 2){
+    printf("done..\n");
+  }
+  
   return throw_err;
 }
 
