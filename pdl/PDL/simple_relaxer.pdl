@@ -119,7 +119,6 @@ use PDL::Graphics::Gnuplot 2.006_001;
 
 sub simple_relaxer {
     my $w = shift;
-    my $interactive = shift || 0;
     my $global = shift || 0;
     my $n=shift||0;
     my $opt = shift || {};
@@ -191,12 +190,12 @@ sub simple_relaxer {
 	push(@f_av,$h->{f_av});
 	push(@fs_av,$h->{fs_av});
 
-	if($auto) {
-	   $dt0 = $dt unless(defined $dt0);
-	   $ratio = $h->{f_av}/$h->{fs_av};
-	   $dt = $dt0 * $ratio;
-	   print "\t\tratio=$ratio; new dt=$dt\n";
-	}
+	unless($save_n==0 || $step % $save_n) {
+	    my $s = sprintf($save_f,$step);
+	    print "saving %s...\n";
+	    $w->write_world($s);
+        }
+
 
 	unless($disp_n==0 || $step % $disp_n ) {
 	    $w->render_lines($opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
@@ -208,11 +207,13 @@ sub simple_relaxer {
 	    }
 	}
 
-	unless($save_n==0 || $step % $save_n) {
-	    my $s = sprintf($save_f,$step);
-	    print "saving %s...\n";
-	    $w->write_world($s);
-        }
+if($auto) {
+	   $dt0 = $dt unless(defined $dt0);
+	   $ratio = $h->{f_av}/$h->{fs_av};
+	   $dt = $dt0 * $ratio;
+	   print "\t\tratio=$ratio; new dt=$dt\n";
+	}
+
 ;
 	$step++;
 ;
