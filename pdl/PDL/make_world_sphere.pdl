@@ -14,18 +14,14 @@ use warnings;
 use PDL::NiceSlice;
 
 sub make_world_sphere {
-  my $opt = pop;
+  my $opt = pop // {};
   my @lines = @_;
   push(@lines,$opt) and undef $opt unless UNIVERSAL::isa($opt,'HASH');
   ##push it back onto @lines if it isn't a hash
 
   my $phot=$opt->{photosphere};
-  my $rad=$opt->{rad};
+  my $rad=$opt->{rad} // 1;
   print "radius is $rad \n";
-##$phot=(1,2,3,4,5,6,7) 
-  ##1-type:0,none;1,plane;2,sphere
-  ##2,3,4:origin of the plane or sphere
-  ##5,6,7:normal to origin for a plane or radius,0,0 for a sphere
   
   @lines = @_;
   push(@lines,$opt) and undef $opt unless UNIVERSAL::isa($opt,'HASH');
@@ -35,7 +31,7 @@ sub make_world_sphere {
 
   push(@out, "GLOBAL FORCES f_pressure_equi2b f_curvature f_vertex4");
   push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 ".$rad);
-  push(@out, "GLOBAL OPEN 0 0 0 ".($opt->{rmax}+1)) if($opt->{rmax});
+  push(@out, "GLOBAL OPEN 0 0 0 ".($opt->{rmax}+1)." 1") if($opt->{rmax});
   push(@out,"");
 
   my $j=100;

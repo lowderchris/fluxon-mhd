@@ -772,7 +772,7 @@ int footpoint_action(WORLD *world, char *s) {
 			  &(world->auto_open)
 			  )
 	       ) {
-	      badstr = "Couldn't parse four values from GLOBAL OPENcd ";
+	      badstr = "Couldn't parse five values from GLOBAL OPEN ";
 	    } else {
 	      world->fc_ob->x[0] = world->fc_oe->x[0];
 	      world->fc_ob->x[1] = world->fc_oe->x[1];
