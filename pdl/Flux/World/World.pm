@@ -1816,9 +1816,6 @@ sub interpolate_value {
     }
 }
 
-    
-    
-
 ## implemented in World.xs
 
 

@@ -964,7 +964,41 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
     }
     v->r_ncl = v->r_cl;
 
+    /* Calculate cross-sectional area (used for plasma flow and maybe some forces)       */
+    /* It's s straight-up calculation using the hull information, except that we clamp   */
+    /* the aspect ratio of each right triangle at 1,000.                                 */
 
+    {
+      NUM area = 0;
+      for(ii=0; ii<v->neighbors.n; ii++) {
+	// Area of left right triangle
+	HULL_VERTEX *hv = &(vertices[ii]);
+	HULL_VERTEX *hv2 = &(vertices[ (ii+1 == v->neighbors.n) ? 0 : (ii+1) ]);
+	NUM a = norm_2d(hv->bisector);
+	NUM b;
+	
+	if(hv->open)
+	  b = 1000*a;
+	else { 
+	  b = cart_2d(hv->p,hv->bisector);
+	  if(b>1000*a)
+	    b = 1000*a;
+	}
+	area += a*b/2;
+	
+	if(hv2->open)
+	  b = 1000*a;
+	else {
+	  b = cart_2d(hv2->p, hv->bisector);
+	  if(b>1000*a)
+	    b=1000*a;
+	}
+	area += a*b/2;
+      }
+      v->A = area;
+    }
+  
+    
     if(fl->fc0->world->verbosity >= 3) 
       printf("---forces:\n");
 
@@ -978,12 +1012,17 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
      /* Accumulate forces and relevant lengthscales */
     for(f_func = &f_funcs[0]; *f_func; f_func++) 
       (**f_func)(v,vertices,ignore_segment_forces);
+
+
     }
 
     if(fl->fc0->world->verbosity >= 3)
       printf("\n");
 
   }
+
+  fl->end->A = 0;
+  
   if(verbosity >= 3) printf("\n");
 
 

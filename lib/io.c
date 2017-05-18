@@ -2438,6 +2438,7 @@ int binary_dump_fluxon_pipe( int fd, FLUXON *f) {
     vd->r_ncl   = v->r_ncl;
     vd->neighbors_n = v->neighbors.n;
     vd->f_n_tot = v->f_n_tot;
+    vd->A = v->A;
 
     neighbors_found += v->neighbors.n;
     if(neighbors_found > neighbors_allowed_for){
@@ -2701,6 +2702,8 @@ int binary_read_fluxon_pipe( long size, char *buf, WORLD *w ) {
     v->r_cl     = vd->r_cl;
     v->r_ncl    = vd->r_ncl;
     v->f_n_tot  = vd->f_n_tot;
+    v->A        = vd->A;
+    
     // Note: passno not copied!  (the daughter may have incremented it a lot; we want to make sure
     // nothing has a passno higher than the current world passno....)
 
