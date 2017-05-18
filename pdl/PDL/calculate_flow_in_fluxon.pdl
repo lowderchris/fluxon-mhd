@@ -1,0 +1,129 @@
+use PDL::NiceSlice;
+=head2 calculate_flow_in_fluxon
+
+=for ref
+
+Given a fluxon and some options, calculate the flow and density in the fluxon if it is open (or leave it blank if it is closed).
+
+Returns a 3xN PDL, containing (r, vr, rho).  By default, it also updates these fields in the fluxon itself.
+
+If the fluxon is doubly open or doubly closed or a plasmoid, return udnef.
+
+=cut
+use PDL::Options;
+
+sub calculate_flow_in_fluxon {
+    my $me = shift;
+    my $u_opt = shift // {};
+
+    my %opt = parse( {
+	steps => 500,
+	g0 => 280,   # m/s^2
+	r0 => 696e6, # m
+	v0 => 10,    # km/sec
+	cs => 180,    # km/sec at 2e6K and fully ionized protons
+		     },
+		     $u_opt
+	);
+    
+		     
+
+    our $st_open = ($me->{fc_start}->{label}==-1);
+    our $en_open = ($me->{fc_end}->{label}==-2);
+
+    return undef if( $me->{plasmoid} || ($st_open + $en_open != 1));
+
+    my $g0 = $opt{g0};
+    my $r0 = $opt{r0};
+    my $cs = $opt{cs} * 1e3; ## convert to m/s from km/s
+
+
+    if($en_open) {
+	our $r = ($me->dump_vecs->(0:2)**2)->sumover->sqrt * $opt{r0};
+	our $A = pdl(map {$_->{A}} ($me->vertices)) * $opt{r0} * $opt{r0};
+    } else {
+	our $r = ($me->dump_vecs->(0:2,-1:0:-1)**2)->sumover->sqrt * $opt->{r0};
+	our $A = pdl(map { $_->{A}} ($me->vertices))->(-1:0:-1) * $opt{r0} * $opt{r0};
+    }
+
+    ## Get rid of end anomalies
+    $A->((0)) .= $A->((1));   
+    $A->((-1)) .= $A->((-2)); 
+    
+    our $g = $g0 * ($opt{r0} / $r)**2;
+    our $fr = $A / $A->((0)) * $opt{r0} * $opt{r0} / $r / $r;
+
+    ## Smooth slightly to remove numerical issues
+    $fr->inplace->convolveND(pdl(1,2,3,2,1)/9,{bound=>'e'});
+    our $dfr_dr = $fr->copy;
+
+    ## $fr .= 1;
+
+    
+    $dfr_dr->(1:-2) .= ($fr->(2:-1) - $fr->(0:-3))/($r->(2:-1) - $r->(0:-3));
+    $dfr_dr->(0) .= ($fr->(1) - $fr->(0)) / ($r->(1) - $fr->(0));
+    $dfr_dr->(-1) .= ($fr->(-1) - $fr->(-2)) / ($r->(-1) - $r->(-2));
+
+    $dydx = sub {
+	my $rnow = shift;
+	my $vnow = shift;
+
+	my $front = $vnow/$rnow;
+	my $denominator = $cs * $cs  -  $vnow * $vnow;
+
+	my $gnow = ($rnow->interpolate($r,$g))[0];
+	my $frnow = ($rnow->interpolate($r,$fr))[0];
+	my $dfr_drnow = ($rnow->interpolate($r,$dfr_dr))[0];
+	
+        my $numerator = $gnow * $rnow   -   2 * $cs * $cs * (  1   +   $rnow / 2 / $frnow * $dfr_drnow  );
+	return ($front * $numerator / $denominator, $numerator, $denominator);
+    };
+
+    $dr = ($r->max - $r->min) / $opt{steps};
+
+    @rv = ();
+    $vnow = $opt{v0} * 1e3; # Convert to m/sec from km/sec
+    $rnow = $r->minimum;
+    push(@rv, pdl($rnow,$vnow));
+
+    @num = ();
+    @denom = ();
+    
+    # Stupid Eulerian steps: walk out to the end or to the first failed critical point.
+    my ($dvdr, $oldnum, $olddenom) = &$dydx($rnow,$vnow);
+    
+    for($step=0; $step<$opt{steps};$step++){
+	my ($dv, $num, $denom) = &$dydx($rnow,$vnow);
+	$rnow += $dr;
+	$vnow += $dv * $dr;
+	push(@num, $num);
+	push(@denom, $denom);
+	if($denom * $olddenom < 0) {
+	    if($num * $oldnum > 0) {
+		$vnow = pdl(asin(1.1));
+		push(@rv, pdl($rnow,$vnow));
+		last;
+	    }
+	}
+	$olddenom = $denom;
+	$oldnum = $num;
+	push(@rv, pdl($rnow,$vnow));
+	last unless(isfinite($vnow));
+    }
+    return pdl(@rv) * pdl(1.0/$opt{r0},1e-3);
+}
+    
+
+    
+__END__
+
+    for ($step=0; $step<$opt{steps};$step++){
+	$vnow = rk4($rnow, $dr, $dydx, $vnow);
+	$rnow += $dr;
+	push(@rv, pdl($rnow,$vnow));
+    }
+    return pdl(@rv) * pdl(1.0/$opt{r0},1e-3);
+
+    
+}    
+    

@@ -1,0 +1,19 @@
+sub calculate_flow_in_fluxon {
+    my $me = shift;
+
+    return if($me->{fc_end}->{label}
+	next if($open->{fc_end}->{label} < 0);  # If both ends are open, ignore
+	
+	our $vecs = $open->dump_vecs();
+	my $multiplier = 10;
+	our $mvecs= zeroes($vecs->dim(0),$vecs->dim(1)*$multiplier-$multiplier+1);
+	$xv = xvals($vecs->dim(1)*$multiplier-$multiplier+1)/$multiplier;
+	for $i(0..$vecs->dim(0)-1){
+	    $mvecs->(($i)) .= $vecs->(($i))->interpND($xv->(*1),{method=>'l'});
+	}
+
+	
+last;	
+    }
+}    
+    
