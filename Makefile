@@ -7,13 +7,6 @@
 FL_PREFIX ?= /usr/local
 export FL_PREFIX
 
-#PL_ARGS =
-ifdef ($(PL_PREFIX))
-PL_ARGS := INSTALL_BASE=$(PL_PREFIX)
-endif
-
-
-
 everything: libbuild install
 
 install: libinstall pdlbuild pdlinstall
@@ -25,7 +18,6 @@ libinstall: libbuild
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make install';
 
 pdlbuild:
-	echo "PL_ARGS is $(PL_ARGS)"; \
 	echo "Using $(PL_PREFIX) in INSTALL_BASE"; \
 	cd pdl ; \
 	perl Makefile.PL INSTALL_BASE=$(PL_PREFIX); \
