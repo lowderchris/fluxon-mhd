@@ -924,7 +924,7 @@ WORLD *read_world(FILE *file, WORLD *a) {
     }
 
     if( (s = next_line(file)) ) {       // assignment
-      error = footpoint_action(a, s);
+      error = footpoint_action(a, s);   // footpoint_action is where all the work happens.
     }
 
     if(seekable && reporting) {
