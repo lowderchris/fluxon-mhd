@@ -36,8 +36,9 @@ libflux.a: $(MODULES) $(HEADERS) Makefile
 	ranlib libflux.a
 
 install: $(HEADERS) libflux.a
+	install -d $(FL_PREFIX)/lib
 	install libflux.a $(FL_PREFIX)/lib
-	ranlib $(FL_PREFIX)/lib/libflux.a
+#	ranlib $(FL_PREFIX)/lib/libflux.a
 	install -d $(FL_PREFIX)/include/flux/
 	install $(ID)/*.h $(FL_PREFIX)/include/flux/
 
