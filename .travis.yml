@@ -6,11 +6,11 @@ addons:
     - libgsl0-dev
     - gnuplot
 install:
-- export FL_PREFIX=~/local
+- export FL_PREFIX=~/
 - make libbuild
 - make libinstall
 - cpanm PDL PDL::Graphics::Gnuplot
 script:
-- export PL_PREFIX=~/local
+- export PL_PREFIX=~/
 - make pdlbuild
 - pushd pdl && make test && popd
