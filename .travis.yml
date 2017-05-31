@@ -1,9 +1,10 @@
 language: perl
+sudo: false
 addons:
- apt:
-  packages:
-  -libgsl0-dev
-  -gnuplot
+  apt:
+    packages:
+    - libgsl0-dev
+    - gnuplot
 install:
 - export FL_PREFIX=~/local
 - make libbuild
@@ -13,4 +14,3 @@ script:
 - export PL_PREFIX=~/local
 - make pdlbuild
 - pushd pdl && make test && popd
-
