@@ -14,6 +14,7 @@ before_install:
 #- pushd gnuplot-5.0.6 && ./configure --prefix=$HOME/ && make && make install && popd
 #- popd
 #- PATH=$HOME/bin:$PATH
+- export GNUTERM=dumb
 - cpanm Alien::Gnuplot || { cat /home/travis/.cpanm/work/*.*/build.log && 1 ; }
 - cpanm PDL::Graphics::Gnuplot || { cat /home/travis/.cpanm/work/*.*/build.log && 1 ; }
 install:
