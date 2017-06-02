@@ -4,7 +4,7 @@ addons:
   apt:
     packages:
     - libgsl0-dev
-    - gnuplot This installs gnuplot-4.4!  Too old
+    - gnuplot #This installs gnuplot-4.4!  Too old
 before_install:
 #- mkdir ~/src
 #- pushd ~/src
