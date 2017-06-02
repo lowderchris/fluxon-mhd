@@ -1,23 +1,23 @@
 language: perl
-sudo: false
+#sudo: false
 addons:
   apt:
     packages:
     - libgsl0-dev
-#    - gnuplot This installs gnuplot-4.4!  Too old
+    - gnuplot This installs gnuplot-4.4!  Too old
 before_install:
-- mkdir ~/src
-- pushd ~/src
-- curl -L https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.0.6/gnuplot-5.0.6.tar.gz -O
-- tar xzf gnuplot-5.0.6.tar.gz
-- pushd gnuplot-5.0.6 && ./configure && make && make check && make install && popd
-- popd
+#- mkdir ~/src
+#- pushd ~/src
+#- curl -L https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.0.6/gnuplot-5.0.6.tar.gz -O
+#- tar xzf gnuplot-5.0.6.tar.gz
+#- pushd gnuplot-5.0.6 && ./configure && make && make check && make install && popd
+#- popd
+- cpanm PDL::Graphics::Gnuplot || cat /home/travis/.cpanm/work/*.*/build.log || 1
 install:
 - export FL_PREFIX=~
 - make libbuild
 - make libinstall
-- cpanm PDL || cat /home/travis/.cpanm/work/*.*/build.log
-- cpanm PDL::Graphics::Gnuplot || cat /home/travis/.cpanm/work/*.*/build.log
+- cpanm PDL || cat /home/travis/.cpanm/work/*.*/build.log || 1
 script:
 - export PL_PREFIX=~
 - make pdlbuild
