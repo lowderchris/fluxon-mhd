@@ -8,7 +8,7 @@ addons:
 before_install:
 - mkdir ~/src
 - pushd ~/src
-- curl -L https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.0.6/gnuplot-5.0.6.tar.gz
+- curl -L https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.0.6/gnuplot-5.0.6.tar.gz -O
 - tar xzf gnuplot-5.0.6.tar.gz
 - pushd gnuplot-5.0.6 && ./configure && make && make check && make install && popd
 - popd
