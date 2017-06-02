@@ -15,7 +15,7 @@ use ExtUtils::MakeMaker;
   }
   print STDERR "###########\nWARNING: Flux could not find pdl.h\n#########\n" unless @inc;
 }
-push(@inc, "/usr/local/include");
+push(@inc, ($ENV{FL_PREFIX} // "/usr/local") . "/include");
 $inc = join(" ",map { "-I$_" } @inc);
 
 
@@ -26,8 +26,9 @@ unless($using_clang){
     $line = `cc -v 2>&1`;
     $using_clang = ($line =~ /clang/io);
 }
-$ccflags = $using_clang ? '' : '-no-inline';
+#$ccflags = $using_clang ? '' : '-no-inline';
 
 WriteMakefile( DIR=>[ 'Flux' ],
+	       NAME=> 'Flux',
 #	       OBJECT => '$(BASEEXT)$(OBJ_EXT) /usr/local/lib/libflux.a'
 	       );
