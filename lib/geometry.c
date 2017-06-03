@@ -131,6 +131,10 @@ void scale_2d(NUM *out, NUM *a, NUM b) {
  * sum - Add two 3-vectors and stick 'em into the destination array.
  * OK to have the destination be one of the sources.
  */
+void diff_2d(NUM *out, NUM *a, NUM *b){
+  *(out++) = *(a++) + *(b++);
+  *(out) = *(a) + *(b);
+}
 void sum_3d(NUM *out, NUM *a, NUM *b) {
   *(out++) = *(a++) + *(b++);
   *(out++) = *(a++) + *(b++);
