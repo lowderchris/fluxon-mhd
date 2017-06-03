@@ -30,5 +30,7 @@ unless($using_clang){
 
 WriteMakefile( DIR=>[ 'Flux' ],
 	       NAME=> 'Flux',
+	       INC=>$inc,
+	       LIBS=>$libs,
 #	       OBJECT => '$(BASEEXT)$(OBJ_EXT) /usr/local/lib/libflux.a'
 	       );
