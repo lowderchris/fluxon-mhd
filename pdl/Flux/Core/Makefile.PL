@@ -16,9 +16,11 @@ use Config;
   print STDERR "##########\nWarning: Flux::Core could not find pdl.h\n#########\n" unless @inc;
 }
 
+#print "\n\n\n\n\n\ninc is $inc\n\n\n\n\n\n\n";
 WriteMakefile( NAME => 'Flux::Core',
 	       INC=> $inc,
 	       CCFLAGS=> $ccflags,
-	       OBJECT => '$(BASEEXT)$(OBJ_EXT) /usr/local/lib/libflux.a'
+	       LIBS=>$libs,#"-L$ENV{FL_PREFIX}/lib -lflux",
+#	       OBJECT => '$(BASEEXT)$(OBJ_EXT) ' . '../../../lib/libflux.a' #($ENV{FL_PREFIX} // '/usr/local') . '/lib/libflux.a'
 	       );
 
