@@ -17,7 +17,7 @@ use ExtUtils::MakeMaker;
 }
 push(@inc, ($ENV{FL_PREFIX} // "/usr/local") . "/include");
 $inc = join(" ",map { "-I$_" } @inc);
-
+$libs = '-L' . ($ENV{FL_PREFIX} // '/usr/local') . '/lib -lflux';
 
 #### Check for clang and make ccflags accordingly.
 use Config;
