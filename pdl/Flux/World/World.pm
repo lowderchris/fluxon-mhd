@@ -1329,7 +1329,7 @@ sub render {
 	my @fc_points = ();
 	my @fc_rgb = ();
 	for my $fc( $w->concentrations ) {
-	    if($fc->{label} < -9 || $fc->{label} > 0) {
+	    if($fc->{label} < -99 || $fc->{label} > 0) {
 		push( @fc_points, $fc->{x} );
 		if($opt->{'rgb_fcs'} && defined $opt->{'rgb_fcs'}->{$fc->{label}}) {
 		    push(@fc_rgb, $opt->{'rgb_fcs'}->{$fc->{label}});
