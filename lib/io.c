@@ -762,23 +762,27 @@ int footpoint_action(WORLD *world, char *s) {
 	case 'O': /* OPEN <x> <y> <z> <r> <auto> - where is the open sphere, and should open lines be handled automagically? */
 	  {
 	    char phscan[80];
+	    int retvals;
 	    sprintf(phscan, "%%%sf %%%sf %%%sf %%%sf %%d",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
 
-	    if(5 > sscanf(s+off,phscan,
-			  &(world->fc_oe->x[0]),
-			  &(world->fc_oe->x[1]),
-			  &(world->fc_oe->x[2]),
-			  &(world->fc_oe->locale_radius),
-			  &(world->auto_open)
-			  )
-	       ) {
-	      badstr = "Couldn't parse five values from GLOBAL OPEN ";
-	    } else {
-	      world->fc_ob->x[0] = world->fc_oe->x[0];
-	      world->fc_ob->x[1] = world->fc_oe->x[1];
-	      world->fc_ob->x[2] = world->fc_oe->x[2];
-	      world->fc_ob->locale_radius = world->fc_oe->locale_radius;
+	    retvals = sscanf(s+off,phscan,
+			     &(world->fc_oe->x[0]),
+			     &(world->fc_oe->x[1]),
+			     &(world->fc_oe->x[2]),
+			     &(world->fc_oe->locale_radius),
+			     &(world->auto_open));
+	    if(retvals != 5 && retvals != 4) {
+	      badstr = "Couldn't parse four or five values from GLOBAL OPEN ";
+	      break;
 	    }
+	    if(retvals == 4 ) {
+	      fprintf(stderr,"Legacy warning: Parsed four values from GLOBAL OPEN, assuming auto_open=0\n");
+	      world->auto_open=0; //this is done in new(), but here we make it explicit.
+	    }
+	    world->fc_ob->x[0] = world->fc_oe->x[0];
+	    world->fc_ob->x[1] = world->fc_oe->x[1];
+	    world->fc_ob->x[2] = world->fc_oe->x[2];
+	    world->fc_ob->locale_radius = world->fc_oe->locale_radius;
 	  }
 	  break;
 	case 'R':  /* ARD Added - read rel_step */
