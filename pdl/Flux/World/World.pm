@@ -949,6 +949,10 @@ Currently useful options are:
 
 =over 3
 
+=item dev (default 'wxt')
+
+Gnuplot device type to use for plotting.  Needs to be a terminal that accepts the 'dashed' term option.  Suggested terminals that should be common across different operating systems are (static files:) 'pngcairo', 'pdfcairo', 'postscript', 'svg', (interactive:) 'wxt', 'x11'.
+
 =item rgb
 
 If present, specifies that all lines should have this color (3-PDL)
@@ -1074,7 +1078,8 @@ our $window;
 sub render {
     my $w = shift;
     my $opt=shift // {};
-    my $gpwin = shift // $opt->{window} // $window // ($window=gpwin('wxt',size=>[9,9],dashed=>0));
+    my $dev = $opt->{dev} // 'wxt';
+    my $gpwin = shift // $opt->{window} // $window // ($window=gpwin($dev,size=>[9,9],dashed=>0));
 
     $gpwin->options(trid=>1);
 
@@ -1476,7 +1481,7 @@ sub render {
     @Flux::World::plotlist = @plot;
 
     unless($gpwin) {
-	$gpwin = gpwin("wxt",size=>[9,9]);
+	$gpwin = gpwin($dev,size=>[9,9]);
     }
     $gpwin->plot3d(@plot);
     $window = $gpwin;
