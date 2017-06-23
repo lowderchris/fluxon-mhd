@@ -21,15 +21,9 @@ It takes up to five arguments:
 
 The first argument is a Flux::World object to relax
 
-=item $int
-
-The second argument is an interactive flag -- if you set this, then
-the code will stop at every time step for you to manipulate the
-graphics viewpoint.  You probably want to feed in 0.
-
 =item $global
 
-The third argument sets the global flag for update_neighbors() and
+The second argument sets the global flag for update_neighbors() and
 update_force() calls.  It's here for debugging -- if you actuallly
 want your simulation to ever complete, you want to set this to 0.
 (Global neighbor recognition runs in O(n^2) time and is MUCH slower
@@ -37,12 +31,12 @@ than local neighbor expansion, which runs in O(n) time).
 
 =item $final
 
-The fourth argument is the step number at which to terminate.  See
+The third argument is the step number at which to terminate.  See
 below for how steps are kept track of.
 
 =item $opt
 
-The fifth argument, if present, is a hash ref containing options about
+The fourth argument, if present, is a hash ref containing options about
 how the relaxation is to proceed.
 
 =back
