@@ -107,3 +107,4 @@ is($@,'','render with neighbors turned on');
 eval{$world->render({hull=>1});};
 is($@,'','render with hull turned on');
 
+
