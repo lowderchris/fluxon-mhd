@@ -1041,9 +1041,9 @@ Flag indicating the width of the LineStrip objects used to render the fluxons.
 
 =item label
 
-Flag indicating whether to use a Label object to indicate the numeric label of every
-vertex.  (Default is 0).  If label is an array ref, then it is treated as a list of 
-fluxons to label -- all other fluxons are NOT labeled.
+Flag indicating whether to indicate the numeric label of every vertex.
+(Default is 0).  If label is an array ref, then it is treated as a
+list of fluxons to label -- all other fluxons are NOT labeled.
 
 =item neighbors
 
@@ -1430,7 +1430,7 @@ sub render {
 		    if(@hpoints) {
 			my $fp = cat(@hpoints)->(:,(0),:);
 
-			push @plot, {with=>'points',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$fp->using(0,1,2); 
+			push @plot, {with=>'points',lc=>[sprintf("#%x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
 
 
 			@hpoints = ();
@@ -1473,7 +1473,7 @@ sub render {
 
 		my $fp = cat(@hpoints)->(:,(0),:);
 
-		push @plot,{with=>'lines',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$fp->using(0,1,2);
+		push @plot,{with=>'lines',lc=>[sprintf("#%x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
 	    }
 	}    
     }
