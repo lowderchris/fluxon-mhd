@@ -1653,7 +1653,7 @@ sub closest_simplex {
 
 =for usage
 
-    $hull = PDL::World::_hull_points($points);
+    $hull = Flux::World::_hull_points($points);
 
 =for ref
 
@@ -1698,7 +1698,7 @@ The output is suitable to feeding into _plot_hull, below.
 =for usage
 
     $w = pgwin(dev=>"/xs", size=>[5,5]);
-    PDL::World::_plot_hull($w, PDL::World::_hull_points($points) [, $points]);
+    Flux::World::_plot_hull($w, Flux::World::_hull_points($points) [, $points]);
 
 =for ref
 
