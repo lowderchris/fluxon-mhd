@@ -19,10 +19,14 @@ FL_PREFIX ?= /usr/local
 # DFLAGS = -I/usr/lib/perl5/5.8.5/i686-linux/CORE -DUSE_PERL_MALLOC
 # DFLAGS = -DUSE_PADDED_MALLOC
 
-CC = gcc
-CFLAGS = -I$(INCLUDE_DIR) -g -fPIC 
+CC = cc
+
+#CFLAGS = -I$(INCLUDE_DIR) -g -fPIC -O0 --coverage
+CFLAGS = -I$(INCLUDE_DIR) -g -fPIC
 #CFLAGS = -I$(INCLUDE_DIR) -O3
-LIBS = -lm
+
+#LIBS not actually used anywhere
+#LIBS = -lm -lgcov --coverage
 
 
 HEADERS = $(ID)/data.h $(ID)/io.h $(ID)/geometry.h $(ID)/model.h $(ID)/physics.h $(ID)/fluxperl.h
@@ -54,8 +58,4 @@ clean:
 %.o:	%.c $(HEADERS) Makefile
 	rm -f $<f.c
 	./subst_filename $< $<f.c
-	cc $(CFLAGS) -o $@ -c $(DFLAGS) $<f.c 
-
-
-
-
+	$(CC) $(CFLAGS) -o $@ -c $(DFLAGS) $<f.c
