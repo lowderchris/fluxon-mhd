@@ -51,25 +51,48 @@ Contributors (gratefully acknowledged):
 INSTALLATION INSTRUCTIONS
 
 There are two components to FLUX: a C simulation library (libflux.a)
-and a Perl module (Flux.pm, etc). Unfortunately, automake and Perl's
-ExtUtils::MakeMaker don't play nicely together.  Additionally, Flux.pm
-needs to have libflux.a installed during build, so we build and
-install the components separately.
+and a Perl module (Flux.pm, etc). Automake and Perl's
+ExtUtils::MakeMaker don't play nicely together, and libflux.a needs to
+be installed before the Perl module is built.  Therefore, we build and
+install the C and Perl components separately.
 
+You should declare two environment variables (the example below
+assumes a bash shell), which are only needed for build and
+installation:
+
+FL_PREFIX: where the FLUX simulation library and include files should
+be installed (e.g., /usr/local or ~/local).
+
+PL_PREFIX: where the Perl front-end module should be installed.
+
+After installation, some autoloading routines will be installed for
+you.  See the docs for PDL::AutoLoader
+(http://pdl.perl.org/PDLdocs/PDL/AutoLoader.html) for a description of
+this handy feature of PDL.  Instructions come at the end of the
+installation script.
+
+
+0) The zeroth line exports the environment variables you have already declared.
 1) The first line builds the simulation library.
-2) The second line installs libflux.a and some header files into /usr/local/lib and /usr/local/include/flux, respectively. These locations are currently hard-coded.
-3) The third line builds the Perl module (and prepares it to install in the location given by PL_PREFIX).
+2) The second line installs libflux.a and some header files into $FL_PREFIX/lib and $FL_PREFIX/include/flux, respectively.
+3) The third line builds the Perl module (and prepares it to install in the location given by $PL_PREFIX).
 4) The fourth line installs Flux.pm, etc.
+5) The fifth line is optional, and cleans up the local environment if desired (or you may just exit the shell).
+
 Note the 'sudo' on lines 2 and [if required based on PL_PREFIX] 4
 
+$ export FL_PREFIX PL_PREFIX
 $ make libbuild
 $ sudo make libinstall
 $ PL_PREFIX=~/local make pdlbuild
 $ [sudo] make pdlinstall
+$ export -n FL_PREFIX PL_PREFIX
 
 IFF both the library and the module are going to be installed in root-owned or user-owned locations, you can shortcut the above with
 
-$ [sudo] [PL_PREFIX=~/local] [FL_PREFIX=~/local] make everything
+$ export PL_PREFIX FL_PREFIX
+$ [sudo] make everything
+$ export -n FL_PREFIX PL_PREFIX
 
 for example, to install everything into your home directory ~/local/lib, ~/local/include, etc., you could do
 
@@ -82,13 +105,13 @@ This is the FLUX top-level directory.
 
 Subdirectories include:
         lib -- the central libflux.a core simulation library
-		    (this gets installed into /usr/local/lib/)
+		    (this gets installed into $FL_PREFIX/lib/)
 
 	doc -- some docs (deprecated; see https://github.com/d-lamb/fluxon-mhd/wiki
 		for more up-to-date information.)
 
 	include -- 'c' header files
-	           (these get installed into /usr/local/include/flux/)
+	           (these get installed into $FL_PREFIX/include/flux/)
 
         pdl -- PDL glue code and perl modules
 
