@@ -14,6 +14,7 @@
 INCLUDE_DIR = ../include
 ID = $(INCLUDE_DIR)
 FL_PREFIX ?= /usr/local
+SANDBOX = ../sandbox
 
 # DFLAGS = -DUSE_DEBUGGING_MALLOC
 # DFLAGS = -I/usr/lib/perl5/5.8.5/i686-linux/CORE -DUSE_PERL_MALLOC
@@ -38,6 +39,9 @@ libflux.a: $(MODULES) $(HEADERS) Makefile
 	rm -f libflux.a
 	ar ru libflux.a $(MODULES)
 	ranlib libflux.a
+	install -d $(SANDBOX)/lib $(SANDBOX)/include/flux
+	install libflux.a $(SANDBOX)/lib
+	install $(ID)/*.h $(SANDBOX)/include/flux
 
 install: $(HEADERS) libflux.a
 	install -d $(FL_PREFIX)/lib
