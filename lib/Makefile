@@ -42,13 +42,13 @@ install: $(HEADERS) libflux.a
 	install -d $(FL_PREFIX)/include/flux/
 	install $(ID)/*.h $(FL_PREFIX)/include/flux/
 
-lib: libflux.a 
+lib: libflux.a
 	echo "libflux.a is now up-to-date"
 
-all: 	lib 
+all: 	lib
 	echo made all
 
-clean: 
+clean:
 	rm -f *~ *.a *.o \#* core a.out $(OBJECTS) *.OOGL sample_output.txt *.cf.c
 
 %.o:	%.c $(HEADERS) Makefile
