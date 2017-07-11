@@ -107,4 +107,15 @@ is($@,'','render with neighbors turned on');
 eval{$world->render({hull=>1});};
 is($@,'','render with hull turned on');
 
+=pod
 
+TODO: {
+
+    todo_skip 'this generates a segfault',0,1;
+use PDL::Graphics::PGPLOT::Window;
+my $w = pgwin(dev=>"/xs", size=>[5,5]);
+my $points = pdl([0,0],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]);
+Flux::World::_plot_hull($w, Flux::World::_hull_points($points));
+}
+
+=cut

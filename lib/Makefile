@@ -14,15 +14,20 @@
 INCLUDE_DIR = ../include
 ID = $(INCLUDE_DIR)
 FL_PREFIX ?= /usr/local
+SANDBOX = ../sandbox
 
 # DFLAGS = -DUSE_DEBUGGING_MALLOC
 # DFLAGS = -I/usr/lib/perl5/5.8.5/i686-linux/CORE -DUSE_PERL_MALLOC
 # DFLAGS = -DUSE_PADDED_MALLOC
 
-CC = gcc
-CFLAGS = -I$(INCLUDE_DIR) -g -fPIC 
+CC = cc
+
+#CFLAGS = -I$(INCLUDE_DIR) -g -fPIC -O0 --coverage
+CFLAGS = -I$(INCLUDE_DIR) -g -fPIC
 #CFLAGS = -I$(INCLUDE_DIR) -O3
-LIBS = -lm
+
+#LIBS not actually used anywhere
+#LIBS = -lm -lgcov --coverage
 
 
 HEADERS = $(ID)/data.h $(ID)/io.h $(ID)/geometry.h $(ID)/model.h $(ID)/physics.h $(ID)/fluxperl.h
@@ -34,6 +39,9 @@ libflux.a: $(MODULES) $(HEADERS) Makefile
 	rm -f libflux.a
 	ar ru libflux.a $(MODULES)
 	ranlib libflux.a
+	install -d $(SANDBOX)/lib $(SANDBOX)/include/flux
+	install libflux.a $(SANDBOX)/lib
+	install $(ID)/*.h $(SANDBOX)/include/flux
 
 install: $(HEADERS) libflux.a
 	install -d $(FL_PREFIX)/lib
@@ -42,20 +50,16 @@ install: $(HEADERS) libflux.a
 	install -d $(FL_PREFIX)/include/flux/
 	install $(ID)/*.h $(FL_PREFIX)/include/flux/
 
-lib: libflux.a 
+lib: libflux.a
 	echo "libflux.a is now up-to-date"
 
-all: 	lib 
+all: 	lib
 	echo made all
 
-clean: 
+clean:
 	rm -f *~ *.a *.o \#* core a.out $(OBJECTS) *.OOGL sample_output.txt *.cf.c
 
 %.o:	%.c $(HEADERS) Makefile
 	rm -f $<f.c
 	./subst_filename $< $<f.c
-	cc $(CFLAGS) -o $@ -c $(DFLAGS) $<f.c 
-
-
-
-
+	$(CC) $(CFLAGS) -o $@ -c $(DFLAGS) $<f.c

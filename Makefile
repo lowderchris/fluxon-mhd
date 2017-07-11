@@ -9,7 +9,7 @@ export FL_PREFIX
 
 everything: libbuild install
 
-install: libinstall pdlbuild pdlinstall
+install: libinstall pdlbuild pdltest pdlinstall
 
 libbuild:
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make';
@@ -18,10 +18,15 @@ libinstall: libbuild
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make install';
 
 pdlbuild:
-	echo "Using $(PL_PREFIX) in INSTALL_BASE"; \
+	@echo "Using $(PL_PREFIX) in INSTALL_BASE"; \
 	cd pdl ; \
 	perl Makefile.PL INSTALL_BASE=$(PL_PREFIX); \
-	make all ; \
+	PERL_INSTALL_QUIET=1 make all ; \
+	cd .. ;
+
+pdltest:
+	cd pdl ; \
+	make test ; \
 	cd .. ;
 
 pdlinstall:
@@ -37,6 +42,9 @@ clean:
 	cd pdl; \
 	make clean; \
 	cd .. ;
+
+realclean: clean
+	rm -rf sandbox
 
 uninstall:
 	rm -r $(FL_PREFIX)/lib/libflux.a $(FL_PREFIX)/include/flux ;
