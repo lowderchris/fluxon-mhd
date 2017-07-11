@@ -24,7 +24,7 @@ pdlbuild:
 	PERL_INSTALL_QUIET=1 make all ; \
 	cd .. ;
 
-pdltest: pdlbuild
+pdltest:
 	cd pdl ; \
 	make test ; \
 	cd .. ;

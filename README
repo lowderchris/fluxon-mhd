@@ -73,18 +73,20 @@ installation script.
 
 
 0) The zeroth line exports the environment variables you have already declared.
-1) The first line builds the simulation library.
+1) The first line builds the simulation library. A copy of the library and include files will be installed into a directory named 'sandbox', so if you use that for the $FL_PREFIX, then nothing will be installed system wide. This may be good for testing.
 2) The second line installs libflux.a and some header files into $FL_PREFIX/lib and $FL_PREFIX/include/flux, respectively.
 3) The third line builds the Perl module (and prepares it to install in the location given by $PL_PREFIX).
-4) The fourth line installs Flux.pm, etc.
-5) The fifth line is optional, and cleans up the local environment if desired (or you may just exit the shell).
+4) The fourth line runs the test suite.
+5) The fifth line installs Flux.pm, etc.
+6) The sixth line is optional, and cleans up the local environment if desired (or you may just exit the shell).
 
 Note the 'sudo' on lines 2 and [if required based on PL_PREFIX] 4
 
 $ export FL_PREFIX PL_PREFIX
 $ make libbuild
 $ sudo make libinstall
-$ PL_PREFIX=~/local make pdlbuild
+$ make pdlbuild
+$ make pdltest
 $ [sudo] make pdlinstall
 $ export -n FL_PREFIX PL_PREFIX
 

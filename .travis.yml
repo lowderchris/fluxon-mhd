@@ -25,4 +25,5 @@ install:
 script:
 - export PL_PREFIX=~
 - make pdlbuild
-- pushd pdl && make test && popd
+- make pdltest
+- make pdlinstall
