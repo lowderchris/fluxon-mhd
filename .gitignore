@@ -6,3 +6,9 @@
 *.gcda
 *.gcno
 cover_db/
+
+#the local sandbox build
+sandbox/
+
+#any Inline stuff
+_Inline/
