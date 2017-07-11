@@ -35,6 +35,12 @@ WriteMakefile( DIR=>[ 'Flux' ],
 	       NAME=> 'Flux',
 	       INC=>$inc,
 	       LIBS=>$libs,
+	       CONFIGURE_REQUIRES=> {"ExtUtils::MakeMaker" => 6.52,
+					  "File::ShareDir" => 0,
+					  "File::ShareDir::Install" => 0,
+	       },
+	       PREREQ_PM=> { "PDL" => 2.007_13,
+	       },
 	       );
 
 package MY;
