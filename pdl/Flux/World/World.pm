@@ -1431,7 +1431,7 @@ sub render {
 		    if(@hpoints) {
 			my $fp = cat(@hpoints)->(:,(0),:);
 
-			push @plot, {with=>'points',lc=>[sprintf("#%x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
+			push @plot, {with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
 
 
 			@hpoints = ();
@@ -1474,7 +1474,7 @@ sub render {
 
 		my $fp = cat(@hpoints)->(:,(0),:);
 
-		push @plot,{with=>'lines',lc=>[sprintf("#%x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
+		push @plot,{with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
 	    }
 	}    
     }
