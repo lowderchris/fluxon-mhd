@@ -494,7 +494,7 @@ sub _conc_helper {
 sub concentrations {
     my $me = shift;
     my @list =_conc_helper($me->{concentrations}); 
-    print "_conc_helper returned ".(0+@list)." elements....\n";
+    print "_conc_helper returned ".(0+@list)." elements....\n" if $me->{verbosity};
     return @list;
 }
 
@@ -1392,11 +1392,12 @@ sub render {
 
     if($opt->{'hull'}) {
 
-      print "hullrgb...\n";
 	my $hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
+	print "hullrgb: $hullrgb...\n" if($Flux::debug);
 
-      print "hullopen...\n";
 	my $hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
+	print "hullopen: $hullopen...\n" if($Flux::debug);
+
 	my $zz = 0;
 	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
 	    next unless($v->next);
