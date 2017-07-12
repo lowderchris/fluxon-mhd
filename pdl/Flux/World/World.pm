@@ -1368,7 +1368,7 @@ sub render {
 	my @neighbors;
 
 	for my $v (map { $_->vertices } $w->fluxons) {
-	    next unless($v->next);
+	    next unless($v->next && ($v->id<-9 || $v->id>0));
 	    my $xcen = 0.5 * ($v->x + $v->next->x);
 
 	    my $pm = $v->projmatrix;
@@ -1400,7 +1400,7 @@ sub render {
 
 	my $zz = 0;
 	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
-	    next unless($v->next);
+	    next unless($v->next && ($v->id<-9 || $v->id>0));
 
 	    my $xcen = 0.5 * ($v->x + $v->next->x);
 	    
