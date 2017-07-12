@@ -41,7 +41,7 @@ foreach (@pref_terms){
 };
 
 my ($zn,$xn,$yn) = (11,3,5);
-my $z = zeroes(21)->xlinvals(0,1);
+my $z = zeroes($zn)->xlinvals(0,1);
 my $x = zeroes($xn)->xlinvals(-1,1);
 my $y = zeroes($yn)->xlinvals(-1,1);
 my @lines = ();
@@ -99,6 +99,7 @@ is(scalar(@flux2),scalar(@fluxons)+2,'emerge added one fluxon each');
 #fix_curvature should eliminate a bunch of vertices since these are all straight fluxons
 $world->update_neighbors(1);
 ok($world->fix_curvature(PI/4,0)!=0,'fix_curvature removes or adds at least one vertex in a simple world');
+$world->update_neighbors(1);
 
 #some extra options to render, mostly just to make sure it doesn't crash.
 #NEED TO CHECK WHETHER THE NEIGHBOR AND HULL PLOTS ACTUALLY MAKE ANY SENSE
