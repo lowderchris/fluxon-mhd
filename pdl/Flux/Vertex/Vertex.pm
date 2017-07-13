@@ -87,7 +87,7 @@ Return the fluxon associated with the vertex
 
 =pod
 
-=head2 prev - return the previos link
+=head2 prev - return the previous link
 
 =for ref
 
