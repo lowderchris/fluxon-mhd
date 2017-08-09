@@ -3,10 +3,10 @@
 =for usage
 
  use Flux;
- $a = read_world('menagerie/twisted.flux')
+ $world = read_world('menagerie/twisted.flux')
  $dt = 0.3;
  $step = 0;
- simple_relaxer($a,0,0,300,$opt);
+ simple_relaxer($world,0,300,$opt);
 
 =for ref
 
@@ -17,7 +17,7 @@ It takes up to five arguments:
 
 =over 3
 
-=item $a
+=item $world
 
 The first argument is a Flux::World object to relax
 
@@ -155,7 +155,7 @@ sub simple_relaxer {
 	    $w->f_length_check($global);
 	}
 
-	if($a->{concurrency}) {
+	if($w->{concurrency}) {
 	    if ($w->{rel_step} == 0){
 		printf("computing inital fast neighbor search...\n");
 		$w->update_neighbors(-1);
