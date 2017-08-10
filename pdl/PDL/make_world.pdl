@@ -25,6 +25,13 @@ Options:
 
 =item rmax
 
+=item precision
+
+A positive integer (default 6) that sets to how many decimal places of
+precision the location of each vertex and flux concentration should be
+printed.  Increase this number if you get world_check WARNINGs that
+fluxon verticies are at the same location, and are being deleted.
+
 =back
 
 This file is part of FLUX 2.0, released 31-Oct-2007.
@@ -40,6 +47,9 @@ sub make_world {
   my @lines = @_;
   push(@lines,$opt) and undef $opt unless UNIVERSAL::isa($opt,'HASH');
   ##push it back onto @lines if it isn't a hash
+
+  my $precision = $opt->{precision} // 6;
+  barf "precision must be a positive integer (you gave $precision)" unless $precision>=1 && $precision==int($precision);
 
   my $phot=$opt->{photosphere};
   my $phot2=$opt->{photosphere2};
@@ -110,22 +120,24 @@ sub make_world {
     my $open_end   = ($opt->{rmax} && $rend   >= $opt->{rmax});
 
     unless($open_start){
-      push(@out,sprintf("NEW %d %9.3g %9.3g %9.3g 1",
+      push(@out,sprintf('NEW %d %9.*5$g %9.*5$g %9.*5$g 1',
 			($fc0=$j++),
-			$line->at(0,0), $line->at(1,0), $line->at(2,0)
+			$line->at(0,0), $line->at(1,0), $line->at(2,0),
+			$precision
 			)
 	   );
     }
 
     unless($open_end){
-      push(@out,sprintf("NEW %d %9.3g %9.3g %9.3g -1",
+      push(@out,sprintf('NEW %d %9.*5$g %9.*5$g %9.*5$g -1',
 			($fc1=$j++),
-			$line->at(0,-1), $line->at(1,-1), $line->at(2,-1)
+			$line->at(0,-1), $line->at(1,-1), $line->at(2,-1),
+			$precision
 			)
 	   );
     }
 
-    push(@out,sprintf("LINE %d %d %d 1",
+    push(@out,sprintf('LINE %d %d %d 1',
 		      ($fl = $j++),
 		      ($open_start ? -1 : $fc0),
 		      ($open_end ? -2 : $fc1)
@@ -134,11 +146,12 @@ sub make_world {
     $ln++;
     for my $k(1..$line->dim(1)-2) {
      ## print "line $ln; k=$k\n";
-      push(@out,sprintf("VERTEX %d %d %d %9.3g %9.3g %9.3g",
+      push(@out,sprintf('VERTEX %d %d %d %9.*5$g %9.*5$g %9.*5$g',
 			$fl,
 			$j++,
 			$k,
-			$line->(:,($k))->list
+			$line->(:,($k))->list,
+			$precision
 			)
 	   );
     }
