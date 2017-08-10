@@ -1,13 +1,13 @@
 /* model.c
- * 
+ *
  * Slightly higher-level data manipulation routines
  * These routines generally use both data.c and geometry.c.  They are
- * the machinery of the model itself, doing things like handling 
+ * the machinery of the model itself, doing things like handling
  * vertex neighbor location and trimming.
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Craig DeForest, 2004-2007
- * 
+ *
  * You may modify and/or distribute this software under the temrs of
  * the Gnu Public License, version 2.  You should have received a copy
  * of the license with this software, in the file COPYING to be found
@@ -17,12 +17,12 @@
  * 330, Boston, MA 02111-1307 USA.
  *
  * The software comes with NO WARRANTY.
- * 
+ *
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
  * This file is part of the FLUX 2.2 release (22-Nov-2008).
- * 
+ *
  */
 #include "model.h"
 #include <stdio.h>
@@ -44,25 +44,25 @@ char *code_info_model="%%%FILE%%%";
  ***** actions are handy to have.  Here they are.
  *****
  ***** Neighbor distances are determined by closest approach of the
- ***** neighbor field line in the projected perpendicular plane.  
+ ***** neighbor field line in the projected perpendicular plane.
  */
 
 /**********************************************************************
  * world_check
- * 
+ *
  * Performs some rudimentary consistency checks on the world, and enforces
  * some trivial conditions.    Returns 0 if nothing was done, a positive
- * number if the world was "fixed-up", and a negative number if a real 
+ * number if the world was "fixed-up", and a negative number if a real
  * (unfixable) problem was found.
  *
  * In particular:
- * 
- *  No two adjacent vertices on a fluxon can occupy the same location -- 
+ *
+ *  No two adjacent vertices on a fluxon can occupy the same location --
  *  if this is found, then one of them is deleted.
  *
  * This is intended to be a general cleanup pass for consistency checks
- * after ingestion or, if necessary, after a timestep. 
- * 
+ * after ingestion or, if necessary, after a timestep.
+ *
  * Other checks that would be useful include:
  *   - checks for invalid neighbors
  *   - checks for crossing a photospheric boundary
@@ -96,7 +96,7 @@ static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
 
   /**********
    * Check that no vertices are on top of one another.
-   * This is a correctible error -- delete the second of the two unless it's the end -- then 
+   * This is a correctible error -- delete the second of the two unless it's the end -- then
    * delete the first of the two.
    */
   for(v=fl->start; v && v->next && v != fl->end; v=v->next) {
@@ -107,21 +107,21 @@ static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
 	world_check_code = -1;
 	return 0;
       }
-      
+
       fprintf(stderr,"world_check WARNING: fluxon %4ld: verts %4ld (%s) & %4ld (%s) are at the same location - deleted %4ld...\n",fl->label, v->label, (v->prev ? "mid" : "beg"), v->next->label, (v->next->next ? "mid" : "end"), (v->next->next ? v->next->label : v->label));
       delete_vertex( v->next->next ? v->next : v );
-      if(world_check_code == 0) 
+      if(world_check_code == 0)
 	world_check_code = 1;
       return 0;
     }
   }
-  
+
   return 0;
 }
 
 int world_check(WORLD *a) {
   world_check_code = 0;
-  
+
   return safe_tree_walker(a->lines, fl_lab_of, fl_all_ln_of, w_c_springboard, 0);
 }
 
@@ -132,7 +132,7 @@ int world_check(WORLD *a) {
  */
 static long w_u_e_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
-  
+
   if( FL_ISDUMMY(fl) )
     return 0 ;
 
@@ -148,8 +148,8 @@ void world_update_ends(WORLD *a) {
 /**********************************************************************
  * fluxon_update_ends
  * Checks and updates the magic boundary vertices at the end of a fluxon.
- * 
- * If the world has automatic open vertex handling ON, then 
+ *
+ * If the world has automatic open vertex handling ON, then
  * fluxon_update_ends also checks to see if any new ends are
  * required, and creates 'em.
  *
@@ -159,7 +159,7 @@ void fluxon_update_ends(FLUXON *f) {
   WORLD *w = f->fc0->world;
 
   /*** End condition updates ***/
-   if(f->fc0->bound) {	
+   if(f->fc0->bound) {
 	(*(f->fc0->bound))(f->start);
    } else if(f->fc0->world->default_bound) {
      (*(f->fc0->world->default_bound))(f->start);
@@ -177,7 +177,7 @@ void fluxon_update_ends(FLUXON *f) {
      if(w->auto_open) {
        fluxon_auto_open(f);
      }
-     
+
      if(f->plasmoid) {
        fluxon_plasmoid_cleanup(f);
      }
@@ -198,7 +198,7 @@ void fluxon_plasmoid_cleanup(FLUXON *f) {
   if(trivloop(f)) { // trivloop is in geometry.c
     delete_fluxon(f);
   }
-  
+
 }
 
 /**********************************************************************
@@ -206,27 +206,27 @@ void fluxon_plasmoid_cleanup(FLUXON *f) {
  * need to be opened (are outside the open-field boundary).
  *
  * If so, do so.
- * 
+ *
  * Does nothing unless the associated WORLD auto_open flag is set.
  */
 void fluxon_auto_open(FLUXON *f) {
 
   WORLD *w = f->fc0->world;
-  
+
   VERTEX *v = f->start;
   NUM x0[3];
   int v_ct = 0;
   NUM r2;
   NUM *xcen;
-  
+
   if( ! (w->auto_open) )
     return;
 
   r2 = w->fc_ob->locale_radius;
   r2 *= r2;
-  
+
   xcen = w->fc_ob->x;
-  
+
   /**************************************************
    * Check for vanishing U-loops
    */
@@ -240,8 +240,8 @@ void fluxon_auto_open(FLUXON *f) {
       //printf(" Fluxon %ld is a trivial U-loop.  Deleting...\n",f->label);
       delete_fluxon(f);
       return;
-    } 
-  
+    }
+
     // Tiny U-loops...
     //    printf("Checking fluxon %d for triviality (start is at (%g,%g,%g))\n",
     //   f->label, f->start->x[0], f->start->x[1], f->start->x[2]);
@@ -251,7 +251,7 @@ void fluxon_auto_open(FLUXON *f) {
       delete_fluxon(f);
       return;
     }
-    
+
   }
 
   /**************************************************
@@ -261,38 +261,38 @@ void fluxon_auto_open(FLUXON *f) {
   for(v=v->next; v && v->next; (v=v->next) && v_ct++) {
     diff_3d(x0,v->x,xcen);
     fflush(stdout);
-    
+
     if( norm2_3d(x0) > r2 ) {
       //printf("v%ld (on %ld) ",v->label,f->label);
       //printf("Open!  ");
       //fflush(stdout);
-      
+
       /******************************
-       * Cut the fluxon into two.  The new 
+       * Cut the fluxon into two.  The new
        * endpoints are placed on the open surface
        * at the points of intersection.
        */
-      
+
       if( f->plasmoid ) {
-	/* Plasmoid case - turn it into a U-loop.  This gets 
+	/* Plasmoid case - turn it into a U-loop.  This gets
 	 * a little complex because we have to rotate
-	 * the endpoint of the plasmoid around to the new 
+	 * the endpoint of the plasmoid around to the new
 	 * true endpoints.
 	 */
 
 	VERTEX *vp = v->prev;  // vp gets the last one inside the boundary
-	VERTEX *vn = v;        
+	VERTEX *vn = v;
 	char stop = 0;
 
 	/******************************
          * Walk around the plasmoid to find how many vertices are outside.
          */
-	for( vn=v ; vn != vp  && !stop 
+	for( vn=v ; vn != vp  && !stop
 	       ; vn = ( (vn->next && vn->next->next) ? vn->next : f->start ) ) {
 	  diff_3d(x0, vn->x, xcen);
 	  stop = (norm2_3d(x0) <= r2);
 	}
-	
+
 	/******************************
 	 * All the vertices were outside -- delete the fluxon.
          */
@@ -329,7 +329,7 @@ void fluxon_auto_open(FLUXON *f) {
 	f->end->next=NULL;
 	f->end->prev=NULL;
 
-	  
+
 	// Delete the dummy first and last vertices (also decrements v_ct)
 	delete_vertex(f->start);
 	delete_vertex(f->end);
@@ -338,7 +338,7 @@ void fluxon_auto_open(FLUXON *f) {
 	// (also decrementing v_ct)
 	{
 	  VERTEX *vv;
-	  for(vv=vp->next; vv != vn; vv=vp->next) 
+	  for(vv=vp->next; vv != vn; vv=vp->next)
 	    delete_vertex(vv);
 	}
 
@@ -355,9 +355,9 @@ void fluxon_auto_open(FLUXON *f) {
 	{
 	  WORLD *w;
 	  w = f->fc0->world;
-	  if(f->fc0 != w->fc_pb) 
+	  if(f->fc0 != w->fc_pb)
 	    fprintf(stderr,"Hey! plasmoid beginning wasn't the world plasmoid start\n");
-	  if(f->fc1 != w->fc_pe) 
+	  if(f->fc1 != w->fc_pe)
 	    fprintf(stderr,"Hey! plasmoid end wasn't the world plasmoid end\n");
 
 	  // Unlink from the plasmoid flux concentration placeholders
@@ -372,9 +372,9 @@ void fluxon_auto_open(FLUXON *f) {
 	}
 
 	return;
-	
+
       } else /* not a plasmoid */ {
-	
+
 	/****************
          * Not a plasmoid... cut into two separate fluxons
          */
@@ -384,8 +384,8 @@ void fluxon_auto_open(FLUXON *f) {
 	NUM rp_n, rn_n, r_n_diff, alpha;
 	VERTEX *Vnext;
 	VERTEX *Vprev;
-	
-	// Vnext is the next vertex located inside the sphere.  If there aren't any at all, 
+
+	// Vnext is the next vertex located inside the sphere.  If there aren't any at all,
 	// then we simply open the fluxon at the current point.
 	{
 	  int inside = 0;
@@ -399,15 +399,15 @@ void fluxon_auto_open(FLUXON *f) {
 	    }
 	  }
 	}
-	
+
 	if(!Vnext) {
-	  
+
 	  /****************************************
-	   * The whole rest of the fluxon is open.  Truncate it and connect it to the 
+	   * The whole rest of the fluxon is open.  Truncate it and connect it to the
 	   * open end vertex.
            *
            *
-           * **** CASE: whole last half is outside the boundary **** 
+           * **** CASE: whole last half is outside the boundary ****
 	   */
 	  while(v->next) {
 	    delete_vertex(v->next);
@@ -422,25 +422,25 @@ void fluxon_auto_open(FLUXON *f) {
 	    // Invoke the end boundary condition on the newly opened endpoint.
 	    (*(f->fc1->bound))(f->end);
 	  }
-	  
 
-	} else /* Vnext exists - normal case */ { 
-	  
+
+	} else /* Vnext exists - normal case */ {
+
 	  /****************************************
-	   * There's at least one non-outside vertex following, so we need to 
+	   * There's at least one non-outside vertex following, so we need to
 	   * cut the current fluxon in two.
 	   */
-	  
+
 	  NUM xp[3];
-	  
+
 	  // Calculate Vprev...
 	  Vprev = v->prev;
 	  diff_3d(xp, v->prev->x, w->fc_ob->x);
 	  rp_n = norm_3d(xp)/w->fc_ob->locale_radius;
-	  
+
 	  if(rp_n > 1) {
 
-	    /* If there are no previous inside vertices, but there are following 
+	    /* If there are no previous inside vertices, but there are following
 	     * inside vertices, then we need to open the beginning...
              *
              *
@@ -463,8 +463,8 @@ void fluxon_auto_open(FLUXON *f) {
 	      f->fc0 = w->fc_ob;
 	      w->fc_ob->lines = tree_binsert(w->fc_ob->lines, f, fl_lab_of, fl_start_ln_of);
 	    }
-	    
-	    
+
+
 	  }  else /* Previous vertex is inside */ {
 
 	    /*Vprev is inside, so we cut.
@@ -473,10 +473,10 @@ void fluxon_auto_open(FLUXON *f) {
 	     * vertices between Vnext and Vprev.  If there is only
 	     * one, add one.  If there is more than one, excise
 	     * 'em. */
-	    
+
 	    if(Vprev->next == Vnext->prev) {
 
-	      // Add an extra vertex, colocated.  
+	      // Add an extra vertex, colocated.
 
 	      VERTEX *Vnew = new_vertex(0, v->x[0],v->x[1],v->x[2], f);
 	      add_vertex_after(f, v, Vnew);
@@ -489,7 +489,7 @@ void fluxon_auto_open(FLUXON *f) {
 		  dumblist_add(&(vn->nearby), (void *)Vnew);
 		}
 	      }
-	    
+
 	    } else if( Vprev->next->next != Vnext->prev ) {
 
 	      // Trim vertices out of the middle
@@ -499,9 +499,9 @@ void fluxon_auto_open(FLUXON *f) {
 		delete_vertex(vv->prev);
 	      }
 	    }
-	    
+
 	    // Now we should have Vprev->a->b->Vnext.
-	    
+
 	    /* Now reposition the intermediate vertices approximately
 	       on the sphere, by truncating their respective segments. */
 	    {
@@ -510,24 +510,24 @@ void fluxon_auto_open(FLUXON *f) {
 	      NUM xx[3];
 	      diff_3d(xx, Vprev->next->x, w->fc_ob->x);
 	      ra_n = norm_3d(xx)/w->fc_ob->locale_radius;
-	      
+
 	      diff_3d(xx, Vnext->prev->x, w->fc_oe->x);
 	      rb_n = norm_3d(xx)/w->fc_oe->locale_radius;
-	      
+
 	      alpha_a = (1 - rp_n)/(ra_n-rp_n) * 0.9;
 	      alpha_b = (1 - rn_n)/(rb_n-rn_n) * 0.9;
 	      //printf("alpha_a = %g; alpha_b=%g\n",alpha_a, alpha_b);
-	      
+
 	      diff_3d(xx, Vprev->next->x, Vprev->x);
 	      scale_3d(xx, xx, alpha_a);
 	      sum_3d(Vprev->next->x, xx, Vprev->x);
-	      
+
 	      diff_3d(xx, Vnext->prev->x, Vnext->x);
 	      scale_3d(xx, xx, alpha_b);
 	      sum_3d(Vnext->prev->x, xx, Vnext->x);
 	      xx[0] = xx[0] * 1;
 	    }
-	    
+
 	    /* Finally, create a new fluxon and cut the old one
 	     * between the two intermediate vertices.  Convenience
 	     * block...*/
@@ -547,12 +547,12 @@ void fluxon_auto_open(FLUXON *f) {
 	      f->end = Vprev->next;
 	      Fnew->start = Vnext->prev;
 
-	      
+
 	      // Switch the original fluxon to its new endpoint
 	      f->fc1->lines = tree_unlink(f, fl_lab_of, fl_end_ln_of);
 	      f->fc1 = w->fc_oe;
 	      w->fc_oe->lines = tree_binsert(w->fc_oe->lines, f, fl_lab_of, fl_end_ln_of);
-	      
+
 	      // Cut off the vertices in the middle
 	      n=0;
 	      for(vv=f->start; vv; vv=vv->next) n++;
@@ -579,10 +579,10 @@ void fluxon_auto_open(FLUXON *f) {
   //printf("\n");
 } /* end of fluxon_auto_open */
 
-  
+
 /**********************************************************************
  * world_update_neighbors
- * 
+ *
  * Calls fluxon_update_neighbors to process the whole world!
  */
 static WORLD *gl_a;  /* springboard world parameter */
@@ -603,7 +603,7 @@ static long closest_v_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
   int i; //dummy counter
   NUM r ; //distance b/w v2 and v
   NUM rmax=0; //distance accumulator
-  
+
   v2 = f->start; //(don't do first and last)
   for (i=0; i < f->v_ct; i++){
     r = cart_3d(v2->x,vertex_for_closest_v->x);
@@ -638,25 +638,25 @@ static long fast_world_gather_neighbors(VERTEX *v, int lab_of, int ln_of, long d
   FLUXON *f;
 
   vertex_for_closest_v=v;
-  
+
   f = v->line;
   while(f->all_links.up)
     f=f->all_links.up;
-  
-  if(!workspace) 
+
+  if(!workspace)
     workspace = new_dumblist();
-  
+
   workspace->n = 0;
-  
+
   snarfer_workspace = workspace;
   tree_walk(f, fl_lab_of, fl_all_ln_of,closest_v_snarfer);
-  
+
   //is this the right way?
   vn = &(v->neighbors);
   vn->n=0;
   dumblist_snarf(vn,workspace);
   //printf("%d  ",v->label);
-  
+
   return 0;
 }
 
@@ -677,7 +677,7 @@ static long w_u_n_springboard(FLUXON *fl, int lab, int link, int depth) {
 void world_update_neighbors(WORLD *a, char global) {
   gl_a = a;
   gl_gl = global;
-  if (gl_gl == -1) { 
+  if (gl_gl == -1) {
     /*do fast neighbor search then do 2 iterations of regular neighbor search. */
     tree_walk(a->vertices,v_lab_of,v_ln_of,fast_world_gather_neighbors);
     if(a->verbosity) printf("done with fast gather neighbors\n");
@@ -697,7 +697,7 @@ void world_update_neighbors(WORLD *a, char global) {
 
 /**********************************************************************
  * fast_world_update_neighbors
- * 
+ *
  * Initializes the neighbors as the closest vertex to you from each
  * fluxon.
  */
@@ -723,7 +723,7 @@ void fast_world_update_neighbors(WORLD *a, char global) {
 
 
 /**********************************************************************
- * world_update_mag updates the magnetic forces for the whole world 
+ * world_update_mag updates the magnetic forces for the whole world
  */
 static long w_u_m_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
@@ -746,7 +746,7 @@ int world_update_mag(WORLD *a, char global) {
 
 /**********************************************************************
  * world_fluxon_length_check makes sure that there are at least
- * 4 vertices in any fluxon. We don't care about fluxons that only 
+ * 4 vertices in any fluxon. We don't care about fluxons that only
  * have 2 vertices and there aren't any that only have 1.
  */
 static long check_fluxon_length(FLUXON *f, int lab, int link, int depth){
@@ -758,7 +758,7 @@ static long check_fluxon_length(FLUXON *f, int lab, int link, int depth){
 
 void world_fluxon_length_check(WORLD *w, char global){
   gl_a = w;
-  gl_gl = global;  
+  gl_gl = global;
 
   tree_walker(w->lines, fl_lab_of, fl_all_ln_of, check_fluxon_length,0);
 }
@@ -767,7 +767,7 @@ void world_fluxon_length_check(WORLD *w, char global){
 /**********************************************************************
  * world_collect_stats
  *
- * Collects neighbor and force stats about the world.  
+ * Collects neighbor and force stats about the world.
  * Mainly useful as a relaxation diagnostic; see 'stats' in the PDL
  * XS routines.
  *
@@ -784,7 +784,7 @@ static long w_c_s_springboard(FLUXON *fl, int lab, int link, int depth) {
 
 VERTEX_STATS *world_collect_stats(WORLD *a) {
   gl_st.n = 0;
-  gl_st.f_acc = 
+  gl_st.f_acc =
     gl_st.f_max =
     gl_st.f_tot_acc =
     gl_st.f_tot_max =
@@ -801,7 +801,7 @@ void fluxon_collect_stats(FLUXON *fl, VERTEX_STATS *st) {
     st->n++;
 
     f = norm_3d(v->f_t);
-    if( f > st->f_max ) 
+    if( f > st->f_max )
       st->f_max = f;
     st->f_acc += f;
 
@@ -817,7 +817,7 @@ void fluxon_collect_stats(FLUXON *fl, VERTEX_STATS *st) {
     v = v->next;
   }
 }
-   
+
 
 /**********************************************************************
  *
@@ -856,8 +856,8 @@ void world_relax_step(WORLD *a, NUM t) {
 
 /**********************************************************************
  * fluxon_update_neighbors
- * 
- * Calls vertex_update_neighbors to process a whole fluxon. 
+ *
+ * Calls vertex_update_neighbors to process a whole fluxon.
  * This is wasteful, as it throws away the Voronoi vertex information
  * from each cell.  Use fluxon_update_mag instead -- that handles
  * physics too.
@@ -873,7 +873,7 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
     return 0;
 
   /* First thing - make sure the end conditions are up to date... */
-  if(fl->fc0->bound) {	
+  if(fl->fc0->bound) {
     (*(fl->fc0->bound))(fl->start);
   }
   if(fl->fc1->bound) {
@@ -882,7 +882,7 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
 
   // v=v->next;
 
-  while(v->next) {   
+  while(v->next) {
     if(verbosity>=3)  printf("\tfluxon_update_neighbors... vertex %ld\n",v->label);
 
     vertex_update_neighbors(v,global || (v->neighbors.n == 0));
@@ -898,13 +898,13 @@ int fluxon_update_neighbors(FLUXON *fl, char global) {
 
 /**********************************************************************
  * fluxon_update_mag
- * 
+ *
  * Calls vertex_update_neighbors and physics functions to process
  * a whole fluxon.  Differs from update_neighbors in that you feed
  * in a list of pointers to force functions that need calling at each
- * node.  At the end of the call, each fluxon contains not only 
- * updated neighbor information but also fresh force values.  
- * Returns the largest and smallest forces and 
+ * node.  At the end of the call, each fluxon contains not only
+ * updated neighbor information but also fresh force values.
+ * Returns the largest and smallest forces and
  * force/neighbor-distance ratios (in that order) in an array of four
  * NUMs (useful for computing timesteps).
  * DAL: last sentence (about the return value) doesn't appear to be true:
@@ -920,8 +920,8 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
   if(verbosity >= 2)  printf("fluxon_update_mag (fluxon %ld): %c",fl->label,(verbosity==2?' ':'\n'));
 
   /*
-   * Set forces on the end vertex to zero, since it has no 
-   * bend and no following segment and hence does not get 
+   * Set forces on the end vertex to zero, since it has no
+   * bend and no following segment and hence does not get
    * looped over.
    */
   {
@@ -933,7 +933,7 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
     v->r_s = v->r_v = -1;
   }
 
-  
+
   for(i=0, v=fl->start; v->next; v=v->next, i++) {
     void (**f_func)();
     NUM r;
@@ -941,10 +941,10 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
     HULL_VERTEX *vertices;
     if(verbosity >= 3) { printf("V%4ld ",v->label); fflush(stdout); }
 
-    /* Update neighbor map and establish neighbors' (r,a) variables, 
+    /* Update neighbor map and establish neighbors' (r,a) variables,
      *  which will be used by the physics funcs! */
 
-    vertices = vertex_update_neighbors(v,global || (v->neighbors.n==0)); 
+    vertices = vertex_update_neighbors(v,global || (v->neighbors.n==0));
 
     /* Zero the vertex's force accumulators */
     v->f_v[0] = v->f_v[1] = v->f_v[2] = 0;
@@ -957,7 +957,7 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
       int i;
       v->r_cl = -1;
       for(i=0;i<v->neighbors.n;i++)
-	if( (v->r_cl < 0) 
+	if( (v->r_cl < 0)
 	    || (v->r_cl > (((VERTEX **)(v->neighbors.stuff))[i])->r)
 	    )
 	  v->r_cl = (((VERTEX **)(v->neighbors.stuff))[i])->r;
@@ -965,18 +965,18 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
     v->r_ncl = v->r_cl;
 
 
-    if(fl->fc0->world->verbosity >= 3) 
+    if(fl->fc0->world->verbosity >= 3)
       printf("---forces:\n");
 
     {
-      int ignore_segment_forces = 
+      int ignore_segment_forces =
 	( ((!v->prev) && funky_fl_b(v->line->fc0))
 	  ||
 	  (  ((!v->next) || (!v->next->next))  && funky_fl_b(v->line->fc1) )
 	  );
 
      /* Accumulate forces and relevant lengthscales */
-    for(f_func = &f_funcs[0]; *f_func; f_func++) 
+    for(f_func = &f_funcs[0]; *f_func; f_func++)
       (**f_func)(v,vertices,ignore_segment_forces);
     }
 
@@ -988,18 +988,18 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
 
 
   /* Find closest approach radius, and calculate total forces */
-  
+
   if(verbosity >= 2) printf("Radius - fluxon %ld: %c",fl->label,(verbosity==2?' ':'\n'));
 
   for(v=fl->start;v->next;v=v->next) {
     NUM f[3], fns, fnv, fn;
     NUM a;
-  
+
     diff_3d(f,v->next->x,v->x);
     a = norm_3d(f);
     if(a<v->r_cl && a>0)
       v->r_cl=a;
-    
+
     if(v->prev) {
       diff_3d(f, v->x, v->prev->x);
       a = norm_3d(f);
@@ -1011,10 +1011,10 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
     } else {
       cp_3d(f,v->f_s);
     }
-    
+
     fns = (v->r_s > 0) ? (norm_3d(f)) : 0;
     fnv = (v->r_v > 0) ? (norm_3d(v->f_v)) : 0;
-    
+
     sum_3d(v->f_t,f,v->f_v);
     v->f_n_tot = norm_3d(v->f_t);
 
@@ -1028,21 +1028,21 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
 
 
 
-  
+
 /**********************************************************************
  * init_minmax_accumulator, vertex_accumulate_f_minmax
  *
- * Accumulates global stats by vertex.  You can call 
+ * Accumulates global stats by vertex.  You can call
  * world_accumulate_minmax to get 'em all, or do it vertex-by-vertex
  * if you are already iterating through the arena.
  *
  * fluxon_update_mag calls the accumulator on a vertex-by-vertex
- * basis, which is currently a waste in the parallel case (because the 
+ * basis, which is currently a waste in the parallel case (because the
  * daughter processes' accumulators will be discarded).
  *
- * This accumulator is called during force/step calculation, but 
- * further accumulation happens in io.c in binary_read_flstep - 
- * the results are transferred from the daughter processes to the 
+ * This accumulator is called during force/step calculation, but
+ * further accumulation happens in io.c in binary_read_flstep -
+ * the results are transferred from the daughter processes to the
  * parent process during parallel processing.
  *
  */
@@ -1076,27 +1076,27 @@ void vertex_accumulate_f_minmax(VERTEX *v, WORLD *w) {
     w->f_min = v->f_n_tot;
   if(w->f_max < 0 || v->f_n_tot > w->f_max)
     w->f_max = v->f_n_tot;
-  
+
   fr = v->f_n_tot / v->r_cl;
   if(w->fr_min < 0 || fr < w->fr_min)
     w->fr_min = fr;
   if(w->fr_max < 0 || fr > w->fr_max)
       w->fr_max = fr;
-  
+
   if (v->prev && v->next) {
     diff_3d(b1hat, v->x, v->prev->x);
     diff_3d(b2hat, v->next->x, v->x);
     cangle = inner_3d(b1hat, b2hat);
     cangle *= fabs(cangle);
     cangle /= (norm2_3d(b1hat) * norm2_3d(b2hat));
-    
-    // Calculate using only the cosine of the 
+
+    // Calculate using only the cosine of the
     // angle (faster than taking a gazillion acos's)
     if (w->ca_min < 0 || cangle < w->ca_min )
       w->ca_min = cangle;
     if (w->ca_max < 0 || cangle > w->ca_max )
       w->ca_max = cangle;
-    
+
     w->ca_acc += cangle;
     w->ca_ct++;
   }
@@ -1105,19 +1105,19 @@ void vertex_accumulate_f_minmax(VERTEX *v, WORLD *w) {
 /**********************************************************************
  * fluxon_relax_step
  *ARD NOTES
- * fluxon relax step is now split into two parts. 
+ * fluxon relax step is now split into two parts.
  * fluxon_calc_step and fluxon_relax_step.
  *
  *PREVIOUS NOTES
- * 
+ *
  * Relaxes the vertex positions of a fluxon.  You must have pre-loaded
  * the fluxon's forces with fluxon_update_mag.
- * 
- * You feed in an amount of time (really, a force-to-offset scaling 
+ *
+ * You feed in an amount of time (really, a force-to-offset scaling
  * factor) to advance, and everything advances toward it.  There is
  * no vertex_relax_step because it's such a simple operation -- though
  * one might want to write one later for extensibility.
- * 
+ *
  * The physics routines stuff forces into the f_s and f_v fields;
  * update_mag does the averaging for f_s and stuffs it into f_v for you,
  * so by the time you see this you should only have to look at f_v.
@@ -1143,7 +1143,7 @@ NUM fastpow( NUM num, NUM exponent ) {
     if(exponent<0) {
       recip = 1.0/num;
       while(exp<0) {  exp++; out *= recip;  }
-    } else 
+    } else
       while(exp>=0.999) { exp--; out *= num; }
     return out;
 
@@ -1161,7 +1161,7 @@ NUM calc_stiffness(VERTEX *v) {
   f_denom = v->f_v_tot + 0.5 * (v->f_s_tot + v->prev->f_s_tot);
   return (f_denom == 0) ? 1 : ( norm_3d(v->f_t)  / (1e-9 + f_denom));
 }
-    
+
 void fluxon_calc_step(FLUXON *f, NUM dt) {
   VERTEX *v = f->start;
   WORLD *w = f->fc0->world;
@@ -1182,10 +1182,10 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
 
     // Calculate the harmonic mean of the relevant segment lengths
     // and the closest neighbor approach distance.
-    
+
     diff_3d(foo,v->next->x,v->x);
     d = norm_3d(foo);
-    
+
     diff_3d(foo,v->x,v->prev->x);
     d1 = norm_3d(foo);
 
@@ -1200,26 +1200,26 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
     stiffness = calc_stiffness(v);
     if(stiffness == 0) stiffness = 1e-7;
 
-    if(verbosity >= 3)  
+    if(verbosity >= 3)
       printf("fluxon %ld, vertex %ld: x=(%g,%g,%g).  v->r_cl=%g,  r_cl=%g,  stiffness = %g, f_t=(%g,%g,%g)[%g]\t",
 	     f->label,
-	     v->label, 
+	     v->label,
 	     v->x[0],v->x[1],v->x[2],
-	     v->r_cl, 
-	     r_cl, 
+	     v->r_cl,
+	     r_cl,
 	     stiffness,
 	     v->f_t[0],v->f_t[1],v->f_t[2],
 	     norm_3d(v->f_t));
-    
+
     if(stiffness > 1.00001) {
       fprintf(stderr,"fluxon %ld, vertex %ld: stiffness = %g, >1!  This is allegedly impossible! You've got trouble, gov\n",f->label,v->label,stiffness);
       fflush(stdout);
       fflush(stderr);
     }
-    
-    /* 
+
+    /*
      * We now have the force per unit length on the vertex, with or without B scaling
-     * depending on the force law.  Use the scaling information stored in the WORLD to 
+     * depending on the force law.  Use the scaling information stored in the WORLD to
      * generate a step.
      */
 
@@ -1234,7 +1234,7 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
 	  b_mag_mean += v->prev->b_mag;
 	  b_mag_mean *= 0.5;
 	}
-	
+
 	fac *= fastpow(b_mag_mean,w->step_scale.b_power);
       }
 
@@ -1252,7 +1252,7 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
 	sum_3d(a, v->f_t, v->prev->f_t);
 	diff_3d(b, v->f_t, v->prev->f_t);
 	pfrac = norm_3d(b)/norm_3d(a);
-	
+
 	sum_3d(a, v->f_t, v->next->f_t);
 	diff_3d(b, v->f_t, v->next->f_t);
 	nfrac = norm_3d(b)/norm_3d(a);
@@ -1260,15 +1260,15 @@ void fluxon_calc_step(FLUXON *f, NUM dt) {
       }
 
       if(isfinite(fac))
-	scale_3d(a, v->f_t, dt * fac );	
-      else 
-	if(verbosity >= 3) 
+	scale_3d(a, v->f_t, dt * fac );
+      else
+	if(verbosity >= 3)
 	  printf("DS FAC NOT FINITE - SETTING to 1.0  ");
 
     }
 
     {
-      /* Check step length -- absolute maximum is 
+      /* Check step length -- absolute maximum is
        * 0.49 of the distance to the nearest
        * boundary-condition neighbor, or all the distance to the nearest
        * non-boundary-condition neighbor.
@@ -1370,24 +1370,24 @@ void expand_via_neighbors(DUMBLIST *workspace, int start_idx, long passno) {
 
 
 /*******************************
- * vertex_enforce_photosphere 
+ * vertex_enforce_photosphere
  * Force a vertex to obey photospheric boundaries.
- * 
- * You feed in a VERTEX and a PHOTOSPHERE, and 
+ *
+ * You feed in a VERTEX and a PHOTOSPHERE, and
  * the VERTEX is forced into agreement with the PHOTOSPHERE.
- * 
- * There is no checking that the VERTEX agrees with all 
- * photospheres -- it is only moved in the most expedient 
+ *
+ * There is no checking that the VERTEX agrees with all
+ * photospheres -- it is only moved in the most expedient
  * way to agree with the current one.
- * 
+ *
  * Only planar and cylindrical photospheres are currently
  * supported.
- * 
- * This is necessary because, while normal photospheric 
+ *
+ * This is necessary because, while normal photospheric
  * neighborly action (image charges) usually works, occasional
- * quirks of relaxation or other boundaries can bring a 
- * point outside a defined PHOTOSPHERE.  This mops up those 
- * glitches. 
+ * quirks of relaxation or other boundaries can bring a
+ * point outside a defined PHOTOSPHERE.  This mops up those
+ * glitches.
  *
  */
 void vertex_enforce_photosphere(VERTEX *v, PHOTOSPHERE *p) {
@@ -1400,7 +1400,7 @@ void vertex_enforce_photosphere(VERTEX *v, PHOTOSPHERE *p) {
     NUM x1[3];
     NUM x1z;
     diff_3d(x1,v->x,p->plane->origin);
-    
+
     x1z = inner_3d(x1,p->plane->normal);
     if(x1z < 0) {
       NUM delta[3];
@@ -1419,19 +1419,19 @@ void vertex_enforce_photosphere(VERTEX *v, PHOTOSPHERE *p) {
     NUM xrot[3];
     NUM r2;
     r2 = norm2_3d(p->plane->normal);
-    
+
     sum_3d(x1,p->plane->origin,p->plane->normal);
 
     /* We can't be outside the cylinder unless we're outside the inscribed */
     /* sphere -- which is much faster to check, so check that first */
-    if(norm2_3d(x1) > r2) { 
+    if(norm2_3d(x1) > r2) {
       projmatrix(M,p->plane->origin,x1);
-      
+
       /* Find the perpendicular-to-cylinder component of the vertex location */
       diff_3d(x1, v->x, p->plane->origin);
       mat_vmult_3d(xrot, M, x1);
       x1r2 = norm2_2d(xrot);
-      
+
       /* If it's outside the cylinder, move it perpendicular to the axis  */
       /* (the Z axis in the rotated coordinates) until it's just inside the */
       /* cylinder. */
@@ -1440,7 +1440,7 @@ void vertex_enforce_photosphere(VERTEX *v, PHOTOSPHERE *p) {
 	vec_mmult_3d(x1, M, xrot);
 	sum_3d( v->x, x1, p->plane->origin);
       }
-      
+
     }
   }
     break;
@@ -1448,7 +1448,7 @@ void vertex_enforce_photosphere(VERTEX *v, PHOTOSPHERE *p) {
     case PHOT_SPHERE: {
       NUM x1[3];
       NUM x1r;
-      
+
       /* sphere center is at p->origin; radius is p->plane->normal[0]; outer/inner flag is sign of p->plane->normal[1]. */
       diff_3d(x1, v->x, p->plane->origin);
       x1r = norm_3d(x1);
@@ -1463,15 +1463,15 @@ void vertex_enforce_photosphere(VERTEX *v, PHOTOSPHERE *p) {
       }
     }
     break;
-	
+
     default: break;
-      
+
     } /* end of photospheric checking switch */
-}       
-			      
+}
 
 
-// ARD - New fluxon_relax_step routine. Step calculation is now in 
+
+// ARD - New fluxon_relax_step routine. Step calculation is now in
 // fluxon_calc_step
 
 void fluxon_relax_step(FLUXON *f, NUM dt) {
@@ -1487,14 +1487,14 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
   POINT3D step, tmp_step;
   VERTEX *vert_neigh;
 
-  if(!workspace) 
-    workspace = new_dumblist(); 
+  if(!workspace)
+    workspace = new_dumblist();
 
   if(!v) {
     fprintf(stderr,"WARNING: fluxon_relax_step called with a fluxon (%ld) that has no start vertex!\n",f->label);
     return;
   }
-    
+
   for(v=v->next; v && v->next; v=vtmp) {
     vtmp = v->next;
     /* vtmp is an assignment. This is here because sometimes the code
@@ -1544,7 +1544,7 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	    }
 	  }
 	}
-	
+
 	// Get the mean for this batch, scale it, and add.
 	// The if clause avoids division-by-zero if none exist at this tier.
 	if(n_found) {
@@ -1553,7 +1553,7 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
 	}
       }
     }
-     
+
     if(isfinite(step[0]) && isfinite(step[1]) && isfinite(step[2])) {
       sum_3d(v->x,v->x,step);
     } else {
@@ -1568,28 +1568,28 @@ void fluxon_relax_step(FLUXON *f, NUM dt) {
       vertex_accumulate_f_minmax(v->prev, world);
     }
 
-    if(verbosity >= 3)    
+    if(verbosity >= 3)
       printf("after update: x=(%g,%g,%g)\n",v->x[0],v->x[1],v->x[2]);
   }
-  
+
 }
-    
-  
+
+
 /**********************************************************************
- * vertex_update_neighbors 
- * 
+ * vertex_update_neighbors
+ *
  * Updates a vertex's neighbor list using gather_neighbor_candidates
  * followed by winnow_neighbor_candidates and hull_neighbors.
- * 
+ *
  * Returns the hull vertex list that is used in the final winnowing
- * process, since it's needed for some of the force laws (see 
+ * process, since it's needed for some of the force laws (see
  * vertex_update_mag).
- * 
+ *
  * The 'global' flag can have several values, and the behavior changes
  * accordingly. fast, faster, and gonzo are defined in model.::
- * 
- *   -1 - quasi-global operation (requires cleanup afterward): the closest 
- *        vertex (using regular 3-D Cartesian distance) along each fluxon 
+ *
+ *   -1 - quasi-global operation (requires cleanup afterward): the closest
+ *        vertex (using regular 3-D Cartesian distance) along each fluxon
  *        is a candidate for the hull)
  *    0 - "normal" non-global operation (about 300 candidates for the hull)
  *    1 - global operation (every vertex is a candidate for every hull
@@ -1662,15 +1662,15 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
   }
 
   hv = hull_neighbors(v, dl); /* save hv for return */
-  
+
   if(verbosity >= 3) {
     printf("Hull_neighbors returned %d neighbors: ",dl->n);
     if(verbosity >= 4)
-      for(i=0;i<dl->n;i++) 
+      for(i=0;i<dl->n;i++)
 	printf("  %ld",((VERTEX *)((dl->stuff)[i]))->label);
     printf("\n");
   }
-  
+
   /******************************
    * Update 'nearby' lists through brute force
    * Not too expensive since these lists are typically under 10 elements long
@@ -1682,7 +1682,7 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
     dumblist_add(    &(((VERTEX *)(dl->stuff[i]))->nearby), v);
   }
   cpflag = 1;
-  
+
   /* Copy the new neighbor list into the vertex. */
   if(cpflag) {
     vn->n = 0;
@@ -1710,24 +1710,24 @@ HULL_VERTEX *vertex_update_neighbors(VERTEX *v, char global) {
 
 /**********************************************************************
  * gather_neighbor_candidates
- * 
- * This finds the neighbor candidates of a vertex, by the 
- * neighbors-of-neighbors strategy.  (That is to say, the only 
+ *
+ * This finds the neighbor candidates of a vertex, by the
+ * neighbors-of-neighbors strategy.  (That is to say, the only
  * candidates are the neighbor-candidate list of its neighbors
- * on its own field line, and the neighbors of its previous neighbors).  
+ * on its own field line, and the neighbors of its previous neighbors).
  * If they have NO neighbors, then the entire
- * fluxon's neighbor set is generated recursively using the 
+ * fluxon's neighbor set is generated recursively using the
  * web of neighbors.  This can be slow, and it might miss a neighbor from
- * time to time, but it's not as bad as the prima facie alternative of 
- * always doing a global neighbor search. 
- * 
+ * time to time, but it's not as bad as the prima facie alternative of
+ * always doing a global neighbor search.
+ *
  * It returns a pointer to its own workspace -- so calling it kills
  * your last instance of its return value, unless you've gone and copied
  * it yourself.
- * 
+ *
  * gather_neighbor_candidates should normally be followed immediately by
  * winnow_neighbor_candidates, which sorts and winnows the list.
- * 
+ *
  */
 
 
@@ -1740,7 +1740,7 @@ static inline void snarf_filtered(DUMBLIST *ws, DUMBLIST *dl, long passno) {
   int i;
   for(i=0;i<dl->n;i++) {
     VERTEX *V = (VERTEX *)(dl->stuff[i]);
-    if( V && V->next && V->passno != passno && V->line && ((!V->line->plasmoid) || V->next->next) ) {        
+    if( V && V->next && V->passno != passno && V->line && ((!V->line->plasmoid) || V->next->next) ) {
       V->passno = passno;
       dumblist_quickadd(ws, dl->stuff[i]);
     }
@@ -1750,8 +1750,8 @@ static inline void snarf_filtered(DUMBLIST *ws, DUMBLIST *dl, long passno) {
 /* snarf_list
  * Helper routine for snarfing up a set of vertices and its next and prev
  * elements.  You feed in a list of vertices (e.g. the "neighbors" list
- * from a vertex) and a workspace, and the vertices that are neighbors and 
- * nearby to each of the elements of the list are themselves added to the 
+ * from a vertex) and a workspace, and the vertices that are neighbors and
+ * nearby to each of the elements of the list are themselves added to the
  * workspace.
  *
  */
@@ -1769,10 +1769,10 @@ static inline void snarf_list(DUMBLIST *workspace, VERTEX **foo, int n, long pas
     snarf_filtered(workspace,&(foo[i]->nearby), passno);
   }
 }
-  
+
 
 /* expand_list
- * Helper routine for expanding a workspace list out:  you feed in 
+ * Helper routine for expanding a workspace list out:  you feed in
  * a workspace with a list of vertices, and it gets expanded to include
  * the next and previous item on each of those vertex lists.
  * It also includes the neighbors of all of those items.
@@ -1786,7 +1786,7 @@ static inline void expand_list(DUMBLIST *workspace, long passno) {
       if( v->next && v->next->passno != passno )
 	v->next->passno = passno;
 	dumblist_quickadd(workspace, v->next);
-      if( v->prev && v->prev->passno != passno ) 
+      if( v->prev && v->prev->passno != passno )
 	v->prev->passno = passno;
 	dumblist_quickadd(workspace, v->prev);
     }
@@ -1818,22 +1818,22 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
   if(!v) {        /* Paranoia */
     fprintf(stderr,"Gather_neighbor_candidates: got a null VERTEX! Returning 0\n");
     fflush(stderr);
-    return 0;   
+    return 0;
   }
 
-  if(!workspace) 
+  if(!workspace)
     workspace = new_dumblist();
 
   workspace->n = 0;
 
-  
-  /* Gather the candidates together 
-   * This step has had a longish history -- I started out 
+
+  /* Gather the candidates together
+   * This step has had a longish history -- I started out
    * grabbing lots and lots of stuff, but "just" neighbors-of-neighbors
    * (and next and prev links) seems to be sufficient.  In pathological
    * cases, it might take a couple of timesteps to walk to the appropriate
    * new neighbor, but that doesn't seem to cause problems in practice.
-   * 
+   *
    * The various "fast" setting of global introduce pathologies of their own
    * by cutting down on the neighbor search.  Use with care but they can speed
    * up the process considerably!
@@ -1852,47 +1852,47 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
 
     if(global != gonzo_neighbors && global != faster_neighbors) {
       expand_lengthwise(workspace, 0, passno);
-    
+
       if(verbosity >= 3) {
 	printf("len - %d; ", workspace->n);
       }
     }
     ilen = workspace->n;
-      
+
     expand_via_neighbors(workspace, 0, passno);
     iwid = workspace->n;
-	
+
     if(verbosity >= 3) {
       printf("wid - %d; ", workspace->n);
     }
 
     if(global != gonzo_neighbors) {
-      
+
       expand_lengthwise(workspace, ilen, passno);
-      
+
       if(verbosity >= 3) {
 	printf("len - %d; ", workspace->n);
       }
-      
-      
+
+
       if(global != faster_neighbors && global != fast_neighbors) {
 	expand_via_neighbors(workspace, iwid, passno);
-	
+
 	if(verbosity >= 3) {
 	  printf ("wid - %d; ", workspace->n);
 	}
-	
+
 	expand_lengthwise(workspace, 0, passno);
-	
+
 	if(verbosity >= 3) {
 	  printf("final - %d\n",workspace->n);
 	}
       }
     }
   }
-  
-    
-   /* Incremental neighbor searching didn't work -- do a global 
+
+
+   /* Incremental neighbor searching didn't work -- do a global
      grab (ouch!).
   */
   if(global==1 || (workspace->n == 0)) {
@@ -1930,7 +1930,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
    * photosphere.  Plasmoids do interact with the photosphere, since
    * they generally don't intersect it. */
 
-  if(v->next && 
+  if(v->next &&
      ( ( v->prev && v->next->next )  || v->line->plasmoid )
      )
   {
@@ -1957,7 +1957,7 @@ DUMBLIST *gather_neighbor_candidates(VERTEX *v, char global){
       image_find(phot,image,v); /*helper routine found below*/
       dumblist_quickadd(workspace, image);
     }
-    
+
     if(v->line->fc0->world->photosphere2.type) { /* assignment, photosphere2 */
       phot = &(v->line->fc0->world->photosphere2);
       image = (v->line->fc0->world->image3);
@@ -1987,7 +1987,7 @@ void image_find(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v) {
     NUM radius;
     NUM M[9]; /*don't need * b/c it is a ptr to the first elem*/
     POINT3D vec2,xd,xrot,irot;
-    
+
   case PHOT_CYL:
     /* arbitrary normal and origin. length of normal is the
      * radius. there are a number of steps involved in this. 1 - find
@@ -1996,7 +1996,7 @@ void image_find(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v) {
      * position.  radius norm_3d(p->normal)
      */
 
-    radius = norm_3d(p->normal);   
+    radius = norm_3d(p->normal);
     sum_3d(vec2,p->origin,p->normal);
     projmatrix(M,p->origin,vec2);
 
@@ -2014,7 +2014,7 @@ void image_find(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v) {
     reflect(irot, xrot, &pl);
     vec_mmult_3d(image->x,M,irot);
     sum_3d(image->x,image->x,p->origin);
-    
+
     diff_3d(xd,v->next->x,p->origin);
     mat_vmult_3d(xrot,M,xd);
     a = norm_2d(xrot);
@@ -2029,32 +2029,32 @@ void image_find(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v) {
     reflect(irot, xrot, &pl);
     vec_mmult_3d(image->next->x,M,irot);
     sum_3d(image->next->x,image->next->x,p->origin);
-    
+
     break;
   case PHOT_SPHERE:
     /***********
-     * Spherical photosphere - sphere is located at the origin in the 
-     * photospheric plane structure; radius is normal[0]. 
+     * Spherical photosphere - sphere is located at the origin in the
+     * photospheric plane structure; radius is normal[0].
      * For external spheres, set normal[1] >= 0.  For internal spheres,
      * set normal[1] < 0.
      */
-    
+
     /* Construct the sub-vertex point on the sphere */
     diff_3d(&(pt[0]),      v->x, &(p->origin[0]));  /* pt gets (x - origin) */
     scale_3d(&(pt[0]), &(pt[0]), p->normal[0]/norm_3d(&(pt[0])));  /* Scale to be on the sphere */
     sum_3d(&(pt[0]), &(pt[0]), p->origin);   /* Put in real space */
-    scale_3d(&(pt[0]), &(pt[0]), 2.0);                             
+    scale_3d(&(pt[0]), &(pt[0]), 2.0);
     diff_3d(image->x, &(pt[0]), v->x);  /* Put reflection in image */
-    
+
     /***** Do for the other point too *****/
     diff_3d(&(pt[0]), v->next->x, p->origin);
     scale_3d(&(pt[0]), &(pt[0]), p->normal[0]/norm_3d(&(pt[0])));
     sum_3d(&(pt[0]),&(pt[0]),p->origin);
     scale_3d(&(pt[0]), &(pt[0]), 2.0);
-    diff_3d(image->next->x, &(pt[0]), v->x); 
-    
+    diff_3d(image->next->x, &(pt[0]), v->x);
+
     break;
-    
+
   case PHOT_PLANE:
     reflect(image->x, v->x, p);
     reflect(image->next->x, v->next->x, p);
@@ -2071,17 +2071,17 @@ void image_find(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v) {
  * collection of neighbor candidates returned by gather_neighbor_candidates
  * (above).
  *
- * We'd like to sort by field line ID, to avoid duplicates along the 
+ * We'd like to sort by field line ID, to avoid duplicates along the
  * same field line -- but unfortunately that breaks some of the more
  * interesting topologies.  In particular, "S"-shaped field lines may
  * interact with a second field line (or with themselves!) in more than
  * one place.  So we first remove the obvious duplications by sorting
  * on vertex pointer, then traverse each of the potential neighbors' field
  * lines to find the closest vertex to the current one, and sort
- * (thereby eliminating duplicates) again.  Note that some of the 
+ * (thereby eliminating duplicates) again.  Note that some of the
  * "neighbors" will turn out to be this vertex itself!  The current
  * vertex is, of course, omitted from the final list.
- * 
+ *
  * winnow_neighbor_candidates is likely the hot spot for the model
  * as a whole; this should be thought about carefully but is not
  * currently.
@@ -2090,7 +2090,7 @@ void image_find(PHOTOSPHERE *phot, VERTEX *image, VERTEX *v) {
 
 /* Helper function -- integer comparison for pointers */
 int winnow_cmp_1(void *a, void *b) {
-  if( (long)a < (long)b ) 
+  if( (long)a < (long)b )
     return -1;
   if( (long)a > (long)b )
     return 1;
@@ -2100,7 +2100,7 @@ int winnow_cmp_1(void *a, void *b) {
 void winnow_neighbor_candidates(VERTEX *v, DUMBLIST *horde) {
   int i;
   VERTEX **vnp;
-	
+
   /* Traverse each member of the horde to find the locally closest
    * vertex */
   for(i=0;i<horde->n;i++) {
@@ -2122,7 +2122,7 @@ void winnow_neighbor_candidates(VERTEX *v, DUMBLIST *horde) {
 	i--;
 	break;
       }
-	
+
       /* Find distances to the next and prev segments */
       d_next = fl_segment_dist(v,vn->next);
       d_prev = fl_segment_dist(v,vn->prev ? vn->prev : (vn->line->plasmoid ? vn->line->end->prev->prev : NULL) );
@@ -2130,7 +2130,7 @@ void winnow_neighbor_candidates(VERTEX *v, DUMBLIST *horde) {
        * bends toward us.
        */
       if( (d_next > 0) && (d_next < d0) ) {
-	if( (d_prev > 0) && (d_prev < d_next)) 
+	if( (d_prev > 0) && (d_prev < d_next))
 	  dumblist_quickadd(horde,vn->prev);
 	(*vnp) = vn->next;
 	if( (*vnp)->line->plasmoid && !((*vnp)->next->next) ) {
@@ -2178,7 +2178,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   static HULL_VERTEX *voronoi_buf = 0;
   static int voronoi_bufsiz = 0;
 
-  if(v->line->fc0->world->verbosity >= 5) 
+  if(v->line->fc0->world->verbosity >= 5)
     printf("Entering hull_neighbors...\n");
 
   if(!v->next) {
@@ -2187,7 +2187,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   }
 
   /* Project the horde into the plane perpendicular to v's line segment.
-   * The projected vectors go into the vertices' scratch space.    
+   * The projected vectors go into the vertices' scratch space.
    */
   if(v->line->fc0->world->verbosity>=5)
     printf("hull_neighbors calling project_n_fill...\n");
@@ -2209,13 +2209,13 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
     if(!voronoi_buf) {
       fprintf(stderr,"Couldn't get memory in hull_neighbors!\n");
       exit(99);
-    } 
+    }
 
   }
 
   if(verbosity > 1) {
     printf(".");
-    
+
     if(verbosity >= 5)
       printf("V%4ld: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
   }
@@ -2223,7 +2223,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   /* Find the 2-D hull.  Don't want rejects. */
   /*  hull_2d(voronoi_buf,horde,0); */
   hull_2d_us(voronoi_buf, horde, v);
-  
+
   if(horde->n==0) {
     fprintf(stderr,"VERTEX %ld: hull_2d gave up! That's odd....\n",v->label);
     fflush(stderr);
@@ -2231,11 +2231,11 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
 
   if(verbosity >= 5){
     printf("hull_neighbors:  hull trimming gives:\n");
-    for(i=0;i<horde->n;i++) 
+    for(i=0;i<horde->n;i++)
       printf("%ld ",((VERTEX *)(horde->stuff[i]))->label); fflush(stdout);
     printf("\n");
   }
-  
+
   return voronoi_buf;
 }
 
@@ -2243,32 +2243,32 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
  ** fix_proximity
  ** fluxon_fix_proximity
  ** global_fix_proximity
- ** 
+ **
  ** You feed in a VERTEX with updated neighbor list,
- ** and it checks all the neighbors for proximity.  If the closest 
- ** neighbor distance is closer than the threshold you supply times the 
- ** length of the line segment, then the line segments are doubled.  
+ ** and it checks all the neighbors for proximity.  If the closest
+ ** neighbor distance is closer than the threshold you supply times the
+ ** length of the line segment, then the line segments are doubled.
  ** The doubling maintains the straightness of each line segment,
- ** just cuts it up into segments that are smaller than the smallest 
- ** distance to a neighbor.  
- ** 
- ** For all of the calls, you get back the number of violating vertices 
+ ** just cuts it up into segments that are smaller than the smallest
+ ** distance to a neighbor.
+ **
+ ** For all of the calls, you get back the number of violating vertices
  ** that were found: ie if there were no proximity errors you get 0.
- ** 
+ **
  ** If you feed in 0 for the scale factor, you really get 1.0.
  **
- ** You must supply a VERTEX that is pre-loaded with neighbors and 
+ ** You must supply a VERTEX that is pre-loaded with neighbors and
  ** their distances by having hull_neighbors called on it!
  ** After that, the problem is trivial but at least this encapsulates it.
  **
- ** If the line segment is too long for its proximity, it gets split in 
- ** half. 
- ** 
- ** scale_thresh is the ratio of the segment length to the 
+ ** If the line segment is too long for its proximity, it gets split in
+ ** half.
+ **
+ ** scale_thresh is the ratio of the segment length to the
  ** closest allowed approach:  0.1 requires more VERTEXes than
  ** does 10, consistent with the general trend that tighter
  ** thresholds mean more numerical work.  1.0 is "normal", I think.
- ** 
+ **
  */
 int fix_proximity(VERTEX *V, NUM scale_thresh) {
   int i;
@@ -2282,7 +2282,7 @@ int fix_proximity(VERTEX *V, NUM scale_thresh) {
   if( V_ISDUMMY(V) || FL_ISDUMMY(V->line) )
     return 0;
 
-  /* Find minimum neighbor-segment distance from the segment, and 
+  /* Find minimum neighbor-segment distance from the segment, and
    * add vertices if necessary.
    */
 
@@ -2337,13 +2337,13 @@ int global_fix_proximity(WORLD *w, NUM scale_thresh) {
   tree_walker(w->lines,fl_lab_of,fl_all_ln_of,gfp_tramp,0);
   return sc_acc;
 }
-  
-  
-/**********************************************************************  
+
+
+/**********************************************************************
  ** fix_curvature
  ** fluxon_fix_curvature
  ** global_fix_curvature
- ** 
+ **
  ** You feed in a VEREX, and the curvature of the field line is
  ** compared with the upper and lower curvature threshold that you
  ** pass in (in radians). The vertex is split into 3 vertexes if the
@@ -2355,26 +2355,26 @@ int global_fix_proximity(WORLD *w, NUM scale_thresh) {
  ** fix_curvature, or you'll have to step through exactly half of any
  ** daughter VERTEXes that are created, or even crash if the vertex
  ** gets deleted.
- ** 
- ** Set 0 curvature to get 0.05 radian (~3 degrees) for splitting 
- ** and 1 degree for merging).  
+ **
+ ** Set 0 curvature to get 0.05 radian (~3 degrees) for splitting
+ ** and 1 degree for merging).
  **
  ** If a vertex has less than the low threshold, and is sufficiently
  ** far from other fluxons in the area, then it is unlinked and deleted.
  **
  ** fix_curvature splits single angles into triple angles, but is
  ** recursive:  a vertex with a too-acute angle is split into three
- ** vertices with a 2/3/2 split in angle.  If any given sub-vertex 
- ** is still too acute, then fix_curvature recurses on down the 
+ ** vertices with a 2/3/2 split in angle.  If any given sub-vertex
+ ** is still too acute, then fix_curvature recurses on down the
  ** line.  The 2/3/2 split is there to prevent vertices coming only
  ** in powers of three -- this way, the series of possible splits is
  ** 1, 3, 7, 9, 17, ...  instead of only powers of 3.
- ** 
+ **
  ** To make the fundamental 1->3 split, we blow a particular fluxel
- ** out into a pair of equal sides.  The new external vertex angle 
+ ** out into a pair of equal sides.  The new external vertex angle
  ** is 2/7 of the original vertex angle, ensuring the 2/3/2 split.
  **
- ** The proximity-curvature dual check may not be optimal for relaxation; 
+ ** The proximity-curvature dual check may not be optimal for relaxation;
  ** the two could stand to be tweaked a bit and merged somehow.
  **/
 
@@ -2390,13 +2390,13 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
   if(curve_thresh_high==0)
     curve_thresh_high = 0.05;
 
-  if(!V || !V->next || !V->prev || !V->line) 
+  if(!V || !V->next || !V->prev || !V->line)
     return 0;
 
 
   diff_3d(d1,V->prev->x,V->x); /* d1 = segment A */
   diff_3d(d2,V->x,V->next->x); /* d2 = segment B */
-  
+
   scale = 1.0/sqrt(norm2_3d(d1) * norm2_3d(d2));
 
   cross_3d(cr,d1,d2);
@@ -2446,21 +2446,21 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
 
       /* Check distance to nearest neighbor... */
       NUM dnext, dprev;
-      
+
       dnext = cart_3d(V->x, V->next->x);
       dprev = cart_3d(V->x, V->prev->x);
       if(dnext < V->r_ncl / 2 &&
 	 dprev < V->prev->r_ncl / 2) {
-      
+
 	/* Check maximum displacement of the fluxel if straightened */
 	NUM offset_dist;
 	NUM pdist,ndist;
-	
+
 	offset_dist = p_ls_dist(V->x,V->prev->x,V->next->x);
 	offset_dist *= 1.5;
-	if(offset_dist >= 0 && 
-	   offset_dist < V->prev->r_ncl && 
-	   offset_dist < V->r_cl && 
+	if(offset_dist >= 0 &&
+	   offset_dist < V->prev->r_ncl &&
+	   offset_dist < V->r_cl &&
 	   offset_dist < V->next->r_ncl) {
 	  if(V->line->fc0->world->verbosity > 3){
 	    printf("fix_curvature: unlinking %ld from line %ld\n",V->label,V->line->label);
@@ -2481,7 +2481,7 @@ int fluxon_fix_curvature(FLUXON *f, NUM curve_thresh_high, NUM curve_thresh_low)
   int verbosity = f->fc0->world->verbosity;
 
   if(verbosity >= 2) printf("fluxon_fix_curvature: fluxon %ld\n",f->label);
-  
+
   while(V && V != f->end) {
     VERTEX *Vnext = V->next;
     if(verbosity >= 3) printf("  vertex %ld\n",V->label);
@@ -2514,7 +2514,7 @@ int global_fix_curvature(WORLD *w, NUM curv_thresh_high, NUM curv_thresh_low) {
  */
 
 /******************************
- * reconnect_vertices: given two vertices on different fluxons, 
+ * reconnect_vertices: given two vertices on different fluxons,
  * swap their ->next connections.  No need to slosh vertices -- that is handled
  * adequately in gather_neighbor_candidates, on the next force iteration.
  *
@@ -2527,10 +2527,10 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
 
   f1 = v1->line;
   f2 = v2->line;
-  
+
   if(f1==f2) {
     /*********************************************
-     * Self-reconnection: create a new plasmoid 
+     * Self-reconnection: create a new plasmoid
      */
     FLUXON *Fnew;
     VERTEX *firstv, *lastv, *v;
@@ -2570,17 +2570,17 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     }
 
     /* Create the new plasmoid and link it into the world */
-    Fnew = new_fluxon(f1->flux, 
+    Fnew = new_fluxon(f1->flux,
 			       w->fc_pb,
 			       w->fc_pe,
 			       0,
 			       0
 		      );
     Fnew->plasmoid = 1;
-    
+
 
     /* Create the new plasmoid's end vertices and link them into the world */
-    Fnew->start = new_vertex(0, 
+    Fnew->start = new_vertex(0,
 			     lastv->x[0],lastv->x[1],lastv->x[2],
 			     Fnew);
 
@@ -2588,7 +2588,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
 			   firstv->x[0],firstv->x[1],firstv->x[2],
 			   Fnew);
 
-    
+
     /* Now cut the plasmoid out of the original fluxon... */
     v = firstv->next;
     firstv->next = lastv->next;
@@ -2607,16 +2607,16 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
 
     Fnew->end->prev = lastv;
     lastv->next = Fnew->end;
-    
+
     vertex_clear_neighbors(lastv);
     vertex_clear_neighbors(lastv->next);
     vertex_clear_neighbors(lastv->prev);
-    
+
     Fnew->v_ct = 2 + (ilast - ifirst);
-    
+
     for(i=0, v=Fnew->start; v; i++, v=v->next )
       v->line = Fnew;
-    
+
     if(i != Fnew->v_ct) {
       fprintf(stderr, "Error in plasmoid reconnection case - v_ct is %ld, i is %ld!\n", Fnew->v_ct, i);
       Fnew->v_ct = i;
@@ -2635,9 +2635,9 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     VERTEX *v, *vpstart;
 
     if(f1->plasmoid && !f2->plasmoid) {
-      // Swap the vertices to ensure that f2 is the plasmoid 
+      // Swap the vertices to ensure that f2 is the plasmoid
       v=v2; v2=v1; v1=v;
-      f1=v1->line; 
+      f1=v1->line;
       f2=v2->line;
     }
 
@@ -2671,7 +2671,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
 
     vertex_clear_neighbors(v1);
     vertex_clear_neighbors(v2);
-    
+
     // Set the fluxon pointer of all vertices
     for(v=f1->start; v; v=v->next)
       v->line = f1;
@@ -2688,10 +2688,10 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
 
     // Now delete the trivial plasmoid
     delete_fluxon(f2);
-     
+
   } else {
     /*********************************************
-     * Non-self-reconnection - normal case 
+     * Non-self-reconnection - normal case
      */
 
     printf("(normal case): Reconnecting (%ld; l=%ld%s) -- (%ld; l=%ld%s), pos (%.3g,%.3g,%.3g)\n",
@@ -2701,7 +2701,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     vv = v1->next;
     v1->next = v2->next;
     v1->next->prev = v1;
-    
+
     v2->next = vv;
     v2->next->prev = v2;
 
@@ -2713,9 +2713,9 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
       vertex_clear_neighbors(v1->prev);
     if(v2->prev)
       vertex_clear_neighbors(v2->prev);
-    
+
     /* Now clean up the fluxons and the back-to-fluxon links in the individual vertices. */
-    
+
     /* f1 */
     i=1;
     for( vv = f1->start; vv && vv->next; vv=vv->next ) {
@@ -2724,7 +2724,7 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     }
     f1->end = vv;
     f1->end->line = f1;
-    
+
     /* f2 */
     j=1;
     for( vv = f2->start; vv && vv->next; vv=vv->next ) {
@@ -2733,21 +2733,21 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     }
     f2->end = vv;
     f2->end->line = f2;
-    
+
     if(i+j != f1->v_ct + f2->v_ct) {
       fprintf(stderr,"Hmmm -- something's funny with the vertex count.  Reconnected %ld(fl %ld) to %ld (fl %ld), final total vertex count is %d, previously %ld\n",v1->label,f1->label,v2->label,f2->label,i+j,f1->v_ct+f2->v_ct);
     }
     f1->v_ct = i;
     f2->v_ct = j;
-    
+
     /* Switch the end flux concentrations... */
     f1->fc1->lines = tree_unlink(f1, fl_lab_of, fl_end_ln_of);
     f2->fc1->lines = tree_unlink(f2, fl_lab_of, fl_end_ln_of);
-    
+
     fc = f1->fc1;
     f1->fc1 = f2->fc1;
     f2->fc1 = fc;
-    
+
     f1->fc1->lines = tree_binsert(f1->fc1->lines, f1, fl_lab_of, fl_end_ln_of);
     f2->fc1->lines = tree_binsert(f2->fc1->lines, f2, fl_lab_of, fl_end_ln_of);
 
@@ -2756,13 +2756,13 @@ void reconnect_vertices( VERTEX *v1, VERTEX *v2, long passno ) {
     v2->passno = passno;
   }
 }
-  
+
 /******************************
- * v_recon_check: checks the current reconnection condition between a 
- * VERTEX and each of its neighbors.  The *following* segment is 
+ * v_recon_check: checks the current reconnection condition between a
+ * VERTEX and each of its neighbors.  The *following* segment is
  * (possibly) reconnected. Reconnection with an image charge
  * is not allowed!  The reconnection conditions are found via the rc_funcs table
- * in the world. 
+ * in the world.
  *
  * Cleanliness is achieved via the passno tainting mechanism, so you don't
  * get multiple reconnections of the same segment.
@@ -2778,10 +2778,10 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
 
   if(v1->passno == passno)
     return 0;
-  
-  for( i=0, rcfuncp = w->rc_funcs; 
-       !rv && i<N_RECON_FUNCS && *rcfuncp ; 
-       i++, rcfuncp++ ) 
+
+  for( i=0, rcfuncp = w->rc_funcs;
+       !rv && i<N_RECON_FUNCS && *rcfuncp ;
+       i++, rcfuncp++ )
     rv = (**rcfuncp)(v1,w->rc_params[i]);
 
   if(rv) {
@@ -2801,9 +2801,9 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
       return 0;
     }
 
-    if(!v1->next || 
-       !v1->next->next || 
-       !v1->next->next->next || 
+    if(!v1->next ||
+       !v1->next->next ||
+       !v1->next->next->next ||
        !v1->prev ||
        !v1->prev->prev ||
        !v1->prev->prev->prev ) {
@@ -2812,7 +2812,7 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
     }
 
 
-    if(!rv->next || 
+    if(!rv->next ||
        !rv->next->next ||
        !rv->next->next->next ||
        !rv->prev ||
@@ -2822,9 +2822,9 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
       return 0;
     }
 
-    if(v1->passno ==passno || 
-       rv->passno == passno || 
-       v1->next->passno == passno || 
+    if(v1->passno ==passno ||
+       rv->passno == passno ||
+       v1->next->passno == passno ||
        rv->next->passno == passno ||
        (v1->prev && v1->prev->passno==passno) ||
        (rv->prev && rv->prev->passno==passno) ||
@@ -2834,7 +2834,7 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
       fprintf(stderr,"    reconnect_vertices: tried to reconnect an already-reconnected vertex -- nope.\n");
       return 0;
     }
-    
+
     if(v1==rv) {
       fprintf(stderr,"    reconnect_vertices: error -- tried to reconnect a vertex to itself!\n");
       return 0;
@@ -2849,7 +2849,7 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
 /******************************
  * fluxon_recon_check
  * Iterates over all the vertices in a fluxon.
- * 
+ *
  * DEPRECATED!  The fluxon can disappear in midstream.  The
  * only way to avoid that is to fall back to the vertex level.
  *
@@ -2857,7 +2857,7 @@ int vertex_recon_check( VERTEX *v1, long passno ) {
 long fluxon_recon_check( FLUXON *f, long passno ) {
   VERTEX *v;
   int retval = 0;
-  if( !(f->start) || !(f->start->next) || !(f->start->next->next) ) 
+  if( !(f->start) || !(f->start->next) || !(f->start->next->next) )
     return retval;
 
   for(v=f->start->next; v->next && v->next->next; v=v->next) {
@@ -2888,8 +2888,8 @@ long global_recon_check(WORLD *w) {
   }
   grc_vertexlist->n = 0;
 
-  // Accumulate a DUMBLIST of all existing vertices that aren't 
-  // plasmoid starts or fluxon ends.  (No other vertex can be 
+  // Accumulate a DUMBLIST of all existing vertices that aren't
+  // plasmoid starts or fluxon ends.  (No other vertex can be
   // destroyed by the reconnection process...)
 
   tree_walker( w->vertices, v_lab_of, v_ln_of, grc_tramp, 0);
@@ -2897,7 +2897,7 @@ long global_recon_check(WORLD *w) {
   if(w->verbosity)
     printf("global_recon_check: found %d vertices to check...\n",grc_vertexlist->n);
 
-  for(i=0;i<grc_vertexlist->n;i++) 
+  for(i=0;i<grc_vertexlist->n;i++)
     recon_ct += vertex_recon_check((VERTEX *)(grc_vertexlist->stuff[i]) , passno);
 
   return recon_ct;
@@ -2905,16 +2905,16 @@ long global_recon_check(WORLD *w) {
 
 
 /******************************
- * fc_cancel - cancel two flux concentrations.  
+ * fc_cancel - cancel two flux concentrations.
  * The two flux concentrations must have opposite fluxes (one source, one sink).
- * Fluxons that connect one concentration to the other are deleted.  If, at the 
+ * Fluxons that connect one concentration to the other are deleted.  If, at the
  * end of the deletion, there are any fluxons left in the weaker of the two, then
- * fluxons are reconnected (in tree [random] order) to connect the two, and then 
- * deleted.  The process stops when one or both concentrations have all their 
+ * fluxons are reconnected (in tree [random] order) to connect the two, and then
+ * deleted.  The process stops when one or both concentrations have all their
  * flux exhausted.
  *
  * Finally, if either of the concentrations has zero flux remaining, it is deleted.
- * 
+ *
  * The first flux concentration must be a source, the second a sink.
  *
  * Returns 0 on success, or nonzero on failure.
@@ -2928,7 +2928,7 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
 
 
   if(v) printf("fc_cancel: %ld and %ld\n",fc0->label,fc1->label);
-  
+
   // Handle the trivial cases.
   if(!fc0->lines && !fc1->lines) {
     if(v) printf("fc_cancel: trivial case (both sides).\n");
@@ -2941,7 +2941,7 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
     if(v) printf("fc_cancel: trivial case (fc0).\n");
     delete_flux_concentration(fc0);
     return 0;
-  } 
+  }
 
   if(!fc1->lines) {
     if(v) printf("fc_cancel: trivial case (fc1).\n");
@@ -2977,18 +2977,18 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
       fprintf(stderr, "cancel: accounting error! (n_min=%ld, fc0 has %ld, fc1 has %ld)\n",n_min, (fc0->lines? fc0->lines->start_links.n : 0), (fc1->lines ? fc1->lines->end_links.n : 0) );
       return 3;
     }
-    
+
     if( fc0->lines->fc1 == fc1 ) {
       if(v) printf("fc_cancel: fluxon %ld (top of fc0) goes fc0->fc1\n",fc0->lines->label);
       delete_fluxon( fc0->lines );
       goto cancel_loop_end;
-    } 
+    }
 
     if( fc1->lines->fc0 == fc0 ) {
       if(v) printf("fc_cancel: fluxon %ld (top of fc1) goes fc0->fc1\n",fc1->lines->label);
       delete_fluxon( fc1->lines );
       goto cancel_loop_end;
-    } 
+    }
 
     if(v) printf("No fc0->fc1 found. Reconnecting %ld and %ld...\n",fc0->lines->label,fc1->lines->label);
     reconnect_vertices( fc0->lines->start, fc1->lines->end->prev, ++(fc0->world->passno));
@@ -3013,14 +3013,14 @@ int fc_cancel(FLUX_CONCENTRATION *fc0, FLUX_CONCENTRATION *fc1) {
 
   return 0;
 }
-    
+
 /********************************************************************
  * fluxon end-condition handlers - update end position of the fluxon
  * to be consistent with the boundary condition.
- * 
+ *
  * the utility routine funky_fl_b indicates whether it's OK for the final
  * segment of the fluxons on this flux concentration to end at the exact
- * same point in space.  If you add a new boundary condition that 
+ * same point in space.  If you add a new boundary condition that
  * allows swivel-hook action, you need to update funky_ends.
  */
 int funky_fl_b(FLUX_CONCENTRATION *fc) {
@@ -3037,14 +3037,14 @@ struct F_B_NAMES F_B_NAMES[] = {
   {fl_b_tied_inject, "fl_b_tied_inject", "Auto-inject new vertices to maintain one near the FC"},
   {fl_b_tied_force,  "fl_b_tied_force",  "Force the closest vertex to be near the FC"},
   {fl_b_open,        "fl_b_open",        "Enforce open (source surface) condition" },
-  {fl_b_plasmoid,    "fl_b_plasmoid",    "Enforce plasmoid (ourobouros) condition" }, 
+  {fl_b_plasmoid,    "fl_b_plasmoid",    "Enforce plasmoid (ourobouros) condition" },
   {0,                "(null)",           "Null condition" },
   {0, 0},
   {0, 0}
 };
 void *boundary_name_to_ptr(char *s) {
   int i;
-  if(!s) 
+  if(!s)
     return 0;
   for(i=0; F_B_NAMES[i].name; i++) {
     if(!strcmp(s, F_B_NAMES[i].name)){
@@ -3090,11 +3090,11 @@ void fl_b_tied_inject(VERTEX *v) {
     if(lr>0) {
       diff_3d(a, v->next->x, v->x);
       r = norm_3d(a);
-      
+
       if(r > lr) {
 	VERTEX *vn;
 	long i;
-       
+
 	// Inject a new vertex, colinear, halfway between the offending vertex and the start
 	sum_3d(a, v->next->x, v->x);
 	scale_3d(a, a, 0.5);
@@ -3102,7 +3102,7 @@ void fl_b_tied_inject(VERTEX *v) {
 	add_vertex_after(v->line, v, vn);
 
 	vn->r_cl = v->r_cl;
-	
+
 	// Seed the new vertex with some neighbors...
 	for(i=0;i<v->neighbors.n;i++) {
 	  dumblist_add( &(vn->neighbors), v->neighbors.stuff[i] );
@@ -3133,21 +3133,21 @@ void fl_b_tied_inject(VERTEX *v) {
 	vn->r_s = v->r_s;
 	vn->b_mag = v->b_mag;
 	cp_3d(vn->b_vec, v->b_vec);
-	
+
 
       }
     }
     return;
-  } 
+  }
 
 
   else if( !v->next ) {
-    
+
     // Handle end-of-fluxon case
 
     cp_3d(v->x, v->line->fc1->x);
 
-    lr = v->line->fc1->locale_radius; 
+    lr = v->line->fc1->locale_radius;
     if(lr>0) {
       diff_3d(a, v->prev->x, v->x);
       r = norm_3d(a);
@@ -3155,15 +3155,15 @@ void fl_b_tied_inject(VERTEX *v) {
       if(r > lr) {
 	VERTEX *vn;
 	long i;
-	
+
 	// Inject a new vertex, colinear, halfway between the offending vertex and the end
 	sum_3d(a, v->prev->x, v->x);
 	scale_3d(a, a, 0.5);
 	vn = new_vertex(0, a[0], a[1], a[2], v->line);
 	add_vertex_after(v->line, v->prev, vn);
-	
+
 	vn->r_cl = v->prev->r_cl;
-	
+
 	// Seed the new vertex with some neighbors...
 	for(i=0;i<v->prev->neighbors.n;i++) {
 	  dumblist_add( &(vn->neighbors), v->prev->neighbors.stuff[i] );
@@ -3197,7 +3197,7 @@ void fl_b_tied_inject(VERTEX *v) {
   }
 
 }
-	
+
 void fl_b_tied_force(VERTEX *v) {
   POINT3D a;
   NUM lr;
@@ -3217,7 +3217,7 @@ void fl_b_tied_force(VERTEX *v) {
     if( lr > 0 ) {
       diff_3d(a, v->next->x, v->x);
       r = norm_3d(a);
-      
+
       if( r > lr ) {
 	scale_3d(a, a, lr / r);
 	sum_3d(v->next->x, a, v->x);
@@ -3228,8 +3228,8 @@ void fl_b_tied_force(VERTEX *v) {
   }
 
   else if(!v->next) {
-    
-    // handle end-of-fluxon case 
+
+    // handle end-of-fluxon case
 
     cp_3d(v->x, v->line->fc1->x);
 
@@ -3237,7 +3237,7 @@ void fl_b_tied_force(VERTEX *v) {
     if(lr > 0) {
       diff_3d(a, v->prev->x, v->x);
       r = norm_3d(a);
-      
+
       if( r > lr ) {
 	scale_3d( a, a, lr/r );
 	sum_3d(v->prev->x, a, v->x);
@@ -3264,7 +3264,7 @@ void fl_b_open(VERTEX *v) {
       fprintf(stderr,"HEY! fl_b_tied got a loner vertex! Ignoring...\n");
       return;
     }
-    
+
     /** Start vertex **/
     if(v->line->fc0->locale_radius > 0) {
       diff_3d( a,    v->next->x, v->line->fc0->x );
@@ -3289,7 +3289,7 @@ void fl_b_open(VERTEX *v) {
 
   /** Shouldn't get here (normally) **/
   fprintf(stderr,"HEY! fl_b_open got a middle vertex! Doing nothing...\n");
-}    
+}
 
 void fl_b_plasmoid(VERTEX *v) {
   if(!v->prev) {
@@ -3299,30 +3299,30 @@ void fl_b_plasmoid(VERTEX *v) {
       fprintf(stderr,"HEY! fl_b_plasmoid got a loner vertex! Ignoring....\n");
       return;
     }
-    
+
     /** Start vertex **/
 
     if(!v->next->next)
       return;
-    
+
     cp_3d( v->x, v->line->end->prev->x );
     return;
 
   }
 
   if(!v->next) {
-    
+
     /** End vertex **/
 
     if(!v->prev->prev)
       return;
-    
+
     cp_3d( v->x, v->line->start->next->x );
     return;
   }
 
   fprintf(stderr,"HEY! fl_b_plasmoid got a middle vertex! Doing nothing...\n");
-  
+
 }
 
 /**********************************************************************
@@ -3336,10 +3336,10 @@ void fl_b_plasmoid(VERTEX *v) {
  * processes are handled via another DUMBLIST, and their results are
  * processed via the binary dump mechanism.
  *
- * 
- * The parallel_prep and parallel_finish set up initial operations to get the 
- * various globals set right.  
- * 
+ *
+ * The parallel_prep and parallel_finish set up initial operations to get the
+ * various globals set right.
+ *
  */
 
 /******************************
@@ -3360,7 +3360,7 @@ typedef struct SUBPROC_DESC {   // Keeps track of what we spawned...
 } SUBPROC_DESC;
 static SUBPROC_DESC *sbd, *sbdi;    // Used for bookkeeping subprocs.
 
-int (*work_springboard)(FLUXON *f); // Contains the actual action 
+int (*work_springboard)(FLUXON *f); // Contains the actual action
 
 
 /******************************
@@ -3376,7 +3376,7 @@ static long v_ct_springboard(FLUXON *fl, int lab, int link, int depth) {
 
 /******************************
  * parallel_prep - call this to set up a parallelization run.
- * Counts vertices and sets the v_thresh, and zeroes out the 
+ * Counts vertices and sets the v_thresh, and zeroes out the
  * subproc dumblist...
  */
 void parallel_prep(WORLD *a) {
@@ -3391,15 +3391,15 @@ void parallel_prep(WORLD *a) {
   }
 
   sbdi = sbd = (SUBPROC_DESC *)localmalloc(sizeof(SUBPROC_DESC) * a->concurrency, MALLOC_MISC);
-  
+
   if(!sbd) {
     fprintf(stderr,"parallel_prep: sbd is 0 (malloc failed).  I'm about to crash....\n");
   }
 
   // Zero out the pointers and such in the dumblists, so as not to confuse the library.
-  for(i=0;i<a->concurrency; i++) 
+  for(i=0;i<a->concurrency; i++)
     dumblist_init(&(sbd[i].batch));
- 
+
   /* Accumulate the total number of vertices, to divide 'em up about equally */
   v_ct = 0;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, v_ct_springboard,0);
@@ -3407,25 +3407,25 @@ void parallel_prep(WORLD *a) {
 
   v_thresh = v_ct / a->concurrency;
   fflush(stdout);
-  
+
   dumblist_clear(fluxon_batch);
   v_ct = 0; // Zero the vertex count for comparison against v_thresh...
 }
 
 
 /******************************
- * parallel_fluxon_spawn_springboard - call this from tree_walker 
+ * parallel_fluxon_spawn_springboard - call this from tree_walker
  * to launch your task, parallelized by fluxon.  You determine the
- * task by setting the global work_springboard, which is a 
+ * task by setting the global work_springboard, which is a
  * pointer to a function that accepts a FLUXON * and returns an
- * int.  
+ * int.
  */
 
 static int parallel_daughter(int p); // handles processing in the daughters.
 
 static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int depth) {
   /* Skip magic boundary fluxons */
-  if( FL_ISDUMMY(fl) ) 
+  if( FL_ISDUMMY(fl) )
     return 0;
 
   dumblist_add( fluxon_batch, fl );
@@ -3463,7 +3463,7 @@ static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int
       /* parent: Clear the batch list for next time */
       v_ct = 0;
       dumblist_clear( fluxon_batch );
-      
+
       return 0;
 
     } else {
@@ -3485,16 +3485,16 @@ static long parallel_fluxon_spawn_springboard(FLUXON *fl, int lab, int link, int
 }
 
 /******************************
- * parallel_daughter 
+ * parallel_daughter
  * Handle springboard processing in the daughter processes.
- * If the pipe argument contains an actual fd, then 
+ * If the pipe argument contains an actual fd, then
  * it dumps the fluxon results to the pipe (which carries them
  * back to the parent process.
  */
 int parallel_daughter(int p) {
   int i;
   int pid = getpid();
-  
+
   for(i=0; i<fluxon_batch->n; i++) {
     FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
     if(f->fc0->world->verbosity) {
@@ -3507,7 +3507,7 @@ int parallel_daughter(int p) {
       return(1);
     }
   }
-  
+
   if(p) {
     for(i=0; i<fluxon_batch->n; i++) {
       FLUXON *f = ((FLUXON **)(fluxon_batch->stuff))[i];
@@ -3522,7 +3522,7 @@ int parallel_daughter(int p) {
  * parallel_finish - call this to suck back in all the state
  * from the daughter subprocesses.  If there's a failure (e.g. an
  * interrupted system call) then re-try the daughter call.
- * 
+ *
  * Returns 0 on normal completion, 1 on error.
  */
 int parallel_finish(WORLD *a) {
@@ -3540,8 +3540,8 @@ int parallel_finish(WORLD *a) {
     brd_ret = binary_read_dumpfile( sbdii->pipe, a );
     close(sbdii->pipe);
 
-    // Uh oh -- we failed!  Re-try the daughter process task. 
-    // Since this shouldn't happen too often, we just do it here 
+    // Uh oh -- we failed!  Re-try the daughter process task.
+    // Since this shouldn't happen too often, we just do it here
     // in the parent rather than trying to respawn the daughter.
 
     if(!brd_ret) {
@@ -3553,7 +3553,7 @@ int parallel_finish(WORLD *a) {
 	fprintf(stderr," %ld",( ((FLUXON **)(fluxon_batch->stuff))[i] )->label );
       }
       fprintf(stderr,"!\n     This is sometimes caused by a system interrupt damaging the pipe. Re-trying in the parent...\n");
-      
+
       i = parallel_daughter(0); // sending 0 omits dumping
       if(i) {
 	fprintf(stderr,"     task failed on re-try.  I will snarf all remaining data and return an error.\n");
@@ -3593,7 +3593,7 @@ int parallel_finish(WORLD *a) {
 
   // Clean up the cached batches and free them (a waste - we really
   // ought to keep 'em around for next time...)
-  for(sbdii=sbd; sbdii<sbdi; sbdii++) 
+  for(sbdii=sbd; sbdii<sbdi; sbdii++)
     dumblist_clean(&(sbdii->batch));
   localfree(sbd);
 
@@ -3603,7 +3603,7 @@ int parallel_finish(WORLD *a) {
 
 
    /******************************
-   * Done with mid-fluxon update -- now adjust the start and end positions 
+   * Done with mid-fluxon update -- now adjust the start and end positions
    * depending on boundary condition.  (Currently only line-tied, open-sphere, and
    * open-plane boundary conditions are supported).
    *
@@ -3651,16 +3651,16 @@ void world_relax_step_parallel(WORLD *a, NUM t) {
     return;
   }
   a->state = WORLD_STATE_WORKING;
-  
+
   init_minmax_accumulator(a);
 
   parallel_prep(a);                       // Get ready
-  gl_t = t;                               // Set up global dtau variable for springboarding                                 
+  gl_t = t;                               // Set up global dtau variable for springboarding
   work_springboard = fluxon_calc_step_sb; // This is the parallelized operation
-  gl_binary_dumper = binary_dump_flstep;  
-  
+  gl_binary_dumper = binary_dump_flstep;
 
-  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0); 
+
+  tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0);
 
   parallel_finish(a);     // Snarf up our state again
 
@@ -3706,7 +3706,7 @@ int world_update_mag_parallel(WORLD *a, char global) {
   work_springboard = fluxon_update_mag_sb;
   gl_binary_dumper = binary_dump_fluxon_pipe;
   tree_walker(a->lines, fl_lab_of, fl_all_ln_of, parallel_fluxon_spawn_springboard, 0);
-  
+
   parallel_finish(a);
 
   return 0;
@@ -3716,7 +3716,7 @@ int world_update_mag_parallel(WORLD *a, char global) {
 
 /**********************************************************************
  * Photosphere hull routines
- * 
+ *
  * Tese routines are to find the hull of the begin/end vertices on the
  * photosphere. They are only called through PDL (p
  * $w->vertex(#)->photohull), and none of the information is stored in
@@ -3725,19 +3725,19 @@ int world_update_mag_parallel(WORLD *a, char global) {
 
 /**********************************************************************
  * gather_photosphere_neighbor_candidates
- * 
+ *
  * This finds the neighbor candidates of a first or last vertex on a
  * planar photosphere. The list of neighnor candidates are all of the
  * other first/last vertices in the world. This can be slow. This
  * routine was developed for determining the exact hull (and hence
  * flux) on a photosphere for a better energy calculation.
- * 
+ *
  * It returns a pointer to its own workspace -- so calling it kills
  * your last instance of its return value, unless you've gone and copied
  * it yourself.
- * 
- * Use with other routines that have 'photosphere' in the name. 
- * 
+ *
+ * Use with other routines that have 'photosphere' in the name.
+ *
  * Created by Laurel Rachmeler: Jan 2009.
  *
  */
@@ -3761,7 +3761,7 @@ static long begin_end_snarfer(FLUXON *f, int lab_of, int ln_of, long depth) {
   if (f->label > 0) {
     if (funky_fl_b(f->fc0) && f->start->passno != passno)
       dumblist_quickadd(snarfer_workspace, f->start);
-    if (funky_fl_b(f->fc1) && f->end->passno != passno)  
+    if (funky_fl_b(f->fc1) && f->end->passno != passno)
       dumblist_quickadd(snarfer_workspace, f->end);
   }
   return 0;
@@ -3776,7 +3776,7 @@ DUMBLIST *gather_photosphere_neighbor_candidates(VERTEX *v, char global){
   int verbosity = v->line->fc0->world->verbosity;
   long passno = ++(v->line->fc0->world->passno);
   v->passno = passno; //identifier for current vertex
-  
+
   if(verbosity >= 2) {
     printf("passno=%ld...  ",passno);
   }
@@ -3791,7 +3791,7 @@ DUMBLIST *gather_photosphere_neighbor_candidates(VERTEX *v, char global){
     return 0;
   }
 
-  if(!workspace) 
+  if(!workspace)
     workspace = new_dumblist();
 
   workspace->n = 0;
@@ -3867,7 +3867,7 @@ HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   static HULL_VERTEX *voronoi_buf = 0;
   static int voronoi_bufsiz = 0;
 
-  if(v->line->fc0->world->verbosity >= 5) 
+  if(v->line->fc0->world->verbosity >= 5)
     printf("Entering photosphere hull_neighbors...\n");
 
   if(v != v->line->start && v != v->line->end){
@@ -3902,13 +3902,13 @@ HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde) {
     if(!voronoi_buf) {
       fprintf(stderr,"Couldn't get memory in hull_neighbors!\n");
       exit(99);
-    } 
+    }
 
   }
 
   if(verbosity > 1) {
     printf(".");
-    
+
     if(verbosity >= 5)
       printf("V%4ld: (%7.3g, %7.3g, %7.3g) -- (%7.3g, %7.3g, %7.3g)\n",v->label,v->x[0],v->x[1],v->x[2], v->next->x[0],v->next->x[1],v->next->x[2]);
   }
@@ -3918,7 +3918,7 @@ HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde) {
       are they the same?; */
   hull_2d_us(voronoi_buf, horde, v);
 
-  projmatrix(pm,or,v->line->fc0->world->photosphere.plane->normal); 
+  projmatrix(pm,or,v->line->fc0->world->photosphere.plane->normal);
   //pm is the rotation matrix to the plane perpendicular to the photosphere
 
   for(i=0;i<horde->n;i++){ /* set the z-coord of the hull vertex */
@@ -3929,32 +3929,32 @@ HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde) {
     sum_3d(temp_p,temp_p,v->x);
     cp_3d(voronoi_buf[i].p,temp_p);
   }
-  
+
   if(horde->n==0) {
     printf("VERTEX %ld: hull_2d gave up! That's odd....\n",v->label);
   }
 
   if(verbosity >= 5){
     printf("hull_neighbors_photosphere:  hull trimming gives:\n");
-    for(i=0;i<horde->n;i++) 
+    for(i=0;i<horde->n;i++)
       printf("%ld ",((VERTEX *)(horde->stuff[i]))->label); fflush(stdout);
     printf("\n");
   }
-  
+
   return voronoi_buf;
 }
 
 
 /**********************************************************************
- * photosphere_vertex_update_neighbors 
- * 
+ * photosphere_vertex_update_neighbors
+ *
  * Updates a begin/end vertex's neighbor list using
  * gather_photosphere_neighbor_candidates followed by
  * winnow_neighbor_candidates and hull_neighbors.
- * 
+ *
  * Returns the hull vertex list that is used in the final winnowing
  * process, since it's needed for some of the force laws (see
- * vertex_update_mag).  
+ * vertex_update_mag).
  */
 
 HULL_VERTEX *photosphere_vertex_update_neighbors(VERTEX *v, char global, int *n_ptr) {
@@ -3994,11 +3994,11 @@ HULL_VERTEX *photosphere_vertex_update_neighbors(VERTEX *v, char global, int *n_
   }
 
   hv = photosphere_hull_neighbors(v, dl); /* save hv for return */
-  
+
   if(verbosity >= 3) {
     printf("Hull_neighbors returned %d neighbors: ",dl->n);
     if(verbosity >= 4)
-      for(i=0;i<dl->n;i++) 
+      for(i=0;i<dl->n;i++)
 	printf("  %ld",((VERTEX *)((dl->stuff)[i]))->label);
     printf("\n");
   }
