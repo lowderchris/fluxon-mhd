@@ -223,8 +223,7 @@ a World to an ASCII string whenever it is used in string context.
     
 sub _stringify {
     my $me = shift;
-    my $s="";
- 
+
     my @s = $me->string;
     my @lines = grep(m/^\s*LINE/,@s);
     my @vertices = grep(m/^\s*VERTEX/,@s);
@@ -1044,6 +1043,10 @@ Flag indicating the width of the LineStrip objects used to render the fluxons.
 Flag indicating whether to indicate the numeric label of every vertex.
 (Default is 0).  If label is an array ref, then it is treated as a
 list of fluxons to label -- all other fluxons are NOT labeled.
+
+=item label_fluxons
+
+Flag indicating whether to label individual fluxons (at both endpoints).
 
 =item neighbors
 
