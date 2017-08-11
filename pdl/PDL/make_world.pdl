@@ -146,7 +146,7 @@ sub make_world {
     $ln++;
     for my $k(1..$line->dim(1)-2) {
      ## print "line $ln; k=$k\n";
-      push(@out,sprintf('VERTEX %d %d %d %9.*5$g %9.*5$g %9.*5$g',
+      push(@out,sprintf('VERTEX %d %d %d %9.*7$g %9.*7$g %9.*7$g',
 			$fl,
 			$j++,
 			$k,
