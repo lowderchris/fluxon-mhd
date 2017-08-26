@@ -116,7 +116,7 @@ sub simple_relaxer {
 	!ref($_[1]) && !ref($_[2]) && !ref($_[3]) ) {
 	die "Looks like you're using the old calling convention for simple_relaxer.  Please delete the 'interactive' flag from your call.";
     }
-    
+
     my $w = shift;
     my $global = shift || 0;
     my $n=shift||0;

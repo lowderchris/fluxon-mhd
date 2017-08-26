@@ -2344,7 +2344,7 @@ int global_fix_proximity(WORLD *w, NUM scale_thresh) {
  ** fluxon_fix_curvature
  ** global_fix_curvature
  **
- ** You feed in a VEREX, and the curvature of the field line is
+ ** You feed in a VERTEX, and the curvature of the field line is
  ** compared with the upper and lower curvature threshold that you
  ** pass in (in radians). The vertex is split into 3 vertexes if the
  ** curvature is too high, and the vertexs is deleted if the curvature
@@ -3261,7 +3261,7 @@ void fl_b_open(VERTEX *v) {
 
     /** Check for loner vertex **/
     if(!v->next) {
-      fprintf(stderr,"HEY! fl_b_tied got a loner vertex! Ignoring...\n");
+      fprintf(stderr,"HEY! fl_b_open got a loner vertex! Ignoring...\n");
       return;
     }
 
