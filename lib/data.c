@@ -695,13 +695,13 @@ void unlink_vertex(VERTEX *v) {
 #ifdef NEVER
   {
     int ii;
-    printf("unlink_vertex: unlinking %d.\n\tNeighbors are: ",v->label);
+    printf("unlink_vertex: unlinking %ld.\n\tNeighbors are: ",v->label);
     for(ii=0;ii<v->neighbors.n;ii++) {
-      printf("%d ",v->neighbors.stuff[ii]?(((VERTEX *)(v->neighbors.stuff[ii]))->label):0);
+      printf("%ld ",v->neighbors.stuff[ii]?(((VERTEX *)(v->neighbors.stuff[ii]))->label):0);
     }
     printf("\n\tNearby is: ");
     for(ii=0;ii<v->nearby.n;ii++) {
-      printf("%d ",v->nearby.stuff[ii]?(((VERTEX *)(v->nearby.stuff[ii]))->label):0);
+      printf("%ld ",v->nearby.stuff[ii]?(((VERTEX *)(v->nearby.stuff[ii]))->label):0);
     }
     printf("\n");
   }
@@ -843,7 +843,7 @@ void unlink_vertex(VERTEX *v) {
     }
 
     if(w->verbosity>=4){
-      printf("Finished unlinking vertex\n");
+      printf("Finished unlinking vertex %ld\n",v->label);
     }
   }
 }

@@ -484,7 +484,7 @@ void f_pressure_equi2(VERTEX *V, HULL_VERTEX *verts, int segflag) {
 	  VERTEX *vn;
 	  for(j=0;j<V->neighbors.n;j++) {
 	    vn = ((VERTEX *)(V->neighbors.stuff[j]));
-	    fprintf(stderr,"Neighbor #%d: label is %d, a is %g, r is %g, hull angles: %g, %g\n",j,vn->label,vn->a*180/3.1415926,vn->r, verts[j].a_l*180/3.14159,verts[(j+1) % V->neighbors.n].a_r*180/3.14159);
+	    fprintf(stderr,"Neighbor #%d: label is %ld, a is %g, r is %g, hull angles: %g, %g\n",j,vn->label,vn->a*180/3.1415926,vn->r, verts[j].a_l*180/3.14159,verts[(j+1) % V->neighbors.n].a_r*180/3.14159);
 	    //    for(k=0;k<vn->nearby.n;k++) {
 	    //  fprintf(stderr,"  nearby #%d: %d\n",k,((VERTEX *)(vn->nearby.stuff[k]))->label);
 	    //}
