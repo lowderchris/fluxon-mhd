@@ -192,7 +192,7 @@ long hash_vertex_label(long request, WORLD *w) {
   }
 
   // Try ten times to find a non-collision
-  while(tree_find( w->vertices, new_label, v_lab_of, v_ln_of ) && count < 10) {
+  while(tree_find( w->vertices, new_label, v_lab_of, v_ln_of ) && count++ < 10) {
     new_label = random() & 0x7fffffff;
   }
 
