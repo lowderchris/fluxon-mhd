@@ -25,6 +25,10 @@ Options:
 
 =item rmax
 
+Sets the GLOBAL OPEN radius to this value (plus 1).  By default, the
+auto_open flag is set to true, so you should turn that off after
+calling make_world if you don't want it on.
+
 =item precision
 
 A positive integer (default 6) that sets to how many decimal places of
@@ -73,7 +77,7 @@ sub make_world {
   push(@out, "GLOBAL B2 " . $phot_types[$phot2->[0]] . ' ' . join(' ',@$phot2[1..6])) if $phot2->[0];
   push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 1") unless ($phot->[0] or $phot2->[0]);
 
-  push(@out, "GLOBAL OPEN 0 0 0 ".($opt->{rmax}+1)) if($opt->{rmax});
+  push(@out, "GLOBAL OPEN 0 0 0 " . ($opt->{rmax}+1) . " 1") if($opt->{rmax});
   push(@out,"");
 
   my $j=100;
