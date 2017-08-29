@@ -2463,10 +2463,14 @@ int fix_curvature(VERTEX *V, NUM curve_thresh_high, NUM curve_thresh_low) {
     scale_3d(V->x,P,1.0/3);
 
     /* Make the new prior vertex, and link */
-    add_vertex_after(V->line, V->prev,
-		     new_vertex(0, P0[0],P0[1],P0[2], V->line));
-    add_vertex_after(V->line, V,
-		     new_vertex(0, P1[0],P1[1],P1[2], V->line));
+    if( add_vertex_after(V->line, V->prev,new_vertex(0, P0[0],P0[1],P0[2], V->line)) ) {
+      fprintf(stderr,"add_vertex_after error with line %ld, prev %ld",V->line->label,V->prev->label);
+      return 0;
+    }
+    if( add_vertex_after(V->line, V,new_vertex(0, P1[0],P1[1],P1[2], V->line)) ) {
+      fprintf(stderr,"add_vertex_after error with line %ld, V %ld",V->line->label,V->label);
+      return 0;
+    }
 
     // Force global neighbor checks...
     vertex_clear_neighbors(V->prev);
