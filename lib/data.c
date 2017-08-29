@@ -787,7 +787,7 @@ void unlink_vertex(VERTEX *v) {
     } else {
       printf("NOTICE: In unlink_vertex, we reached an else condition that probably shouldn't have been possible: we just ran dumblist_crunch on v->neighbors.  Now v's neighbor #%d (vertex 'a') is at memory location %p and v is at memory location %p\n",i,a,v);
     }
-    //v->neighbors.stuff[i]=0;//????????DAL added for symmetry with below, but probably non-functional
+    //v->neighbors.stuff[i]=0;//DAL added for symmetry with below, but probably non-functional
   }
   v->neighbors.n=0;
 
@@ -832,7 +832,10 @@ void unlink_vertex(VERTEX *v) {
     }  else {
       printf("NOTICE: In unlink_vertex, we reached an else condition that probably shouldn't have been possible: we just ran dumblist_crunch on v->nearby.  Now v's nearby #%d (vertex 'a') is at memory location %p and v is at memory location %p\n",i,a,v);
     }
-    v->nearby.stuff[i]=0;
+    if(v->nearby.stuff[i]!=0){
+      printf("NOTICE2: setting v->nearby.stuff[%d]=0, since it isn't already (it is %ld).\n",i,v->nearby.stuff[i]);
+      v->nearby.stuff[i]=0;//DAL: also probably non-functional, but kept for now.
+    }
   }
   v->nearby.n=0;
   v->prev = 0;
