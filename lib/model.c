@@ -393,7 +393,7 @@ void fluxon_auto_open(FLUXON *f) {
 	    NUM x2[3];
 	    diff_3d(x2, Vnext->x, w->fc_oe->x);
 	    rn_n = norm_3d(x2)/w->fc_oe->locale_radius;
-	    inside = (rn_n < 1);
+	    inside = (rn_n < 1 - FP_EPSILON );
 	    if (!inside) {
 	      Vnext = Vnext->next;
 	    }
@@ -438,7 +438,7 @@ void fluxon_auto_open(FLUXON *f) {
 	  diff_3d(xp, v->prev->x, w->fc_ob->x);
 	  rp_n = norm_3d(xp)/w->fc_ob->locale_radius;
 
-	  if(rp_n > 1) {
+	  if(rp_n > 1 + FP_EPSILON ) {
 
 	    /* If there are no previous inside vertices, but there are following
 	     * inside vertices, then we need to open the beginning...

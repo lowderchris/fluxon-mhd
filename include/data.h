@@ -30,6 +30,8 @@
  * the 'l' makes the parse a double.]
  */
 #define NUMCHAR "l"
+#include <float.h>
+#define FP_EPSILON DBL_EPSILON /*change to FLT_EPSILON or LDBL_EPSILON if NUM is changed */
 
 #include <stdlib.h>
 #include <stddef.h>
