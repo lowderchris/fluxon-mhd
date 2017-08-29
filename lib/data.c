@@ -745,14 +745,28 @@ void unlink_vertex(VERTEX *v) {
   for(i=0;i<v->neighbors.n;i++) {
     int j;
     VERTEX *a = ((VERTEX **)(v->neighbors.stuff))[i];
-    
-    if( a && a != v ) {
-      //      printf(" neighbor %d: purging %d's nearby link to %d\n",i,a->label,v->label);
+
+    if( a && a != v ) { //could we get rid of both of these conditions? We just ran dumblist_crunch on v->neighbors(and also in neary loop below)  Keeping in for now, with the NOTICE below.
+      if(v->line->fc0->world->verbosity>=3)
+	printf(" neighbor %d: purging %ld's nearby link to %ld\n",i,a->label,v->label);
 
       long n = a->nearby.n;
       dumblist_delete( &(a->nearby), v);
       if(n == a->nearby.n) {
   	printf("WHOA THERE! doomed vertex %ld's neighbor %ld had no nearby link back!\n",v->label,a->label);
+
+	//DAL print extra diagnostics
+	printf("%ld's nearby list is: ",a->label);
+	for(j=0; j<a->nearby.n; j++) {
+	  printf("%ld ",( ((VERTEX **)(a->nearby.stuff))[j] )->label);
+	}
+	printf("\n");
+	printf("doomed vertex %ld has neighbor list: ",v->label);
+	for(j=0; j<v->neighbors.n; j++) {
+	  printf("%ld ",( ((VERTEX **)(v->neighbors.stuff))[j] )->label);
+	}
+	printf("\n");
+	printf("(we're on the %dth element of the neighbor list)\n",i);
       }
 
       if(v->next && a != v->next && a != v->next->next ) {
@@ -760,25 +774,44 @@ void unlink_vertex(VERTEX *v) {
       	dumblist_add(    &(a->nearby), v->next);
       }
 
-      if(v->prev && a != v->prev && a != v->prev->prev ) {     
+      if(v->prev && a != v->prev && a != v->prev->prev ) {
 	dumblist_add(    &(v->prev->neighbors), a);
 	dumblist_add(    &(a->nearby), v->prev);
       }
+    } else {
+      printf("NOTICE: In unlink_vertex, we reached an else condition that probably shouldn't have been possible: we just ran dumblist_crunch on v->neighbors.  Now v's neighbor #%d (vertex 'a') is at memory location %p and v is at memory location %p\n",i,a,v);
     }
+    //v->neighbors.stuff[i]=0;//????????DAL added for symmetry with below, but probably non-functional
   }
   v->neighbors.n=0;
 
   dumblist_crunch(&(v->nearby));
 
   for(i=0;i<v->nearby.n;i++) {
+    int j;
     VERTEX *a = ((VERTEX **)(v->nearby.stuff))[i];
-    if( a && a != v ) {
+    if( a && a != v ) { //kept for now with NOTICE below.
+     if(v->line->fc0->world->verbosity>=3)
+       printf(" nearby %d: purging %ld's neighbor link to %ld\n",i,a->label,v->label);
 
-      // printf(" nearby %d: purging %d's neighbor link to %d\n",i,a->label,v->label);
       long n = a->neighbors.n;
       dumblist_delete(&(a->neighbors), v);
       if(n == a->neighbors.n) {
 	printf("WHOA THERE! doomed vertex %ld's nearby %ld had no neighbor link back!\n",v->label,a->label);
+
+	//DAL print extra diagnostics
+	printf("%ld's neighbor list is: ",a->label);
+	for(j=0; j<a->neighbors.n; j++) {
+	  printf("%ld ",( ((VERTEX **)(a->neighbors.stuff))[j] )->label);
+	}
+	printf("\n");
+	printf("doomed vertex %ld has nearby list: ",v->label);
+	for(j=0; j<v->nearby.n; j++) {
+	  printf("%ld ",( ((VERTEX **)(v->nearby.stuff))[j] )->label);
+	}
+	printf("\n");
+	printf("(we're on the %dth element of the nearby list)\n",i);
+
       }
       
       if(v->next && a != v->next && a != v->next->next ) {
@@ -790,6 +823,8 @@ void unlink_vertex(VERTEX *v) {
 	dumblist_add(   &(a->neighbors), v->prev);
 	dumblist_add(   &(v->prev->nearby), a);
       }
+    }  else {
+      printf("NOTICE: In unlink_vertex, we reached an else condition that probably shouldn't have been possible: we just ran dumblist_crunch on v->nearby.  Now v's nearby #%d (vertex 'a') is at memory location %p and v is at memory location %p\n",i,a,v);
     }
     v->nearby.stuff[i]=0;
   }
@@ -2167,7 +2202,7 @@ void dumblist_shellsort( DUMBLIST *dl, int ((*cmp)(void *a, void *b)) ) {
 
 /******************************
  * dumblist_crunch 
- * crunches a SORTED dumblist, removing duplicate elements and nulls. duplicate
+ * crunches a dumblist, removing duplicate elements and nulls. duplicate
  * elements must be pointing to same thing to be considered duplicate.
  * 
  * The dumblist need not be sorted.
