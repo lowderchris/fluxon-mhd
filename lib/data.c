@@ -323,8 +323,14 @@ VERTEX *new_vertex(long label, NUM x, NUM y, NUM z, FLUXON *fluxon) {
   tp->b_mag = 0;
   tp->b_vec[0] = tp->b_vec[1] = tp->b_vec[2] = 0;
 
-  tp->label = label ? hash_vertex_label(label, fluxon->fc0->world) : hash_vertex_label(0, fluxon->fc0->world);
-  
+  //  tp->label = label ? hash_vertex_label(label, fluxon->fc0->world) : hash_vertex_label(0, fluxon->fc0->world);
+  /* DAL try hash_ --> new_ here (twice) to revert to the old behavior
+     of making the new vertex labels sequential instead of randomized
+     by md5.  Sequential is helpful for making runs reproducible when
+     debugging.
+   */
+  tp->label = label ? new_vertex_label(label) : new_vertex_label(0);
+
   tp->rho = 0;
   tp->p[0] = tp->p[1] = tp->p[2] = 0;
   tp->T = 0;
