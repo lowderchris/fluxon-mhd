@@ -1,10 +1,38 @@
-=head2 make_world - given a list of lines, make a world.
+=head2 make_world
 
 =for ref
 
-You feed in a list of pdls, one pdl per fluxon.  You get back a world
-with default characteristics and two flux concentrations per fluxon (north
-at the beginning, south at the end).
+Given a list of lines, generate a string that can be used to make a world.
+
+You feed in a list of pdls, one pdl per fluxon.  You get back a string
+that can be passed to str2world.  The world would have default
+characteristics and two flux concentrations per fluxon (north at the
+beginning, south at the end).
+
+=for usage
+
+$str = make_world($opt, @geom);  #OR
+$str = make_world(@geom); #AND THEN
+$w = str2world($str);
+
+=for options
+
+Options:
+
+=over 3
+
+=item photosphere
+
+=item rmax
+
+=item precision
+
+A positive integer (default 6) that sets to how many decimal places of
+precision the location of each vertex and flux concentration should be
+printed.  Increase this number if you get world_check WARNINGs that
+fluxon verticies are at the same location, and are being deleted.
+
+=back
 
 This file is part of FLUX 2.0, released 31-Oct-2007.
 
@@ -20,20 +48,31 @@ sub make_world {
   push(@lines,$opt) and undef $opt unless UNIVERSAL::isa($opt,'HASH');
   ##push it back onto @lines if it isn't a hash
 
+  my $precision = $opt->{precision} // 6;
+  barf "precision must be a positive integer (you gave $precision)" unless $precision>=1 && $precision==int($precision);
+
   my $phot=$opt->{photosphere};
-  ##$phot=(1,2,3,4,5,6,7) 
-  ##1-type:0,none;1,plane;2,sphere
+  my $phot2=$opt->{photosphere2};
+  ##$phot=(1,2,3,4,5,6,7)
+  ##1-type:0,none;1,plane;2,sphere;3,cylinder
   ##2,3,4:origin of the plane or sphere
-  ##5,6,7:normal to origin for a plane or radius,0,0 for a sphere
-  
+  ##5,6,7:for a plane, normal to origin;
+  ##for a sphere, radius,0,0 for a sphere [actually second element is inside/outside; see wiki);
+  ##for a cylinder, the orientation of the axis, radius set by magnitude.
+
   @lines = @_;
   push(@lines,$opt) and undef $opt unless UNIVERSAL::isa($opt,'HASH');
   ##push it back onto @lines if it isn't a hash
 
   my @out = "";
+  my @phot_types = ('NONE','PLANE','SPHERE','CYLINDER');
 
   push(@out, "GLOBAL FORCES f_pressure_equi2b f_curvature f_vertex4");
-  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 1");
+
+  push(@out, "GLOBAL BOUNDARY " . $phot_types[$phot->[0]] . ' ' . join(' ',@$phot[1..6])) if $phot->[0];
+  push(@out, "GLOBAL B2 " . $phot_types[$phot2->[0]] . ' ' . join(' ',@$phot2[1..6])) if $phot2->[0];
+  push(@out, "GLOBAL BOUNDARY SPHERE 0 0 0 1") unless ($phot->[0] or $phot2->[0]);
+
   push(@out, "GLOBAL OPEN 0 0 0 ".($opt->{rmax}+1)) if($opt->{rmax});
   push(@out,"");
 
@@ -48,13 +87,13 @@ sub make_world {
     ##photosphere is a plane
     ##if ($phot->((0)) == 1) {
 	##my $origin=$phot->((1:3));
-			       
-    
+
+
 
     my $rstart = sqrt(sum($line->(:,(0)) * $line->(:,(0))));
     my $rend   = sqrt(sum($line->(:,(-1)) * $line->(:,(-1))));
 
-    
+
 
 ##    if($rstart < 1) {
 ##	my $rn = sqrt(sum($line->(:,(1))*$line->(:,(1))));
@@ -66,7 +105,7 @@ sub make_world {
 ##	# above uses planar photosphere, not quite right.   Fudge the last bit.
 ##	$line->(:,(0)) /= sqrt(sum($line->(:,(0))*$line->(:,(0))));
 ##    }
-    
+
 ##    if($rend < 1) {
 ##	my $rp = sqrt(sum($line->(:,(-2))*$line->(:,(-2))));
 ##	if($rp > 1) {
@@ -79,38 +118,40 @@ sub make_world {
 
     my $open_start = ($opt->{rmax} && $rstart >= $opt->{rmax});
     my $open_end   = ($opt->{rmax} && $rend   >= $opt->{rmax});
-      print $open_start, $open_end, "\n";
 
     unless($open_start){
-      push(@out,sprintf("NEW %d %9.3g %9.3g %9.3g 1",
+      push(@out,sprintf('NEW %d %9.*5$g %9.*5$g %9.*5$g 1',
 			($fc0=$j++),
-			$line->at(0,0), $line->at(1,0), $line->at(2,0)
+			$line->at(0,0), $line->at(1,0), $line->at(2,0),
+			$precision
 			)
 	   );
     }
 
     unless($open_end){
-      push(@out,sprintf("NEW %d %9.3g %9.3g %9.3g -1",
+      push(@out,sprintf('NEW %d %9.*5$g %9.*5$g %9.*5$g -1',
 			($fc1=$j++),
-			$line->at(0,-1), $line->at(1,-1), $line->at(2,-1)
+			$line->at(0,-1), $line->at(1,-1), $line->at(2,-1),
+			$precision
 			)
 	   );
     }
-    
-    push(@out,sprintf("LINE %d %d %d 1",
-		      ($fl = $j++),  
-		      ($open_start ? -1 : $fc0),   
+
+    push(@out,sprintf('LINE %d %d %d 1',
+		      ($fl = $j++),
+		      ($open_start ? -1 : $fc0),
 		      ($open_end ? -2 : $fc1)
 		      )
 	 );
     $ln++;
     for my $k(1..$line->dim(1)-2) {
      ## print "line $ln; k=$k\n";
-      push(@out,sprintf("VERTEX %d %d %d %9.3g %9.3g %9.3g",
+      push(@out,sprintf('VERTEX %d %d %d %9.*7$g %9.*7$g %9.*7$g',
 			$fl,
 			$j++,
 			$k,
-			$line->(:,($k))->list
+			$line->(:,($k))->list,
+			$precision
 			)
 	   );
     }
@@ -118,9 +159,5 @@ sub make_world {
   }
   join("\n",@out);
 }
-    
 
-		      
-
-
-  
+1;

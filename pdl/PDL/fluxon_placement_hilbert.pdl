@@ -36,6 +36,7 @@ error diffusion.
 use strict;
 use warnings;
 use PDL::NiceSlice;
+use PDL::ImageND;
 
 sub fluxon_placement_hilbert {
     my $bgram = shift;

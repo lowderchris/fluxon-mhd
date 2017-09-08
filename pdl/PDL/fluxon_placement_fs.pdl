@@ -39,6 +39,9 @@ pixels; if the magnetogram is in Gauss, then it is in units of
 Gauss-pixels).  If you specify a count it should be positive; if you specify 
 a size it should be negative.
 
+The magnetogram should have no BAD values.  If yours does, you may
+wish to patch them out with PDL::Image2D::patchbad2d first.
+
 You get back a 3xN PDL with fluxon placements for the magnetogram.
 Each row consists of (x,y,sign).  The minus field is -1 for south end
 of fluxons, +1 for north ends of fluxons.  The x and y are floating
@@ -51,6 +54,8 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 use strict;
 use warnings;
 use PDL::NiceSlice;
+use PDL::ImageND;
+use PDL::Transform;
 
 sub fluxon_placement_fs {
   my $bgram = shift;
@@ -77,9 +82,9 @@ sub fluxon_placement_fs {
   }
 
   my $gridsperpixel = ceil(sqrt($sm_max/$flux));
-  $fluxon_count= $smooth->abs->sum / $flux;
-  print "grids per pixel is $gridsperpixel; estimated total count is $fluxon_count\n";
 
+#  print "grids per pixel is $gridsperpixel; estimated total count is $fluxon_count\n";
+#  print "expanding to dimensions " . $gridsperpixel * $bgram->dim(0) . ' x ' . $gridsperpixel * $bgram->dim(1) . "\n";
   my $expanded = $bgram->double->match([$gridsperpixel * $bgram->dim(0), $gridsperpixel * $bgram->dim(1)]);
   $expanded *= $fluxon_count / $sm_us_sum / $gridsperpixel / $gridsperpixel;
   my $exp = $expanded->copy->(:,-1:0:-1);
@@ -89,21 +94,24 @@ sub fluxon_placement_fs {
 
   PDL::_fl_pl_fs_helper($expanded, $xl, $yl);
 
-  my $xl2=[];
-  my $yl2=[];
-  PDL::_fl_pl_fs_helper($exp, $xl2, $yl2);
-  my $o2 = pdl($xl2,$yl2)->transpose;
-  $o2 = $o2->glue(0,ones(1,$o2->dim(1)));
-  my $wn = which( ($o2->((1))<0) | ($o2->((0))<0));
-  $o2->(:,$wn) *= -1;
-  $o2->((1)) *= -1;
-  $o2->((1)) += $exp->dim(1)-1;
-
   my $out = pdl($xl, $yl)->transpose;
   $out /= $gridsperpixel;
   $out = $out->glue(0,ones(1,$out->dim(1)));
-  $wn= which(($out->((1))<0) | ($out->((0))<0));
+  my $wn= which(($out->((1))<0) | ($out->((0))<0));
   $out->(:,$wn) *= -1;
+
+  my $xl2=[];
+  my $yl2=[];
+
+  PDL::_fl_pl_fs_helper($exp, $xl2, $yl2);
+
+  my $o2 = pdl($xl2,$yl2)->transpose;
+  $o2 /= $gridsperpixel;
+  $o2 = $o2->glue(0,ones(1,$o2->dim(1)));
+  $wn = which( ($o2->((1))<0) | ($o2->((0))<0));
+  $o2->(:,$wn) *= -1;
+  $o2->((1)) *= -1; #this line and the next set y <- (y_max - y)
+  $o2->((1)) += $bgram->dim(1)-1; #the original y_max, not the expanded y_max, size we've divided by $gridsperpixel
 
   $out = $out->glue(1,$o2);
 

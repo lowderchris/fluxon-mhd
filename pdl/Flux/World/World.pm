@@ -223,8 +223,7 @@ a World to an ASCII string whenever it is used in string context.
     
 sub _stringify {
     my $me = shift;
-    my $s="";
- 
+
     my @s = $me->string;
     my @lines = grep(m/^\s*LINE/,@s);
     my @vertices = grep(m/^\s*VERTEX/,@s);
@@ -494,7 +493,7 @@ sub _conc_helper {
 sub concentrations {
     my $me = shift;
     my @list =_conc_helper($me->{concentrations}); 
-    print "_conc_helper returned ".(0+@list)." elements....\n";
+    print "_conc_helper returned ".(0+@list)." elements....\n" if $me->{verbosity};
     return @list;
 }
 
@@ -949,6 +948,10 @@ Currently useful options are:
 
 =over 3
 
+=item dev (default 'wxt')
+
+Gnuplot device type to use for plotting.  Needs to be a terminal that accepts the 'dashed' term option.  Suggested terminals that should be common across different operating systems are (static files:) 'pngcairo', 'pdfcairo', 'postscript', 'svg', (interactive:) 'wxt', 'x11'.
+
 =item rgb
 
 If present, specifies that all lines should have this color (3-PDL)
@@ -1037,9 +1040,13 @@ Flag indicating the width of the LineStrip objects used to render the fluxons.
 
 =item label
 
-Flag indicating whether to use a Label object to indicate the numeric label of every
-vertex.  (Default is 0).  If label is an array ref, then it is treated as a list of 
-fluxons to label -- all other fluxons are NOT labeled.
+Flag indicating whether to indicate the numeric label of every vertex.
+(Default is 0).  If label is an array ref, then it is treated as a
+list of fluxons to label -- all other fluxons are NOT labeled.
+
+=item label_fluxons
+
+Flag indicating whether to label individual fluxons (at both endpoints).
 
 =item neighbors
 
@@ -1074,7 +1081,8 @@ our $window;
 sub render {
     my $w = shift;
     my $opt=shift // {};
-    my $gpwin = shift // $opt->{window} // $window // ($window=gpwin('wxt',size=>[9,9],dashed=>0));
+    my $dev = $opt->{dev} // 'wxt';
+    my $gpwin = shift // $opt->{window} // $window // ($window=gpwin($dev,size=>[9,9],dashed=>0));
 
     $gpwin->options(trid=>1);
 
@@ -1329,7 +1337,7 @@ sub render {
 	my @fc_points = ();
 	my @fc_rgb = ();
 	for my $fc( $w->concentrations ) {
-	    if($fc->{label} < -9 || $fc->{label} > 0) {
+	    if($fc->{label} < -99 || $fc->{label} > 0) {
 		push( @fc_points, $fc->{x} );
 		if($opt->{'rgb_fcs'} && defined $opt->{'rgb_fcs'}->{$fc->{label}}) {
 		    push(@fc_rgb, $opt->{'rgb_fcs'}->{$fc->{label}});
@@ -1363,7 +1371,7 @@ sub render {
 	my @neighbors;
 
 	for my $v (map { $_->vertices } $w->fluxons) {
-	    next unless($v->next);
+	    next unless($v->next && ($v->id<-9 || $v->id>0));
 	    my $xcen = 0.5 * ($v->x + $v->next->x);
 
 	    my $pm = $v->projmatrix;
@@ -1387,14 +1395,15 @@ sub render {
 
     if($opt->{'hull'}) {
 
-      print "hullrgb...\n";
 	my $hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
+	print "hullrgb: $hullrgb...\n" if($Flux::debug);
 
-      print "hullopen...\n";
 	my $hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
+	print "hullopen: $hullopen...\n" if($Flux::debug);
+
 	my $zz = 0;
 	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
-	    next unless($v->next);
+	    next unless($v->next && ($v->id<-9 || $v->id>0));
 
 	    my $xcen = 0.5 * ($v->x + $v->next->x);
 	    
@@ -1425,7 +1434,7 @@ sub render {
 		    if(@hpoints) {
 			my $fp = cat(@hpoints)->(:,(0),:);
 
-			push @plot, {with=>'points',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$fp->using(0,1,2); 
+			push @plot, {with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
 
 
 			@hpoints = ();
@@ -1468,7 +1477,7 @@ sub render {
 
 		my $fp = cat(@hpoints)->(:,(0),:);
 
-		push @plot,{with=>'lines',lc=>[rgbcolor=>$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover]},$fp->using(0,1,2);
+		push @plot,{with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
 	    }
 	}    
     }
@@ -1476,7 +1485,7 @@ sub render {
     @Flux::World::plotlist = @plot;
 
     unless($gpwin) {
-	$gpwin = gpwin("wxt",size=>[9,9]);
+	$gpwin = gpwin($dev,size=>[9,9]);
     }
     $gpwin->plot3d(@plot);
     $window = $gpwin;
@@ -1648,7 +1657,7 @@ sub closest_simplex {
 
 =for usage
 
-    $hull = PDL::World::_hull_points($points);
+    $hull = Flux::World::_hull_points($points);
 
 =for ref
 
@@ -1693,7 +1702,7 @@ The output is suitable to feeding into _plot_hull, below.
 =for usage
 
     $w = pgwin(dev=>"/xs", size=>[5,5]);
-    PDL::World::_plot_hull($w, PDL::World::_hull_points($points) [, $points]);
+    Flux::World::_plot_hull($w, Flux::World::_hull_points($points) [, $points]);
 
 =for ref
 
