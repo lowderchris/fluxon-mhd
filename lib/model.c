@@ -965,7 +965,7 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
     v->r_ncl = v->r_cl;
 
     /* Calculate cross-sectional area (used for plasma flow and maybe some forces)       */
-    /* It's s straight-up calculation using the hull information, except that we clamp   */
+    /* It's a straight-up calculation using the hull information, except that we clamp   */
     /* the aspect ratio of each right triangle at 1,000.                                 */
 
 
@@ -1011,10 +1011,8 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
 	  );
 
      /* Accumulate forces and relevant lengthscales */
-    for(f_func = &f_funcs[0]; *f_func; f_func++)
-      (**f_func)(v,vertices,ignore_segment_forces);
-
-
+      for(f_func = &f_funcs[0]; *f_func; f_func++)
+        (**f_func)(v,vertices,ignore_segment_forces);
     }
 
     if(fl->fc0->world->verbosity >= 3)
