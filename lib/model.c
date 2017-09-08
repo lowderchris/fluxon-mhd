@@ -2225,7 +2225,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   hull_2d_us(voronoi_buf, horde, v);
 
   if(horde->n==0) {
-    fprintf(stderr,"VERTEX %ld: hull_2d gave up! That's odd....\n",v->label);
+    fprintf(stderr,"VERTEX %ld: hull_2d gave up (in hull_neighbors)! That's odd....\n",v->label);
     fflush(stderr);
   }
 
@@ -3935,7 +3935,7 @@ HULL_VERTEX *photosphere_hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   }
 
   if(horde->n==0) {
-    printf("VERTEX %ld: hull_2d gave up! That's odd....\n",v->label);
+    printf("VERTEX %ld: hull_2d gave up (in photosphere_hull_neighbors)! That's odd....\n",v->label);
   }
 
   if(verbosity >= 5){
