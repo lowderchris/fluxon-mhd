@@ -1,0 +1,52 @@
+=head2 gridify
+
+=for ref
+
+Given the name of a value and a radius, return that value on a sin-lat grid everywhere.
+
+Returns everything as a (2+N) x NX x NY grid.  The first two elements in each tuple are 
+map coordinates.  The remaining elements are the value requested, which could be a scalar
+or a vector.
+
+=cut
+
+use PDL::Options;
+use PDL::NiceSlice;
+use PDL::Transform;
+use PDL::Transform::Cartography;
+
+sub gridify {
+    my $world = shift;
+    my $value = shift;
+    my $u_opt = shift // {};
+
+    my %opt = parse(
+	{
+	    nx=>360,
+	    ny=>180,
+	    r=>undef,
+	    method=>'sin_lat'
+	},
+	$u_opt
+	);
+
+    unless(defined($opt{r})) {
+	$opt{r} = $world->concentration(-2)->{locale_radius};
+	print "Using radius $opt{r}\n";
+    }
+
+    if($opt{method} =~ m/sin_lat/) {
+	$coords = (ndcoords($opt{nx},$opt{ny}) - pdl($opt{nx},$opt{ny})/2) * pdl( 2 * PI / $opt{nx}, 2 / $opt{ny});
+	$c = $coords->apply(t_unit_sphere() x (!t_sin_lat())) * $opt{r};
+    } else {
+	die "unknown method '$opt{method}'";
+    }
+
+    $vals = pdl(   map {  pdl(map { $a->interpolate_value($value,$_,1) } ($_->dog)) } $c->dog);
+
+    if($vals->ndims==2){
+	$vals = $vals->(*1);
+    }
+
+    return $coords->glue(0,$vals);
+}

@@ -1,0 +1,49 @@
+
+use PDL::NiceSlice;
+use PDL::Options;
+
+sub max_flow_in_fluxon {
+    my $me = shift;
+    my $u_opt = shift // {};
+
+    my %opt = parse( {
+	steps => 500,
+	g0=>280,
+	r0=>696e6,
+	v0=>1,
+		     },
+		     $u_opt
+	);
+
+    our $st_open = ($me->{fc_start}->{label}==-1);
+    our $en_open = ($me->{fc_end}->{label}==-2);
+
+    return undef if( $me->{plasmoid} || ($st_open + $en_open != 1));
+
+    # Do a binary search to find the fastest the wind can go.  In general, high sound speeds are more stable, so start with 1000.
+    $csmin = 10;
+    $csmax = 1000;
+    my $z;
+    do {
+	my $csguess = ($csmin + $csmax)/2;
+	$opt{cs} = $csguess;
+	$z = calculate_flow_in_fluxon($me,\%opt);
+	if($z->dim(1) < $opt{steps}+1) {
+	    $csmin = $csguess;
+	} else {
+	    $csmax = $csguess;
+	}
+    } while($csmax - $csmin > 0.01);
+    $opt{cs} = ($csmax+$csmin)/2;
+    $z = calculate_flow_in_fluxon($me,\%opt);
+    p "z is $z\n";
+    if(wantarray) {
+	return ( $z,($csmin+$csmax)/2 );
+    } else {
+	return $z;
+    }
+}
+    
+    
+
+    
