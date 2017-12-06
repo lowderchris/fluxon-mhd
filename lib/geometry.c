@@ -2260,7 +2260,7 @@ VERTEX *find_vertex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
   /*** Local search -- minimize from the vertex ***/
   else {
-    
+    //printf("Starting at vertex %ld",v->label);
     NUM dist2 = cart2_3d(x,v->x);
     int done = 0;
 
@@ -2420,7 +2420,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
       cache = new_dumblist();
     }
     dumblist_clear(cache);
-    
+
     passno = ++(vv->line->fc0->world->passno);
     dumblist_add(cache, vv);
     vv->passno = passno;
@@ -2440,22 +2440,22 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
       }
     }
 
-    // printf("p1 is vertex %d (%g,%g,%g)\n",simplex[1]->label, simplex[1]->x[0], simplex[1]->x[1], simplex[1]->x[2]);
+    // printf("p1 is vertex %ld (%g,%g,%g)\n",simplex[1]->label, simplex[1]->x[0], simplex[1]->x[1], simplex[1]->x[2]);
 
     if(!p1) {
       fprintf(stderr, "find_simplex_by_location: FAILED to find a second neighbor! (Should never happen...?\n");
       return fsbl_cache;
     }
     dumblist_add(fsbl_cache,simplex[1]);
-    
+
     /* Now we have two points (p0 and p1) and their ancillary info.  Search the neighbors of
-     * p0 and p1 to find the maximum angle out of the (x,p0,p1) plane.  We do that by trying 
-     * to find a vector that is (parallel | antiparallel) to the (x,p0,p1) normal vector.  
-     * 
+     * p0 and p1 to find the maximum angle out of the (x,p0,p1) plane.  We do that by trying
+     * to find a vector that is (parallel | antiparallel) to the (x,p0,p1) normal vector.
+     *
      * That means maximizing abs(cos(phi)), the angle between the vector to the trial point and
      * the normal fo (x,p0,p1).
      */
-    
+
     p2 = 0;
 
     // Assemble candidates
@@ -2492,7 +2492,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     }
     dumblist_add(fsbl_cache,simplex[2]);
 
-    // printf("p2 is vertex %d (%g,%g,%g)\n",simplex[2]->label, simplex[2]->x[0], simplex[2]->x[1], simplex[2]->x[2]);
+    // printf("p2 is vertex %ld (%g,%g,%g)\n",simplex[2]->label, simplex[2]->x[0], simplex[2]->x[1], simplex[2]->x[2]);
 
     /* We've got three points that are hopefully noncoplanar with the original point.  
      * Now try to find a fourth VERTEX that makes an enclosing simplex.
@@ -2505,7 +2505,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     dumblist_add(cache,simplex[1]);
     dumblist_add(cache,simplex[2]);
 
-    // printf("passno is %d...",passno);
+    // printf("passno is %ld...",passno);
     simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
     expand_lengthwise(cache,0,passno);
     expand_via_neighbors(cache,0,passno);
@@ -2524,10 +2524,10 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
       // acl gets the volume of the simplex formed by the three prior points and the candidate.
       // We want the smallest simplex that encloses the sample point.
       f_s_calc_stuff(pc, ac, acl, vv);
-      
-      // printf(" v%d ",vv->label);
+
+      // printf(" v%ld ",vv->label);
       ok =  in_simplex( a0, a1, a2, ac, origin );
-      
+
       if( ok ) {
 	// If the simplex hasn't been filled yet (always true on the first OK) or if
 	// we're better than the last simplex-filler, copy the fourth point to the simplex.
@@ -2541,7 +2541,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
       // Kept as a comment because it is useful for debugging.
       //      fprintf(stderr,"find_simplex_by_location: FAILED to find a fourth neighbor!\n");
       //      fprintf(stderr,"\tChecking planarity condition...\n");
-      //      fprintf(stderr,"\tx is (%g,%g,%g)\n\tp0 is (%g,%g,%g) (v%d)\n\tp1 is (%g,%g,%g) (v%d)\n\tp2 is (%g,%g,%g) (v%d)\n",x[0],x[1],x[2],
+      //      fprintf(stderr,"\tx is (%g,%g,%g)\n\tp0 is (%g,%g,%g) (v%ld)\n\tp1 is (%g,%g,%g) (v%ld)\n\tp2 is (%g,%g,%g) (v%ld)\n",x[0],x[1],x[2],
       //	      simplex[0]->x[0],simplex[0]->x[1],simplex[0]->x[2],simplex[0]->label,
       //	      simplex[1]->x[0],simplex[1]->x[1],simplex[1]->x[2],simplex[1]->label,
       //	      simplex[2]->x[0],simplex[2]->x[1],simplex[2]->x[2],simplex[2]->label
@@ -2549,7 +2549,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
       return fsbl_cache;
     }
-    //printf("p3 is vertex %d (%g,%g,%g)\n",simplex[3]->label, simplex[3]->x[0], simplex[3]->x[1], simplex[3]->x[2]);
+    //printf("p3 is vertex %ld (%g,%g,%g)\n",simplex[3]->label, simplex[3]->x[0], simplex[3]->x[1], simplex[3]->x[2]);
      
     dumblist_add(fsbl_cache,simplex[3]);
    
@@ -2574,17 +2574,30 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
   NUM wgt_acc = 1.0;
   NUM acc = 0;
   int i;
-    
+
+  /*  printf("interpolate_lin_3d: number of simplex points is %d, x is %f, %f, %f\n",n,x[0],x[1],x[2]);
+  printf("interpolate_lin_3d: val is %f, %f, %f, %f\n",val[0],val[1],val[2],val[3]);
+  printf("p (simplex points):\n");
+  for (i=0;i<3*n;i++){
+    if(i%3==0)
+      printf("(");
+    printf("%f, ",p[i]);
+    if(i%3==2)
+      printf(") val = %f\n",val[i/3]);
+  }
+  */
   switch(n) {
   case 4:
     // Full simplex: Find intersection of the line P3 -> X with the P0,P1,P2 plane,
     // and reduce to the triangular (planar) case.
     points2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
+    //printf("PLANE: origin (%f, %f, %f), normal (%f, %f, %f)\n",pl.origin[0],pl.origin[1],pl.origin[2],pl.normal[0],pl.normal[1],pl.normal[2]);
     p_l_intersection(a, &pl, x, &p[3*3]);
+    //printf("OUT: a= (%f, %f, %f)\n",a[0],a[1],a[2]);
 
     // Find relative length
-    diff_3d(xx, x, &p[3*3]);
-    diff_3d(aa, a, &p[3*3]);
+    diff_3d(xx, x, &p[3*3]); //xx gets the vector difference between x and the 4th simplex point.
+    diff_3d(aa, a, &p[3*3]); //aa gets the vector difference between a and the 4th simplex point.
     alpha = inner_3d(xx,aa) / norm2_3d(aa);
 
     acc += wgt_acc * (1-alpha) * val[3];
