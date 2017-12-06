@@ -25,9 +25,7 @@ pdlbuild:
 	cd .. ;
 
 pdltest:
-	cd pdl ; \
-	make test ; \
-	cd .. ;
+	{ cd pdl; } && { make test; } && { cd ..; }
 
 pdlinstall:
 	cd pdl ; \
