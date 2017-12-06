@@ -124,19 +124,21 @@ sub make_world {
     my $open_end   = ($opt->{rmax} && $rend   >= $opt->{rmax});
 
     unless($open_start){
-      push(@out,sprintf('NEW %d %9.*5$g %9.*5$g %9.*5$g 1',
+      push(@out,sprintf('NEW %d %9.*g %9.*g %9.*g 1',
 			($fc0=$j++),
-			$line->at(0,0), $line->at(1,0), $line->at(2,0),
-			$precision
+			$precision, $line->at(0,0),
+			$precision, $line->at(1,0),
+			$precision, $line->at(2,0)
 			)
 	   );
     }
 
     unless($open_end){
-      push(@out,sprintf('NEW %d %9.*5$g %9.*5$g %9.*5$g -1',
+      push(@out,sprintf('NEW %d %9.*g %9.*g %9.*g -1',
 			($fc1=$j++),
-			$line->at(0,-1), $line->at(1,-1), $line->at(2,-1),
-			$precision
+			$precision, $line->at(0,-1),
+			$precision, $line->at(1,-1),
+			$precision, $line->at(2,-1)
 			)
 	   );
     }
@@ -150,12 +152,13 @@ sub make_world {
     $ln++;
     for my $k(1..$line->dim(1)-2) {
      ## print "line $ln; k=$k\n";
-      push(@out,sprintf('VERTEX %d %d %d %9.*7$g %9.*7$g %9.*7$g',
+      push(@out,sprintf('VERTEX %d %d %d %9.*g %9.*g %9.*g',
 			$fl,
 			$j++,
 			$k,
-			$line->(:,($k))->list,
-			$precision
+			$precision, $line->((0),($k)),
+			$precision, $line->((1),($k)),
+			$precision, $line->((2),($k))
 			)
 	   );
     }
