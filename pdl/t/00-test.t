@@ -5,7 +5,7 @@ use PDL::NiceSlice;
 use PDL::Constants qw/PI/;
 use File::Temp qw/tempfile/;
 
-use Test::More tests=>31;
+use Test::More tests=>33;
 
 BEGIN {use_ok('Flux');}
 
@@ -122,6 +122,16 @@ is($@,'','simple_relaxer with concurrency=1');
 $world->{concurrency}=2;
 eval {simple_relaxer($world,0,3,{movie_n=>0,disp_n=>0});};
 is($@,'','simple_relaxer with concurrency=2');
+
+###Test interpolation routines
+##start with coordinate interpolation, exactly on a vertex
+{
+    my $in_loc = $world->vertex($vertex_ids[$#vertex_ids/2])->{'x'};
+    my $out_loc;
+    eval{$out_loc = $world->interpolate_value('x',$in_loc,1);};
+    is($@,'','interpolation of a coordinate value at a vertex location did not crash');
+    ok(all($out_loc==$in_loc),'interpolation of a coordinate value at a vertex location gives correct value');
+}
 
 =pod
 
