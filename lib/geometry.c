@@ -2610,12 +2610,15 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
     diff_3d(xx, x, &p[3*3]); //xx gets the vector difference between x and the 4th simplex point.
     diff_3d(aa, a, &p[3*3]); //aa gets the vector difference between a and the 4th simplex point.
     alpha = inner_3d(xx,aa) / norm2_3d(aa);
-
-    acc += wgt_acc * (1-alpha) * val[3];
-    wgt_acc *= alpha;
-
-    cp_3d(x,a); // Move X into the plane and fall through to planar case
-
+    if(isfinite(alpha)){
+      acc += wgt_acc * (1-alpha) * val[3];
+      wgt_acc *= alpha;
+      /*printf("a= %f, %f, %f\n",a[0],a[1],a[2]);
+      printf("xx= %f, %f, %f\n",xx[0],xx[1],xx[2]);
+      printf("aa= %f, %f, %f\n",aa[0],aa[1],aa[2]);
+      printf("n=4; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);*/
+      cp_3d(x,a); // Move X into the plane and fall through to planar case
+    }
   case 3:
     // Triangle (plane): Find the intersection of the line from P2->X with the 
     // P0,P1 "line" (project everything down to the P0,P1,P2 plane), and reduce
@@ -2627,26 +2630,27 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
     diff_3d(xx, x, &p[2*3]);
     diff_3d(aa, a, &p[2*3]);
     alpha = inner_3d(xx,aa) / norm2_3d(aa);
-    
-    acc += wgt_acc * (1-alpha) * val[2];
-    wgt_acc *= alpha;
-    
-    cp_3d(x,a); // Move X onto the P0-P1 line and fall through to the linear case
-    
+    if(isfinite(alpha)){
+      acc += wgt_acc * (1-alpha) * val[2];
+      wgt_acc *= alpha;
+      //printf("n=3; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
+      cp_3d(x,a); // Move X onto the P0-P1 line and fall through to the linear case
+    }
   case 2:
     // Line: direct interpolation 
     diff_3d(xx, x, &p[3*1]);
     diff_3d(a,  &p[3*0], &p[3*1]);
     
     alpha = inner_3d( xx, a ) / norm2_3d(a);
-    
-    acc += wgt_acc * (1 - alpha) * val[1];
-    wgt_acc *= alpha;
-    
+    if(isfinite(alpha)){
+      acc += wgt_acc * (1 - alpha) * val[1];
+      wgt_acc *= alpha;
+      //printf("n=2; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
+    }
   case 1:
     
     acc += wgt_acc * val[0];
-
+    //printf("n=1; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
     break;
   }
   return acc;
