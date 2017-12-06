@@ -1800,8 +1800,8 @@ sub interpolate_value {
     my $w = shift;
     my $field = shift;
     my $loc = shift;
-    my $global = shift;
-    my $seed = shift;
+    my $global = shift || 0;
+    my $seed = shift || 0;
     my $offset;
     
     if((ref $w) ne 'Flux::World') {
