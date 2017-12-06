@@ -2225,7 +2225,7 @@ static NUM fvbl_current_min;
 static long fvbl_helper( void *v, int depth) {
   NUM dist;
   dist = cart2_3d(fvbl_stash_x, ((VERTEX *)v)->x);
-  if(((VERTEX *)v)->label > 0 && 
+  if(!V_ISDUMMY((VERTEX *)v) &&
      (fvbl_current_min < 0 || dist < fvbl_current_min)) {
     fvbl_stash_v = v;
     fvbl_current_min = dist;
@@ -2430,6 +2430,8 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     costheta_min = 2;  // Impossibly large; grab first possible answer.
     for(i=1;i<cache->n;i++){ // skip simplex[0]
       vv = ((VERTEX **)(cache->stuff))[i];
+      if (V_ISDUMMY(vv))
+	continue;
       f_s_calc_stuff(  pc, ac, acl, vv );
 
       // Find the cosine of the angle between the first VERTEX found and the current one;
@@ -2476,6 +2478,8 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     for(i=2; i<cache->n; i++) { // skip simplex[0] and simplex[1]
       NUM triple;
       vv = ((VERTEX **)(cache->stuff))[i];
+      if (V_ISDUMMY(vv))
+	continue;
 
       f_s_calc_stuff(pc, ac, acl, vv);
       triple = inner_3d( ac, scr );                // triple is the triple product (ac . a0 x a1)
@@ -2521,6 +2525,9 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     for(i=3; i<cache->n; i++) {
       int ok;
       vv =  ((VERTEX **)(cache->stuff)) [i] ;
+      if (V_ISDUMMY(vv))
+	continue;
+
       // acl gets the volume of the simplex formed by the three prior points and the candidate.
       // We want the smallest simplex that encloses the sample point.
       f_s_calc_stuff(pc, ac, acl, vv);
