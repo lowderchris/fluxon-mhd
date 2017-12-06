@@ -2399,9 +2399,12 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
   dumblist_add(fsbl_cache,simplex[0]);
 
   //  printf("x is (%g,%g,%g)\n",x[0],x[1],x[2]);
-  //  printf("p0 is vertex %d (%g,%g,%g)\n",simplex[0]->label, simplex[0]->x[0], simplex[0]->x[1], simplex[0]->x[2]);
-	   
-  
+  //  printf("p0 is vertex %ld (%g,%g,%g)\n",simplex[0]->label, simplex[0]->x[0], simplex[0]->x[1], simplex[0]->x[2]);
+
+  if(simplex[0]->x[0]==x[0] && simplex[0]->x[1]==x[1] && simplex[0]->x[2]==x[2]){
+    //printf("The interpolated point is exactly at one of the vertices: returning with only that one point\n");
+    return fsbl_cache;
+  }
   /************
    * Now search for the neighbor of P0 that has the highest angle relative to the P0 - x line
    */
@@ -2568,9 +2571,10 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
 
 /**********************************************************************
- * interpolate_lin_3d - given a set of 1-4 points in 3-space and a 
- * location to which to interpolate, do so. 
- * 
+ * interpolate_lin_3d - given a set of 1 <= n <= 4 points (p) in
+ * 3-space at which values (val) are known, and a location (x) to
+ * which to interpolate, do so.
+ *
  * Scrozzles the contents of the original arrays.
  */
 NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
