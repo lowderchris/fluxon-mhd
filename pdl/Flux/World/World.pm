@@ -935,15 +935,20 @@ Mnemonic: Flux World stats.
 
 =for usage
 
- $world->render($interactive, $range, $opt)
+ $world->render($opt)
+
+=for example
+
+ $world->render; #use default options
+
+ $world->render({rgb=>pdl(1,0,0),prgb=>pdl(0,0,1)}); #make the fluxons red and the vertices (except the endpoints) blue
 
 =for ref
 
 Produces a simple 3-D plot of all the field lines in a World, using PDL::Graphics::Gnuplot.
 
-The C<$interactive> argument is a flag indicating whether the event loop should
-be run to position and angle the output.  C<$range>, if present, is a 3x2 PDL containing
-the (minimum, maximum) corners of the 3-cube to render.  C<$opt> is an options hash.
+C<$opt> is an reference to an options hash.
+
 Currently useful options are:
 
 =over 3
@@ -951,6 +956,10 @@ Currently useful options are:
 =item dev (default 'wxt')
 
 Gnuplot device type to use for plotting.  Needs to be a terminal that accepts the 'dashed' term option.  Suggested terminals that should be common across different operating systems are (static files:) 'pngcairo', 'pdfcairo', 'postscript', 'svg', (interactive:) 'wxt', 'x11'.
+
+=item window
+
+Gnuplot window object for plotting.  If none is specified, one is created for you using the type (if any) given by the C<dev> option.  The plotting object is available as $Flux::World::window, so you can render the world, and then call $Flux::World::window->replot(%extra_gnuplot_options).
 
 =item rgb
 
@@ -1084,7 +1093,7 @@ sub render {
     my $dev = $opt->{dev} // 'wxt';
     my $gpwin = shift // $opt->{window} // $window // ($window=gpwin($dev,size=>[9,9],dashed=>0));
 
-    $gpwin->options(trid=>1);
+    $gpwin->options(trid=>1,view=>[equal=>'xyz'],xyplane=>[relative=>0.1],xlabel=>'X',ylabel=>'Y',zlabel=>'Z');
 
     my (@rgb,@prgb);
     print "Defining RGB..." if($Flux::debug);
@@ -1161,7 +1170,8 @@ sub render {
 
     } elsif(defined $opt->{'rgb'}) {
       ### RGB - specify color for all fluxons at once
-      @rgb = map { (ones($_) - (yvals($_)==0)) * $opt->{'rgb'} } @poly;
+      #this only works because there are three dimensions in both space and in rgb color-space
+      @rgb = map { (yvals($_)!=0) * $opt->{'rgb'} } @poly;
 
     } else {
       ### Default case - blue->red color scheme for all fluxons
@@ -1182,7 +1192,7 @@ sub render {
 
     } elsif(defined $opt->{'prgb'}) {
 
-      @prgb = map { (ones($_) - (yvals($_)==0)) * $opt->{'rgb'} } @poly;
+      @prgb = map { (yvals($_)!=0) * $opt->{'prgb'} } @poly;
 
     } else {
 
@@ -1283,7 +1293,7 @@ sub render {
     my @plot;
 
     if($opt->{points} || !defined($opt->{points})) {
-	push @plot,{with=>'points',lc=>'rgb variable',pointsize=>($opt->{psize}||1)},$poly->using(0,1,2),$prgb->(-1:0)->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+	push @plot,{with=>'points',lc=>'rgb variable',pointsize=>($opt->{psize}||1)},$poly->using(0,1,2),$prgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
     }
 
     ##############################
@@ -1297,7 +1307,7 @@ sub render {
     for my $i(0..$#id) {
 	my $fp = $w->fluxon($id[$i])->polyline;
 
-	push @plot,{with=>'lines',lc=>'rgb variable',lw=>($opt->{linewidth}||1)},$fp->using(0,1,2),$rgb[$i]->(-1:0)->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+	push @plot,{with=>'lines',lc=>'rgb variable',lw=>($opt->{linewidth}||1)},$fp->using(0,1,2),$rgb[$i]->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
 	#DL3D could do this and the 'points' in one step with a switch between 'lines' or 'linespoints'? Yes, except for the prgb/rgb duplication
 
 	##############################
