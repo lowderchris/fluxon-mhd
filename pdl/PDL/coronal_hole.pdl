@@ -21,6 +21,7 @@ use PDL::NiceSlice;
 sub coronal_hole {
   my @lines = ();
   my @open = ();
+  my $world = ();
 
   my $xform = !t_spherical() x t_scale([3.14159/180,3.14159/180,1]);
 # Make a bunch of open field lines
@@ -63,9 +64,8 @@ sub coronal_hole {
     }
   }
 
-    
-
-
-  return @open;
+  $world = make_world(@open);
+  $world = str2world($world);
+  return $world;
 } 
     
