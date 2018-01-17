@@ -1023,7 +1023,9 @@ render. (Not for the faint of heart!)
 =item concentrations
 
 Flag indicating whether or not to draw flux concentrations separately at the
-end of field lines.  They are rendered as large points. (Default is 1).
+end of field lines.  They are rendered as large points, with
+the shape of the point given by the value of this option. (Default is
+7, a filled circle on most Gnuplot terminal types.)
 
 =item rgb_fcs
 
@@ -1369,7 +1371,7 @@ sub render {
 	if(@fc_points) {
 	    my $fc_points = cat(@fc_points);
 	    my $fc_rgb = cat(@fc_rgb);
-	    push @plot,{with=>'points',lc=>'rgb variable',pointsize=>2},$fc_points->using(0,1,2),$fc_rgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+	    push @plot,{with=>'points',lc=>'rgb variable',pointsize=>2,pointtype=>$opt->{'concentrations'}||7},$fc_points->using(0,1,2),$fc_rgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
 	}
     }
 	    
