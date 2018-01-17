@@ -961,6 +961,12 @@ Gnuplot device type to use for plotting.  Needs to be a terminal that accepts th
 
 Gnuplot window object for plotting.  If none is specified, one is created for you using the type (if any) given by the C<dev> option.  The plotting object is available as $Flux::World::window, so you can render the world, and then call $Flux::World::window->replot(%extra_gnuplot_options).
 
+=item range
+
+A reference to a 6-element list (not a piddle) that sets the 3D plot
+boundaries.  E.g. "range=>[$xmin,$xmax,$ymin,$ymax,$zmin,$zmax]".  If
+left undefined, the axis ranges are automatically computed by Gnuplot.
+
 =item rgb
 
 If present, specifies that all lines should have this color (3-PDL)
@@ -1096,6 +1102,14 @@ sub render {
     my $gpwin = shift // $opt->{window} // $window // ($window=gpwin($dev,size=>[9,9],dashed=>0));
 
     $gpwin->options(trid=>1,view=>[equal=>'xyz'],xyplane=>[relative=>0.1],xlabel=>'X',ylabel=>'Y',zlabel=>'Z');
+    if (defined($opt->{'range'})){
+	my $range = $opt->{'range'};
+	barf "'range' option to Flux::World::render must be a reference to a 6-element list!" unless ((ref $range eq 'ARRAY') && $#$range==5);
+	$gpwin->options(xrange=>[@{$range}[0,1]],yrange=>[@{$range}[2,3]],zrange=>[@{$range}[4,5]]);
+    } else {
+	#delete any previously-used values for the axis ranges
+	delete $gpwin->options->{$_} foreach ('xrange','yrange','zrange');
+    }
 
     my (@rgb,@prgb);
     print "Defining RGB..." if($Flux::debug);

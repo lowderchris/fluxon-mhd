@@ -36,7 +36,7 @@ foreach (@pref_terms){
 
  SKIP: {
      skip "No suitable gnuplot terminal found for rendering",1 unless $dev;
-     eval {$so->render({dev=>$dev});};
+     eval {$so->render({dev=>$dev,range=>[-1,1,-1,6,0,1]});};
      is($@,'','rendering does not throw an error') or diag("You might need to change the gnuplot terminal type. Availble terminals are:\n" . join(' ',@Alien::Gnuplot::terms));
 };
 
