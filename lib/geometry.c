@@ -4,7 +4,7 @@
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Southwest Research Institute, 2004-2008
- * 
+ *
  * You may modify and/or distribute this software under the temrs of
  * the Gnu Public License, version 2.  You should have received a copy
  * of the license with this software, in the file COPYING to be found
@@ -14,7 +14,7 @@
  * 330, Boston, MA 02111-1307 USA.
  *
  * The software comes with NO WARRANTY.
- * 
+ *
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
  *
@@ -28,7 +28,7 @@
 
 // model.h is needed only for find_simplex, which pulls expand_lengthwise and expand_via_neighbors.
 // Should find_simplex be moved to model.c?
-#include "model.h"    
+#include "model.h"
 
 #ifndef NAN
 #define NAN (nan("NAN"))
@@ -39,7 +39,7 @@ char *code_info_geometry="%%%FILE%%% (new unsorted hull routine)";
 /**********************************************************************
  **********************************************************************
  *****  Vector basics
- *****  norm, inner product, cross product, scalar product, sum, 
+ *****  norm, inner product, cross product, scalar product, sum,
  *****  difference, copy.
  */
 
@@ -94,7 +94,7 @@ NUM inner_3d(NUM *p0, NUM *p1) {
 }
 
 /**********************************************************************
- * cross - Cross product of two vectors.  In 2-D, this is a 
+ * cross - Cross product of two vectors.  In 2-D, this is a
  * scalar, in 3-D it's a vector and hence doesn't return the value
  * directly.
  */
@@ -111,8 +111,8 @@ NUM cross_2d(NUM *p0, NUM *p1) {
 }
 
 /**********************************************************************
- * scale - Multiply a vector by a scalar in-place, and stick the 
- * result in the given destination. OK to have the destination be 
+ * scale - Multiply a vector by a scalar in-place, and stick the
+ * result in the given destination. OK to have the destination be
  * the source vector.
  */
 void scale_3d(NUM *out, NUM *a, NUM b) {
@@ -126,7 +126,7 @@ void scale_2d(NUM *out, NUM *a, NUM b) {
   *(out) = *(a++) * b;
 }
 
-  
+
 /**********************************************************************
  * sum - Add two 3-vectors and stick 'em into the destination array.
  * OK to have the destination be one of the sources.
@@ -206,7 +206,7 @@ void mat_mult_2d(NUM *out, NUM *a, NUM *b) {
 
 /**********************************************************************
  * Transpose a 2-D matrix.  This inverts rotations.  It is also
- * trivial. Yes, I know the ^= trick, but it's too much hassle with 
+ * trivial. Yes, I know the ^= trick, but it's too much hassle with
  * the switchable NUMs.
  */
 void transpose_2x2(NUM *mat) {
@@ -248,7 +248,7 @@ void mat_mult_3d(NUM *out, NUM *a, NUM *b) {
 /**********************************************************************
  * mat_vmult_2d - Multply a 2x2 matrix by a 2-vector on the right.
  * Buffered, so the destination may be the vector source.
- * 
+ *
  * The arguments are treated as pointers not POINTs so that they can
  * be written to!
  */
@@ -274,7 +274,7 @@ void mat_vmult_3d(NUM *out, NUM *mat, NUM *v) {
 
 /***********************************************************************
  * vec_mmult_3d - Multiply a 3x3 matrix by a 3-vector on the left.
- * This is the same as transposing the matrix, which is the same as 
+ * This is the same as transposing the matrix, which is the same as
  * inverting it if it's a rotation matrix!
  */
 void vec_mmult_3d(NUM *out, NUM *mat, NUM *v) {
@@ -320,7 +320,7 @@ void points2plane(PLANE *plane, NUM *p0, NUM *p1, NUM *p2) {
 }
 
 /**********************************************************************
- * lp2plane - given a line segment P0-P1 and a third point P2, 
+ * lp2plane - given a line segment P0-P1 and a third point P2,
  * return the plane that passes through P0 and P1, with normal
  * through P2.
  */
@@ -331,12 +331,12 @@ void lp2plane(PLANE *plane, NUM *p0, NUM *p1, NUM *p2) {
 
   diff_3d(x1,p1,p0);
   diff_3d(x2,p2,p0);
-  
+
   // offset plane origin to the point under the normal
   alpha = inner_3d(x1,x2) / norm2_3d(x1);
   scale_3d(plane->origin, x1, alpha );
   sum_3d(plane->origin, plane->origin, p0);
-  
+
   // copy the normal and, er, normalize it.
   diff_3d(plane->normal, p2, plane->origin);
   scale_3d(plane->normal, plane->normal, 1.0/norm_3d(plane->normal));
@@ -346,7 +346,7 @@ void lp2plane(PLANE *plane, NUM *p0, NUM *p1, NUM *p2) {
 /**********************************************************************
  * p_l_intersection - given a plane and a line (specified by two points)
  * return the intersection between them.
- * Returns a flag indicating whether the intersection is between 
+ * Returns a flag indicating whether the intersection is between
  * the two points (1=between, 0=not between)
  */
 int p_l_intersection(NUM *out, PLANE *plane, NUM *p0, NUM *p1) {
@@ -391,7 +391,7 @@ int xy_l_intersection(NUM *out, NUM *p0, NUM *p1) {
   }
   // Never get here...
 }
-  
+
 /**********************************************************************
  * p_inside_tri - given a triangle and a point in the plane, determine
  * whether the point is strictly inside the triangle (1) or outside it (0).
@@ -419,11 +419,11 @@ int p_inside_tri(NUM *tri0, NUM *tri1, NUM *tri2, NUM *p) {
  * to the distance to the nearest neighbor that is not part of the fluxon.
  *
  * Trivloop tells you nothing about the topology of the loop -- e.g. whether
- * it is the unknot.  Hence it is not so useful for determining whether a 
+ * it is the unknot.  Hence it is not so useful for determining whether a
  * plasmoid should vanish in ideal MHD -- but it is pretty good for deciding
  * whether a small U-loop should vanish in open boundary conditions.
  *
- * A fluxon is a trivial loop if all of its internal distances vanish 
+ * A fluxon is a trivial loop if all of its internal distances vanish
  * compared to the corresponding distances to each neighbor.
  *
 
@@ -454,7 +454,7 @@ int trivloop(FLUXON *f) {
 	}
       }
     }
-    
+
     for(i=0;i<v->nearby.n; i++) {
       NUM r;
       VERTEX *vn = (VERTEX *)(v->nearby.stuff[i]);
@@ -469,8 +469,8 @@ int trivloop(FLUXON *f) {
 	}
       }
     }
-	
-    
+
+
     for(v1=v; v1&&v1->next; v1=v1->next) {
       NUM r = cart_3d(v->x, v1->x);
       if(r > max_internal_dist) {
@@ -517,7 +517,7 @@ NUM cart2_3d(NUM *x1, NUM *x2) {
   return (out + a*a);
 }
 
-  
+
 /***********************************************************************
  * cart - Return the distance between two points, 'N' dimensions
  */
@@ -540,11 +540,11 @@ NUM cart_3d(NUM *x1, NUM *x2) {
   a = *(x2++) - *(x1++);
   return sqrt(out + a*a);
 }
-  
+
 
 /**********************************************************************
  * p_l_dist
- * Find the distance between a point (in 3-space) and a line 
+ * Find the distance between a point (in 3-space) and a line
  * (also in 3-space).   Relatively simple geometric construction.
  */
 NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1) {
@@ -554,7 +554,7 @@ NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1) {
   diff_3d(p,p0,x0);      /* p = p0 - x0 */
 
   cross(u,x,p);           /* u = p x x  */
-  return norm_3d(u)/norm_3d(x); 
+  return norm_3d(u)/norm_3d(x);
 }
 
 /**********************************************************************
@@ -566,22 +566,22 @@ NUM p_l_dist(NUM *p0, NUM *x0, NUM *x1) {
 NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1) {
   NUM p[3],x[3],u[3];
   NUM l,a;
-  
+
   diff_3d(x,x1,x0);
-  
-  l = norm_3d(x); 
+
+  l = norm_3d(x);
   if(!l)                    /* Degenerate case -- x0==x1 */
     return cart_3d(p0,x0);
- 
+
   diff_3d(p,p0,x0);
 
   a = inner_3d(p,x)/l;         /* a = ( (p-x0) . (x1-x0) ) / |x1 - x0| */
-  
-  if(a<0) 
+
+  if(a<0)
     return norm_3d(p);     /* Already did the subtraction... */
-  else if(a>l) 
+  else if(a>l)
     return cart_3d(p0,x1);
-  
+
   cross(u,x,p);
   return norm_3d(u)/l;
 }
@@ -589,11 +589,11 @@ NUM p_ls_dist(NUM *p0, NUM *x0, NUM *x1) {
 /**********************************************************************
  * l_l_dist
  * Find the closest approach between two skew lines (in 3-space).
- * You supply two points (A and B) on one line segment and 
+ * You supply two points (A and B) on one line segment and
  * two points (C and D) on the other.   You get back the closest
  * distance between the two LINES, not the segments.
- * 
- * This could probably be cleaned up via some vector identities, 
+ *
+ * This could probably be cleaned up via some vector identities,
  * but at first blush they didn't look to actually improve the computational
  * load much.
  *
@@ -610,7 +610,7 @@ NUM l_l_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
   diff_3d(b,b0,a0);             /* b gets (B - A)-hat */
   scale_3d(b,b,1.0/norm_3d(b));
 
-  diff_3d(foo,c0,a0);  
+  diff_3d(foo,c0,a0);
   cross(c,foo,b);      /* c gets (C - A) x (B - A) */
 
   diff_3d(foo,d0,a0);
@@ -621,7 +621,7 @@ NUM l_l_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
   cross(foo,c,d);      /* foo gets   C' x (D' - C') */
 
   cdpl = norm_3d(d);
-  if(cdpl) 
+  if(cdpl)
     return norm_3d(foo)/cdpl;
 
   /* Degenerate case -- cd is parallel to ab, or c==d!  Makes no  *
@@ -631,11 +631,11 @@ NUM l_l_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
 
 /**********************************************************************
  * p_l_closest_approach and p_ls_closest_approach --
- * Given a line segment and point C, return the location of the 
+ * Given a line segment and point C, return the location of the
  * extended line's closest approach to C, or the line segment's
  * closest approach to C.  Scant degeneracy checking is done, because
  * the algorithm works more-or-less gracefully in nearly-degenerate cases.
- * 
+ *
  */
 
 void p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
@@ -646,7 +646,7 @@ void p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
   if( p0[0]==0 && p0[1]==0 && p0[2]==0 ) {
     cp_3d(p0,a0);
   } else {
-    
+
     diff_3d(c, c0, a0);
     r = inner_3d(p0, c) / inner_3d(p0,p0); /* r gets (b.c/b.b) */
     if(r<0)                                /* less than 0: before a */
@@ -664,17 +664,17 @@ void p_ls_closest_approach(NUM p0[3], NUM a0[3], NUM b0[3], NUM c0[3]) {
 
 /**********************************************************************
  * ls_closest_approach
- * 
- * You feed in the endpoints of two line segments, and two POINTs. 
+ *
+ * You feed in the endpoints of two line segments, and two POINTs.
  * The two points get the closest-approach points of the two line
  * segments.
- * 
+ *
  * There are nine cases to consider: four endpoint-to-endpoint cases,
  * four endpoint-to-line cases, and one line-to-line case.
- * 
+ *
  * Method:
  *   - handle degenerate cases.
- * 
+ *
  *   - Consider the line-to-line case.  If it's valid, use it and return.
  *
  *   - Consider the endpoint-to-line cases. If one is valid, use it and return.
@@ -696,7 +696,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     char ab0,cd0;
     ab0=(a0[0]==b0[0] && a0[1]==b0[1] && a0[2]==b0[2]);
     cd0=(c0[0]==d0[0] && c0[1]==d0[1] && c0[2]==d0[2]);
-    
+
     if(ab0) {
       cp_3d(p0,a0);
       if(cd0) {
@@ -708,7 +708,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
 	/* printf("ls_closest: a==b (%g,%g,%g); closest on cd is (%g,%g,%g)\n",a0[0],a0[1],a0[2],p1[0],p1[1],p1[2]); */
 	return;
       }
-    } 
+    }
     if(cd0){
       cp_3d(p1,c0);
       p_ls_closest_approach(p0,a0,b0,c0);
@@ -716,28 +716,28 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
 
     }
   }
-  
+
   /******************************
    * Find the closest approach of the *lines* AB and CD.
    */
-  
+
   /***********
    * Place a at the origin and rotate so that b points in the positive z direction
    */
-  
+
   projmatrix(mat,b0,a0);
-  
+
   diff_3d(scr,b0,a0);
   mat_vmult_3d(b, mat, scr);
-  
+
   diff_3d(scr,c0,a0);
   mat_vmult_3d(c, mat, scr);
-  
+
   diff_3d(scr,d0,a0);
   mat_vmult_3d(d, mat, scr);
-  
-  //  printf("ls_closest_approach (in ab frame):\n\tb is %g,%g,%g\n\tc is %g,%g,%g\n\td is %g,%g,%g\n",b[0],b[1],b[2],c[0],c[1],c[2],d[0],d[1],d[2]); 
-  
+
+  //  printf("ls_closest_approach (in ab frame):\n\tb is %g,%g,%g\n\tc is %g,%g,%g\n\td is %g,%g,%g\n",b[0],b[1],b[2],c[0],c[1],c[2],d[0],d[1],d[2]);
+
   /**********
    * Find the closest approach of the line cd to the origin.  Works by
    * displacing c to the origin and projecting a perpendicular to the
@@ -756,7 +756,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
   alpha = - inner_2d(scr,c) / d2;
 
   /**********
-   * Using alpha, find the altitude in the current space 
+   * Using alpha, find the altitude in the current space
    * of the closest approach, and use that to calculate beta.
    */
   beta = ( (1.0-alpha) * c[2] + alpha * d[2] ) / b[2];
@@ -771,7 +771,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     scale_3d(scr, c0, (1.0-alpha) );
     scale_3d(p1,  d0, alpha );
     sum_3d(p1, p1, scr);
-    
+
     scale_3d(scr, a0, (1.0-beta) );
     scale_3d(p0,  b0, beta );
     sum_3d(p0, p0, scr);
@@ -783,17 +783,17 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
    * (which includes thhe four endpoint-endpoint cases too).
    * Boneheaded but certain.
    */
-  {  
+  {
     char found_one = 0;
     NUM d2,c2;
-    
+
     /* Check AB - C */
     p_ls_closest_approach(scr, a0, b0, c0);
     d2 = cart2_3d(c0,scr);
     cp_3d(p0,scr);
     cp_3d(p1,c0);
     //        printf("AB-C: dist is %g\n",d2);
-    
+
     /* Check AB - D */
     p_ls_closest_approach(scr, a0, b0, d0);
     c2 = cart2_3d(d0,scr);
@@ -803,7 +803,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
       cp_3d(p0,scr);
       cp_3d(p1,d0);
     }
-  
+
     /* Check A - CD */
     p_ls_closest_approach(scr, c0, d0, a0);
     c2 = cart2_3d(a0,scr);
@@ -833,21 +833,21 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
  */
  parallel:
   //  printf("ls_dist: parallel case...");
-  
+
   /* Both lines are parallel along the z axis.  b>0, a=0. */
-  
+
   if( c[2] < 0 && d[2] < 0 ) {
     cp_3d(p0, a0);
     cp_3d(p1, (c[2] >= d[2]) ? c0 : d0);
     return;
-  } 
-  
+  }
+
   if( c[2] > b[2]  && d[2] > b[2] ) {
     cp_3d(p0, b0);
     cp_3d(p1, (c[2] <= d[2]) ? c0 : d0);
     return;
   }
-  
+
   if( c[2] >=0 && c[2] <= b[2] ) {
     cp_3d( p1, c0 );
     alpha = c[2]/b[2];
@@ -856,7 +856,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     sum_3d( p0, p0, scr );
     return;
   }
-  
+
   if( d[2] >= 0 && d[2] <= b[2] ) {
     cp_3d( p1, d0 );
     alpha = d[2]/b[2];
@@ -865,7 +865,7 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     sum_3d( p0, p0, scr );
     return;
   }
-  
+
   /* got here: cd must straddle ab, so a is a right answer. */
   cp_3d(p0, a0);
   alpha = (0 - c[2]) / (d[2]-c[2]);
@@ -873,21 +873,21 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
   scale_3d( p1,  d0, alpha );
   sum_3d(p1, p1, scr);
   return;
-  
+
 }
 
-  
+
 
 /**********************************************************************
  * ls_ls_dist
  * Find the distance of closest approach between two line segments in
  * 3-space.  You supply end endpoints A and B of the first
- * segment and C and D of the second segment.  You get back the 
- * closest distance between the segments (which might be a 
- * l-l distance, a p-p distance, or a l-p distance). 
+ * segment and C and D of the second segment.  You get back the
+ * closest distance between the segments (which might be a
+ * l-l distance, a p-p distance, or a l-p distance).
  *
- * This is especially complex because of the multiple cases.  
- * This one finds the location of the closest point on 
+ * This is especially complex because of the multiple cases.
+ * This one finds the location of the closest point on
  * each line segment to the other line, and then gets the distance
  * between those two points explicitly.
  *
@@ -908,21 +908,21 @@ NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]) {
 /**********************************************************************
  * fl_segment_masked_dist
  * Given two pointers to VERTEXes, return the closest approach of their
- * two line segments, masking space to include only the demesnes of the 
- * first line segment.  That is to say, return the distance to the 
+ * two line segments, masking space to include only the demesnes of the
+ * first line segment.  That is to say, return the distance to the
  * closest point of the second line segment that is within the volume of space
- * defined by the two face planes of the segment.  If there is only one face 
- * plane (either this VERTEX or its next neighbor is an endpoint), 
- * then half of space is allowed. 
+ * defined by the two face planes of the segment.  If there is only one face
+ * plane (either this VERTEX or its next neighbor is an endpoint),
+ * then half of space is allowed.
  *
  * If there is no point within the space, or if the VERTEX is at the end
  * of a fluxon, then return -1.
- * 
+ *
  * It uses a helper routine, mask_halfspace, that masks and truncates two
  * points to within one of the two bounding halfspaces of a line segment.
- * 
- * The "sign" argument to mask_halfspace should be 1 or -1. 
- * 
+ *
+ * The "sign" argument to mask_halfspace should be 1 or -1.
+ *
  * mask_halfspace returns -1, 0, or 1 depending on whether it rejects both
  * points, does nothing, or truncates a point.  Only the "-1" value matters
  * at the moment.
@@ -956,12 +956,12 @@ static int  mask_halfspace(VERTEX *v, NUM X0[3], NUM X1[3], int sign){
 
   diff_3d(B, Y1,Y0);
   scale_3d(B,B,d0/(d0-d1));
-  
-  if(d0 <= 0) 
+
+  if(d0 <= 0)
     sum_3d(X0,X0,B);
   else /* if(d1 <= 0) */
     sum_3d(X1,X0,B);
-  
+
   return 1;
 }
 
@@ -974,8 +974,8 @@ NUM fl_segment_masked_dist(VERTEX *v0, VERTEX *v1) {
 /**********************************************************************
  * fl_segment_masked_deluxe_dist
  * You feed in an X0 and X1, and they get stuffed with the points of closest
- * approach of the segments.  You also get the distance back. 
- * 
+ * approach of the segments.  You also get the distance back.
+ *
  * This function is deprecated -- the smoothly masked fl_segment_deluxe_dist is
  * preferred.
  */
@@ -1008,7 +1008,7 @@ NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1){
  * fl_segment_deluxe_dist
  * Given two pointers to VERTEXes, return the closest approach of their
  * two line segments.  If either is invalid, return 1e50.
- * The deluxe_dist accepts two points, which get filled with the 
+ * The deluxe_dist accepts two points, which get filled with the
  * points of closest approach of the two line segments.
  *
  * Does a projection in the inverse sine to get the output
@@ -1043,10 +1043,10 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
   // inverse square sine...
   /* Scale by the inverse square sine of the projection angle:  */
   /* AB x (closest).  Note that this makes the metric asymmetric! */
-  
+
   /* See also reflect_deluxe, which undoes the sin^2 for reflected (image) */
   /* segment distances -- if you change this you must also change that...  */
-   
+
   scale_3d(P,P,1.0/Plen);
 
   diff_3d(seg,v0->next->x,v0->x);
@@ -1062,30 +1062,30 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
     NUM skewlimit_recip = 4;
     NUM s1[3];
     NUM mat[9];
-    
-    
+
+
     projmatrix(mat, P0, P1);
-    
+
     diff_3d(P, v1->next->x, v1->x);
     mat_vmult_3d(s1, mat, P);
-    
+
     mat_vmult_3d(P, mat, seg);
-    
+
     alpha = 2.0  / ( fabs(   ( norm_2d(s1) * norm_2d(P))   / inner_2d(s1, P) ) + skewlimit_recip ) ;
-    if(a == 0) 
+    if(a == 0)
       return 1e50;
-    
+
     Plen *= alpha/a;
   } else {
-    if(a == 0) 
+    if(a == 0)
       return 1e50;
     Plen /= a;
   }
-  
-  
+
+
   return Plen;
 }
-				   
+
 /**********************************************************************
  **********************************************************************
  ***** Projection
@@ -1093,17 +1093,17 @@ NUM fl_segment_deluxe_dist(NUM P0[3],NUM P1[3], VERTEX *v0, VERTEX *v1) {
 
 /**********************************************************************
  * projmatrix
- * Given two points in 3-space, return a rotation matrix that 
+ * Given two points in 3-space, return a rotation matrix that
  * rotates the vector connecting them into the Z axis (for projecting
  * stuff down to the plane perpendicular to the given line segment).
  * The returned matrix has a determinant of unity, by construction, so
  * distances are preserved.
  *
  * You supply the output location, pre-allocated with 9 NUMs.
- * 
+ *
  * The product of two rotation matrices is hand-assembled here:
  * first the vector is rotated about the Z axis into the ZX plane;
- * then it's rotated about the Y axis into the Z axis.  See 
+ * then it's rotated about the Y axis into the Z axis.  See
  * DeForest notebooks, vol. IV-A, p. 177.
  */
 void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
@@ -1144,9 +1144,9 @@ void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
     }
     return;
   }
-    
 
-  /* Generate the rotation matrices independently and multiply them. 
+
+  /* Generate the rotation matrices independently and multiply them.
      Slightly slower than direct assembly, but robust. */
 
   /* rotate to remove the y component */
@@ -1154,19 +1154,19 @@ void projmatrix(NUM *out, NUM *x0_3, NUM *x1_3) {
   *(m++) = a[0] / r2d;  *(m++) = a[1] / r2d;   *(m++) = 0;
   *(m++) = -a[1] / r2d;  *(m++) = a[0] / r2d;    *(m++) = 0;
   *(m++) = 0;           *(m++) = 0;             *(m)   = 1;
-  
+
   /* rotate the vector (now in the xz plane) to point along the z axis */
   m=m2;
   *(m++) = a[2] / r3d;  *(m++) = 0;            *(m++) = -r2d / r3d;
   *(m++) = 0;            *(m++) = 1;            *(m++) =  0;
   *(m++) = r2d / r3d;   *(m++) = 0;            *(m)   = a[2]/r3d;
   mat_mult_3d(out,m2,m1);
-  
+
 }
 
 /**********************************************************************
  * reflect
- * Given a PLANE and a point, reflect the point through the PLANE.  
+ * Given a PLANE and a point, reflect the point through the PLANE.
  * The reflected point is stuffed into the target array.
  */
 void reflect(NUM out[3], NUM point[3], PLANE *plane) {
@@ -1186,10 +1186,10 @@ void reflect(NUM out[3], NUM point[3], PLANE *plane) {
 /**********************************************************************
  * perp_bisector_2d
  *
- * Find the bisector of the line between (P) and (Q) [this is trivial] 
- * and return the bisector and slope in the given temporary 3-NUM array.  
+ * Find the bisector of the line between (P) and (Q) [this is trivial]
+ * and return the bisector and slope in the given temporary 3-NUM array.
  * Return  0 on normal completion; 1 if the slope is infinite.
- * 
+ *
  * If you feed in NULL for P, then P is treated as the origin.
  */
 int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
@@ -1200,15 +1200,15 @@ int perp_bisector_2d(NUM *out, NUM *P, NUM *Q) {
     /* P-is-the-origin case */
     out[0] = Q[0]/2;
     out[1] = Q[1]/2;
-    
+
     out[2] = - Q[0]/Q[1]; /* Perp. slope = (- delta-X / delta-Y). */
     return !isfinite(out[2]);
-  }    
+  }
 
   /* P-not-the-origin case */
   out[0] = ( Q[0] + P[0] ) / 2;
   out[1] = ( Q[1] + P[1] ) / 2;
-  
+
   /* Slope is negative reciprocal */
   out[2] = - ( (Q[0]-P[0]) / (Q[1]-P[1]) );
   return !isfinite(out[2]);
@@ -1243,8 +1243,8 @@ int intersection_2d(NUM *out, NUM *L1, NUM *L2) {
 
     delta_y = L2[1] + L2[2] * ( L1[0] - L2[0] ) - L1[1]; /* Delta-Y at L1's X0 */
     delta_x = delta_y / delta_s; /* Offset from L1's X0 to intersection */
-    
-    out[0] = L1[0] + delta_x;         
+
+    out[0] = L1[0] + delta_x;
     out[1] = L1[1] + delta_x * L1[2];
     return 0;
   }
@@ -1256,7 +1256,7 @@ int intersection_2d(NUM *out, NUM *L1, NUM *L2) {
     out[0] = L1[0];
     out[1] = L2[1] + (L1[0] - L2[0]) * L2[2];
     return 0;
-  } 
+  }
 
   /* Parallel vertical lines */
   out[1] = out[0] = NAN;
@@ -1266,19 +1266,19 @@ int intersection_2d(NUM *out, NUM *L1, NUM *L2) {
 
 /**********************************************************************
  * project_n_fill
- * 
+ *
  * Given a VERTEX and a DUMBLIST of VERTICES, project the DUMBLIST
  * down to 2-D using fl_segment_deluxe_dist (closest approach of
  * fluxels associated with vertices, not the vertices themselves) to
  * find the projected radius, and fill the angle and radius fields of
  * the members of the DUMBLIST.
- * 
+ *
  * Also accumulate the closest-real-approach distance between neighbors
  * and the current VERTEX.  By examining only neighbors that have been
  * winnowed with the special metric, we risk missing the actual
  * minimum distance -- but not very often.  Hopefully it won't lead to
  * pathological evolution problems!
- * 
+ *
  */
 void project_n_fill(VERTEX *v, DUMBLIST *horde) {
   int i;
@@ -1289,16 +1289,16 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
   VERTEX *v1;
   char crunch = 0;
 
-  if(v->line->fc0->world->verbosity >= 5) 
+  if(v->line->fc0->world->verbosity >= 5)
     printf("Entered project_n_fill... got a horde of %d candidates...\n",horde->n);
-    
+
   if(!v->next) {
     fprintf(stderr,"Hey!  Don't feed end vertices to project_n_fill....\n");
     fflush(stderr);
     return;
   }
 
-  if(v->line->fc0->world->verbosity >= 5) 
+  if(v->line->fc0->world->verbosity >= 5)
     printf("calling projmatrix with (%g,%g,%g) and (%g,%g,%g)\n",v->x[0],v->x[1],v->x[2],v->next->x[0],v->next->x[1],v->next->x[2]);
 
   projmatrix(pm,v->x,v->next->x);
@@ -1315,9 +1315,9 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
       fflush(stdout);
     }
 
-   
+
     v1 = (VERTEX *)((horde->stuff)[i]);
-    
+
     r = fl_segment_deluxe_dist(p0, p1, v, v1); /*This is where the
 						 non-linear projection
 						 is done. It is for r
@@ -1337,17 +1337,17 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
 	v->r_cl = r;
 
       diff_3d(X0, p1, p0);
-      
+
       mat_vmult_3d(v1->scr,pm,X0); /* Project into the perpendicular plane */
 
       len = norm_2d(v1->scr);      /* * 2-D * length of vector */
 
-      if(v->line->fc0->world->verbosity >= 5) 
+      if(v->line->fc0->world->verbosity >= 5)
 	printf("len=%g for vertex %ld\n",len,v1->label);
 
       if(len <= 0) {
 
-	if(v->line->fc0->world->verbosity == 4) 
+	if(v->line->fc0->world->verbosity == 4)
 	  printf("len=%g for vertex %ld\n",len,v1->label);
 
 	horde->stuff[i] = 0;
@@ -1361,12 +1361,12 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
 					   that has been projected
 					   into a plane perpendicular
 					   to the v-fluxel.*/
-	
+
 	v1->a = ATAN2(v1->scr[1],v1->scr[0]); //store angles
 	v1->r = r; //store non-linear projected distances.
       }
     }
-    
+
   }
 
   /* If some of the items were invalidated, crunch down the horde... */
@@ -1381,13 +1381,13 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
     horde->n = j;
   }
 }
-  
+
 
 /**********************************************************************
  * sort_by_angle_2d
- * 
+ *
  * Given a DUMBLIST of VERTICES containing 2-D points in their
- * scratch spaces, sort them by angle from the origin. 
+ * scratch spaces, sort them by angle from the origin.
  *
  * No actual checking of the vector in ->scr is done -- you must
  * pre-set the angle in ->a!  (This is normally done by project_n_fill.)
@@ -1434,11 +1434,11 @@ void sort_by_angle_2d(DUMBLIST *horde) {
   /* Do the actual sort... */
   dumblist_sort(horde,angle_cmp);
   //dumblist_crunch(horde); (crunching is handled by the sorter)
-}  
+}
 
 
 /**********************************************************************
- * hv_cp - copy a HULL_VERTEX 
+ * hv_cp - copy a HULL_VERTEX
  */
  void hv_cp(HULL_VERTEX *to, HULL_VERTEX *from) {
   to->p[0] = from->p[0];
@@ -1454,36 +1454,36 @@ void sort_by_angle_2d(DUMBLIST *horde) {
 
 /**********************************************************************
  * hull_2d
- * 
- * Given an angle-sorted DUMBLIST of VERTICES containing 2-D points in their 
- * scratch spaces, find the minimal convex hull of the origin.  
+ *
+ * Given an angle-sorted DUMBLIST of VERTICES containing 2-D points in their
+ * scratch spaces, find the minimal convex hull of the origin.
  * (note that this is different than the conventional "maximal convex hull"
- * problem). The original DUMBLIST winds up containing the points that were 
+ * problem). The original DUMBLIST winds up containing the points that were
  * used for the hull; you can also pass in a DUMBLIST
  * that gets the rejects.  On exit, the output array (which you
  * have to supply, pre-allocated) contains N HULL_VERTEXes
  * (N is the number of vertices in the final hull).
- * Each voronoi vertex is the one to the left of the corresponding 
+ * Each voronoi vertex is the one to the left of the corresponding
  * neighbor point.
- * 
+ *
  * Typical usage:
  *    <collect dumblist>
  *    vertices = malloc(sizeof(NUM)*2*horde->n);
  *    hull_2d(vertices,horde,rejects=dumblist_new());
  *
- * If you don't want a list of rejects, pass in NULL for the 
+ * If you don't want a list of rejects, pass in NULL for the
  * third parameter.
- * 
- * Note:  (To avoid the hassle of frequently removing fields from the 
- * horde DUMBLIST, the code nulls individual rejected elements, then 
+ *
+ * Note:  (To avoid the hassle of frequently removing fields from the
+ * horde DUMBLIST, the code nulls individual rejected elements, then
  * crunches 'em all at the end.)
  *
  * This is probably the hot spot for the code as a whole, so some
- * perhaps misguided trades have been made against readability and 
+ * perhaps misguided trades have been made against readability and
  * for (hopefully) speed.
- * 
- * The sort-by-angle step requires that the projected radius and 
- * angle fields in the VERTEX be filled; this is performed by 
+ *
+ * The sort-by-angle step requires that the projected radius and
+ * angle fields in the VERTEX be filled; this is performed by
  * project_n_fill, which should be called before hull_2d.
  * *
  */
@@ -1503,7 +1503,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
   char abort = 0;
 
   /* Do nothing if we get a trivial list */
-  if(horde->n < 1) 
+  if(horde->n < 1)
     return;
 
   if(horde->n == 1) {
@@ -1543,7 +1543,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     if(horde->stuff[i]) {    /* Skip over already-zeroed elements */
 
       char open=0;
-      
+
       /*** Find next guy and prep his bisector if necessary ***/
       for(i_l=MOD_NEXT(i,n);  i_l != i && !horde->stuff[i_l]; MOD_INC(i_l,n))
 	;
@@ -1555,7 +1555,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
       if(!been_there)
 	perp_bisector_2d( out[i_l].bisector, 0, lv->scr );
-      
+
       /*** Check for pathologies ***/
       if(i_r == i || i_l == i) {
 	abort = 1;
@@ -1590,7 +1590,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	/* Line isn't open on the left, so it intersects on the left.   */
 	intersection_2d( out[ i ].p, out[ i ].bisector, out[i_l].bisector );
 	out[i].open = 0;
-	
+
 
 	if( b > EPSILON && b < PI-EPSILON) {
 
@@ -1626,15 +1626,15 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
       /*** The only way to get to the rejection code is to goto it! ***/
       if(0) {
-      reject: 
+      reject:
 	/*** rejection code ***/
-           
-	/* "Normally", we back up when we hit a rejection -- but the 
-	 * first item in the list is an exception -- in that case we 
+
+	/* "Normally", we back up when we hit a rejection -- but the
+	 * first item in the list is an exception -- in that case we
          * keep the same right side but walk forward one.  That requires
 	 * updating the intersection information for the right side.
 	 */
-	if(rejects) 
+	if(rejects)
 	  dumblist_add(rejects,horde->stuff[i]);
 
 	horde->stuff[i] = 0;
@@ -1648,7 +1648,7 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	    ;
 	  terminus =i_r;
 	  rv = (VERTEX *)(horde->stuff[i_r]);
-	  
+
 
 	} else {
 
@@ -1669,11 +1669,11 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 	}
       }
     } /* end of non-zeroed-out check */
-    
+
   } while(!abort && (!been_there || i != terminus));  /* End of main loop */
 
   /* Finished -- now crunch the dumblist and, simultaneously, the output. */
-  { 
+  {
     int j;
 
     for(i=j=0; i<horde->n; i++) {
@@ -1713,22 +1713,22 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
  * with vertices on the axes and on the 45-degree lines.
  *
  * The range is -pi/2 to pi/2.
- * 
+ *
  */
 
 NUM atan2_oct( NUM y, NUM x) {
   NUM ay = fabs(y);
   NUM ax = fabs(x);
   NUM out;
-  
+
   if(ax==0)
     return(y>0?PI/2: (y<0)?-PI/2 : nan("1"));
-  
+
   /* fast atan2 in one quadrant using octagonal approx */
   out = 0.25 * PI * ((ax >= ay) ? (ay/ax) : (2 - ax/ay));
-  
+
   if(x>0) {
-    if(y<0) 
+    if(y<0)
       out *= -1;
   } else {
     if(y>=0) {
@@ -1743,9 +1743,9 @@ NUM atan2_oct( NUM y, NUM x) {
 
 /******************************
  * check_hullpoint - helper routine for hull_2d_us
- * Given a VERTEX and HULL_VERTEX pointer for next and prev, and 
+ * Given a VERTEX and HULL_VERTEX pointer for next and prev, and
  * a VERTEX to test, returns true if it should be kept and false if not.
- * The return value is negative if the vertex is closed, 1 if it is open 
+ * The return value is negative if the vertex is closed, 1 if it is open
  * on the next side, 2 if it is open on the prev side.
  * If the hullpoint is to be kept, then the previous hull_vertex has its
  * open and/or p fields updated as appropriate.
@@ -1782,7 +1782,7 @@ int check_hullpoint(VERTEX *v,
    * sense of the return value.
    */
 
-  { 
+  {
     int colinear_keep = 0;
     NUM eps = EPSILON * v->r;
     /* if the angle between them in small (sin(theta) near zero,
@@ -1815,12 +1815,12 @@ int check_hullpoint(VERTEX *v,
   } /* end of colinear check convenience block */
 
   /* Not colinear -- find perpendicular bisector and start crunching... */
-  
+
   perp_bisector_2d(scr->bisector, 0, v->scr);
 
   /* scr->p gets the hull intersection point with the next guy; */
   /* point gets the hull intersection point with the previous guy */
-  
+
   intersection_2d( scr->p, scr->bisector, nhv->bisector );
   intersection_2d( point, scr->bisector, phv->bisector );
 
@@ -1833,25 +1833,25 @@ int check_hullpoint(VERTEX *v,
       // Noncolinear and open on next side -- keep
       open = 1;
     }
-  } 
+  }
   /**** Open on previous side ? ****/
   else if(     cross_2d( pv->scr,  v->scr) <= 0) {
     // Noncolinear and open on prev side -- keep
     open = 2;
   }
-  
+
   /**** Closed and OK? ****/
   else if(  cross_2d( point, scr->p ) >= 0  ) {
     // Noncolinear and closed, but OK -- keep
     open = -1;
-  } 
+  }
 
   /**** Closed and not OK? ****/
-  else { 
+  else {
     /* closed both sides, but intersections in wrong order -- reject */
       return 0;
   }
-  
+
   /* are the points the same? If so, reject it. */
   /*if (scr->p[0] == point[0] && scr->p[1] == point[1]) {
     return 0;
@@ -1862,27 +1862,27 @@ int check_hullpoint(VERTEX *v,
   phv->p[0] = point[0];
   phv->p[1] = point[1];
   phv->open = (open==2)?1:0;
-  
+
   return open;
-  
+
 }
 
-  
+
 
 /**********************************************************************
  * hull_2d_us - hull routine for unsorted points
  * (see if we can avoid the sorting step)
  *
  * Keep a current-hull dumblist and add points to it by brute-force
- * copying and binary searching.  Brute force should be OK since the 
+ * copying and binary searching.  Brute force should be OK since the
  * typical hull size is only 6.
- * 
- * We keep our own workspace, and build the hull in it, then copy the 
+ *
+ * We keep our own workspace, and build the hull in it, then copy the
  * elements by brute force into the horde (thereby truncating it considerably!)
  *
- * See notes on hull_2d, above -- the points should be pre-treated with  
- * project_n_fill, which sets the projected 2-D coordinates in the scr field of 
- * each candidate VERTEX, and also the a and r fields.  (a may contain the 
+ * See notes on hull_2d, above -- the points should be pre-treated with
+ * project_n_fill, which sets the projected 2-D coordinates in the scr field of
+ * each candidate VERTEX, and also the a and r fields.  (a may contain the
  * sleazy arctan rather than the true arctan -- it only has to be monotonic).
  *
  */
@@ -1894,7 +1894,7 @@ static DUMBLIST *ws = 0;
 static inline char plasmoid_conjugate(VERTEX *a, VERTEX *b) {
   if((a->line != b->line) || (!a->line->plasmoid))
     return 0;
-  if( a == a->line->start ) 
+  if( a == a->line->start )
     return (b == b->line->end->prev || b==b->line->end->prev->prev);
   if( a == a->line->start->next )
     return (b == b->line->end->prev);
@@ -1904,7 +1904,7 @@ static inline char plasmoid_conjugate(VERTEX *a, VERTEX *b) {
     return (a == a->line->end->prev);
   return 0;
 }
-  
+
 void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   int n = horde->n;
   int horde_i;
@@ -1917,12 +1917,12 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
     dumblist_grow(ws,16);
   }
 
-  if(! horde->n) 
+  if(! horde->n)
     return;
 
   /*go through each potential neighbor and make sure it is in the
     world still. Old problem that is now fixed, can do it an easier
-    way now. 
+    way now.
   for(i=0;!w && i<horde->n; i++)
     if( (((VERTEX **)(horde->stuff))[i])->line )
     w = (((VERTEX **)(horde->stuff))[i])->line->fc0->world;*/
@@ -1931,7 +1931,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
   if(!w) {
     fprintf(stderr,"You're in trouble, guv! exiting (horde->n was %d)...\n",horde->n);
     exit(99);
-  } 
+  }
 
   // use passno to prevent multiple looks at the same candidate.
   passno = ++w->passno;
@@ -1945,7 +1945,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 
 
   /* always add the first eligible VERTEX in the list... */
-  for(i=0;i<horde->n && 
+  for(i=0;i<horde->n &&
 	( horde->stuff[i] == central_v ||              // skip the main vertex if present
 	  horde->stuff[i] == central_v->prev ||        // skip the following segment if present
 	  horde->stuff[i] == central_v->next ||        // skip the previous segment if present
@@ -1957,7 +1957,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 
   /*first look at this candidate and add it, it will be removed later
     if it is not really a neighbor. */
-  if(i<horde->n) { 
+  if(i<horde->n) {
     ((VERTEX **)(horde->stuff))[i]->passno = passno;
     ws->stuff[0] = horde->stuff[i];
     ws->n = 1;
@@ -1991,11 +1991,11 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	   plasmoid_conjugate( v, central_v)
 	   )
 	 )
-       ) {   
+       ) {
       // Skip (do nothing; just move on to the next candidate)
     } else {
       v->passno = passno; // Mark it processed (avoid duplicated effort)
-      
+
       keep = 0;
 
       /* Linear searches are slow, but not so bad -- there are
@@ -2005,10 +2005,10 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	 that has a larger angle than v, this candidate will be nv. nv
 	 is assigned here. This loop determines next_idx which is also
 	 the index for nv.*/
-      for(next_idx = 0; 
-	  next_idx < ws->n && 
+      for(next_idx = 0;
+	  next_idx < ws->n &&
 	    (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
-	  next_idx++ 
+	  next_idx++
 	  )
 	;
 
@@ -2020,7 +2020,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 
       if( nv->a < v->a ) {
 	/* We went off the end, so put ti at the end */
-	
+
 	next_idx = ws->n;
 	nv = ((VERTEX **)(ws->stuff))[0];
 	nh = hull;
@@ -2039,7 +2039,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	  ph = hull + next_idx-1;
 	}
       }
-      
+
       flag = check_hullpoint(v, pv,ph, nv,nh, &scrhv);
 
       if(flag) {
@@ -2056,15 +2056,15 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	}
 
 	ws->n++;
-	
+
 	/* Set the insertion-point values */
 	ws->stuff[next_idx] = v;
 	hv_cp(hull+next_idx, &(scrhv));
 
 	hull[next_idx].open = ( flag>0 && (flag & 1) ); /* logical && and bitwise & */
-	hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open = 
+	hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open =
 	  ( flag>0 && (flag & 2) ); /* logical && and bitwise & */
-	
+
 	/**************************
 	 * Now that we've put the new guy in, make sure he doesn't invalidate
          * his neighbors on the prev side...
@@ -2079,9 +2079,9 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	  nnn=nn; MOD_INC(nnn,ws->n);//n+2
 
 	  /* Walk backward until we find a still-keep-worthy vertex */
-	  while( p != n && 
-		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]), 
-						  (VERTEX *)(ws->stuff[pp]), hull + pp, 
+	  while( p != n &&
+		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]),
+						  (VERTEX *)(ws->stuff[pp]), hull + pp,
 						  (VERTEX *)(ws->stuff[n]),  hull + n,
 						  hull + p))
 		 ) {
@@ -2118,7 +2118,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	  {
 
 	    int ii,jj, diff;
-	    
+
 	    if( p <= n-1 ) {
 	      if( nn <= n-1 ) {
 
@@ -2153,14 +2153,14 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 		}
 	      }
 	    } else {
-	      
+
 	      // ....|...n****p.. case
 	      if(n>0) {
 		hv_cp(hull, hull+n);
 		ws->stuff[0] = ws->stuff[n];
 	      }
 	      ii=1;
-	      
+
 	      if( nn>1 ) {
 		for( jj=nn; jj<=p; ii++, jj++) {
 		  hv_cp( hull + ii, hull + jj );
@@ -2169,7 +2169,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 	      } else {
 		ii= p + 1;
 	      }
-	      
+
 	    }/* end of case testing */
 	    ws->n = ii;
 
@@ -2181,7 +2181,7 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
     } /* end of non-duplication test block */
   } /* end of horde loop */
 
-  /* Calculate the (more expensive) true-atan angles for the hull points and for the 
+  /* Calculate the (more expensive) true-atan angles for the hull points and for the
    * actual neighbors, since there are so few of them.
    */
 
@@ -2205,13 +2205,13 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 
 
 
-    
+
 /**********************************************************************
- * find_vertex_by_location 
- * 
- * Given a location in 3-space, a world, and an (optional) VERTEX, 
+ * find_vertex_by_location
+ *
+ * Given a location in 3-space, a world, and an (optional) VERTEX,
  * find the VERTEX closest to the point you want.
- * 
+ *
  * If you use the "global" flag then an explicit search is performed
  * (slow); otherwise a simple minimization-by-step is performed.
  *
@@ -2232,7 +2232,7 @@ static long fvbl_helper( void *v, int depth) {
   }
   return 0;
 }
-  
+
 
 
 VERTEX *find_vertex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
@@ -2268,13 +2268,13 @@ VERTEX *find_vertex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
       NUM d2;
 
 
-      if( v->next && 
+      if( v->next &&
 	  ((d2 = cart2_3d(x, v->next->x)) < dist2)  /* assignment */
 	  ) {
 	/* walk forward */
 	v = v->next;
 	dist2 = d2;
-      } else if( v->prev && 
+      } else if( v->prev &&
 		 ((d2 = cart2_3d(x, v->prev->x)) < dist2) /* assignment */
 		 ) {
 	/* walk backward */
@@ -2297,11 +2297,11 @@ VERTEX *find_vertex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 	    vcd2 = d2;
 	  }
 	}
-	
+
 	if(v_candidate) {
 	  v = v_candidate;
 	  dist2 = vcd2;
-	} else 
+	} else
 	  done = 1;
       }
     } while(!done);
@@ -2327,9 +2327,9 @@ int above_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
 }
 
 /**********************************************************************
- * in_simplex 
- * Given four noncoplanar points (which define a 3-D simplex), 
- * determine whether a 5th point is inside or outside the simplex. 
+ * in_simplex
+ * Given four noncoplanar points (which define a 3-D simplex),
+ * determine whether a 5th point is inside or outside the simplex.
  */
 int in_simplex( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
   POINT3D P01, P02, P03;
@@ -2350,12 +2350,12 @@ int in_simplex( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
  * vertices around it.  Works by finding the nearest VERTEX, then attempting
  * to find other nearby vertices.   If the point is outside the cloud of
  * vertices, deliver only a plane.
- * 
- * Takes the same parameters as find_vertex_by_location; returns a DUMBLIST 
+ *
+ * Takes the same parameters as find_vertex_by_location; returns a DUMBLIST
  * containing the VERTEXes that were found.  The DUMBLIST is statically
  * allocated and hence is only temporary storage.
- */  
-  
+ */
+
 static DUMBLIST *fsbl_cache = 0;
 
 
@@ -2386,7 +2386,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     fsbl_cache = new_dumblist();
   }
   dumblist_clear(fsbl_cache);
-  
+
   vv = find_vertex_by_location(x,w,v,global);
   if(!vv) {
     fprintf(stderr,"find_simplex_by_location: no vertices at all found for location (%g,%g,%g)!\n",x[0],x[1],x[2]);
@@ -2430,7 +2430,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     expand_lengthwise(cache, 0, passno);
     expand_via_neighbors(cache, 0, passno);
 
-    costheta_min = 2;  // Impossibly large; grab first possible answer.
+    costheta_min = -1;
     for(i=1;i<cache->n;i++){ // skip simplex[0]
       vv = ((VERTEX **)(cache->stuff))[i];
       if (V_ISDUMMY(vv))
@@ -2439,7 +2439,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
       // Find the cosine of the angle between the first VERTEX found and the current one;
       // retain the lowest-cosine (highest angle) VERTEX.
-      if( (costheta = inner_3d(ac,a0)/a0l/acl) < costheta_min) { // assignment
+      if((costheta_min < 0) || ((costheta = abs(inner_3d(ac,a0))) < costheta_min)) { // assignment
 	f_s_copy_stuff( p1, a1, a1l, simplex[1],        pc, ac, acl, vv );
 	costheta_min = costheta;
       }
@@ -2486,7 +2486,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
       f_s_calc_stuff(pc, ac, acl, vv);
       triple = inner_3d( ac, scr );                // triple is the triple product (ac . a0 x a1)
-      cosphi = fabs(triple / l0l1sintheta / acl);   // Divide out to get cos(phi); get absolute value
+      cosphi = fabs(triple / l0l1sintheta / acl / l0l1sintheta / acl);   // Divide out to get cos(phi); get absolute value
 
       if( cosphi > cosphi_max ) {
 	f_s_copy_stuff( p2, a2, a2l, simplex[2],      pc, ac, acl, vv );
@@ -2501,7 +2501,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
     // printf("p2 is vertex %ld (%g,%g,%g)\n",simplex[2]->label, simplex[2]->x[0], simplex[2]->x[1], simplex[2]->x[2]);
 
-    /* We've got three points that are hopefully noncoplanar with the original point.  
+    /* We've got three points that are hopefully noncoplanar with the original point.
      * Now try to find a fourth VERTEX that makes an enclosing simplex.
      */
 
@@ -2545,7 +2545,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 	  f_s_copy_stuff(p3, a3, a3l, simplex[3],          pc, ac, acl, vv);
       }
     }
-    
+
     if(!simplex[3]) {
       // Not finding a 4th neighbor is not unusual if you are outside the sim, so we don't throw an error.
       // Kept as a comment because it is useful for debugging.
@@ -2560,11 +2560,11 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
       return fsbl_cache;
     }
     //printf("p3 is vertex %ld (%g,%g,%g)\n",simplex[3]->label, simplex[3]->x[0], simplex[3]->x[1], simplex[3]->x[2]);
-     
+
     dumblist_add(fsbl_cache,simplex[3]);
-   
+
     /* Should we try to shrink the simplex here? */
-    
+
   }
   return fsbl_cache;
 }
@@ -2620,12 +2620,12 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
       cp_3d(x,a); // Move X into the plane and fall through to planar case
     }
   case 3:
-    // Triangle (plane): Find the intersection of the line from P2->X with the 
+    // Triangle (plane): Find the intersection of the line from P2->X with the
     // P0,P1 "line" (project everything down to the P0,P1,P2 plane), and reduce
     // to the linear case.
     lp2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
     p_l_intersection(a, &pl, x, &p[2*3]);
-    
+
     // find relative length
     diff_3d(xx, x, &p[2*3]);
     diff_3d(aa, a, &p[2*3]);
@@ -2637,10 +2637,10 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
       cp_3d(x,a); // Move X onto the P0-P1 line and fall through to the linear case
     }
   case 2:
-    // Line: direct interpolation 
+    // Line: direct interpolation
     diff_3d(xx, x, &p[3*1]);
     diff_3d(a,  &p[3*0], &p[3*1]);
-    
+
     alpha = inner_3d( xx, a ) / norm2_3d(a);
     if(isfinite(alpha)){
       acc += wgt_acc * (1 - alpha) * val[1];
@@ -2648,7 +2648,7 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
       //printf("n=2; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
     }
   case 1:
-    
+
     acc += wgt_acc * val[0];
     //printf("n=1; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
     break;
@@ -2660,12 +2660,12 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
 /**********************************************************************
  * interpolate_value_simplex
  *
- * Given a location and a simplex of VERTEXes that surround it, 
- * interpolate the value of a NUM between the vertices.  Any NUM 
- * stored in a VERTEX can be interpolated. 
+ * Given a location and a simplex of VERTEXes that surround it,
+ * interpolate the value of a NUM between the vertices.  Any NUM
+ * stored in a VERTEX can be interpolated.
  *
  */
- 
+
 NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset) {
   POINT3D scr;
   NUM acc;
@@ -2676,7 +2676,7 @@ NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset) {
   NUM val[4];
   acc = 0;
   wgt_acc = 0;
-  
+
 
   for(i=0;i<dl->n;i++) {
     cp_3d( &p[i*3], ((VERTEX **)(dl->stuff))[i]->x );
@@ -2688,9 +2688,9 @@ NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset) {
 
 /**********************************************************************
  * interpolate_value
- * same as interpolate_value_simplex, but you don't supply the simplex -- 
+ * same as interpolate_value_simplex, but you don't supply the simplex --
  * find_simplex_by_location gets called for you.
- * 
+ *
  * The calling parameters are the same as for find_simplex_by_location.
  */
 
@@ -2707,8 +2707,8 @@ NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offse
   return interpolate_value_simplex(x, dl, val_offset);
 }
 
-  
-  
+
+
 
 
 
@@ -2727,7 +2727,7 @@ NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offse
 
 /**********************************************************************
  * project_n_fill_photosphere
- * 
+ *
  * Similar to project_n_fill, but instead of using the fluxel to
  * derive the plane, we use photosphere1. Also, there are no
  * non-linear projections, and all distances are from vertices instead
@@ -2736,13 +2736,13 @@ NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offse
  * Given a VERTEX and a DUMBLIST of VERTICES, project the DUMBLIST
  * down to 2-D using fl_segment_deluxe_dist to find the projected radius,
  * and fill the angle and radius fields of the members of the DUMBLIST.
- * 
+ *
  * Also accumulate the closest-real-approach distance between neighbors
  * and the current VERTEX.  By examining only neighbors that have been
  * winnowed with the special metric, we risk missing the actual
  * minimum distance -- but not very often.  Hopefully it won't lead to
  * pathological evolution problems!
- * 
+ *
  */
 void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
   int i;
@@ -2754,10 +2754,10 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
   VERTEX *v1;
   char crunch = 0;
 
-  if(v->line->fc0->world->verbosity >= 5) 
+  if(v->line->fc0->world->verbosity >= 5)
     printf("Entered project_n_fill_phototsphere... got a horde of %d candidates...\n",horde->n);
-    
-  if(v->line->fc0->world->verbosity >= 5) 
+
+  if(v->line->fc0->world->verbosity >= 5)
     printf("calling projmatrix with (%g,%g,%g) and (%g,%g,%g)\n",or[0],or[1],or[2],v->line->fc0->world->photosphere.plane->normal[0],v->line->fc0->world->photosphere.plane->normal[1],v->line->fc0->world->photosphere.plane->normal[2]);
 
   projmatrix(pm,or,v->line->fc0->world->photosphere.plane->normal); //pm is the projection matrix
@@ -2774,17 +2774,17 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
       fflush(stdout);
     }
 
-   
+
     v1 = (VERTEX *)((horde->stuff)[i]);
 
     //p0 = v->x;
 
     //p1 = v1->x;
-    
+
     diff_3d(X0, v->x, v1->x); /*X0 is the line of closest approach
 			     between v and neighbor v1*/
 
-    r = norm_3d(X0); 
+    r = norm_3d(X0);
 
     if(r<=0 || !isfinite(r)) { /*not sure what these circumstance would be*/
       horde->stuff[i] = 0;
@@ -2794,7 +2794,7 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
 
       if(r<v->r_cl || v->r_cl < 0 ) /* Accumulate closest approach distance */
 	v->r_cl = r;
-      
+
       mat_vmult_3d(v1->scr,pm,X0);
       //v1->scr is X0 rotated to perpendicular to the photosphere.
 
@@ -2806,17 +2806,17 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
       if (len != r){
 	printf("Oops! len!=r in project_n_fill_photsphere, v %ld, neighbor %ld,len=%f,r=%f \n",v->label, v1->label,len,r);
 	printf("pm is ((%f,%f,%f),(%f,%f,%f),(%f,%f,%f)) \n",pm[0],pm[1],pm[2],pm[3],pm[4],pm[5],pm[6],pm[7],pm[8]);
-	
+
       } /*else {
 	printf("len=r for neighbor %d \n",v1->label);
 	}*/
 
-      if(v->line->fc0->world->verbosity >= 5) 
+      if(v->line->fc0->world->verbosity >= 5)
 	printf("len=%g for vertex %ld\n",len,v1->label);
 
       if(len <= 0) {
 
-	if(v->line->fc0->world->verbosity == 4) 
+	if(v->line->fc0->world->verbosity == 4)
 	  printf("len=%g for vertex %ld\n",len,v1->label);
 
 	horde->stuff[i] = 0;
@@ -2824,12 +2824,12 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
       }
       else {
 	//scale_3d(v1->scr,v1->scr,r/len); /* not this b/c should be the same.*/
-	
+
 	v1->a = ATAN2(v1->scr[1],v1->scr[0]); //accumulate angles
 	v1->r = r; //accumulate non-linear projected distance.
       }
     }
-    
+
   }
 
   /* If some of the items were invalidated, crunch down the horde... */
@@ -2844,7 +2844,7 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
     horde->n = j;
   }
 }
- 
+
 
 /**********************************************************************
  * The only difference for the photosphere version is that it doesn't
@@ -2862,7 +2862,7 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
     dumblist_grow(ws,16);
   }
 
-  if(! horde->n) 
+  if(! horde->n)
     return;
 
   for(i=0;!w && i<horde->n; i++) //go through each potential neighbor
@@ -2885,7 +2885,7 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
 
 
   /* always add the first eligible VERTEX in the list... */
-  for(i=0;i<horde->n && 
+  for(i=0;i<horde->n &&
 	( horde->stuff[i] == central_v ||              // skip the main vertex if present
 	  plasmoid_conjugate( (VERTEX *)(horde->stuff[i]), central_v )
 	  );
@@ -2922,22 +2922,22 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
 	   plasmoid_conjugate( v, central_v)
 	   )
 	 )
-       ) {   
+       ) {
       // Skip (do nothing; just move on to the next candidate)
     } else {
       v->passno = passno; // Mark it processed (avoid duplicated effort)
-      
+
       keep = 0;
 
       /* Linear searches are slow, but not so bad -- there are
        generally under 10 elements in ws, so binary search probably
        isn't worth the effort.  */
-      for(next_idx = 0; 
-	  next_idx < ws->n && 
+      for(next_idx = 0;
+	  next_idx < ws->n &&
 	    (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
-	  next_idx++ 
+	  next_idx++
 	  )
-	;//not sure about this loop 
+	;//not sure about this loop
 
 
       /******************************
@@ -2965,7 +2965,7 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
 	  ph = hull + next_idx-1;
 	}
       }
-      
+
       flag = check_hullpoint(v, pv,ph, nv,nh, &scrhv);
 
       if(flag) {
@@ -2980,15 +2980,15 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
 	}
 
 	ws->n++;
-	
+
 	/* Set the insertion-point values */
 	ws->stuff[next_idx] = v;
 	hv_cp(hull+next_idx, &(scrhv));
 
 	hull[next_idx].open = ( flag>0 && (flag & 1) ); /* logical && and bitwise & */
-	hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open = 
+	hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open =
 	  ( flag>0 && (flag & 2) ); /* logical && and bitwise & */
-	
+
 	/**************************
 	 * Now that we've put the new guy in, make sure he doesn't invalidate
          * his neighbors on the prev side...
@@ -3003,9 +3003,9 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
 	  nnn=nn; MOD_INC(nnn,ws->n);
 
 	  /* Walk backward until we find a still-keep-worthy vertex */
-	  while( p != n && 
-		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]), 
-						  (VERTEX *)(ws->stuff[pp]), hull + pp, 
+	  while( p != n &&
+		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]),
+						  (VERTEX *)(ws->stuff[pp]), hull + pp,
 						  (VERTEX *)(ws->stuff[n]),  hull + n,
 						  hull + p))
 		 ) {
@@ -3039,7 +3039,7 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
 	  {
 
 	    int ii,jj, diff;
-	    
+
 	    if( p <= n-1 ) {
 	      if( nn <= n-1 ) {
 
@@ -3074,14 +3074,14 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
 		}
 	      }
 	    } else {
-	      
+
 	      // ....|...****.. case
 	      if(n>0) {
 		hv_cp(hull, hull+n);
 		ws->stuff[0] = ws->stuff[n];
 	      }
 	      ii=1;
-	      
+
 	      if( nn>1 ) {
 		for( jj=nn; jj<=p; ii++, jj++) {
 		  hv_cp( hull + ii, hull + jj );
@@ -3090,7 +3090,7 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
 	      } else {
 		ii= p + 1;
 	      }
-	      
+
 	    }/* end of case testing */
 	    ws->n = ii;
 
@@ -3102,7 +3102,7 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
     } /* end of non-duplication test block */
   } /* end of horde loop */
 
-  /* Calculate the (more expensive) true-atan angles for the hull points and for the 
+  /* Calculate the (more expensive) true-atan angles for the hull points and for the
    * actual neighbors, since there are so few of them.
    */
 
@@ -3122,5 +3122,3 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
   }
   horde->n = i;
 }
-
-
