@@ -2323,7 +2323,7 @@ int above_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
   diff_3d(AC, C, A);
   diff_3d(AX, X, A);
   cross_3d(ABxAC, AC, AB);
-  return (  inner_3d(ABxAC, AX) >= 0  );
+  return (  inner_3d(ABxAC, AX) > -0.0001  );
 }
 
 /**********************************************************************
@@ -2335,9 +2335,9 @@ int in_simplex( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
   POINT3D P01, P02, P03;
 
   return ( ! (  (above_plane(P0,P1,P2,P3) ^ above_plane(P0,P1,P2,X) ) ||
-		(above_plane(P1,P2,P3,P0) ^ above_plane(P1,P2,P3,X) ) ||
-		(above_plane(P2,P3,P0,P1) ^ above_plane(P2,P3,P0,X) ) ||
-		(above_plane(P3,P0,P1,P2) ^ above_plane(P3,P0,P1,X) )
+                (above_plane(P1,P2,P3,P0) ^ above_plane(P1,P2,P3,X) ) ||
+                (above_plane(P2,P3,P0,P1) ^ above_plane(P2,P3,P0,X) ) ||
+                (above_plane(P3,P0,P1,P2) ^ above_plane(P3,P0,P1,X) )
 	      )
 	   );
 }
@@ -2432,19 +2432,24 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
     costheta_min = -1;
     for(i=1;i<cache->n;i++){ // skip simplex[0]
-      vv = ((VERTEX **)(cache->stuff))[i];
+        vv = ((VERTEX **)(cache->stuff))[i];
       if (V_ISDUMMY(vv))
 	continue;
       f_s_calc_stuff(  pc, ac, acl, vv );
-
       // Find the cosine of the angle between the first VERTEX found and the current one;
       // retain the lowest-cosine (highest angle) VERTEX.
-      if((costheta_min < 0) || ((costheta = abs(inner_3d(ac,a0))) < costheta_min)) { // assignment
-	f_s_copy_stuff( p1, a1, a1l, simplex[1],        pc, ac, acl, vv );
-	costheta_min = costheta;
+        // Dot product and not costheta...
+        costheta = fabs(inner_3d(ac,a0));
+      if((costheta_min < 0) || (costheta < costheta_min)) { // assignment
+          f_s_copy_stuff( p1, a1, a1l, simplex[1],        pc, ac, acl, vv );
+          costheta_min = costheta;
       }
+//        printf("%d-%d:%g ",vv->label,simplex[0]->label,costheta );
+//            if(costheta<1e-100)
+//                printf("\n\t%d:%g,%g,%g;  %fd:%g,%g,%g\n", vv->label,ac[0],ac[1],ac[2],simplex[0]->label,a0[0],a0[1],a0[2]);
+//        fflush(stdout);
     }
-
+  
     // printf("p1 is vertex %ld (%g,%g,%g)\n",simplex[1]->label, simplex[1]->x[0], simplex[1]->x[1], simplex[1]->x[2]);
 
     if(!p1) {
@@ -2489,8 +2494,8 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
       cosphi = fabs(triple / l0l1sintheta / acl / l0l1sintheta / acl);   // Divide out to get cos(phi); get absolute value
 
       if( cosphi > cosphi_max ) {
-	f_s_copy_stuff( p2, a2, a2l, simplex[2],      pc, ac, acl, vv );
-	cosphi_max = cosphi;
+          f_s_copy_stuff( p2, a2, a2l, simplex[2],      pc, ac, acl, vv );
+          cosphi_max = cosphi;
       }
     }
     if(!p2) {
@@ -2537,14 +2542,37 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
       // printf(" v%ld ",vv->label);
       ok =  in_simplex( a0, a1, a2, ac, origin );
-
+        
+        if( !ok && x[0] > 0 && x[0] < 0.5 && x[1] > 0 && x[1] < 0.5) {
+            printf("\n \t %ld", vv->line->label);
+            printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0], a0[1], a0[2]);
+            printf("\n \t $a1 = pdl(%g, %g, %g)", a1[0], a1[1], a1[2]);
+            printf("\n \t $a2 = pdl(%g, %g, %g)", a2[0], a2[1], a2[2]);
+            printf("\n \t $ac = pdl(%g, %g, %g)", ac[0], ac[1], ac[2]);
+            printf("\n \t $as = pdl($a0, $a1, $a2, $ac)");
+            printf("\n \t $win->plot({trid=>1}, {with=>'points'},$as->using(0,1,2))");
+            printf("\n");
+            fflush(stdout);
+        }
+        
       if( ok ) {
+          //printf("%d ",ok);
+//          printf("\n \t %ld", vv->line->label);
+//          printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0], a0[1], a0[2]);
+//          printf("\n \t $a1 = pdl(%g, %g, %g)", a1[0], a1[1], a1[2]);
+//          printf("\n \t $a2 = pdl(%g, %g, %g)", a2[0], a2[1], a2[2]);
+//          printf("\n \t $ac = pdl(%g, %g, %g)", ac[0], ac[1], ac[2]);
+//          printf("\n \t $as = pdl($a0, $a1, $a2, $ac)");
+//          printf("\n \t $win->plot({trid=>1}, {with=>'points'},$as->using(0,1,2))");
+//          printf("\n");
+//          fflush(stdout);
 	// If the simplex hasn't been filled yet (always true on the first OK) or if
 	// we're better than the last simplex-filler, copy the fourth point to the simplex.
 	if(  (!simplex[3]) || (acl < a3l )  )
 	  f_s_copy_stuff(p3, a3, a3l, simplex[3],          pc, ac, acl, vv);
       }
     }
+      printf("\n");
 
     if(!simplex[3]) {
       // Not finding a 4th neighbor is not unusual if you are outside the sim, so we don't throw an error.

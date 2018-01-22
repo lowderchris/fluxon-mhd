@@ -42,42 +42,43 @@ sub rad_test {
 }
 
 # Load the example world
-#$world = read_world('cartesian_interpolate_test_relaxed.flux');
-$world = rad_test();
+$world = read_world('cartesian_interpolate_test_relaxed.flux');
+#$world = rad_test();
 
 # Do I need to check for a neighbor search here?
 # Performing an initial global recalculation of neighbors
 $world -> update_neighbors(1);
 
 # Render the world
-$win = $world -> render();
+#$win = gpwin('wxt', size=>15)
+$win = $world -> render({label_fluxons=>1});
 
 # In probing through the C find_vertex_by_location subroutine, closest_vertex stands as the PDL interface for this through World.pm
 
-$x = pdl(1.25,1.25,0);
-$v = $world -> closest_vertex($x, 0);
+#$x = pdl(1.25,1.25,0);
+#$v = $world -> closest_vertex($x, 0);
 
 # closest_simplex stands as the PDL interface for dealing with the C code for find_simplex_by_location
 
-$x = pdl(2.0,2.0,0.0);
-@s = $world -> closest_simplex($x,1);
+#$x = pdl(2.0,2.0,0.0);
+#@s = $world -> closest_simplex($x,1);
 
 # Render the point under consideration
-$win -> replot({with=>'points'}, $x(0), $x(1), $x(2));
+#$win -> replot({with=>'points'}, $x(0), $x(1), $x(2));
 
 # Render the connections to the nearest simplex points
-@splt = ();
-for $i(0..scalar(@s)-1){
-    $spt = @s[$i]->{'x'};
-    push @splt,{with=>'lines', lc=>'black'}, pdl($x(0), $spt(0)), pdl($x(1), $spt(1)), pdl($x(2), $spt(2));
-}
-$win -> replot(@splt);
+#@splt = ();
+#for $i(0..scalar(@s)-1){
+#    $spt = @s[$i]->{'x'};
+#    push @splt,{with=>'lines', lc=>'black'}, pdl($x(0), $spt(0)), pdl($x(1), $spt(1)), pdl($x(2), $spt(2));
+#}
+#$win -> replot(@splt);
 
 # Alternatively, generate a grid of points for testing, and display simplexes
-$xvals = zeroes(10)->xlinvals(-3.0,3.0);
-$yvals = zeroes(10)->xlinvals(-3.0,3.0);
+$xvals = zeroes(6)->xlinvals(-1.5,1.5);
+$yvals = zeroes(6)->xlinvals(-1.5,1.5);
 #$zvals = zeroes(4)->xlinvals(-3.0,3.0);
-$zvals = pdl(0.0);
+$zvals = pdl(0.25);
 
 @splt = ();
 foreach my $k(0..$zvals->nelem-1){
@@ -85,7 +86,7 @@ foreach my $j(0..$yvals->nelem-1){
 foreach my $i(0..$xvals->nelem-1){
     $x = pdl($xvals->at($i),$yvals->at($j),$zvals->at($k));
     @s = $world -> closest_simplex($x,1);
-    @cols = ('black', 'cyan', 'magenta', 'green');
+    @cols = ('black', 'blue', 'violet', 'cyan');
     if (scalar(@s) == 4) {
         push @splt, {with=>'points'}, $x(0), $x(1), $x(2);
         for $i(0..scalar(@s)-1){
@@ -97,8 +98,8 @@ foreach my $i(0..$xvals->nelem-1){
         push @splt, {with=>'points'}, $x(0), $x(1), $x(2);
         for $i(0..scalar(@s)-1){
             $spt = @s[$i]->{'x'};
-            #push @splt,{with=>'lines', lc=>$cols[$i]}, pdl($x(0), $spt(0)), pdl($x(1), $spt(1)), pdl($x(2), $spt(2));
-            push @splt,{with=>'lines', lc=>'red'}, pdl($x(0), $spt(0)), pdl($x(1), $spt(1)), pdl($x(2), $spt(2));
+            push @splt,{with=>'lines', lc=>$cols[$i], lt=>0}, pdl($x(0), $spt(0)), pdl($x(1), $spt(1)), pdl($x(2), $spt(2));
+            #push @splt,{with=>'lines', lc=>'red'}, pdl($x(0), $spt(0)), pdl($x(1), $spt(1)), pdl($x(2), $spt(2));
         }
     }
 }
