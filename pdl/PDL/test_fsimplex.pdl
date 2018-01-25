@@ -77,9 +77,9 @@ $win = $world -> render({label_fluxons=>0});
 
 # Alternatively, generate a grid of points for testing, and display simplexes
 @np = (6,6,1);
-@xrng = (-3.0,3.0);
-@yrng = (-3.0,3.0);
-@zrng = (2.5);
+@xrng = (-1.25,1.25);
+@yrng = (-1.25,1.25);
+@zrng = (0.5);
 
 sub plt_grid {
     # Call by specifying coordinate spacing information (as above),
@@ -101,7 +101,7 @@ sub plt_grid {
     foreach my $i(0..$xvals->nelem-1){
         $x = pdl($xvals->at($i),$yvals->at($j),$zvals->at($k));
         @s = $world -> closest_simplex($x,1);
-        @cols = ('black', 'blue', 'violet', 'cyan');
+        @cols = ('red', 'orange', 'green', 'blue');
         if (scalar(@s) == 4) {
             push @splt, {with=>'points'}, $x(0), $x(1), $x(2);
             for $i(0..scalar(@s)-1){
@@ -129,8 +129,15 @@ sub plt_simplex {
 
     @splt = ();
     @s = $world -> closest_simplex($sx,1);
-    @cols = ('black', 'blue', 'violet', 'cyan');
-    $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[3]->{'x'}, @s[0]->{'x'}, @s[2]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[3]->{'x'});
+    @cols = ('red', 'orange', 'green', 'blue');
+    if (scalar(@s) == 4) {
+        $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[3]->{'x'}, @s[0]->{'x'}, @s[2]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[3]->{'x'});
+    } elsif (scalar(@s) == 3) {
+        $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[0]->{'x'});
+    } else {
+        print 'Somethings gone terribly wrong (n_simplex < 3). Please do not push this button again.';
+        return;
+    }
     push @splt, {with=>'lines', lc=>'black'}, $splex->using(0,1,2);
     push @splt, {with=>'points'}, $sx->using(0,1,2);
     for $i(0..scalar(@s)-1){
@@ -139,3 +146,9 @@ sub plt_simplex {
     }
     $win -> replot(@splt);
 }
+
+# Some sample points for testing in the Cartesian sample world
+plt_simplex(pdl(0.75,0.75,0.5));
+plt_simplex(pdl(-0.85,0.85,0.5));
+plt_simplex(pdl(-0.9,-0.9,0.25));
+plt_simplex(pdl(0.6,-0.6,0.75));
