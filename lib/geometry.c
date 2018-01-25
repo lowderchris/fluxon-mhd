@@ -154,6 +154,15 @@ void diff_3d(NUM *out, NUM *a, NUM *b) {
 
 
 /**********************************************************************
+ * centroid - Find the centroid of the plane formed from 3 3-vectors
+ */
+void centroid(NUM *out, NUM *a, NUM *b, NUM *c) {
+  *(out++) = *(a++) + *(b++) + *(c++);
+  *(out++) = *(a++) + *(b++) + *(c++);
+  *(out) = (*(a) + *(b) + *(c))/3;
+}
+
+/**********************************************************************
  * cp_3d - Copy a 3-vector
  */
 void cp_3d(NUM *a, NUM *b) {
@@ -2511,68 +2520,132 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
      */
 
 
-    passno = ++(vv->line->fc0->world->passno);
-    dumblist_clear(cache);
-    dumblist_add(cache,simplex[0]);
-    dumblist_add(cache,simplex[1]);
-    dumblist_add(cache,simplex[2]);
+    // A New Hope... find the vertex close to the vector defined by the normal
+    //   of the plane P0, P1, P2 and the point x.
 
-    // printf("passno is %ld...",passno);
+    POINT3D c012, ax012;
+    NUM cosgamma, cosgamma_max; 
+    p3 = 0;
+
+    // Assemble candidates
+    dumblist_clear(cache);
+    passno = ++(vv->line->fc0->world->passno);
+    dumblist_add(cache, simplex[0]);
+    dumblist_add(cache, simplex[1]);
+    dumblist_add(cache, simplex[2]);
     simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
-    expand_lengthwise(cache,0,passno);
-    expand_via_neighbors(cache,0,passno);
-    expand_lengthwise(cache,0,passno);
+    expand_lengthwise(cache, 0, passno);
+    expand_via_neighbors(cache, 0, passno);
+    expand_lengthwise(cache,0,passno); // Additional neighbor search(?) from original version
     {
       long n = cache->n;
       expand_lengthwise(cache,n,passno);
       expand_via_neighbors(cache,n,passno);
     }
-    //    printf("Testing %d candidates for the final point of the simplex...\n",cache->n - 3);
 
+    // Grab the centroid of the plane defined by P0, P1, and P2
+    centroid(c012, a0, a1, a2);
+
+    // Define the vector between this centroid and the point x
+    diff_3d(ax012, x, c012);
+
+    // Search through candidate points
     simplex[3] = 0;
-    for(i=3; i<cache->n; i++) {
-      int ok;
-      vv =  ((VERTEX **)(cache->stuff)) [i] ;
-      if (V_ISDUMMY(vv))
-	continue;
+    cosgamma_max = 0;
+    for(i=3; i<cache->n; i++){ // Skipping the first three simplexes
 
-      // acl gets the volume of the simplex formed by the three prior points and the candidate.
-      // We want the smallest simplex that encloses the sample point.
-      f_s_calc_stuff(pc, ac, acl, vv);
+        // Define any variables
+        int ok;
 
-      // printf(" v%ld ",vv->label);
-      ok =  in_simplex( a0, a1, a2, ac, origin );
-        
-        if( !ok && x[0] > 0 && x[0] < 0.5 && x[1] > 0 && x[1] < 0.5) {
-            printf("\n \t %ld", vv->line->label);
-            printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0], a0[1], a0[2]);
-            printf("\n \t $a1 = pdl(%g, %g, %g)", a1[0], a1[1], a1[2]);
-            printf("\n \t $a2 = pdl(%g, %g, %g)", a2[0], a2[1], a2[2]);
-            printf("\n \t $ac = pdl(%g, %g, %g)", ac[0], ac[1], ac[2]);
-            printf("\n \t $as = pdl($a0, $a1, $a2, $ac)");
-            printf("\n \t $win->plot({trid=>1}, {with=>'points'},$as->using(0,1,2))");
-            printf("\n");
-            fflush(stdout);
+        // Check the vertex        
+        vv = ((VERTEX **)(cache->stuff))[i];
+        if (V_ISDUMMY(vv))
+            continue;
+
+        // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
+        // Normalize with the length from the candidate point to x to penalize distant points
+        f_s_calc_stuff( pc, ac, acl, vv);
+        cosgamma = inner_3d(ac, ax012) / sqrt(acl);
+
+        // To force some out of plane movement, could we utilize above_plane here?
+        // Perhaps earlier, checking that P3 lies above the plane formed by x, P0, and P1...
+
+        // Check that this encloses the point x
+        ok = in_simplex( a0, a1, a2, ac, origin );
+
+        // If the simplex contains x,
+        //   and if either the simplex hasn't been filled or the weighted angle exceeds
+        //   the current maximum, copy things over.
+        if ( ok && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
+            f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
+            cosgamma_max = cosgamma;
         }
-        
-      if( ok ) {
-          //printf("%d ",ok);
-//          printf("\n \t %ld", vv->line->label);
-//          printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0], a0[1], a0[2]);
-//          printf("\n \t $a1 = pdl(%g, %g, %g)", a1[0], a1[1], a1[2]);
-//          printf("\n \t $a2 = pdl(%g, %g, %g)", a2[0], a2[1], a2[2]);
-//          printf("\n \t $ac = pdl(%g, %g, %g)", ac[0], ac[1], ac[2]);
-//          printf("\n \t $as = pdl($a0, $a1, $a2, $ac)");
-//          printf("\n \t $win->plot({trid=>1}, {with=>'points'},$as->using(0,1,2))");
-//          printf("\n");
-//          fflush(stdout);
-	// If the simplex hasn't been filled yet (always true on the first OK) or if
-	// we're better than the last simplex-filler, copy the fourth point to the simplex.
-	if(  (!simplex[3]) || (acl < a3l )  )
-	  f_s_copy_stuff(p3, a3, a3l, simplex[3],          pc, ac, acl, vv);
-      }
     }
-      printf("\n");
+
+    //// Original simplex volume minimization code
+    //passno = ++(vv->line->fc0->world->passno);
+    //dumblist_clear(cache);
+    //dumblist_add(cache,simplex[0]);
+    //dumblist_add(cache,simplex[1]);
+    //dumblist_add(cache,simplex[2]);
+
+    //// printf("passno is %ld...",passno);
+    //simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
+    //expand_lengthwise(cache,0,passno);
+    //expand_via_neighbors(cache,0,passno);
+    //expand_lengthwise(cache,0,passno);
+    //{
+    //  long n = cache->n;
+    //  expand_lengthwise(cache,n,passno);
+    //  expand_via_neighbors(cache,n,passno);
+    //}
+    ////    printf("Testing %d candidates for the final point of the simplex...\n",cache->n - 3);
+
+    //simplex[3] = 0;
+    //for(i=3; i<cache->n; i++) {
+    //  int ok;
+    //  vv =  ((VERTEX **)(cache->stuff)) [i] ;
+    //  if (V_ISDUMMY(vv))
+    //    continue;
+
+    //  // acl gets the volume of the simplex formed by the three prior points and the candidate.
+    //  // We want the smallest simplex that encloses the sample point.
+    //  f_s_calc_stuff(pc, ac, acl, vv);
+
+    //  // printf(" v%ld ",vv->label);
+    //  ok =  in_simplex( a0, a1, a2, ac, origin );
+    //   
+    //  // Some diagnostics for funky simplex finding 
+    //  //if( !ok && x[0] > 0 && x[0] < 0.5 && x[1] > 0 && x[1] < 0.5) {
+    //    //printf("\n \t %ld", vv->line->label);
+    //    //printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0], a0[1], a0[2]);
+    //    //printf("\n \t $a1 = pdl(%g, %g, %g)", a1[0], a1[1], a1[2]);
+    //    //printf("\n \t $a2 = pdl(%g, %g, %g)", a2[0], a2[1], a2[2]);
+    //    //printf("\n \t $ac = pdl(%g, %g, %g)", ac[0], ac[1], ac[2]);
+    //    //printf("\n \t $as = pdl($a0, $a1, $a2, $ac)");
+    //    //printf("\n \t $win->plot({trid=>1}, {with=>'points'},$as->using(0,1,2))");
+    //    //printf("\n");
+    //    //fflush(stdout);
+    //  //}
+    //    
+    //  if( ok ) {
+    //    //printf("%d ",ok);
+    //    //printf("\n \t %ld", vv->line->label);
+    //    //printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0], a0[1], a0[2]);
+    //    //printf("\n \t $a1 = pdl(%g, %g, %g)", a1[0], a1[1], a1[2]);
+    //    //printf("\n \t $a2 = pdl(%g, %g, %g)", a2[0], a2[1], a2[2]);
+    //    //printf("\n \t $ac = pdl(%g, %g, %g)", ac[0], ac[1], ac[2]);
+    //    //printf("\n \t $as = pdl($a0, $a1, $a2, $ac)");
+    //    //printf("\n \t $win->plot({trid=>1}, {with=>'points'},$as->using(0,1,2))");
+    //    //printf("\n");
+    //    //fflush(stdout);
+    //    // If the simplex hasn't been filled yet (always true on the first OK) or if
+    //    // we're better than the last simplex-filler, copy the fourth point to the simplex.
+    //    if(  (!simplex[3]) || (acl < a3l )  )
+    //      f_s_copy_stuff(p3, a3, a3l, simplex[3],          pc, ac, acl, vv);
+    //  }
+    //}
+    //  printf("\n");
 
     if(!simplex[3]) {
       // Not finding a 4th neighbor is not unusual if you are outside the sim, so we don't throw an error.
