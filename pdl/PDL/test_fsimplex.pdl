@@ -152,3 +152,6 @@ plt_simplex(pdl(0.75,0.75,0.5));
 plt_simplex(pdl(-0.85,0.85,0.5));
 plt_simplex(pdl(-0.9,-0.9,0.25));
 plt_simplex(pdl(0.6,-0.6,0.75));
+
+plt_simplex(pdl(-0.75,0.0,0.25));
+plt_simplex(pdl(0.75,-0.1,0.25));

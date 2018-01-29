@@ -2332,7 +2332,7 @@ int above_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
   diff_3d(AC, C, A);
   diff_3d(AX, X, A);
   cross_3d(ABxAC, AC, AB);
-  return (  inner_3d(ABxAC, AX) > -0.0001  );
+  return (  inner_3d(ABxAC, AX) >= 0  );
 }
 
 /**********************************************************************
@@ -2524,6 +2524,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     //   of the plane P0, P1, P2 and the point x.
 
     POINT3D c012, ax012;
+    NUM axl012;
     NUM cosgamma, cosgamma_max; 
     p3 = 0;
 
@@ -2548,6 +2549,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
     // Define the vector between this centroid and the point x
     diff_3d(ax012, x, c012);
+    axl012 = norm_3d(ax012);
 
     // Search through candidate points
     simplex[3] = 0;
@@ -2565,7 +2567,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
         // Normalize with the length from the candidate point to x to penalize distant points
         f_s_calc_stuff( pc, ac, acl, vv);
-        cosgamma = inner_3d(ac, ax012) / sqrt(acl);
+        cosgamma = inner_3d(ac, ax012) / (acl * acl * axl012 * axl012);
 
         // To force some out of plane movement, could we utilize above_plane here?
         // Perhaps earlier, checking that P3 lies above the plane formed by x, P0, and P1...
@@ -2573,12 +2575,16 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         // Check that this encloses the point x
         ok = in_simplex( a0, a1, a2, ac, origin );
 
+        printf("\n okay: %d , acl: %g , axl012: %g, cosgamma: %g", ok, acl, axl012, cosgamma);
+
         // If the simplex contains x,
         //   and if either the simplex hasn't been filled or the weighted angle exceeds
         //   the current maximum, copy things over.
         if ( ok && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
+        //if ( ok && (cosgamma > 0) && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
             f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
             cosgamma_max = cosgamma;
+            printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g", ok, acl, axl012, cosgamma);
         }
     }
 
