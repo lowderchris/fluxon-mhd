@@ -2527,6 +2527,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     NUM axl012;
     NUM cosgamma, cosgamma_max; 
     p3 = 0;
+    long n;
 
     // Assemble candidates
     dumblist_clear(cache);
@@ -2538,11 +2539,14 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     expand_lengthwise(cache, 0, passno);
     expand_via_neighbors(cache, 0, passno);
     expand_lengthwise(cache,0,passno); // Additional neighbor search(?) from original version
+    simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
+    printf("\n Neighbor search - n:%ld passno:%ld", n, passno);
     {
       long n = cache->n;
       expand_lengthwise(cache,n,passno);
       expand_via_neighbors(cache,n,passno);
     }
+
 
     // Grab the centroid of the plane defined by P0, P1, and P2
     centroid(c012, a0, a1, a2);
@@ -2567,7 +2571,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
         // Normalize with the length from the candidate point to x to penalize distant points
         f_s_calc_stuff( pc, ac, acl, vv);
-        cosgamma = inner_3d(ac, ax012) / (acl * acl * axl012 * axl012);
+        cosgamma = fabs(inner_3d(ac, ax012)) / (acl * acl * axl012 * axl012);
 
         // To force some out of plane movement, could we utilize above_plane here?
         // Perhaps earlier, checking that P3 lies above the plane formed by x, P0, and P1...
@@ -2575,7 +2579,18 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         // Check that this encloses the point x
         ok = in_simplex( a0, a1, a2, ac, origin );
 
-        printf("\n okay: %d , acl: %g , axl012: %g, cosgamma: %g", ok, acl, axl012, cosgamma);
+        // CL - Print out fluxon ID
+        //printf("\n okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
+
+        //if (vv->line->label == 300){
+        //    printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0]+x[0], a0[1]+x[1], a0[2]+x[2]);
+        //    printf("\n \t $a1 = pdl(%g, %g, %g)", a1[0]+x[0], a1[1]+x[1], a1[2]+x[2]);
+        //    printf("\n \t $a2 = pdl(%g, %g, %g)", a2[0]+x[0], a2[1]+x[1], a2[2]+x[2]);
+        //    printf("\n \t $ac = pdl(%g, %g, %g)", ac[0]+x[0], ac[1]+x[1], ac[2]+x[2]);
+        //    printf("\n \t $as = pdl($ac, $a0, $ac, $a1, $ac, $a2)");
+        //    printf("\n \t $win->replot({trid=>1}, {with=>'lines'},$as->using(0,1,2))");
+        //    printf("\n");
+        //}
 
         // If the simplex contains x,
         //   and if either the simplex hasn't been filled or the weighted angle exceeds
@@ -2584,7 +2599,50 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         //if ( ok && (cosgamma > 0) && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
             f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
             cosgamma_max = cosgamma;
-            printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g", ok, acl, axl012, cosgamma);
+            printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
+        }
+    }
+
+    // CL - Either expand the neighbor search, or run a global search if no fourth point is found
+    while (!simplex[3]){
+        // Declare any variables
+        int ok;
+        int i;
+
+        //CL - Assemble candidates... a bit more. For testing.
+        passno = ++(vv->line->fc0->world->passno);
+        n = ++n;
+        i = n;
+        simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
+        expand_lengthwise(cache, n, passno);
+        expand_via_neighbors(cache, n, passno);
+        expand_lengthwise(cache,n,passno); // Additional neighbor search(?) from original version
+        simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
+        printf("\n Neighbor search - n:%ld passno:%ld", n, passno);
+
+        // Check the vertex
+        vv = ((VERTEX **)(cache->stuff))[i];
+        if (V_ISDUMMY(vv))
+            continue;
+
+        // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
+        // Normalize with the length from the candidate point to x to penalize distant points
+        f_s_calc_stuff( pc, ac, acl, vv);
+        cosgamma = fabs(inner_3d(ac, ax012)) / (acl * acl * axl012 * axl012);
+
+        // To force some out of plane movement, could we utilize above_plane here?
+        // Perhaps earlier, checking that P3 lies above the plane formed by x, P0, and P1...
+
+        // Check that this encloses the point x
+        ok = in_simplex( a0, a1, a2, ac, origin );
+
+        // If the simplex contains x,
+        //   and if either the simplex hasn't been filled or the weighted angle exceeds
+        //   the current maximum, copy things over.
+        if ( ok && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
+            f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
+            cosgamma_max = cosgamma;
+            printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
         }
     }
 

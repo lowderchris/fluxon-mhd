@@ -52,7 +52,7 @@ $world -> update_neighbors(1);
 
 # Render the world
 #$win = gpwin('wxt', size=>15)
-$win = $world -> render({label_fluxons=>0});
+$win = $world -> render({label_fluxons=>1});
 
 # In probing through the C find_vertex_by_location subroutine, closest_vertex stands as the PDL interface for this through World.pm
 
