@@ -19,7 +19,7 @@ sub rad_test {
     my $xform = !t_spherical() x t_scale([3.14159/180,3.14159/180,1]);
 
     # Create some open field lines
-    for my $i(-25..25){
+    for my $i(-100..100){
         next unless($i);
         my $n = floor(pdl(1));
         #my $n = floor(pdl(rand(10)+1));
@@ -27,7 +27,7 @@ sub rad_test {
         $open -> ((2)) .= xvals(4)+1;
 
         for my $j(1..$n){
-          my $line = ($open+pdl(rand(2)-1,rand(2)-1,0))->apply($xform);
+          my $line = ($open+pdl(rand(20)-1,rand(20)-1,0))->apply($xform);
           if($i<=0) {
         $line->((2)) *= -1;
         $line = $line->(:,-1:0:-1);
@@ -43,8 +43,8 @@ sub rad_test {
 }
 
 # Load the example world
-$world = read_world('cartesian_interpolate_test_relaxed.flux');
-#$world = rad_test();
+#$world = read_world('cartesian_interpolate_test_relaxed.flux');
+$world = rad_test();
 
 # Do I need to check for a neighbor search here?
 # Performing an initial global recalculation of neighbors
@@ -52,7 +52,7 @@ $world -> update_neighbors(1);
 
 # Render the world
 #$win = gpwin('wxt', size=>15)
-$win = $world -> render({label_fluxons=>1});
+$win = $world -> render({label_fluxons=>0});
 
 # In probing through the C find_vertex_by_location subroutine, closest_vertex stands as the PDL interface for this through World.pm
 
@@ -132,13 +132,14 @@ sub plt_simplex {
     @cols = ('red', 'orange', 'green', 'blue');
     if (scalar(@s) == 4) {
         $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[3]->{'x'}, @s[0]->{'x'}, @s[2]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[3]->{'x'});
+    push @splt, {with=>'lines', lc=>'black'}, $splex->using(0,1,2);
     } elsif (scalar(@s) == 3) {
         $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[0]->{'x'});
+    push @splt, {with=>'lines', lc=>'black', lt=>0}, $splex->using(0,1,2);
     } else {
         print 'Somethings gone terribly wrong (n_simplex < 3). Please do not push this button again.';
         return;
     }
-    push @splt, {with=>'lines', lc=>'black'}, $splex->using(0,1,2);
     push @splt, {with=>'points'}, $sx->using(0,1,2);
     for $i(0..scalar(@s)-1){
         $spt = @s[$i]->{'x'};
@@ -155,3 +156,16 @@ plt_simplex(pdl(0.6,-0.6,0.75));
 
 plt_simplex(pdl(-0.75,0.0,0.25));
 plt_simplex(pdl(0.75,-0.1,0.25));
+
+# Some sample points for testing in the radial sample world
+sub sign {
+    my $num = shift;
+    if ($num >=0){
+        return 1;
+    } else {
+        return -1;
+    }
+}
+for $i(0..10){
+    plt_simplex(pdl(sign(rand(2)-1)*(rand(2)+1),sign(rand(2)-1)*(rand(2)+1),sign(rand(2)-1)*(rand(2)+1)));
+}

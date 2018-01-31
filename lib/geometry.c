@@ -2336,6 +2336,45 @@ int above_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
 }
 
 /**********************************************************************
+ * above_plane_ratio
+ *
+ * Given three noncolinear points (which define an oriented plane)
+ * determine whether a 4th point is above or below the plane.
+ * Returns the projection of this vector onto AX, as a fraction of the
+ * lengths of AX and ABxAC. Positive / negative values are above / below the plane.
+ */
+int above_plane_ratio(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
+  POINT3D AB, AC, AX;
+  POINT3D ABxAC;
+  NUM AXL, ABxACL;
+  diff_3d(AB, B, A);
+  diff_3d(AC, C, A);
+  diff_3d(AX, X, A);
+  AXL = norm_3d(AX);
+  ABxACL = norm_3d(ABxAC);
+  cross_3d(ABxAC, AC, AB);
+  printf("\n %g", inner_3d(ABxAC, AX) / (AXL * ABxACL));
+  return (  inner_3d(ABxAC, AX) / (AXL * ABxACL)  );
+}
+
+/**********************************************************************
+ * opposite_plane
+ * Given three points forming a plane,
+ * determine if a fourth and fifth points are on opposite sides
+ * of this plane. Return 1 for opposite sides, 0 for same sides (or *on* the plane).
+ */
+int opposite_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X, POINT3D Y) {
+  POINT3D AB, AC, AX, AY;
+  POINT3D ABxAC;
+  diff_3d(AB, B, A);
+  diff_3d(AC, C, A);
+  diff_3d(AX, X, A);
+  diff_3d(AY, Y, A);
+  cross_3d(ABxAC, AC, AB);
+  return ( (inner_3d(ABxAC, AX) > 0) ^ (inner_3d(ABxAC, AY) > 0) );
+}
+
+/**********************************************************************
  * in_simplex
  * Given four noncoplanar points (which define a 3-D simplex),
  * determine whether a 5th point is inside or outside the simplex.
@@ -2351,6 +2390,27 @@ int in_simplex( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
 	   );
 }
 
+/**********************************************************************
+ * in_simplex_ratio
+ * Given four noncoplanar points (which define a 3-D simplex),
+ * determine whether a 5th point is inside or outside the simplex,
+ * utilizing the means of above_plane_ratio
+ *
+ * CL - Perhaps only apply the ratio version to the X points
+ */
+int in_simplex_ratio( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
+  POINT3D P01, P02, P03;
+  NUM tol;
+
+  tol = 0.2;
+
+  return ( ! (  (above_plane(P0,P1,P2,P3) ^ (above_plane_ratio(P0,P1,P2,X)>=tol) ) ||
+                (above_plane(P1,P2,P3,P0) ^ (above_plane_ratio(P1,P2,P3,X)>=tol) ) ||
+                (above_plane(P2,P3,P0,P1) ^ (above_plane_ratio(P2,P3,P0,X)>=tol) ) ||
+                (above_plane(P3,P0,P1,P2) ^ (above_plane_ratio(P3,P0,P1,X)>=tol) )
+	      )
+	   );
+}
 
 /**********************************************************************
  * find_simplex_by_location
@@ -2528,6 +2588,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     NUM cosgamma, cosgamma_max; 
     p3 = 0;
     long n;
+    n = 0;
 
     // Assemble candidates
     dumblist_clear(cache);
@@ -2540,13 +2601,12 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     expand_via_neighbors(cache, 0, passno);
     expand_lengthwise(cache,0,passno); // Additional neighbor search(?) from original version
     simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
-    printf("\n Neighbor search - n:%ld passno:%ld", n, passno);
+    //printf("\n Neighbor search - n:%ld passno:%ld", n, passno);
     {
       long n = cache->n;
       expand_lengthwise(cache,n,passno);
       expand_via_neighbors(cache,n,passno);
     }
-
 
     // Grab the centroid of the plane defined by P0, P1, and P2
     centroid(c012, a0, a1, a2);
@@ -2562,6 +2622,8 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
         // Define any variables
         int ok;
+        int opp;
+        //int plnchk;
 
         // Check the vertex        
         vv = ((VERTEX **)(cache->stuff))[i];
@@ -2569,15 +2631,24 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
             continue;
 
         // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
-        // Normalize with the length from the candidate point to x to penalize distant points
+        // Normalize twice with lengths to penalize distant points
         f_s_calc_stuff( pc, ac, acl, vv);
         cosgamma = fabs(inner_3d(ac, ax012)) / (acl * acl * axl012 * axl012);
 
         // To force some out of plane movement, could we utilize above_plane here?
-        // Perhaps earlier, checking that P3 lies above the plane formed by x, P0, and P1...
+        // Perhaps checking that P3 lies above the plane formed by a combination of
+        //   x and two of P0, P1, P2
+        // Although the point might be *barely* above one of these planes...
+        //plnchk = above_plane(a0, a1, x, ac);
+
+        // Check that the distance of x from the plane centroid is within a tolerance ratio
+        //   of the distance from the centroid to the remaining simplex point. Rinse and repeat.
 
         // Check that this encloses the point x
         ok = in_simplex( a0, a1, a2, ac, origin );
+
+        // Check that this fourth point is opposite of P2
+        opp = opposite_plane(a0, a1, origin, ac, a2);
 
         // CL - Print out fluxon ID
         //printf("\n okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
@@ -2595,21 +2666,22 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         // If the simplex contains x,
         //   and if either the simplex hasn't been filled or the weighted angle exceeds
         //   the current maximum, copy things over.
-        if ( ok && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
+        if ( ok && opp && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
         //if ( ok && (cosgamma > 0) && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
             f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
             cosgamma_max = cosgamma;
-            printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
+            //printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
         }
     }
 
-    // CL - Either expand the neighbor search, or run a global search if no fourth point is found
-    while (!simplex[3]){
+    // Expand the neighbor search if no fourth point is immediately found
+    while ((!simplex[3]) && (n < 250)){
         // Declare any variables
         int ok;
+        int opp;
         int i;
 
-        //CL - Assemble candidates... a bit more. For testing.
+        //CL - Assemble a few more candidates.
         passno = ++(vv->line->fc0->world->passno);
         n = ++n;
         i = n;
@@ -2618,7 +2690,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         expand_via_neighbors(cache, n, passno);
         expand_lengthwise(cache,n,passno); // Additional neighbor search(?) from original version
         simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
-        printf("\n Neighbor search - n:%ld passno:%ld", n, passno);
+        //printf("\n Neighbor search - n:%ld passno:%ld", n, passno);
 
         // Check the vertex
         vv = ((VERTEX **)(cache->stuff))[i];
@@ -2626,23 +2698,23 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
             continue;
 
         // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
-        // Normalize with the length from the candidate point to x to penalize distant points
+        // Normalize twice with the lengths to penalize distant points
         f_s_calc_stuff( pc, ac, acl, vv);
         cosgamma = fabs(inner_3d(ac, ax012)) / (acl * acl * axl012 * axl012);
-
-        // To force some out of plane movement, could we utilize above_plane here?
-        // Perhaps earlier, checking that P3 lies above the plane formed by x, P0, and P1...
 
         // Check that this encloses the point x
         ok = in_simplex( a0, a1, a2, ac, origin );
 
+        // Check that this fourth point is opposite of P2
+        opp = opposite_plane(a0, a1, origin, ac, a2);
+
         // If the simplex contains x,
         //   and if either the simplex hasn't been filled or the weighted angle exceeds
         //   the current maximum, copy things over.
-        if ( ok && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
+        if ( ok && opp && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
             f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
             cosgamma_max = cosgamma;
-            printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
+            //printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
         }
     }
 
