@@ -162,6 +162,19 @@ void centroid(NUM *out, NUM *a, NUM *b, NUM *c) {
   *(out) = (*(a) + *(b) + *(c))/3;
 }
 
+
+/**********************************************************************
+ * mpdist - Find the distance from the point x to the midpoint of the
+ * vector from a-b
+ */
+NUM mpdist(NUM *a, NUM*b, NUM *x) {
+  NUM out;
+  out = (0.5 * (*a - *b)) - *x; a++; b++; x++;
+  out += (0.5 * (*a - *b)) - *x; a++; b++; x++;
+  out += (0.5 * (*a - *b)) - *x;
+  return out;
+}
+
 /**********************************************************************
  * cp_3d - Copy a 3-vector
  */
@@ -304,7 +317,7 @@ NUM det_2d(NUM *mat) {
  */
 NUM det_3d(NUM *mat) {
   return(  mat[0]*mat[4]*mat[8] + mat[1]*mat[5]*mat[6] + mat[2]*mat[3]*mat[7]
-	  -mat[0]*mat[5]*mat[7] - mat[1]*mat[3]*mat[8] - mat[2]*mat[4]*mat[6]);
+          -mat[0]*mat[5]*mat[7] - mat[1]*mat[3]*mat[8] - mat[2]*mat[4]*mat[6]);
 }
 
 /**********************************************************************
@@ -417,8 +430,8 @@ int p_inside_tri(NUM *tri0, NUM *tri1, NUM *tri2, NUM *p) {
   c3 = cross_2d(x2,x0);
 
   return ( (c1 > 0  &&  c2 > 0  && c3 > 0) ||
-	   (c1 < 0  &&  c2 < 0  && c3 < 0)
-	   );
+           (c1 < 0  &&  c2 < 0  && c3 < 0)
+           );
 }
 
 
@@ -453,14 +466,14 @@ int trivloop(FLUXON *f) {
       NUM r;
       VERTEX *vn = (VERTEX *)(v->neighbors.stuff[i]);
       if(vn->next && vn->line != f) {
-	r=p_ls_dist(v->x, vn->x, vn->next->x);
-	if(r<min_neighbor_dist) {
-	  min_neighbor_dist = r;
-	  if(min_neighbor_dist < max_internal_dist * trivloop_factor) {
-	    //printf("trivloop: not trivial (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
-	    return 0;
-	  }
-	}
+        r=p_ls_dist(v->x, vn->x, vn->next->x);
+        if(r<min_neighbor_dist) {
+          min_neighbor_dist = r;
+          if(min_neighbor_dist < max_internal_dist * trivloop_factor) {
+            //printf("trivloop: not trivial (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
+            return 0;
+          }
+        }
       }
     }
 
@@ -468,14 +481,14 @@ int trivloop(FLUXON *f) {
       NUM r;
       VERTEX *vn = (VERTEX *)(v->nearby.stuff[i]);
       if(vn->next && vn->line != f) {
-	r=p_ls_dist(v->x, vn->x, vn->next->x);
-	if(r<min_neighbor_dist) {
-	  min_neighbor_dist = r;
-	  if(min_neighbor_dist < max_internal_dist * trivloop_factor) {
-	    //printf("trivloop: not trivial; case 2 (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
-	    return 0;
-	  }
-	}
+        r=p_ls_dist(v->x, vn->x, vn->next->x);
+        if(r<min_neighbor_dist) {
+          min_neighbor_dist = r;
+          if(min_neighbor_dist < max_internal_dist * trivloop_factor) {
+            //printf("trivloop: not trivial; case 2 (%g < %g); v=%d,vn=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label,vn->label);
+            return 0;
+          }
+        }
       }
     }
 
@@ -483,11 +496,11 @@ int trivloop(FLUXON *f) {
     for(v1=v; v1&&v1->next; v1=v1->next) {
       NUM r = cart_3d(v->x, v1->x);
       if(r > max_internal_dist) {
-	max_internal_dist = r;
-	if( min_neighbor_dist < max_internal_dist * trivloop_factor) {
-	  //printf("trivloop: not trivial; case 3 (%g < %g); v=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label);
-	  return 0;
-	}
+        max_internal_dist = r;
+        if( min_neighbor_dist < max_internal_dist * trivloop_factor) {
+          //printf("trivloop: not trivial; case 3 (%g < %g); v=%d\n",min_neighbor_dist,max_internal_dist * trivloop_factor,v->label);
+          return 0;
+        }
       }
     }
   }
@@ -709,13 +722,13 @@ void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], 
     if(ab0) {
       cp_3d(p0,a0);
       if(cd0) {
-	cp_3d(p1,c0);
-	/* printf("ls_closest: a==b, c==d (%g,%g,%g)\n",a0[0],a0[1],a0[2]); */
-	return;
+        cp_3d(p1,c0);
+        /* printf("ls_closest: a==b, c==d (%g,%g,%g)\n",a0[0],a0[1],a0[2]); */
+        return;
       } else {
-	p_ls_closest_approach(p1,c0,d0,a0);
-	/* printf("ls_closest: a==b (%g,%g,%g); closest on cd is (%g,%g,%g)\n",a0[0],a0[1],a0[2],p1[0],p1[1],p1[2]); */
-	return;
+        p_ls_closest_approach(p1,c0,d0,a0);
+        /* printf("ls_closest: a==b (%g,%g,%g); closest on cd is (%g,%g,%g)\n",a0[0],a0[1],a0[2],p1[0],p1[1],p1[2]); */
+        return;
       }
     }
     if(cd0){
@@ -1328,10 +1341,10 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
     v1 = (VERTEX *)((horde->stuff)[i]);
 
     r = fl_segment_deluxe_dist(p0, p1, v, v1); /*This is where the
-						 non-linear projection
-						 is done. It is for r
-						 only, not for p0 and
-						 p1*/
+                                                 non-linear projection
+                                                 is done. It is for r
+                                                 only, not for p0 and
+                                                 p1*/
 
     if((v->line->fc0->world->verbosity - (r>=0))>=6)
       printf("\nfl_segment_deluxe_dist returned %g for vertex %ld\n",r,v1->label);
@@ -1343,7 +1356,7 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
     else {
 
       if(r<v->r_cl || v->r_cl < 0 ) /* Accumulate closest approach distance */
-	v->r_cl = r;
+        v->r_cl = r;
 
       diff_3d(X0, p1, p0);
 
@@ -1352,27 +1365,27 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
       len = norm_2d(v1->scr);      /* * 2-D * length of vector */
 
       if(v->line->fc0->world->verbosity >= 5)
-	printf("len=%g for vertex %ld\n",len,v1->label);
+        printf("len=%g for vertex %ld\n",len,v1->label);
 
       if(len <= 0) {
 
-	if(v->line->fc0->world->verbosity == 4)
-	  printf("len=%g for vertex %ld\n",len,v1->label);
+        if(v->line->fc0->world->verbosity == 4)
+          printf("len=%g for vertex %ld\n",len,v1->label);
 
-	horde->stuff[i] = 0;
-	crunch=1;
+        horde->stuff[i] = 0;
+        crunch=1;
       }
       else {
-	scale_3d(v1->scr,v1->scr,r/len); /*so scr is the vector of the
-					   nearest approach with a
-					   length of the inverese
-					   sin^2 projected distance
-					   that has been projected
-					   into a plane perpendicular
-					   to the v-fluxel.*/
+        scale_3d(v1->scr,v1->scr,r/len); /*so scr is the vector of the
+                                           nearest approach with a
+                                           length of the inverese
+                                           sin^2 projected distance
+                                           that has been projected
+                                           into a plane perpendicular
+                                           to the v-fluxel.*/
 
-	v1->a = ATAN2(v1->scr[1],v1->scr[0]); //store angles
-	v1->r = r; //store non-linear projected distances.
+        v1->a = ATAN2(v1->scr[1],v1->scr[0]); //store angles
+        v1->r = r; //store non-linear projected distances.
       }
     }
 
@@ -1383,9 +1396,9 @@ void project_n_fill(VERTEX *v, DUMBLIST *horde) {
     int j;
     for(i=j=0;i<horde->n;i++) {
       for(;i<horde->n && !horde->stuff[i]; i++)
-	;
+        ;
       if(i<horde->n)
-	horde->stuff[j++] = horde->stuff[i];
+        horde->stuff[j++] = horde->stuff[i];
     }
     horde->n = j;
   }
@@ -1555,74 +1568,74 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
 
       /*** Find next guy and prep his bisector if necessary ***/
       for(i_l=MOD_NEXT(i,n);  i_l != i && !horde->stuff[i_l]; MOD_INC(i_l,n))
-	;
+        ;
       lv = (VERTEX *)(horde->stuff[i_l]);
 
       // Remove dupes
       if( iv==rv )
-	goto reject;
+        goto reject;
 
       if(!been_there)
-	perp_bisector_2d( out[i_l].bisector, 0, lv->scr );
+        perp_bisector_2d( out[i_l].bisector, 0, lv->scr );
 
       /*** Check for pathologies ***/
       if(i_r == i || i_l == i) {
-	abort = 1;
-	//	fflush(stdout);
-	//	fprintf(stderr,"hull_2d: eliminated all vertices! I give up.\n");
-	//	horde->n=0;
-	//	return;
+        abort = 1;
+        //        fflush(stdout);
+        //        fprintf(stderr,"hull_2d: eliminated all vertices! I give up.\n");
+        //        horde->n=0;
+        //        return;
       }
 
       if(!isfinite(iv->r) || !isfinite(iv->a))
-	goto reject;
+        goto reject;
 
       if(iv->r == 0)
-	goto reject;
+        goto reject;
 
       /*** Check colinearity and opentude on right & left ***/
       /* (right could be handled by caching, but it's pretty cheap) */
       b = iv->a - rv->a;
       TRIM_ANGLE(b);
       if( b < EPSILON && b > -EPSILON && rv->r < iv->r ) {
-	goto reject; /* Colinear with (and farther than) right-side vertex */
+        goto reject; /* Colinear with (and farther than) right-side vertex */
       }
 
       a = lv->a - iv->a;
 
       TRIM_ANGLE(a);
       if( a < EPSILON && a > -EPSILON && lv->r <= iv->r ) {
-	goto reject;  /* Colinear with (and farther than) left-side vertex */
+        goto reject;  /* Colinear with (and farther than) left-side vertex */
       }
 
       if( a > EPSILON && a < PI-EPSILON) {
-	/* Line isn't open on the left, so it intersects on the left.   */
-	intersection_2d( out[ i ].p, out[ i ].bisector, out[i_l].bisector );
-	out[i].open = 0;
+        /* Line isn't open on the left, so it intersects on the left.   */
+        intersection_2d( out[ i ].p, out[ i ].bisector, out[i_l].bisector );
+        out[i].open = 0;
 
 
-	if( b > EPSILON && b < PI-EPSILON) {
+        if( b > EPSILON && b < PI-EPSILON) {
 
-	  /* Line isn't open on the right either, so compare intersections */
-	  a = cross_2d( out[i_r].p, out[ i ].p );
+          /* Line isn't open on the right either, so compare intersections */
+          a = cross_2d( out[i_r].p, out[ i ].p );
 
-	  if( !isfinite(a) ) {
-	    printf("ASSERTION FAILED in hull_2d: intersection should exist (but doesn't)\n\t\tleft_p: %5.2g, %5.2g ;   right_p: %5.2g, %5.2g",out[i].p[0],out[i].p[1],out[i_r].p[0],out[i_r].p[1]);
-	    printf("\n\t\tleft_b: %5.2g, %5.2g, %5.2g;  this_b: %5.2g, %5.2g, %5.2g; right_b: %5.2g, %5.2g, %5.2g\n",out[i_l].bisector[0],out[i_l].bisector[1],out[i_l].bisector[2],out[i].bisector[0],out[i].bisector[1],out[i].bisector[2],out[i_r].bisector[0],out[i_r].bisector[1],out[i_r].bisector[2]);
-	    printf("\t\tlv->a=%5.2g, iv->a=%5.2g, rv->a=%5.2g,   lv-iv: %5.2g,   iv-rv: %5.2g\n",lv->a*180/PI,iv->a*180/PI,rv->a*180/PI,(lv->a-iv->a)*180/PI,(iv->a-rv->a)*180/PI);
-	    goto reject;
-	  }
+          if( !isfinite(a) ) {
+            printf("ASSERTION FAILED in hull_2d: intersection should exist (but doesn't)\n\t\tleft_p: %5.2g, %5.2g ;   right_p: %5.2g, %5.2g",out[i].p[0],out[i].p[1],out[i_r].p[0],out[i_r].p[1]);
+            printf("\n\t\tleft_b: %5.2g, %5.2g, %5.2g;  this_b: %5.2g, %5.2g, %5.2g; right_b: %5.2g, %5.2g, %5.2g\n",out[i_l].bisector[0],out[i_l].bisector[1],out[i_l].bisector[2],out[i].bisector[0],out[i].bisector[1],out[i].bisector[2],out[i_r].bisector[0],out[i_r].bisector[1],out[i_r].bisector[2]);
+            printf("\t\tlv->a=%5.2g, iv->a=%5.2g, rv->a=%5.2g,   lv-iv: %5.2g,   iv-rv: %5.2g\n",lv->a*180/PI,iv->a*180/PI,rv->a*180/PI,(lv->a-iv->a)*180/PI,(iv->a-rv->a)*180/PI);
+            goto reject;
+          }
 
-	  /*** If intersections were in the wrong order, reject the point ***/
-	  if(a < 0) {
-	    goto reject;
-	  }
-	}
+          /*** If intersections were in the wrong order, reject the point ***/
+          if(a < 0) {
+            goto reject;
+          }
+        }
 
       } else {
-	/* Line is open on the left -- set the left point to zero */
-	out[i].p[0] = out[i].p[1] = 0;
-	out[i].open = 1;
+        /* Line is open on the left -- set the left point to zero */
+        out[i].p[0] = out[i].p[1] = 0;
+        out[i].open = 1;
       }
 
 
@@ -1636,46 +1649,46 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
       /*** The only way to get to the rejection code is to goto it! ***/
       if(0) {
       reject:
-	/*** rejection code ***/
+        /*** rejection code ***/
 
-	/* "Normally", we back up when we hit a rejection -- but the
-	 * first item in the list is an exception -- in that case we
+        /* "Normally", we back up when we hit a rejection -- but the
+         * first item in the list is an exception -- in that case we
          * keep the same right side but walk forward one.  That requires
-	 * updating the intersection information for the right side.
-	 */
-	if(rejects)
-	  dumblist_add(rejects,horde->stuff[i]);
+         * updating the intersection information for the right side.
+         */
+        if(rejects)
+          dumblist_add(rejects,horde->stuff[i]);
 
-	horde->stuff[i] = 0;
+        horde->stuff[i] = 0;
 
-	if(been_there || (i > i_r)) {
-	  i = i_r;
+        if(been_there || (i > i_r)) {
+          i = i_r;
 
-	  iv = rv;
+          iv = rv;
 
-	  for(i_r=MOD_PREV(i,n); i_r!=i && !horde->stuff[i_r]; MOD_DEC(i_r,n))
-	    ;
-	  terminus =i_r;
-	  rv = (VERTEX *)(horde->stuff[i_r]);
+          for(i_r=MOD_PREV(i,n); i_r!=i && !horde->stuff[i_r]; MOD_DEC(i_r,n))
+            ;
+          terminus =i_r;
+          rv = (VERTEX *)(horde->stuff[i_r]);
 
 
-	} else {
+        } else {
 
-	  i = i_l;
+          i = i_l;
           terminus = i_r;
-	  iv = lv;
+          iv = lv;
 
-	  been_there = 0;
+          been_there = 0;
 
-	  a = iv->a - rv->a; TRIM_ANGLE(a);
-	  if(a<0) {
-	    out[i_r].p[0] = out[i_r].p[1] = 0;
-	    out[i_r].open = 1;
-	  }  else {
-	    intersection_2d( out[i_r].p, out[i_r].bisector, out[ i ].bisector );
-	    out[i_r].open = 0;
-	  }
-	}
+          a = iv->a - rv->a; TRIM_ANGLE(a);
+          if(a<0) {
+            out[i_r].p[0] = out[i_r].p[1] = 0;
+            out[i_r].open = 1;
+          }  else {
+            intersection_2d( out[i_r].p, out[i_r].bisector, out[ i ].bisector );
+            out[i_r].open = 0;
+          }
+        }
       }
     } /* end of non-zeroed-out check */
 
@@ -1688,11 +1701,11 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     for(i=j=0; i<horde->n; i++) {
       VERTEX *hsi = (VERTEX *)(horde->stuff[i]);
       if(hsi) {
-	if(i != j) {
-	  horde->stuff[j] = hsi;
-	  out[j] = out[i];
-	}
-	j++;
+        if(i != j) {
+          horde->stuff[j] = hsi;
+          out[j] = out[i];
+        }
+        j++;
       }
     }
     horde->n = j;
@@ -1703,10 +1716,10 @@ void hull_2d(HULL_VERTEX *out, DUMBLIST *horde, DUMBLIST *rejects) {
     HULL_VERTEX *hv = out;
     for(i=0;i<horde->n;i++,hv++) {
       if(!hv->open)
-	hv->a_r = hv->a_l = ATAN2(hv->p[1], hv->p[0]);
+        hv->a_r = hv->a_l = ATAN2(hv->p[1], hv->p[0]);
       else {
-	hv->a_l =(((VERTEX *)(horde->stuff[i]))->a ) + PI/2;
-	hv->a_r =(((VERTEX *)(horde->stuff[MOD_NEXT(i,horde->n)]))->a) - PI/2;
+        hv->a_l =(((VERTEX *)(horde->stuff[i]))->a ) + PI/2;
+        hv->a_r =(((VERTEX *)(horde->stuff[MOD_NEXT(i,horde->n)]))->a) - PI/2;
       }
     }
   }
@@ -1761,12 +1774,12 @@ NUM atan2_oct( NUM y, NUM x) {
  */
 
 int check_hullpoint(VERTEX *v,
-		    VERTEX *pv,
-		    HULL_VERTEX *phv,
-		    VERTEX *nv,
-		    HULL_VERTEX *nhv,
-		    HULL_VERTEX *scr
-		    ) {
+                    VERTEX *pv,
+                    HULL_VERTEX *phv,
+                    VERTEX *nv,
+                    HULL_VERTEX *nhv,
+                    HULL_VERTEX *scr
+                    ) {
   NUM point[2];
   NUM a;
   char open = 0;
@@ -1798,18 +1811,18 @@ int check_hullpoint(VERTEX *v,
        cos(theta) is positive) */
     if( fabs( cross_2d(v->scr, pv->scr) ) < eps && (inner_2d(v->scr, pv->scr) > 0) ) {
       if(  pv->r >= pv->r  ) {
-	return 0;
+        return 0;
       }
       else
-	colinear_keep = 1;
+        colinear_keep = 1;
     }
 
     if( fabs( cross_2d( v->scr, nv->scr) ) < eps && (inner_2d(v->scr, nv->scr) > 0) )  {
       if(  v->r >= nv->r  ) {
-	return 0;
+        return 0;
       }
       else
-	colinear_keep = 2;
+        colinear_keep = 2;
     }
 
     if(colinear_keep) {
@@ -1955,12 +1968,12 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
 
   /* always add the first eligible VERTEX in the list... */
   for(i=0;i<horde->n &&
-	( horde->stuff[i] == central_v ||              // skip the main vertex if present
-	  horde->stuff[i] == central_v->prev ||        // skip the following segment if present
-	  horde->stuff[i] == central_v->next ||        // skip the previous segment if present
-	  !( ((VERTEX *)(horde->stuff[i]))->next ) ||  // skip endpoint vertices if present
-	  plasmoid_conjugate( (VERTEX *)(horde->stuff[i]), central_v )
-	  );
+        ( horde->stuff[i] == central_v ||              // skip the main vertex if present
+          horde->stuff[i] == central_v->prev ||        // skip the following segment if present
+          horde->stuff[i] == central_v->next ||        // skip the previous segment if present
+          !( ((VERTEX *)(horde->stuff[i]))->next ) ||  // skip endpoint vertices if present
+          plasmoid_conjugate( (VERTEX *)(horde->stuff[i]), central_v )
+          );
       i++) //find first candidate
     ;
 
@@ -1995,11 +2008,11 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
        v == central_v ||                        // Skip ourselves if we encounter us
        !v->next ||                              // Must have a following segment to be valid
        ( v->line==central_v->line &&            // Several end conditions for same fluxon:
-	 ( v->next==central_v ||                // Skip next segment
-	   v->prev==central_v ||                // Skip previous segment
-	   plasmoid_conjugate( v, central_v)
-	   )
-	 )
+         ( v->next==central_v ||                // Skip next segment
+           v->prev==central_v ||                // Skip previous segment
+           plasmoid_conjugate( v, central_v)
+           )
+         )
        ) {
       // Skip (do nothing; just move on to the next candidate)
     } else {
@@ -2011,15 +2024,15 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
        generally under 10 elements in ws, so binary search probably
        isn't worth the effort.  */
       /* Sort through the current candidates to find the first one
-	 that has a larger angle than v, this candidate will be nv. nv
-	 is assigned here. This loop determines next_idx which is also
-	 the index for nv.*/
+         that has a larger angle than v, this candidate will be nv. nv
+         is assigned here. This loop determines next_idx which is also
+         the index for nv.*/
       for(next_idx = 0;
-	  next_idx < ws->n &&
-	    (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
-	  next_idx++
-	  )
-	;
+          next_idx < ws->n &&
+            (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
+          next_idx++
+          )
+        ;
 
 
       /******************************
@@ -2028,164 +2041,164 @@ void hull_2d_us(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v) {
        */
 
       if( nv->a < v->a ) {
-	/* We went off the end, so put ti at the end */
+        /* We went off the end, so put ti at the end */
 
-	next_idx = ws->n;
-	nv = ((VERTEX **)(ws->stuff))[0];
-	nh = hull;
-	pv = ((VERTEX **)(ws->stuff))[ws->n-1];
-	ph = hull + ws->n-1;
+        next_idx = ws->n;
+        nv = ((VERTEX **)(ws->stuff))[0];
+        nh = hull;
+        pv = ((VERTEX **)(ws->stuff))[ws->n-1];
+        ph = hull + ws->n-1;
       } else {
-	/* We didn't, it is at the beginning */
-	if(next_idx==0) {
-	  nh = hull;
-	  pv = ((VERTEX **)(ws->stuff))[ws->n-1];
-	  ph = hull + ws->n-1;
-	} else {
-	  /* It is somewhere in the middle */
-	  nh = hull + next_idx;
-	  pv = ((VERTEX **)(ws->stuff))[next_idx - 1];
-	  ph = hull + next_idx-1;
-	}
+        /* We didn't, it is at the beginning */
+        if(next_idx==0) {
+          nh = hull;
+          pv = ((VERTEX **)(ws->stuff))[ws->n-1];
+          ph = hull + ws->n-1;
+        } else {
+          /* It is somewhere in the middle */
+          nh = hull + next_idx;
+          pv = ((VERTEX **)(ws->stuff))[next_idx - 1];
+          ph = hull + next_idx-1;
+        }
       }
 
       flag = check_hullpoint(v, pv,ph, nv,nh, &scrhv);
 
       if(flag) {
-	/* Make sure we have room in the workspace */
-	if(ws->size <= ws->n)
-	  dumblist_grow(ws, ws->size * 1.5 + 10);
+        /* Make sure we have room in the workspace */
+        if(ws->size <= ws->n)
+          dumblist_grow(ws, ws->size * 1.5 + 10);
 
-	/* Make room in the workspace dumb list and the hull
-	   list. backward loop, search backward and shift everything
-	   +1 until we get to next_idx. */
-	for( j = ws->n; j>next_idx; j--){
-	  ws->stuff[j] = ws->stuff[j-1];
-	  hv_cp(hull+j, hull+j-1);
-	}
+        /* Make room in the workspace dumb list and the hull
+           list. backward loop, search backward and shift everything
+           +1 until we get to next_idx. */
+        for( j = ws->n; j>next_idx; j--){
+          ws->stuff[j] = ws->stuff[j-1];
+          hv_cp(hull+j, hull+j-1);
+        }
 
-	ws->n++;
+        ws->n++;
 
-	/* Set the insertion-point values */
-	ws->stuff[next_idx] = v;
-	hv_cp(hull+next_idx, &(scrhv));
+        /* Set the insertion-point values */
+        ws->stuff[next_idx] = v;
+        hv_cp(hull+next_idx, &(scrhv));
 
-	hull[next_idx].open = ( flag>0 && (flag & 1) ); /* logical && and bitwise & */
-	hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open =
-	  ( flag>0 && (flag & 2) ); /* logical && and bitwise & */
+        hull[next_idx].open = ( flag>0 && (flag & 1) ); /* logical && and bitwise & */
+        hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open =
+          ( flag>0 && (flag & 2) ); /* logical && and bitwise & */
 
-	/**************************
-	 * Now that we've put the new guy in, make sure he doesn't invalidate
+        /**************************
+         * Now that we've put the new guy in, make sure he doesn't invalidate
          * his neighbors on the prev side...
          */
-	{
-	  int n, p, pp, nn, nnn, check_flag;
+        {
+          int n, p, pp, nn, nnn, check_flag;
 
-	  n = next_idx;              //n
-	  p = n; MOD_DEC(p, ws->n);  //n-1
-	  pp= p; MOD_DEC(pp, ws->n); //n-2
-	  nn = n; MOD_INC(nn, ws->n);//n+1
-	  nnn=nn; MOD_INC(nnn,ws->n);//n+2
+          n = next_idx;              //n
+          p = n; MOD_DEC(p, ws->n);  //n-1
+          pp= p; MOD_DEC(pp, ws->n); //n-2
+          nn = n; MOD_INC(nn, ws->n);//n+1
+          nnn=nn; MOD_INC(nnn,ws->n);//n+2
 
-	  /* Walk backward until we find a still-keep-worthy vertex */
-	  while( p != n &&
-		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]),
-						  (VERTEX *)(ws->stuff[pp]), hull + pp,
-						  (VERTEX *)(ws->stuff[n]),  hull + n,
-						  hull + p))
-		 ) {
+          /* Walk backward until we find a still-keep-worthy vertex */
+          while( p != n &&
+                 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]),
+                                                  (VERTEX *)(ws->stuff[pp]), hull + pp,
+                                                  (VERTEX *)(ws->stuff[n]),  hull + n,
+                                                  hull + p))
+                 ) {
 
-	    p=pp;
-	    MOD_DEC(pp, ws->n); //decrement p and pp
-	  }
+            p=pp;
+            MOD_DEC(pp, ws->n); //decrement p and pp
+          }
 
-	  hull[p].open = (check_flag > 0) && (check_flag & 1);
-	  hull[pp].open = (check_flag > 0) && (check_flag & 2);
+          hull[p].open = (check_flag > 0) && (check_flag & 1);
+          hull[pp].open = (check_flag > 0) && (check_flag & 2);
 
-	  /* walk forward until we find a still-keep-worthy vertex */
-	  while( n != p &&
-		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[nn]),
-						  (VERTEX *)(ws->stuff[n]),  hull + n,
-						  (VERTEX *)(ws->stuff[nnn]), hull + nnn,
-						  hull+nn
-						  ) )
-		 ) {
+          /* walk forward until we find a still-keep-worthy vertex */
+          while( n != p &&
+                 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[nn]),
+                                                  (VERTEX *)(ws->stuff[n]),  hull + n,
+                                                  (VERTEX *)(ws->stuff[nnn]), hull + nnn,
+                                                  hull+nn
+                                                  ) )
+                 ) {
 
-	    nn=nnn;
-	    MOD_INC(nnn, ws->n); //increment nn and nnn
-	  }
+            nn=nnn;
+            MOD_INC(nnn, ws->n); //increment nn and nnn
+          }
 
-	  hull[nn].open = (check_flag > 0) && (check_flag & 1);
-	  hull[n].open = (check_flag > 0) && (check_flag & 2);
+          hull[nn].open = (check_flag > 0) && (check_flag & 1);
+          hull[n].open = (check_flag > 0) && (check_flag & 2);
 
-	  /* Now p is the first keepworthy vertex, walking backward
-	     from n, and nn is the first keepworthy vertex, walking
-	     forward from n. Crunch down the list. */
-	  /* Case nomeclature: .=no longer neighbor, *=true
-	     neighbor. the line represents each vertex currently in
-	     ws.*/
-	  {
+          /* Now p is the first keepworthy vertex, walking backward
+             from n, and nn is the first keepworthy vertex, walking
+             forward from n. Crunch down the list. */
+          /* Case nomeclature: .=no longer neighbor, *=true
+             neighbor. the line represents each vertex currently in
+             ws.*/
+          {
 
-	    int ii,jj, diff;
+            int ii,jj, diff;
 
-	    if( p <= n-1 ) {
-	      if( nn <= n-1 ) {
+            if( p <= n-1 ) {
+              if( nn <= n-1 ) {
 
-		// ...n*****p...|.....  case
-		for(ii=0, jj=nn; jj<=p; jj++,ii++) {
-		  hv_cp( hull+ii, hull+jj );
-		  ws->stuff[ii] = ws->stuff[jj];
-		}
-		hv_cp( hull+ii, hull +n );
-		ws->stuff[ii] = ws->stuff[n];
-		ii++;
+                // ...n*****p...|.....  case
+                for(ii=0, jj=nn; jj<=p; jj++,ii++) {
+                  hv_cp( hull+ii, hull+jj );
+                  ws->stuff[ii] = ws->stuff[jj];
+                }
+                hv_cp( hull+ii, hull +n );
+                ws->stuff[ii] = ws->stuff[n];
+                ii++;
 
-	      } else {
+              } else {
 
-		// *****p...|...n**** case
+                // *****p...|...n**** case
 
-		ii=p+1;
-		if(ii == n) {
-		  ii++;
-		} else {
-		  hv_cp( hull + ii, hull + n );
-		  ws->stuff[ii] = ws->stuff[n];
-		  ii++;
-		}
-		if(ii<nn) {
-		  for( jj=nn; jj < ws->n; ii++,jj++) {
-		    hv_cp(hull + ii, hull + jj);
-		    ws->stuff[ii] = ws->stuff[jj];
-		  }
-		} else if(ii==nn) {
-		  ii = ws->n;
-		}
-	      }
-	    } else {
+                ii=p+1;
+                if(ii == n) {
+                  ii++;
+                } else {
+                  hv_cp( hull + ii, hull + n );
+                  ws->stuff[ii] = ws->stuff[n];
+                  ii++;
+                }
+                if(ii<nn) {
+                  for( jj=nn; jj < ws->n; ii++,jj++) {
+                    hv_cp(hull + ii, hull + jj);
+                    ws->stuff[ii] = ws->stuff[jj];
+                  }
+                } else if(ii==nn) {
+                  ii = ws->n;
+                }
+              }
+            } else {
 
-	      // ....|...n****p.. case
-	      if(n>0) {
-		hv_cp(hull, hull+n);
-		ws->stuff[0] = ws->stuff[n];
-	      }
-	      ii=1;
+              // ....|...n****p.. case
+              if(n>0) {
+                hv_cp(hull, hull+n);
+                ws->stuff[0] = ws->stuff[n];
+              }
+              ii=1;
 
-	      if( nn>1 ) {
-		for( jj=nn; jj<=p; ii++, jj++) {
-		  hv_cp( hull + ii, hull + jj );
-		  ws->stuff[ii] = ws->stuff[jj];
-		}
-	      } else {
-		ii= p + 1;
-	      }
+              if( nn>1 ) {
+                for( jj=nn; jj<=p; ii++, jj++) {
+                  hv_cp( hull + ii, hull + jj );
+                  ws->stuff[ii] = ws->stuff[jj];
+                }
+              } else {
+                ii= p + 1;
+              }
 
-	    }/* end of case testing */
-	    ws->n = ii;
+            }/* end of case testing */
+            ws->n = ii;
 
-	  } /* end of crunching convenience block */
-	} /* end of neighbor-testing convenience block */
+          } /* end of crunching convenience block */
+        } /* end of neighbor-testing convenience block */
       } else {
-	/* no keeping -- just ignore this point and start the next loop */
+        /* no keeping -- just ignore this point and start the next loop */
       }
     } /* end of non-duplication test block */
   } /* end of horde loop */
@@ -2278,40 +2291,40 @@ VERTEX *find_vertex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
 
       if( v->next &&
-	  ((d2 = cart2_3d(x, v->next->x)) < dist2)  /* assignment */
-	  ) {
-	/* walk forward */
-	v = v->next;
-	dist2 = d2;
+          ((d2 = cart2_3d(x, v->next->x)) < dist2)  /* assignment */
+          ) {
+        /* walk forward */
+        v = v->next;
+        dist2 = d2;
       } else if( v->prev &&
-		 ((d2 = cart2_3d(x, v->prev->x)) < dist2) /* assignment */
-		 ) {
-	/* walk backward */
-	v = v->prev;
-	dist2 = d2;
+                 ((d2 = cart2_3d(x, v->prev->x)) < dist2) /* assignment */
+                 ) {
+        /* walk backward */
+        v = v->prev;
+        dist2 = d2;
       } else {
-	/* search neighbors & nearby */
-	int i;
-	VERTEX *v_candidate = 0;
-	NUM vcd2 = dist2;
-	for(i=0; i < v->neighbors.n; i++) {
-	  if( (d2 = cart2_3d(x, ((VERTEX **)(v->neighbors.stuff))[i]->x)) < vcd2 ) {
-	    v_candidate = ((VERTEX **)(v->neighbors.stuff))[i];
-	    vcd2 = d2;
-	  }
-	}
-	for(i=0; i<v->nearby.n; i++) {
-	  if( (d2 = cart2_3d(x, ((VERTEX **)(v->nearby.stuff))[i]->x)) < vcd2 ) {
-	    v_candidate = ((VERTEX **)(v->nearby.stuff))[i];
-	    vcd2 = d2;
-	  }
-	}
+        /* search neighbors & nearby */
+        int i;
+        VERTEX *v_candidate = 0;
+        NUM vcd2 = dist2;
+        for(i=0; i < v->neighbors.n; i++) {
+          if( (d2 = cart2_3d(x, ((VERTEX **)(v->neighbors.stuff))[i]->x)) < vcd2 ) {
+            v_candidate = ((VERTEX **)(v->neighbors.stuff))[i];
+            vcd2 = d2;
+          }
+        }
+        for(i=0; i<v->nearby.n; i++) {
+          if( (d2 = cart2_3d(x, ((VERTEX **)(v->nearby.stuff))[i]->x)) < vcd2 ) {
+            v_candidate = ((VERTEX **)(v->nearby.stuff))[i];
+            vcd2 = d2;
+          }
+        }
 
-	if(v_candidate) {
-	  v = v_candidate;
-	  dist2 = vcd2;
-	} else
-	  done = 1;
+        if(v_candidate) {
+          v = v_candidate;
+          dist2 = vcd2;
+        } else
+          done = 1;
       }
     } while(!done);
   }
@@ -2386,8 +2399,8 @@ int in_simplex( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
                 (above_plane(P1,P2,P3,P0) ^ above_plane(P1,P2,P3,X) ) ||
                 (above_plane(P2,P3,P0,P1) ^ above_plane(P2,P3,P0,X) ) ||
                 (above_plane(P3,P0,P1,P2) ^ above_plane(P3,P0,P1,X) )
-	      )
-	   );
+              )
+           );
 }
 
 /**********************************************************************
@@ -2408,8 +2421,351 @@ int in_simplex_ratio( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X)
                 (above_plane(P1,P2,P3,P0) ^ (above_plane_ratio(P1,P2,P3,X)>=tol) ) ||
                 (above_plane(P2,P3,P0,P1) ^ (above_plane_ratio(P2,P3,P0,X)>=tol) ) ||
                 (above_plane(P3,P0,P1,P2) ^ (above_plane_ratio(P3,P0,P1,X)>=tol) )
-	      )
-	   );
+              )
+           );
+}
+
+
+
+/**********************************************************************
+ * find_nsimplex_by_location
+ *
+ * Given a location in 3-space, build a minimal simplex (tetrahedron) of
+ * vertices around it. Attempts to provide a 'nice' simplex to comfortably
+ * envelop the provided location.
+ *
+ * Takes the same parameters as find_vertex_by_location; returns a DUMBLIST
+ * containing the VERTEXes that were found.  The DUMBLIST is statically
+ * allocated and hence is only temporary storage.
+ */
+
+static DUMBLIST *fsbl_cache = 0;
+
+// f_s_calc_stuff: shorthand for some geometrical calculations:
+//  - pc gets the point of the argument VERTEX
+//  - ac gets the offset vector to that VERTEX from the current origin (x).
+//  - acl gets the norm of the offset vector.
+#define f_s_calc_stuff(pc,ac,acl,v) do { (pc)=(v->x); diff_3d((ac),(pc),x); (acl)=norm_3d(ac); } while(0)
+
+// f_s_copy_stuff: shorthand for copying a bunch of things.
+//   - p gets pc;
+//   - a gets ac;
+//   - al gets acl;
+//   - v gets vc.
+#define f_s_copy_stuff(p,a,al,v,pc,ac,acl,vc) do { (p)=(pc); cp_3d((a),(ac)); (al)=(acl); (v)=(vc);} while(0)
+
+DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
+    VERTEX *vv;
+    static VERTEX *(simplex[6]);  // Gets the VERTEXes of the simplex
+    POINT3D a0, a1, a2a, a2b, a3a, a3b;       // These get the vectors relative to the desired point
+    static POINT3D origin = {0,0,0};
+    NUM *p0, *p1, *p2a, *p2b, *p3a, *p3b;       // These get the x vectors of the VERTEXes we're dealing with
+    NUM a0l, a1l, a2al, a2bl, a3al, a3bl;
+
+    // Initialize some things
+
+    simplex[0] = simplex[1] = simplex[2] = simplex[3] = simplex[4] = simplex[5] = 0;
+
+    if(!fsbl_cache) {
+    fsbl_cache = new_dumblist();
+    }
+    dumblist_clear(fsbl_cache);
+
+    // *************************************
+    // Find the closest vertex, P0
+
+    vv = find_vertex_by_location(x,w,v,global);
+    if(!vv) {
+    fprintf(stderr,"find_simplex_by_location: no vertices at all found for location (%g,%g,%g)!\n",x[0],x[1],x[2]);
+    return 0;
+    }
+
+    // Put the vertex in the simplex, and calculate its ancillary vectors
+    simplex[0] = vv;
+    f_s_calc_stuff(p0, a0, a0l, vv);
+    dumblist_add(fsbl_cache,simplex[0]);
+
+    // End early if the point is exactly atop a vertex
+    if(simplex[0]->x[0]==x[0] && simplex[0]->x[1]==x[1] && simplex[0]->x[2]==x[2]){
+    //printf("The interpolated point is exactly at one of the vertices: returning with only that one point\n");
+    return fsbl_cache;
+    }
+
+    // *************************************
+    // Find a vertex, P1, close to perpendicular to the x-P0 line, penalizing for distance (?)
+    {
+    static DUMBLIST *cache = 0;
+    NUM costheta, cosphi, l0l1sintheta;
+    NUM *pc;
+    POINT3D ac,scr;
+    NUM acl;
+    int i;
+    long passno;
+    NUM costheta_min, cosphi_min, cosphi_max;
+    p1 = 0;
+
+    if( !cache ) {
+      cache = new_dumblist();
+    }
+    dumblist_clear(cache);
+
+    passno = ++(vv->line->fc0->world->passno);
+    dumblist_add(cache, vv);
+    vv->passno = passno;
+    expand_lengthwise(cache, 0, passno);
+    expand_via_neighbors(cache, 0, passno);
+
+    costheta_min = -1;
+    for(i=1;i<cache->n;i++){ // skip simplex[0]
+      vv = ((VERTEX **)(cache->stuff))[i];
+      if (V_ISDUMMY(vv))
+        continue;
+      f_s_calc_stuff(  pc, ac, acl, vv );
+      // Find the cosine of the angle between the first VERTEX found and the current one;
+      // retain the lowest-cosine (highest angle) VERTEX.
+      // An additional factor of vector lengths is provided to penalize distant points
+        costheta = fabs(inner_3d(ac,a0) * (acl * a0l * acl * a0l));
+      if((costheta_min < 0) || (costheta < costheta_min)) { // assignment
+          f_s_copy_stuff( p1, a1, a1l, simplex[1],        pc, ac, acl, vv );
+          costheta_min = costheta;
+      }
+    }
+
+    if(!p1) {
+      fprintf(stderr, "find_simplex_by_location: FAILED to find a second neighbor! (Should never happen...?\n");
+      return fsbl_cache;
+    }
+    dumblist_add(fsbl_cache,simplex[1]);
+
+    // *************************************
+    // Find two vertices, P2a and P2b, close to perpendicular to the x-P0-P1 plane, penalizing for distance (?)
+    p2a = 0;
+    p2b = 0;
+
+    // Assemble candidates
+    dumblist_clear(cache);
+    passno = ++(vv->line->fc0->world->passno);
+    dumblist_add(cache, simplex[0]);
+    dumblist_add(cache, simplex[1]);
+    simplex[0]->passno = simplex[1]->passno = passno;
+    expand_lengthwise(cache, 0, passno);
+    expand_via_neighbors(cache, 0, passno);
+
+    // Find the normal vector to the x-p0-p1 plane
+    cross_3d(scr,a0,a1);
+    l0l1sintheta = norm_3d(scr);
+    cosphi_max = 0;
+    cosphi_min = 0;
+
+    // Search through points to find two candidate points for p2
+    for(i=2; i<cache->n; i++) { // skip simplex[0] and simplex[1]
+      NUM triple;
+      vv = ((VERTEX **)(cache->stuff))[i];
+      if (V_ISDUMMY(vv))
+        continue;
+
+      f_s_calc_stuff(pc, ac, acl, vv);
+      triple = inner_3d( ac, scr );                // triple is the triple product (ac . a0 x a1)
+      cosphi = triple / l0l1sintheta / acl / l0l1sintheta / acl;   // Divide out to get cos(phi); get absolute value
+
+      if( (cosphi > 0) && (cosphi > cosphi_max) ) {
+          f_s_copy_stuff( p2a, a2a, a2al, simplex[2],      pc, ac, acl, vv );
+          cosphi_max = cosphi;
+      }
+      if( (cosphi < 0) && (cosphi < cosphi_min) ) {
+          f_s_copy_stuff( p2b, a2b, a2bl, simplex[3],      pc, ac, acl, vv );
+          cosphi_min = cosphi;
+      }
+        // CL - Need to set up some logic if either of these points is not defined
+    }
+    if(!p2a && !p2b) {
+      fprintf(stderr,"find_simplex_by_location: FAILED to find a third neighbor!\n");
+      return fsbl_cache;
+    }
+    dumblist_add(fsbl_cache,simplex[2]);
+    dumblist_add(fsbl_cache,simplex[3]);
+
+    // *************************************
+    // Find two vertices, P3a and P3b, close to parallel with the vector connecting
+    //   x to the centroid of the plane(s) formed by P0-P1-P2a/b. Penalize for distance (?)
+    POINT3D c012a, c012b, ax012a, ax012b;
+    NUM axl012a, axl012b;
+    NUM acosgamma, bcosgamma, acosgamma_max, bcosgamma_max;
+
+    p3a = 0;
+    p3b = 0;
+
+    // Assemble candidates
+    dumblist_clear(cache);
+    passno = ++(vv->line->fc0->world->passno);
+    dumblist_add(cache, simplex[0]);
+    dumblist_add(cache, simplex[1]);
+    dumblist_add(cache, simplex[2]);
+    dumblist_add(cache, simplex[3]);
+    simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = simplex[3]->passno = passno;
+    expand_lengthwise(cache, 0, passno);
+    expand_via_neighbors(cache, 0, passno);
+    expand_lengthwise(cache,0,passno);
+    simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = simplex[3]->passno = passno;
+    {
+      long n = cache->n;
+      expand_lengthwise(cache,n,passno);
+      expand_via_neighbors(cache,n,passno);
+    }
+
+    // Grab the centroids of the plane defined by P0, P1, and P2a/b
+    centroid(c012a, a0, a1, a2a);
+    centroid(c012b, a0, a1, a2b);
+
+    // Define the vector between these centroids and the point x
+    diff_3d(ax012a, x, c012a);
+    diff_3d(ax012b, x, c012b);
+    axl012a = norm_3d(ax012a);
+    axl012b = norm_3d(ax012b);
+
+    // Search through candidate points
+    simplex[4] = 0;
+    simplex[5] = 0;
+    acosgamma_max = 0;
+    bcosgamma_max = 0;
+    for(i=4; i<cache->n; i++){ // Skipping the first four simplex candidates
+
+        // Define any variables
+        int oka, okb;
+
+        // Check the vertex
+        vv = ((VERTEX **)(cache->stuff))[i];
+        if (V_ISDUMMY(vv))
+            continue;
+
+        // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
+        // Normalize with lengths to penalize distant points
+        f_s_calc_stuff( pc, ac, acl, vv);
+        acosgamma = fabs(inner_3d(ac, ax012a)) / (acl * acl * axl012a * axl012a);
+        bcosgamma = fabs(inner_3d(ac, ax012b)) / (acl * acl * axl012b * axl012b);
+
+        // Check that this encloses the point x
+        oka = in_simplex( a0, a1, a2a, ac, origin );
+        okb = in_simplex( a0, a1, a2b, ac, origin );
+
+        // If the simplex contains x,
+        //   and if either the simplex hasn't been filled or the weighted angle exceeds
+        //   the current maximum, copy things over.
+        if ( oka && (simplex[2] != 0) && ((!simplex[4]) || (acosgamma > acosgamma_max ))) {
+            f_s_copy_stuff(p3a, a3a, a3al, simplex[4], pc, ac, acl, vv);
+            acosgamma_max = acosgamma;
+        }
+        if ( okb && (simplex[3] != 0) && ((!simplex[5]) || (bcosgamma > bcosgamma_max ))) {
+            f_s_copy_stuff(p3b, a3b, a3bl, simplex[5], pc, ac, acl, vv);
+            bcosgamma_max = bcosgamma;
+        }
+    }
+    dumblist_add(fsbl_cache,simplex[4]);
+    dumblist_add(fsbl_cache,simplex[5]);
+  }
+
+    // *************************************
+    // Keeping the simplex points P0 and P1, find the combination of remaining candidates that:
+    //  - enclose the point x
+    //  ~ minimize simplex volume
+    //  - maintain a close distribution of distances from x to simplex faces
+    // If no adequate fourth point is found, return the best combination of three
+    // Define some lengths
+    NUM ed01, ed02a, ed02b, ed12a, ed12b;
+    POINT3D c012a, c012b, c013a, c013b, c123a, c123b, c023a, c023b;
+    POINT3D ax012a, ax012b, ax013a, ax013b, ax123a, ax123b, ax023a, ax023b;
+    NUM axl012a, axl012b, axl013a, axl013b, axl123a, axl123b, axl023a, axl023b;
+    NUM avga, avgb, vara, varb;
+
+    // If both final simplex points are defined...
+    if (simplex[4] && simplex[5]){
+        // Calculate some distances to face centroids
+
+        // Define some centroids
+        centroid(c012a, a0,  a1, a2a);
+        centroid(c012b, a0,  a1, a2b);
+        centroid(c013a, a0,  a1, a3a);
+        centroid(c013b, a0,  a1, a3b);
+        centroid(c123a, a1, a2a, a3a);
+        centroid(c123b, a1, a2b, a3b);
+        centroid(c023a, a0, a2a, a3a);
+        centroid(c023b, a0, a2b, a3b);
+
+        // Define the vector between these centroids and the point x
+        diff_3d(ax012a, x, c012a);
+        diff_3d(ax012b, x, c012b);
+        diff_3d(ax013a, x, c013a);
+        diff_3d(ax013b, x, c013b);
+        diff_3d(ax123a, x, c123a);
+        diff_3d(ax123b, x, c123b);
+        diff_3d(ax023a, x, c023a);
+        diff_3d(ax023b, x, c023b);
+        axl012a = norm_3d(ax012a);
+        axl012b = norm_3d(ax012b);
+        axl013a = norm_3d(ax013a);
+        axl013b = norm_3d(ax013b);
+        axl123a = norm_3d(ax123a);
+        axl123b = norm_3d(ax123b);
+        axl023a = norm_3d(ax023a);
+        axl023b = norm_3d(ax023b);
+
+        // Calculate variances
+        avga = (axl012a + axl013a + axl123a + axl023a) / 4;
+        avgb = (axl012b + axl013b + axl123b + axl023b) / 4;
+        vara = (pow(axl012a - avga, 2) + pow(axl013a - avga, 2) + pow(axl123a - avga, 2) + pow(axl023a - avga, 2)) / 4;
+        varb = (pow(axl012b - avgb, 2) + pow(axl013b - avgb, 2) + pow(axl123b - avgb, 2) + pow(axl023b - avgb, 2)) / 4;
+
+        // Write these best simplex points out
+        dumblist_clear(fsbl_cache);
+        dumblist_add(fsbl_cache, simplex[0]);
+        dumblist_add(fsbl_cache, simplex[1]);
+        if (vara < varb) {
+            dumblist_add(fsbl_cache, simplex[2]);
+            dumblist_add(fsbl_cache, simplex[4]);
+        } else{
+            dumblist_add(fsbl_cache, simplex[3]);
+            dumblist_add(fsbl_cache, simplex[5]);
+        }
+    // If only the final a-simplex point is found...
+    } else if (!simplex[5] && (simplex[4] != 0)){
+        dumblist_clear(fsbl_cache);
+        dumblist_add(fsbl_cache, simplex[0]);
+        dumblist_add(fsbl_cache, simplex[1]);
+        dumblist_add(fsbl_cache, simplex[2]);
+        dumblist_add(fsbl_cache, simplex[4]);
+    // If only the final b-simplex point is found...
+    } else if (!simplex[4] && (simplex[5] != 0)){
+        dumblist_clear(fsbl_cache);
+        dumblist_add(fsbl_cache, simplex[0]);
+        dumblist_add(fsbl_cache, simplex[1]);
+        dumblist_add(fsbl_cache, simplex[3]);
+        dumblist_add(fsbl_cache, simplex[5]);
+    // If neither the final a/b-simplex points are found...
+    } else if (!simplex[4] && !simplex[5]){
+        // Calculate some distances to edges for this case
+        ed01  = mpdist(a0,  a1, x);
+        ed02a = mpdist(a0, a2a, x);
+        ed02b = mpdist(a0, a2b, x);
+        ed12a = mpdist(a1, a2a, x);
+        ed12b = mpdist(a1, a2b, x);
+
+        // Calculate variances
+        avga = (ed01 + ed02a + ed12a) / 3;
+        avgb = (ed01 + ed02b + ed12b) / 3;
+        vara = (pow(ed01 - avga, 2) + pow(ed02a - avga, 2) + pow(ed12a - avga, 2)) / 3;
+        varb = (pow(ed01 - avgb, 2) + pow(ed02b - avgb, 2) + pow(ed12b - avgb, 2)) / 3;
+
+        dumblist_clear(fsbl_cache);
+        dumblist_add(fsbl_cache, simplex[0]);
+        dumblist_add(fsbl_cache, simplex[1]);
+        if (vara < varb) {
+            dumblist_add(fsbl_cache, simplex[2]);
+        } else{
+            dumblist_add(fsbl_cache, simplex[3]);
+        }
+    }
+
+    return fsbl_cache;
 }
 
 /**********************************************************************
@@ -2425,8 +2781,7 @@ int in_simplex_ratio( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X)
  * allocated and hence is only temporary storage.
  */
 
-static DUMBLIST *fsbl_cache = 0;
-
+// static DUMBLIST *fsbl_cache = 0;
 
 // f_s_calc_stuff: shorthand for some geometrical calculations:
 //  - pc gets the point of the argument VERTEX
@@ -2503,12 +2858,12 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     for(i=1;i<cache->n;i++){ // skip simplex[0]
         vv = ((VERTEX **)(cache->stuff))[i];
       if (V_ISDUMMY(vv))
-	continue;
+        continue;
       f_s_calc_stuff(  pc, ac, acl, vv );
       // Find the cosine of the angle between the first VERTEX found and the current one;
       // retain the lowest-cosine (highest angle) VERTEX.
-        // Dot product and not costheta...
-        costheta = fabs(inner_3d(ac,a0));
+      // An additional factor of vector lengths is provided to penalize distant points
+        costheta = fabs(inner_3d(ac,a0) * (acl * a0l * acl * a0l));
       if((costheta_min < 0) || (costheta < costheta_min)) { // assignment
           f_s_copy_stuff( p1, a1, a1l, simplex[1],        pc, ac, acl, vv );
           costheta_min = costheta;
@@ -2518,7 +2873,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 //                printf("\n\t%d:%g,%g,%g;  %fd:%g,%g,%g\n", vv->label,ac[0],ac[1],ac[2],simplex[0]->label,a0[0],a0[1],a0[2]);
 //        fflush(stdout);
     }
-  
+
     // printf("p1 is vertex %ld (%g,%g,%g)\n",simplex[1]->label, simplex[1]->x[0], simplex[1]->x[1], simplex[1]->x[2]);
 
     if(!p1) {
@@ -2556,7 +2911,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
       NUM triple;
       vv = ((VERTEX **)(cache->stuff))[i];
       if (V_ISDUMMY(vv))
-	continue;
+        continue;
 
       f_s_calc_stuff(pc, ac, acl, vv);
       triple = inner_3d( ac, scr );                // triple is the triple product (ac . a0 x a1)
@@ -2585,7 +2940,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
     POINT3D c012, ax012;
     NUM axl012;
-    NUM cosgamma, cosgamma_max; 
+    NUM cosgamma, cosgamma_max;
     p3 = 0;
     long n;
     n = 0;
@@ -2625,13 +2980,13 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         int opp;
         //int plnchk;
 
-        // Check the vertex        
+        // Check the vertex
         vv = ((VERTEX **)(cache->stuff))[i];
         if (V_ISDUMMY(vv))
             continue;
 
         // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
-        // Normalize twice with lengths to penalize distant points
+        // Normalize with lengths to penalize distant points
         f_s_calc_stuff( pc, ac, acl, vv);
         cosgamma = fabs(inner_3d(ac, ax012)) / (acl * acl * axl012 * axl012);
 
@@ -2675,7 +3030,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     }
 
     // Expand the neighbor search if no fourth point is immediately found
-    while ((!simplex[3]) && (n < 250)){
+    while ((!simplex[3]) && (n < 10) && (0)){
         // Declare any variables
         int ok;
         int opp;
@@ -2698,7 +3053,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
             continue;
 
         // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
-        // Normalize twice with the lengths to penalize distant points
+        // Normalize with the lengths to penalize distant points
         f_s_calc_stuff( pc, ac, acl, vv);
         cosgamma = fabs(inner_3d(ac, ax012)) / (acl * acl * axl012 * axl012);
 
@@ -2750,8 +3105,8 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
     //  // printf(" v%ld ",vv->label);
     //  ok =  in_simplex( a0, a1, a2, ac, origin );
-    //   
-    //  // Some diagnostics for funky simplex finding 
+    //
+    //  // Some diagnostics for funky simplex finding
     //  //if( !ok && x[0] > 0 && x[0] < 0.5 && x[1] > 0 && x[1] < 0.5) {
     //    //printf("\n \t %ld", vv->line->label);
     //    //printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0], a0[1], a0[2]);
@@ -2763,7 +3118,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     //    //printf("\n");
     //    //fflush(stdout);
     //  //}
-    //    
+    //
     //  if( ok ) {
     //    //printf("%d ",ok);
     //    //printf("\n \t %ld", vv->line->label);
@@ -2789,10 +3144,10 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
       //      fprintf(stderr,"find_simplex_by_location: FAILED to find a fourth neighbor!\n");
       //      fprintf(stderr,"\tChecking planarity condition...\n");
       //      fprintf(stderr,"\tx is (%g,%g,%g)\n\tp0 is (%g,%g,%g) (v%ld)\n\tp1 is (%g,%g,%g) (v%ld)\n\tp2 is (%g,%g,%g) (v%ld)\n",x[0],x[1],x[2],
-      //	      simplex[0]->x[0],simplex[0]->x[1],simplex[0]->x[2],simplex[0]->label,
-      //	      simplex[1]->x[0],simplex[1]->x[1],simplex[1]->x[2],simplex[1]->label,
-      //	      simplex[2]->x[0],simplex[2]->x[1],simplex[2]->x[2],simplex[2]->label
-      //	      );
+      //              simplex[0]->x[0],simplex[0]->x[1],simplex[0]->x[2],simplex[0]->label,
+      //              simplex[1]->x[0],simplex[1]->x[1],simplex[1]->x[2],simplex[1]->label,
+      //              simplex[2]->x[0],simplex[2]->x[1],simplex[2]->x[2],simplex[2]->label
+      //              );
 
       return fsbl_cache;
     }
@@ -3019,7 +3374,7 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
     //p1 = v1->x;
 
     diff_3d(X0, v->x, v1->x); /*X0 is the line of closest approach
-			     between v and neighbor v1*/
+                                between v and neighbor v1*/
 
     r = norm_3d(X0);
 
@@ -3030,40 +3385,40 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
     else {
 
       if(r<v->r_cl || v->r_cl < 0 ) /* Accumulate closest approach distance */
-	v->r_cl = r;
+        v->r_cl = r;
 
       mat_vmult_3d(v1->scr,pm,X0);
       //v1->scr is X0 rotated to perpendicular to the photosphere.
 
       len = norm_2d(v1->scr);      /* 2-D length of vector, should be
-				      the same as r because length is
-				      preserved for rotation
-				      matrices*/
+                                    the same as r because length is
+                                    preserved for rotation
+                                    matrices*/
 
       if (len != r){
-	printf("Oops! len!=r in project_n_fill_photsphere, v %ld, neighbor %ld,len=%f,r=%f \n",v->label, v1->label,len,r);
-	printf("pm is ((%f,%f,%f),(%f,%f,%f),(%f,%f,%f)) \n",pm[0],pm[1],pm[2],pm[3],pm[4],pm[5],pm[6],pm[7],pm[8]);
+        printf("Oops! len!=r in project_n_fill_photsphere, v %ld, neighbor %ld,len=%f,r=%f \n",v->label, v1->label,len,r);
+        printf("pm is ((%f,%f,%f),(%f,%f,%f),(%f,%f,%f)) \n",pm[0],pm[1],pm[2],pm[3],pm[4],pm[5],pm[6],pm[7],pm[8]);
 
       } /*else {
-	printf("len=r for neighbor %d \n",v1->label);
-	}*/
+        printf("len=r for neighbor %d \n",v1->label);
+        }*/
 
       if(v->line->fc0->world->verbosity >= 5)
-	printf("len=%g for vertex %ld\n",len,v1->label);
+        printf("len=%g for vertex %ld\n",len,v1->label);
 
       if(len <= 0) {
 
-	if(v->line->fc0->world->verbosity == 4)
-	  printf("len=%g for vertex %ld\n",len,v1->label);
+        if(v->line->fc0->world->verbosity == 4)
+            printf("len=%g for vertex %ld\n",len,v1->label);
 
-	horde->stuff[i] = 0;
-	crunch=1;
+        horde->stuff[i] = 0;
+        crunch=1;
       }
       else {
-	//scale_3d(v1->scr,v1->scr,r/len); /* not this b/c should be the same.*/
+        //scale_3d(v1->scr,v1->scr,r/len); /* not this b/c should be the same.*/
 
-	v1->a = ATAN2(v1->scr[1],v1->scr[0]); //accumulate angles
-	v1->r = r; //accumulate non-linear projected distance.
+        v1->a = ATAN2(v1->scr[1],v1->scr[0]); //accumulate angles
+        v1->r = r; //accumulate non-linear projected distance.
       }
     }
 
@@ -3074,9 +3429,9 @@ void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde) {
     int j;
     for(i=j=0;i<horde->n;i++) {
       for(;i<horde->n && !horde->stuff[i]; i++)
-	;
+        ;
       if(i<horde->n)
-	horde->stuff[j++] = horde->stuff[i];
+        horde->stuff[j++] = horde->stuff[i];
     }
     horde->n = j;
   }
@@ -3123,9 +3478,9 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
 
   /* always add the first eligible VERTEX in the list... */
   for(i=0;i<horde->n &&
-	( horde->stuff[i] == central_v ||              // skip the main vertex if present
-	  plasmoid_conjugate( (VERTEX *)(horde->stuff[i]), central_v )
-	  );
+        ( horde->stuff[i] == central_v ||              // skip the main vertex if present
+            plasmoid_conjugate( (VERTEX *)(horde->stuff[i]), central_v )
+        );
       i++) //find first candidate
     ;
   if(i<horde->n) { //first look at this candidate and add it.
@@ -3154,11 +3509,11 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
     if(v->passno == passno ||                   // Already been here
        v == central_v ||                        // Skip ourselves if we encounter us
        ( v->line==central_v->line &&            // Several end conditions for same fluxon:
-	 ( v->next==central_v ||                // Skip next segment
-	   v->prev==central_v ||                // Skip previous segment
-	   plasmoid_conjugate( v, central_v)
-	   )
-	 )
+        ( v->next==central_v ||                // Skip next segment
+            v->prev==central_v ||                // Skip previous segment
+            plasmoid_conjugate( v, central_v)
+        )
+       )
        ) {
       // Skip (do nothing; just move on to the next candidate)
     } else {
@@ -3170,11 +3525,11 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
        generally under 10 elements in ws, so binary search probably
        isn't worth the effort.  */
       for(next_idx = 0;
-	  next_idx < ws->n &&
-	    (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
-	  next_idx++
-	  )
-	;//not sure about this loop
+            next_idx < ws->n &&
+            (nv = (((VERTEX **)(ws->stuff))[next_idx]) )->a < v->a;  // assign to nv
+          next_idx++
+          )
+        ;//not sure about this loop
 
 
       /******************************
@@ -3183,158 +3538,158 @@ void hull_2d_us_photosphere(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_
        */
 
       if( nv->a < v->a ) {
-	/* We went off the end... */
+        /* We went off the end... */
 
-	next_idx = ws->n;
-	nv = ((VERTEX **)(ws->stuff))[0];
-	nh = hull;
-	pv = ((VERTEX **)(ws->stuff))[ws->n-1];
-	ph = hull + ws->n-1;
+        next_idx = ws->n;
+        nv = ((VERTEX **)(ws->stuff))[0];
+        nh = hull;
+        pv = ((VERTEX **)(ws->stuff))[ws->n-1];
+        ph = hull + ws->n-1;
       } else {
-	/* We didn't... */
-	if(next_idx==0) {
-	  nh = hull;
-	  pv = ((VERTEX **)(ws->stuff))[ws->n-1];
-	  ph = hull + ws->n-1;
-	} else {
-	  nh = hull + next_idx;
-	  pv = ((VERTEX **)(ws->stuff))[next_idx - 1];
-	  ph = hull + next_idx-1;
-	}
+        /* We didn't... */
+        if(next_idx==0) {
+            nh = hull;
+            pv = ((VERTEX **)(ws->stuff))[ws->n-1];
+            ph = hull + ws->n-1;
+        } else {
+            nh = hull + next_idx;
+            pv = ((VERTEX **)(ws->stuff))[next_idx - 1];
+            ph = hull + next_idx-1;
+        }
       }
 
       flag = check_hullpoint(v, pv,ph, nv,nh, &scrhv);
 
       if(flag) {
-	/* Make sure we have room in the workspace */
-	if(ws->size <= ws->n)
-	  dumblist_grow(ws, ws->size * 1.5 + 10);
+        /* Make sure we have room in the workspace */
+        if(ws->size <= ws->n)
+         dumblist_grow(ws, ws->size * 1.5 + 10);
 
-	/* Make room in the workspace dumb list and the hull list */
-	for( j = ws->n; j>next_idx; j--){
-	  ws->stuff[j] = ws->stuff[j-1];
-	  hv_cp(hull+j, hull+j-1);
-	}
+        /* Make room in the workspace dumb list and the hull list */
+        for( j = ws->n; j>next_idx; j--){
+            ws->stuff[j] = ws->stuff[j-1];
+            hv_cp(hull+j, hull+j-1);
+        }
 
-	ws->n++;
+        ws->n++;
 
-	/* Set the insertion-point values */
-	ws->stuff[next_idx] = v;
-	hv_cp(hull+next_idx, &(scrhv));
+        /* Set the insertion-point values */
+        ws->stuff[next_idx] = v;
+        hv_cp(hull+next_idx, &(scrhv));
 
-	hull[next_idx].open = ( flag>0 && (flag & 1) ); /* logical && and bitwise & */
-	hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open =
-	  ( flag>0 && (flag & 2) ); /* logical && and bitwise & */
+        hull[next_idx].open = ( flag>0 && (flag & 1) ); /* logical && and bitwise & */
+        hull[   ( next_idx ? next_idx : ws->n ) - 1  ].open =
+            ( flag>0 && (flag & 2) ); /* logical && and bitwise & */
 
-	/**************************
-	 * Now that we've put the new guy in, make sure he doesn't invalidate
-         * his neighbors on the prev side...
-         */
-	{
-	  int n, p, pp, nn, nnn, check_flag;
+        /**************************
+        * Now that we've put the new guy in, make sure he doesn't invalidate
+        * his neighbors on the prev side...
+        */
+        {
+          int n, p, pp, nn, nnn, check_flag;
 
-	  n = next_idx;
-	  p = n; MOD_DEC(p, ws->n);
-	  pp= p; MOD_DEC(pp, ws->n);
-	  nn = n; MOD_INC(nn, ws->n);
-	  nnn=nn; MOD_INC(nnn,ws->n);
+          n = next_idx;
+          p = n; MOD_DEC(p, ws->n);
+          pp= p; MOD_DEC(pp, ws->n);
+          nn = n; MOD_INC(nn, ws->n);
+          nnn=nn; MOD_INC(nnn,ws->n);
 
-	  /* Walk backward until we find a still-keep-worthy vertex */
-	  while( p != n &&
-		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]),
-						  (VERTEX *)(ws->stuff[pp]), hull + pp,
-						  (VERTEX *)(ws->stuff[n]),  hull + n,
-						  hull + p))
-		 ) {
+          /* Walk backward until we find a still-keep-worthy vertex */
+          while( p != n &&
+            ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[p]),
+                                                            (VERTEX *)(ws->stuff[pp]), hull + pp,
+                                                            (VERTEX *)(ws->stuff[n]),  hull + n,
+                                                            hull + p))
+          ) {
 
-	    p=pp;
-	    MOD_DEC(pp, ws->n);
-	  }
+            p=pp;
+            MOD_DEC(pp, ws->n);
+          }
 
-	  hull[p].open = (check_flag > 0) && (check_flag & 1);
-	  hull[pp].open = (check_flag > 0) && (check_flag & 2);
+          hull[p].open = (check_flag > 0) && (check_flag & 1);
+          hull[pp].open = (check_flag > 0) && (check_flag & 2);
 
-	  /* walk forward until we find a still-keep-worthy vertex */
-	  while( n != p &&
-		 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[nn]),
-						  (VERTEX *)(ws->stuff[n]),  hull + n,
-						  (VERTEX *)(ws->stuff[nnn]), hull + nnn,
-						  hull+nn
-						  ) )
-		 ) {
+          /* walk forward until we find a still-keep-worthy vertex */
+          while( n != p &&
+                 ! (check_flag = check_hullpoint( (VERTEX *)(ws->stuff[nn]),
+                                                  (VERTEX *)(ws->stuff[n]),  hull + n,
+                                                  (VERTEX *)(ws->stuff[nnn]), hull + nnn,
+                                                  hull+nn
+                                                  ) )
+                 ) {
 
-	    nn=nnn;
-	    MOD_INC(nnn, ws->n);
-	  }
+            nn=nnn;
+            MOD_INC(nnn, ws->n);
+          }
 
-	  hull[nn].open = (check_flag > 0) && (check_flag & 1);
-	  hull[n].open = (check_flag > 0) && (check_flag & 2);
+          hull[nn].open = (check_flag > 0) && (check_flag & 1);
+          hull[n].open = (check_flag > 0) && (check_flag & 2);
 
-	  /* Now p is the first keepworthy vertex, walking backward from n, and */
-	  /* nn is the first keepworthy vertex, walking forward from n.         */
-	  /* Crunch down the list... */
-	  {
+          /* Now p is the first keepworthy vertex, walking backward from n, and */
+          /* nn is the first keepworthy vertex, walking forward from n.         */
+          /* Crunch down the list... */
+          {
 
-	    int ii,jj, diff;
+            int ii,jj, diff;
 
-	    if( p <= n-1 ) {
-	      if( nn <= n-1 ) {
+            if( p <= n-1 ) {
+              if( nn <= n-1 ) {
 
-		// ...*****...|.....  case
-		for(ii=0, jj=nn; jj<=p; jj++,ii++) {
-		  hv_cp( hull+ii, hull+jj );
-		  ws->stuff[ii] = ws->stuff[jj];
-		}
-		hv_cp( hull+ii, hull +n );
-		ws->stuff[ii] = ws->stuff[n];
-		ii++;
+                // ...*****...|.....  case
+                for(ii=0, jj=nn; jj<=p; jj++,ii++) {
+                  hv_cp( hull+ii, hull+jj );
+                  ws->stuff[ii] = ws->stuff[jj];
+                }
+                hv_cp( hull+ii, hull +n );
+                ws->stuff[ii] = ws->stuff[n];
+                ii++;
 
-	      } else {
+              } else {
 
-		// *****...|...**** case
+                // *****...|...**** case
 
-		ii=p+1;
-		if(ii == n) {
-		  ii++;
-		} else {
-		  hv_cp( hull + ii, hull + n );
-		  ws->stuff[ii] = ws->stuff[n];
-		  ii++;
-		}
-		if(ii<nn) {
-		  for( jj=nn; jj < ws->n; ii++,jj++) {
-		    hv_cp(hull + ii, hull + jj);
-		    ws->stuff[ii] = ws->stuff[jj];
-		  }
-		} else if(ii==nn) {
-		  ii = ws->n;
-		}
-	      }
-	    } else {
+                ii=p+1;
+                if(ii == n) {
+                  ii++;
+                } else {
+                  hv_cp( hull + ii, hull + n );
+                  ws->stuff[ii] = ws->stuff[n];
+                  ii++;
+                }
+                if(ii<nn) {
+                  for( jj=nn; jj < ws->n; ii++,jj++) {
+                    hv_cp(hull + ii, hull + jj);
+                    ws->stuff[ii] = ws->stuff[jj];
+                  }
+                } else if(ii==nn) {
+                  ii = ws->n;
+                }
+              }
+            } else {
 
-	      // ....|...****.. case
-	      if(n>0) {
-		hv_cp(hull, hull+n);
-		ws->stuff[0] = ws->stuff[n];
-	      }
-	      ii=1;
+              // ....|...****.. case
+              if(n>0) {
+                hv_cp(hull, hull+n);
+                ws->stuff[0] = ws->stuff[n];
+              }
+              ii=1;
 
-	      if( nn>1 ) {
-		for( jj=nn; jj<=p; ii++, jj++) {
-		  hv_cp( hull + ii, hull + jj );
-		  ws->stuff[ii] = ws->stuff[jj];
-		}
-	      } else {
-		ii= p + 1;
-	      }
+              if( nn>1 ) {
+                for( jj=nn; jj<=p; ii++, jj++) {
+                  hv_cp( hull + ii, hull + jj );
+                  ws->stuff[ii] = ws->stuff[jj];
+                }
+              } else {
+                ii= p + 1;
+              }
 
-	    }/* end of case testing */
-	    ws->n = ii;
+            }/* end of case testing */
+            ws->n = ii;
 
-	  } /* end of crunching convenience block */
-	} /* end of neighbor-testing convenience block */
+          } /* end of crunching convenience block */
+        } /* end of neighbor-testing convenience block */
       } else {
-	/* no keeping -- just ignore this point and start the next loop */
+        /* no keeping -- just ignore this point and start the next loop */
       }
     } /* end of non-duplication test block */
   } /* end of horde loop */

@@ -451,6 +451,7 @@ FLUX->in_simplex		= in_simplex;
 FLUX->above_plane               = above_plane;
 FLUX->find_vertex_by_location   = find_vertex_by_location;
 FLUX->find_simplex_by_location  = find_simplex_by_location;
+FLUX->find_nsimplex_by_location = find_nsimplex_by_location;
 FLUX->interpolate_lin_3d	= interpolate_lin_3d;
 FLUX->interpolate_value_simplex = interpolate_value_simplex;
 FLUX->interpolate_value         = interpolate_value;

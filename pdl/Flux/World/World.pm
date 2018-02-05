@@ -1679,6 +1679,46 @@ sub closest_simplex {
 
 =pod
 
+=head2 closest_nsimplex
+
+=for usage
+
+@list = $world->closest_nsimplex(pdl($x,$y,$z), [$global, [$start_vertex]]);
+
+=for ref
+
+Return four vertices forming a tetrahedron that encloses the requested point.
+If that is not possible (e.g. point is outside the outermost fluxon) then return
+the nearest three.
+
+This is a revamped version of the routine closest_simplex, with a new methodology
+for simplex searching. In particular, the goal is finding a 'nice' simplex, enclosing
+the given point with comfortable padding.
+
+The vertices come back as a list.  The parameters are the same as closest_vertex.
+
+BEWARE: although the initial point is found by calling closest_vertex, subseqent
+stages of the simplex construction require neighbor initialization, so you can't just
+set the global flag to 1 and expect everything to be OK on an unknown world -- it
+must have appropriate neighbors already calculated.
+
+=cut
+
+sub closest_nsimplex {
+    my $w = shift;
+    my $x = shift;
+    my $global = shift || 0;
+    my $start_vertex = shift || undef;
+    my $a = _closest_nsimplex($w,$x,$global,$start_vertex);
+    if(ref $a) {
+	return @$a;
+    } else {
+	return ();
+    }
+}
+
+=pod
+
 =head2 _hull_points
 
 =for usage
@@ -1750,7 +1790,7 @@ sub _plot_hull {
 	$win->points($points->((0)),$points->((1)),{color=>2});
 	$win->hold;
 	for my $i(0..$points->dim(1)-1){
-	    $win->text($i,$points->((0),($i)),$points->((1),($i)),{color=>2});
+            $win->text($i,$points->((0),($i)),$points->((1),($i)),{color=>2});
 	}
     }
 
@@ -1768,7 +1808,7 @@ sub _plot_hull {
 	my $r = $hull->range([2,$i],[3,2],'p');
 
 	unless($r->at(2,0) || $r->at(2,1)) {
-	    $win->line($r->((0)), $r->((1)),{color=>4});
+            $win->line($r->((0)), $r->((1)),{color=>4});
 	} elsif($r->at(2,0)) {
 	    my $x1 = $r->at(0,1) + 2000 * cos($r->at(1,0));
 	    my $y1 = $r->at(1,1) + 2000 * sin($r->at(1,0));

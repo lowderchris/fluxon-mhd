@@ -19,7 +19,7 @@ sub rad_test {
     my $xform = !t_spherical() x t_scale([3.14159/180,3.14159/180,1]);
 
     # Create some open field lines
-    for my $i(-100..100){
+    for my $i(-50..50){
         next unless($i);
         my $n = floor(pdl(1));
         #my $n = floor(pdl(rand(10)+1));
@@ -43,8 +43,8 @@ sub rad_test {
 }
 
 # Load the example world
-#$world = read_world('cartesian_interpolate_test_relaxed.flux');
-$world = rad_test();
+$world = read_world('cartesian_interpolate_test_relaxed.flux');
+#$world = rad_test();
 
 # Do I need to check for a neighbor search here?
 # Performing an initial global recalculation of neighbors
@@ -128,7 +128,7 @@ sub plt_simplex {
     my $sx = shift;
 
     @splt = ();
-    @s = $world -> closest_simplex($sx,1);
+    @s = $world -> closest_nsimplex($sx,1);
     @cols = ('red', 'orange', 'green', 'blue');
     if (scalar(@s) == 4) {
         $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[3]->{'x'}, @s[0]->{'x'}, @s[2]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[3]->{'x'});

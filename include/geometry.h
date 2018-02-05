@@ -2,7 +2,7 @@
  *
  * This file is part of FLUX, the Field Line Universal relaXer.
  * Copyright (c) Craig DeForet, 2004-2007
- * 
+ *
  * You may modify and/or distribute this software under the temrs of
  * the Gnu Public License, version 2.  You should have received a copy
  * of the license with this software, in the file COPYING to be found
@@ -12,10 +12,10 @@
  * 330, Boston, MA 02111-1307 USA.
  *
  * The software comes with NO WARRANTY.
- * 
+ *
  * You may direct questions, kudos, gripes, and/or patches to the
  * author, Craig DeForest, at "deforest@boulder.swri.edu".
- * 
+ *
  * This file is part of FLUX 2.2 (22-Nov-2008).
  */
 
@@ -96,38 +96,38 @@ void cp_3d(NUM *out, NUM *a);
  void ls_closest_approach(NUM p0[3], NUM p1[3], NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]);
  NUM ls_ls_dist(NUM a0[3], NUM b0[3], NUM c0[3], NUM d0[3]); /* seg-seg dist */
 
- NUM fl_segment_masked_dist(VERTEX *v0, VERTEX *v1); 
+ NUM fl_segment_masked_dist(VERTEX *v0, VERTEX *v1);
  NUM fl_segment_masked_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1);
 
- NUM fl_segment_dist(VERTEX *v1, VERTEX *v2);        
+ NUM fl_segment_dist(VERTEX *v1, VERTEX *v2);
  NUM fl_segment_deluxe_dist(NUM P0[3], NUM P1[3], VERTEX *v0, VERTEX *v1);
 
 
 
 
 
-/********************************************************************** 
+/**********************************************************************
  * Voronoi-cell functions
  */
 
 
  int perp_bisector_2d(NUM *out, NUM *P, NUM *Q);           /* Find the perpendicular bisector
-							     of a line segment */
+                                                            of a line segment */
  int intersection_2d(NUM *out, NUM *L1, NUM *L2);          /* Find the intersection of two
-							     line segments */
+                                                            line segments */
 void project_n_fill(VERTEX *v, DUMBLIST *horde);
 
 
-NUM neighbor_triangle(NUM *dAdp, NUM *L, NUM *M, NUM *N);  /* Characterize the 
-							 partial-neighborhood triangle
-							 described by L, M, and N (with
-							 central point at the origin).
-							  */
+NUM neighbor_triangle(NUM *dAdp, NUM *L, NUM *M, NUM *N);  /* Characterize the
+                                                            partial-neighborhood triangle
+                                                            described by L, M, and N (with
+                                                            central point at the origin).
+                                                            */
 
-int find_neighbors_from_list(VERTEX *tp, 
-			     int n, 
-			     int depth, 
-			     VERTEX **where);
+int find_neighbors_from_list(VERTEX *tp,
+                            int n,
+                            int depth,
+                            VERTEX **where);
 
 
 /* The a_left and a_right differ when the point is open... */
@@ -154,11 +154,12 @@ VERTEX   *find_vertex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global);
 int above_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X);
 int in_simplex(POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X);
 DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global);
+DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global);
 
 NUM interpolate_lin_3d( POINT3D x, NUM p[12], NUM val[4], int n);
 NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset);
 NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset);
-/********************************************************************** 
+/**********************************************************************
  *Photosphere only functions
  */
 void project_n_fill_photosphere(VERTEX *v, DUMBLIST *horde);
