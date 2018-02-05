@@ -132,7 +132,7 @@ sub str2world {
   shift if(substr($_[0],0,length(__PACKAGE__)) eq __PACKAGE__);
 
     if(@_ == 1 && ref $_[0] eq 'ARRAY') {
-	@_ = @{$_[0]};
+        @_ = @{$_[0]};
     }
     my $fname = "/tmp/fluxtmp-$$";
     open FLUXSYSTEM_TMP,">$fname" || die "Can't open tmp file $fname\n";
@@ -169,14 +169,14 @@ sub write_world {
     my $fname = shift;
 
     unless($fname =~ m/\.gz$/) {
-	_write_world($world,$fname);
+        _write_world($world,$fname);
     } else {
-	my $tmpfname = "/tmp/fluxtmp-$$";
-	eval {unlink $tmpfname;};
-	my $wwo = _write_world($world, $tmpfname);
-	`gzip $tmpfname`;
-	`mv ${tmpfname}.gz $fname`;
-	return $wwo;
+        my $tmpfname = "/tmp/fluxtmp-$$";
+        eval {unlink $tmpfname;};
+        my $wwo = _write_world($world, $tmpfname);
+        `gzip $tmpfname`;
+        `mv ${tmpfname}.gz $fname`;
+        return $wwo;
     }
 }
 
@@ -228,10 +228,10 @@ sub _stringify {
     my @lines = grep(m/^\s*LINE/,@s);
     my @vertices = grep(m/^\s*VERTEX/,@s);
     my @bounds = ( sub {"None. "}
-		   ,sub {"Plane; origin: $_[0],$_[1],$_[2]; normal: $_[3],$_[4],$_[5]";}
-		   ,sub {"Sphere; origin: $_[0],$_[1],$_[2]; radius: $_[3]"}
-		   ,sub {"Cylinder origin: $_[0],$_[1],$_[2], normal: $_[3],$_[4],$_[5], radius:".sqrt($_[3]**2+$_[4]**2+$_[5]**2)}
-		   );
+                   ,sub {"Plane; origin: $_[0],$_[1],$_[2]; normal: $_[3],$_[4],$_[5]";}
+                   ,sub {"Sphere; origin: $_[0],$_[1],$_[2]; radius: $_[3]"}
+                   ,sub {"Cylinder origin: $_[0],$_[1],$_[2], normal: $_[3],$_[4],$_[5], radius:".sqrt($_[3]**2+$_[4]**2+$_[5]**2)}
+                   );
     my @ph = $me->photosphere;
     my @ph2 = $me->photosphere2;
     my $btype = $ph[6];
@@ -242,10 +242,10 @@ sub _stringify {
 
     no warnings;    # shut up about undefined elements while printing
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n"
-	."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
-	."\tGlobal b2: ".&{$bounds[$btype2]}(@ph2)."\n"
-	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash))."\n\n"
-	;
+        ."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
+        ."\tGlobal b2: ".&{$bounds[$btype2]}(@ph2)."\n"
+        ."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash))."\n\n"
+        ;
     use warnings;
 
 }
@@ -265,7 +265,7 @@ sub summary {
     my $me = shift;
     my $s = "";
     for my $k(keys %$me) {
-	$s .= sprintf( "%15s %s\n", $k.":", $me->{$k} );
+        $s .= sprintf( "%15s %s\n", $k.":", $me->{$k} );
     }
     $s;
 }
@@ -477,13 +477,13 @@ sub _conc_helper {
     my @a;
 
     if(exists($me->{links_left})) {
-	push(@a, _conc_helper($me->{links_left},$depth+1));
+        push(@a, _conc_helper($me->{links_left},$depth+1));
     }
 
     push(@a, $me);
 
     if(exists($me->{links_right})) {
-	push(@a, _conc_helper($me->{links_right},$depth+1));
+        push(@a, _conc_helper($me->{links_right},$depth+1));
     }
 
     return @a;
@@ -553,7 +553,7 @@ sub fluxons {
     my $id;
     my @fluxons;
     while(defined ($id=shift)) {
-	push(@fluxons, &fluxon($world,$id)) unless($id<0 && $id>=-11);
+        push(@fluxons, &fluxon($world,$id)) unless($id<0 && $id>=-11);
     }
 
     return @fluxons;
@@ -615,12 +615,12 @@ sub vertices {
     my $world = shift;
     my @a = @_;
     if(!@a){
-	push(@a,@{$world->_vertex_ids});
+        push(@a,@{$world->_vertex_ids});
     }
     my $id;
     my @vertices;
     while(defined ($id=shift @a)) {
-	push(@vertices, $world->vertex($id));
+        push(@vertices, $world->vertex($id));
     }
     return @vertices;
 }
@@ -687,8 +687,8 @@ sub emerge {
     $flux = 1 unless($flux);
 
     barf "vertices must be a scalar or 3xN" if(ref $vertices eq 'PDL' and
-					       $vertices->dim(0) != 3
-					       );
+                                               $vertices->dim(0) != 3
+                                               );
 
     my $fc0 = new_concentration($world, $src, 1, 0, undef);
     print "emerge: after first new_concentration, ref count is $world->{refct}\n" if($world->{verbosity});
@@ -699,49 +699,49 @@ sub emerge {
 
     if( ref $vertices eq 'PDL' && $vertices->dim(0)==3) {
 
-	$fl = $fc0->new_fluxon($fc1, 1, 0, $vertices);
-	print "emerge: after fluxon origination, ref count is $world->{refct}\n" if($world->{verbosity});
+        $fl = $fc0->new_fluxon($fc1, 1, 0, $vertices);
+        print "emerge: after fluxon origination, ref count is $world->{refct}\n" if($world->{verbosity});
 
     } else {
-	$fl = $fc0->new_fluxon($fc1, 1, 0);
-	print "emerge: after fluxon origination, ref count is $world->{refct} (nonspecified vertex case)\n" if($world->{verbosity});
+        $fl = $fc0->new_fluxon($fc1, 1, 0);
+        print "emerge: after fluxon origination, ref count is $world->{refct} (nonspecified vertex case)\n" if($world->{verbosity});
 
-	if("$vertices") {
-	    my $nv = ( pdl(0)+$vertices )->at(0);
+        if("$vertices") {
+            my $nv = ( pdl(0)+$vertices )->at(0);
 
-	    print "emerge: generating vertices ($vertices)\n" if($world->{verbosity});
+            print "emerge: generating vertices ($vertices)\n" if($world->{verbosity});
 
-	    my $svec = ($snk - $src)/($nv+1);
-	    my $sep = (($snk - $src) * ($snk - $src))->sumover->sqrt;
-	    my $ph = $world->{photosphere};
-	    my $vertex = $fl->{start};
-	    for my $i(1..$nv){
-		my $loc = $svec * $i + $src;
+            my $svec = ($snk - $src)/($nv+1);
+            my $sep = (($snk - $src) * ($snk - $src))->sumover->sqrt;
+            my $ph = $world->{photosphere};
+            my $vertex = $fl->{start};
+            for my $i(1..$nv){
+                my $loc = $svec * $i + $src;
 
-		if($ph->{type}==1) {
-		    ### Planar photosphere -- if it's below the photosphere, move it up to the surface
-		    ### plus 10% of the separation between the footpoints.
+                if($ph->{type}==1) {
+                    ### Planar photosphere -- if it's below the photosphere, move it up to the surface
+                    ### plus 10% of the separation between the footpoints.
 
-		    my $vertcoord = (($loc - $ph->{origin}) * ($ph->{normal}))->sumover;
-		    if($vertcoord < 0) {
-			$loc -= $vertcoord * $ph->{normal};
-			$loc += $sep * 0.1 * $ph->{normal};
-		    }
+                    my $vertcoord = (($loc - $ph->{origin}) * ($ph->{normal}))->sumover;
+                    if($vertcoord < 0) {
+                        $loc -= $vertcoord * $ph->{normal};
+                        $loc += $sep * 0.1 * $ph->{normal};
+                    }
 
-		} elsif($ph->{type}==2) {
-		    ### Spherical photosphere -- if it's below the photosphere, move it outward to
-		    ### the surface plus 1% of the separation between the footpoints.
+                } elsif($ph->{type}==2) {
+                    ### Spherical photosphere -- if it's below the photosphere, move it outward to
+                    ### the surface plus 1% of the separation between the footpoints.
 
-		    my $radius = (($loc - $ph->{origin}) * ($loc - $ph->{origin}))->sumover->sqrt;
-		    if($radius < $ph->{normal}->((0))) {
-			my $rhat = ($loc - $ph->{origin}) / $radius;
-			my $disp = $ph->{normal}->((0)) + 0.1 * $sep - $radius;
-			$loc += $disp * $rhat;
-		    }
-		}
-		$vertex = $vertex->add_vertex_after( $loc );
-	    }
-	}
+                    my $radius = (($loc - $ph->{origin}) * ($loc - $ph->{origin}))->sumover->sqrt;
+                    if($radius < $ph->{normal}->((0))) {
+                        my $rhat = ($loc - $ph->{origin}) / $radius;
+                        my $disp = $ph->{normal}->((0)) + 0.1 * $sep - $radius;
+                        $loc += $disp * $rhat;
+                    }
+                }
+                $vertex = $vertex->add_vertex_after( $loc );
+            }
+        }
     }
     return $fc0;
 }
@@ -775,14 +775,14 @@ field is $a->{forces}).
 sub forces {
     my $me = shift;
     if(@_==0) {
-	return @{_forces($me)};    # Retrieve forces (in World.xs)
+        return @{_forces($me)};    # Retrieve forces (in World.xs)
     } else {
-	my $i = 0;
-	my $s;
-	while($s=shift) {
-	    _set_force($me,$i++,$s); # Set forces one at a time (in World.xs)
-	}
-	_set_force($me,$i,'');
+        my $i = 0;
+        my $s;
+        while($s=shift) {
+            _set_force($me,$i++,$s); # Set forces one at a time (in World.xs)
+        }
+        _set_force($me,$i,'');
     }
 }
 
@@ -1103,19 +1103,19 @@ sub render {
 
     $gpwin->options(trid=>1,view=>[equal=>'xyz'],xyplane=>[relative=>0.1],xlabel=>'X',ylabel=>'Y',zlabel=>'Z');
     if (defined($opt->{'range'})){
-	my $range = $opt->{'range'};
-	barf "'range' option to Flux::World::render must be a reference to a 6-element list!" unless ((ref $range eq 'ARRAY') && $#$range==5);
-	$gpwin->options(xrange=>[@{$range}[0,1]],yrange=>[@{$range}[2,3]],zrange=>[@{$range}[4,5]]);
+        my $range = $opt->{'range'};
+        barf "'range' option to Flux::World::render must be a reference to a 6-element list!" unless ((ref $range eq 'ARRAY') && $#$range==5);
+        $gpwin->options(xrange=>[@{$range}[0,1]],yrange=>[@{$range}[2,3]],zrange=>[@{$range}[4,5]]);
     } else {
-	#delete any previously-used values for the axis ranges
-	delete $gpwin->options->{$_} foreach ('xrange','yrange','zrange');
+        #delete any previously-used values for the axis ranges
+        delete $gpwin->options->{$_} foreach ('xrange','yrange','zrange');
     }
 
     my (@rgb,@prgb);
     print "Defining RGB..." if($Flux::debug);
     my @fluxons = ();
     for my $id($w->fluxon_ids) {
-	push(@fluxons,$id) if($id>0 || $id<-11);
+        push(@fluxons,$id) if($id>0 || $id<-11);
     }
 
     my $fid;
@@ -1134,54 +1134,54 @@ sub render {
 
       for my $i(0..$#fluxons) {
 
-	my $spec = $opt->{'rgb_fluxons'}->{$fluxons[$i]+0};
-	unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
-	  $spec = $opt->{'rgb_fluxons'}->{default};
-	  unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
-	    $spec = pdl(1,1,1);
-	  }
-	}
+        my $spec = $opt->{'rgb_fluxons'}->{$fluxons[$i]+0};
+        unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
+          $spec = $opt->{'rgb_fluxons'}->{default};
+          unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
+            $spec = pdl(1,1,1);
+          }
+        }
 
-	# Convert 3 x n PDLs to lists of 3-PDLs
-	if(ref $spec eq 'PDL' and $spec->dims == 2 ) {
-	  $spec = [ dog $spec ];
-	}
+        # Convert 3 x n PDLs to lists of 3-PDLs
+        if(ref $spec eq 'PDL' and $spec->dims == 2 ) {
+          $spec = [ dog $spec ];
+        }
 
-	print "fluxon $i: spec is $spec...\n" if($Flux::debug);
+        print "fluxon $i: spec is $spec...\n" if($Flux::debug);
 
-	if(ref $spec eq 'PDL') {
+        if(ref $spec eq 'PDL') {
 
-	  push(@rgb, $spec * ones($poly[$i]));
+          push(@rgb, $spec * ones($poly[$i]));
 
-	} elsif(ref $spec eq 'ARRAY') {
+        } elsif(ref $spec eq 'ARRAY') {
 
-	  if( @$spec == 1 ) {
-	    push(@rgb, $spec->[0] * ones($poly[$i]));
+          if( @$spec == 1 ) {
+            push(@rgb, $spec->[0] * ones($poly[$i]));
 
-	  } elsif( @$spec == 2 ) {
-	    my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
-	    my $beta = 1.0 - $alpha;
-	    push(@rgb,  ($alpha * $spec->[0] +
-			 $beta  * $spec->[1]
-			 ));
+          } elsif( @$spec == 2 ) {
+            my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
+            my $beta = 1.0 - $alpha;
+            push(@rgb,  ($alpha * $spec->[0] +
+                         $beta  * $spec->[1]
+                         ));
 
-	  } elsif( @$spec >= 3 ) {
-	    my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
-	    my $beta = 1.0-$alpha;
-	    my $gamma = sin($alpha * 3.14159);
-	    push(@rgb, ($alpha * $spec->[0] +
-			$beta  * $spec->[2] +
-			$gamma * $spec->[1]
-			)
-		 );
-	  }
+          } elsif( @$spec >= 3 ) {
+            my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
+            my $beta = 1.0-$alpha;
+            my $gamma = sin($alpha * 3.14159);
+            push(@rgb, ($alpha * $spec->[0] +
+                        $beta  * $spec->[2] +
+                        $gamma * $spec->[1]
+                        )
+                 );
+          }
 
-	} else {
+        } else {
 
-	  ## Error -- should not happen ##
-	  push(@rgb, pdl(1,0.25,0) * ones($poly[$i]));
+          ## Error -- should not happen ##
+          push(@rgb, pdl(1,0.25,0) * ones($poly[$i]));
 
-	}
+        }
       }
 
     } elsif(defined $opt->{'rgb'}) {
@@ -1192,13 +1192,13 @@ sub render {
     } else {
       ### Default case - blue->red color scheme for all fluxons
       @rgb = map {
-	my $alpha = double yvals($_);
-	$alpha /= max($alpha);
-	    my $beta = 1.0 - $alpha;
-	    my $gamma = sin($alpha*3.14159)**2;
-	    my $prgb = $beta * pdl(1,0,0) + $alpha * pdl(0,0,1) + $gamma * pdl(0,1,0);
-	    $prgb;
-	} @poly;
+        my $alpha = double yvals($_);
+        $alpha /= max($alpha);
+            my $beta = 1.0 - $alpha;
+            my $gamma = sin($alpha*3.14159)**2;
+            my $prgb = $beta * pdl(1,0,0) + $alpha * pdl(0,0,1) + $gamma * pdl(0,1,0);
+            $prgb;
+        } @poly;
     }
 
     print "Defining PRGB..." if($Flux::debug);
@@ -1213,12 +1213,12 @@ sub render {
     } else {
 
       @prgb = map {
-	my $alpha = double yvals($_);
-	$alpha /= max($alpha);
-	my $beta = 1.0 - $alpha;
-	my $gamma = sin($alpha*3.14159)**2;
-	my $prgb = $beta * pdl(1,0,0) + $alpha * pdl(0,0,1) + $gamma * pdl(0,1,0);
-	$prgb;
+        my $alpha = double yvals($_);
+        $alpha /= max($alpha);
+        my $beta = 1.0 - $alpha;
+        my $gamma = sin($alpha*3.14159)**2;
+        my $prgb = $beta * pdl(1,0,0) + $alpha * pdl(0,0,1) + $gamma * pdl(0,1,0);
+        $prgb;
       } @poly;
     }
 
@@ -1230,44 +1230,44 @@ sub render {
       # Walk through the fluxons and identify any midpoint vertices that are lower than their
       # neighbors on the same fluxon
       for my $i(0..$#poly) {
-	next if((ref $opt->{'no_dip'} eq 'HASH') && ($opt->{'no_dip'}->{$fluxons[$i]}));
-	my $poly = $poly[$i];
-	my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
-	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
-	$mask->(0) .= 0;
-	$mask->(-1) .= 0;
+        next if((ref $opt->{'no_dip'} eq 'HASH') && ($opt->{'no_dip'}->{$fluxons[$i]}));
+        my $poly = $poly[$i];
+        my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
+        my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
+        $mask->(0) .= 0;
+        $mask->(-1) .= 0;
 
-	# Now spread outward in the forward direction till we reach a local maximum
-	my @dips = list which($mask);
-	my @mw = ();
+        # Now spread outward in the forward direction till we reach a local maximum
+        my @dips = list which($mask);
+        my @mw = ();
 
-	for my $dip(@dips) {
-	    my ($before, $after) = ($dip, $dip);
-	    while($before >= 2 && $poly->(2,$before-1)>$poly->(2,$before)) {
-		$before--;
-	    }
-	    while($after < $poly->dim(1) - 1 && $poly->(2,$after+1)>$poly->(2,$after) &&
-		  ($after==$dip || $poly->(2,$after+1)<= $poly->(2,$before))) {
-		$after++;
-	    }
-	    while($before < $dip-1 && $poly->(2,$before) > $poly->(2,$after)) {
-		$before++;
-	    }
+        for my $dip(@dips) {
+            my ($before, $after) = ($dip, $dip);
+            while($before >= 2 && $poly->(2,$before-1)>$poly->(2,$before)) {
+                $before--;
+            }
+            while($after < $poly->dim(1) - 1 && $poly->(2,$after+1)>$poly->(2,$after) &&
+                  ($after==$dip || $poly->(2,$after+1)<= $poly->(2,$before))) {
+                $after++;
+            }
+            while($before < $dip-1 && $poly->(2,$before) > $poly->(2,$after)) {
+                $before++;
+            }
 
-	    push(@mw,$before..$after);
-	}
+            push(@mw,$before..$after);
+        }
 
-	if(@mw) {
-	    my $mw = pdl(@mw);
-	    my $prgb = $prgb[$i];
-	    if($mw->nelem) {
-		my $prgb = $prgb[$i];
-		$prgb->(:,$mw) .= $opt->{'dip_detector2'};
-		my $rgb= $rgb[$i];
-		$rgb->(:,$mw-1) .= $opt->{'dip_detector2'};
-		$rgb->(:,$mw) .= $opt->{'dip_detector2'};
-	    }
-	}
+        if(@mw) {
+            my $mw = pdl(@mw);
+            my $prgb = $prgb[$i];
+            if($mw->nelem) {
+                my $prgb = $prgb[$i];
+                $prgb->(:,$mw) .= $opt->{'dip_detector2'};
+                my $rgb= $rgb[$i];
+                $rgb->(:,$mw-1) .= $opt->{'dip_detector2'};
+                $rgb->(:,$mw) .= $opt->{'dip_detector2'};
+            }
+        }
       }
     }
 
@@ -1279,20 +1279,20 @@ sub render {
       # Walk through the fluxons and identify any midpoint vertices that are lower than their
       # neighbors on the same fluxon
       for my $i(0..$#poly) {
-	my $poly = $poly[$i];
-	my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
-	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
-	$mask->(0) .= 0;
-	$mask->(-1) .= 0;
-	print "mask is $mask\n" if($Flux::debug);
-	my $mw = which($mask);
-	my $prgb = $prgb[$i];
-	if($mw->nelem) {
-	  $prgb->(:,$mw) .= $opt->{'dip_detector'};
-	  my $rgb= $rgb[$i];
-	  $rgb->(:,$mw) .= $opt->{'dip_detector'};
-	  $rgb->(:,$mw+1) .= $opt->{'dip_detector'};
-	}
+        my $poly = $poly[$i];
+        my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
+        my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
+        $mask->(0) .= 0;
+        $mask->(-1) .= 0;
+        print "mask is $mask\n" if($Flux::debug);
+        my $mw = which($mask);
+        my $prgb = $prgb[$i];
+        if($mw->nelem) {
+          $prgb->(:,$mw) .= $opt->{'dip_detector'};
+          my $rgb= $rgb[$i];
+          $rgb->(:,$mw) .= $opt->{'dip_detector'};
+          $rgb->(:,$mw+1) .= $opt->{'dip_detector'};
+        }
 
       }
     }
@@ -1309,7 +1309,7 @@ sub render {
     my @plot;
 
     if($opt->{points} || !defined($opt->{points})) {
-	push @plot,{with=>'points',lc=>'rgb variable',pointsize=>($opt->{psize}||1)},$poly->using(0,1,2),$prgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+        push @plot,{with=>'points',lc=>'rgb variable',pointsize=>($opt->{psize}||1)},$poly->using(0,1,2),$prgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
     }
 
     ##############################
@@ -1321,37 +1321,37 @@ sub render {
 
     print "Defining line strips...\n" if($Flux::debug);
     for my $i(0..$#id) {
-	my $fp = $w->fluxon($id[$i])->polyline;
+        my $fp = $w->fluxon($id[$i])->polyline;
 
-	push @plot,{with=>'lines',lc=>'rgb variable',lw=>($opt->{linewidth}||1)},$fp->using(0,1,2),$rgb[$i]->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
-	#DL3D could do this and the 'points' in one step with a switch between 'lines' or 'linespoints'? Yes, except for the prgb/rgb duplication
+        push @plot,{with=>'lines',lc=>'rgb variable',lw=>($opt->{linewidth}||1)},$fp->using(0,1,2),$rgb[$i]->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+        #DL3D could do this and the 'points' in one step with a switch between 'lines' or 'linespoints'? Yes, except for the prgb/rgb duplication
 
-	##############################
-	# Label fluxon endpoints if desired
-	if($opt->{label_fluxons}) {
-	    $gpwin->options(label=>["N-$id[$i]-N",at=>join(',',$fp->(:,(0) )->list),'front']);
-	    $gpwin->options(label=>["S-$id[$i]-S",at=>join(',',$fp->(:,(-1))->list),'front']);
-	}
+        ##############################
+        # Label fluxon endpoints if desired
+        if($opt->{label_fluxons}) {
+            $gpwin->options(label=>["N-$id[$i]-N",at=>join(',',$fp->(:,(0) )->list),'front']);
+            $gpwin->options(label=>["S-$id[$i]-S",at=>join(',',$fp->(:,(-1))->list),'front']);
+        }
 
-	##############################
-	# Label every vertex if desired
-	if($opt->{label}) {
+        ##############################
+        # Label every vertex if desired
+        if($opt->{label}) {
 
-	    next if(ref $opt->{label} eq 'ARRAY' &&
-		    which( $id[$i] == $olabel )->nelem != 1
-		    );
+            next if(ref $opt->{label} eq 'ARRAY' &&
+                    which( $id[$i] == $olabel )->nelem != 1
+                    );
 
 
-	    my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
+            my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
 
-	    if(ref $opt->{label} eq 'ARRAY') {
+            if(ref $opt->{label} eq 'ARRAY') {
 
-	    }
+            }
 
-	    label:for my $j(0..$#labels) {
-		$gpwin->options(label=>[qq/"$labels[$j]"/,at=>join(',',$fp->(:,($j))->list),'front']);
-	    }
-	}
+            label:for my $j(0..$#labels) {
+                $gpwin->options(label=>[qq/"$labels[$j]"/,at=>join(',',$fp->(:,($j))->list),'front']);
+            }
+        }
 
 
     }
@@ -1360,33 +1360,33 @@ sub render {
     # Generate flux concentrations if desired
 
     if($opt->{'concentrations'} || !defined($opt->{'concentrations'})) {
-	my @fc_points = ();
-	my @fc_rgb = ();
-	for my $fc( $w->concentrations ) {
-	    if($fc->{label} < -99 || $fc->{label} > 0) {
-		push( @fc_points, $fc->{x} );
-		if($opt->{'rgb_fcs'} && defined $opt->{'rgb_fcs'}->{$fc->{label}}) {
-		    push(@fc_rgb, $opt->{'rgb_fcs'}->{$fc->{label}});
-		} else {
-		    if($fc->{lines}) {
-			if( $fc->{lines}->{fc_start}->{label} == $fc->{label} ) {
-			    push(@fc_rgb, pdl(0,0.25,1));
-			} elsif( $fc->{lines}->{fc_end}->{label} == $fc->{label} ) {
-			    push(@fc_rgb, pdl(1,0.25,0));
-			} else {
-			    push(@fc_rgb, pdl(0.25,1,0.25));
-			}
-		    } else {
-			push(@fc_rgb, pdl(1,1,1));
-		    }
-		}
-	    }
-	}
-	if(@fc_points) {
-	    my $fc_points = cat(@fc_points);
-	    my $fc_rgb = cat(@fc_rgb);
-	    push @plot,{with=>'points',lc=>'rgb variable',pointsize=>2,pointtype=>$opt->{'concentrations'}||7},$fc_points->using(0,1,2),$fc_rgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
-	}
+        my @fc_points = ();
+        my @fc_rgb = ();
+        for my $fc( $w->concentrations ) {
+            if($fc->{label} < -99 || $fc->{label} > 0) {
+                push( @fc_points, $fc->{x} );
+                if($opt->{'rgb_fcs'} && defined $opt->{'rgb_fcs'}->{$fc->{label}}) {
+                    push(@fc_rgb, $opt->{'rgb_fcs'}->{$fc->{label}});
+                } else {
+                    if($fc->{lines}) {
+                        if( $fc->{lines}->{fc_start}->{label} == $fc->{label} ) {
+                            push(@fc_rgb, pdl(0,0.25,1));
+                        } elsif( $fc->{lines}->{fc_end}->{label} == $fc->{label} ) {
+                            push(@fc_rgb, pdl(1,0.25,0));
+                        } else {
+                            push(@fc_rgb, pdl(0.25,1,0.25));
+                        }
+                    } else {
+                        push(@fc_rgb, pdl(1,1,1));
+                    }
+                }
+            }
+        }
+        if(@fc_points) {
+            my $fc_points = cat(@fc_points);
+            my $fc_rgb = cat(@fc_rgb);
+            push @plot,{with=>'points',lc=>'rgb variable',pointsize=>2,pointtype=>$opt->{'concentrations'}||7},$fc_points->using(0,1,2),$fc_rgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+        }
     }
 
 
@@ -1394,124 +1394,124 @@ sub render {
     my $nscale = $opt->{'nscale'} || 0.25;
 
     if($opt->{'neighbors'}){
-	my @neighbors;
+        my @neighbors;
 
-	for my $v (map { $_->vertices } $w->fluxons) {
-	    next unless($v->next && ($v->id<-9 || $v->id>0));
-	    my $xcen = 0.5 * ($v->x + $v->next->x);
+        for my $v (map { $_->vertices } $w->fluxons) {
+            next unless($v->next && ($v->id<-9 || $v->id>0));
+            my $xcen = 0.5 * ($v->x + $v->next->x);
 
-	    my $pm = $v->projmatrix;
+            my $pm = $v->projmatrix;
 
-	    my $neigh = $v->proj_neighbors;
+            my $neigh = $v->proj_neighbors;
 
-	    for my $i(0..$neigh->dim(1)-1) {
-		my $x = zeroes(3);
-		$x->(0:1) .= $neigh->(0:1,($i));
-		$x *= $nscale;
-		my $xx = Flux::World::_vec_mmult_3d($pm->list,$x->list);
-		$xx += $xcen;
-		push(@neighbors,$xx);
-	    }
-	}
+            for my $i(0..$neigh->dim(1)-1) {
+                my $x = zeroes(3);
+                $x->(0:1) .= $neigh->(0:1,($i));
+                $x *= $nscale;
+                my $xx = Flux::World::_vec_mmult_3d($pm->list,$x->list);
+                $xx += $xcen;
+                push(@neighbors,$xx);
+            }
+        }
 
-	my $fp = cat(@neighbors);
-	push @plot,{with=>'points',pointsize=>2},$fp->using(0,1,2);
+        my $fp = cat(@neighbors);
+        push @plot,{with=>'points',pointsize=>2},$fp->using(0,1,2);
 
     }
 
     if($opt->{'hull'}) {
 
-	my $hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
-	print "hullrgb: $hullrgb...\n" if($Flux::debug);
+        my $hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
+        print "hullrgb: $hullrgb...\n" if($Flux::debug);
 
-	my $hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
-	print "hullopen: $hullopen...\n" if($Flux::debug);
+        my $hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
+        print "hullopen: $hullopen...\n" if($Flux::debug);
 
-	my $zz = 0;
-	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
-	    next unless($v->next && ($v->id<-9 || $v->id>0));
+        my $zz = 0;
+        for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
+            next unless($v->next && ($v->id<-9 || $v->id>0));
 
-	    my $xcen = 0.5 * ($v->x + $v->next->x);
+            my $xcen = 0.5 * ($v->x + $v->next->x);
 
-	    my $pm = $v->projmatrix;
+            my $pm = $v->projmatrix;
 
-	    my $hull = $v->hull(0);
+            my $hull = $v->hull(0);
 
-	    my @hpoints = ();
+            my @hpoints = ();
 
-	    for my $i(0..$hull->dim(1)-1) {
+            for my $i(0..$hull->dim(1)-1) {
 
-		my $rows = $hull->range([0,$i],[7,2],'p');
-		if( ! ($rows->((4),:)->any) ) {
-		    my $x = zeroes(3);
-		    $x->(0:1) .= $rows->(2:3,(0));
-		    $x *= $nscale;
-		    my $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
+                my $rows = $hull->range([0,$i],[7,2],'p');
+                if( ! ($rows->((4),:)->any) ) {
+                    my $x = zeroes(3);
+                    $x->(0:1) .= $rows->(2:3,(0));
+                    $x *= $nscale;
+                    my $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
 
-		    $x->(0:1) .= $rows->(2:3,(1));
-		    $x->(2) .= 0;
-		    $x *= $nscale;
-		    $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
-		} elsif($rows->((4),0)) {
-		    if(@hpoints) {
-			my $fp = cat(@hpoints)->(:,(0),:);
+                    $x->(0:1) .= $rows->(2:3,(1));
+                    $x->(2) .= 0;
+                    $x *= $nscale;
+                    $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
+                } elsif($rows->((4),0)) {
+                    if(@hpoints) {
+                        my $fp = cat(@hpoints)->(:,(0),:);
 
-			push @plot, {with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
-
-
-			@hpoints = ();
-		    }
+                        push @plot, {with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
 
 
-		    my $x = zeroes(3);
-		    $x->(0) .= $rows->((2),(1)) + $hullopen * cos($rows->((6),(0)));
-		    $x->(1) .= $rows->((3),(1)) + $hullopen * sin($rows->((6),(0)));
-		    $x *= $nscale;
-		    my $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
+                        @hpoints = ();
+                    }
 
-		    $x->(0:1) .= $rows->(2:3,(1));
-		    $x->(2) .= 0;
-		    $x *= $nscale;
-		    $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
-		} elsif($rows->((4),1)) {
 
-		    my $x = zeroes(3);
-		    $x->(0:1) .= $rows->(2:3,(0));
-		    $x *= $nscale;
-		    my $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
+                    my $x = zeroes(3);
+                    $x->(0) .= $rows->((2),(1)) + $hullopen * cos($rows->((6),(0)));
+                    $x->(1) .= $rows->((3),(1)) + $hullopen * sin($rows->((6),(0)));
+                    $x *= $nscale;
+                    my $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
 
-		    $x->(0) .= $rows->((2),(0)) + $hullopen * cos($rows->((5),(1)));
-		    $x->(1) .= $rows->((3),(0)) + $hullopen * sin($rows->((5),(1)));
-		    $x *= $nscale;
-		    $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
-		}
-	    }
+                    $x->(0:1) .= $rows->(2:3,(1));
+                    $x->(2) .= 0;
+                    $x *= $nscale;
+                    $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
+                } elsif($rows->((4),1)) {
 
-	    if(@hpoints) {
+                    my $x = zeroes(3);
+                    $x->(0:1) .= $rows->(2:3,(0));
+                    $x *= $nscale;
+                    my $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
 
-		my $fp = cat(@hpoints)->(:,(0),:);
+                    $x->(0) .= $rows->((2),(0)) + $hullopen * cos($rows->((5),(1)));
+                    $x->(1) .= $rows->((3),(0)) + $hullopen * sin($rows->((5),(1)));
+                    $x *= $nscale;
+                    $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
+                }
+            }
 
-		push @plot,{with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
-	    }
-	}
+            if(@hpoints) {
+
+                my $fp = cat(@hpoints)->(:,(0),:);
+
+                push @plot,{with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
+            }
+        }
     }
 
     @Flux::World::plotlist = @plot;
 
     unless($gpwin) {
-	$gpwin = gpwin($dev,size=>[9,9]);
+        $gpwin = gpwin($dev,size=>[9,9]);
     }
     $gpwin->plot3d(@plot);
     $window = $gpwin;
@@ -1578,7 +1578,7 @@ sub energy {
     my $E = 0;
 
     for ($w->vertices) {
-	$E += $_->{energy};
+        $E += $_->{energy};
     }
 
     return $E;
@@ -1671,9 +1671,9 @@ sub closest_simplex {
     my $start_vertex = shift || undef;
     my $a = _closest_simplex($w,$x,$global,$start_vertex);
     if(ref $a) {
-	return @$a;
+        return @$a;
     } else {
-	return ();
+        return ();
     }
 }
 
@@ -1711,9 +1711,9 @@ sub closest_nsimplex {
     my $start_vertex = shift || undef;
     my $a = _closest_nsimplex($w,$x,$global,$start_vertex);
     if(ref $a) {
-	return @$a;
+        return @$a;
     } else {
-	return ();
+        return ();
     }
 }
 
@@ -1787,37 +1787,37 @@ sub _plot_hull {
 
     # Plot all points in set, if presented
     if(defined $points) {
-	$win->points($points->((0)),$points->((1)),{color=>2});
-	$win->hold;
-	for my $i(0..$points->dim(1)-1){
+        $win->points($points->((0)),$points->((1)),{color=>2});
+        $win->hold;
+        for my $i(0..$points->dim(1)-1){
             $win->text($i,$points->((0),($i)),$points->((1),($i)),{color=>2});
-	}
+        }
     }
 
     # Plot all points in neighbors.
     $win->points($hull->((0)),$hull->((1)),{color=>3});
     $win->hold;
     for my $i(0..$hull->dim(1)-1){
-	$win->text($hull->at(5,$i),$hull->at(0,$i),$hull->at(1,$i),{color=>3});
-	$win->line(pdl(0,$hull->at(0,$i)),pdl(0,$hull->at(1,$i)),{color=>3});
+        $win->text($hull->at(5,$i),$hull->at(0,$i),$hull->at(1,$i),{color=>3});
+        $win->line(pdl(0,$hull->at(0,$i)),pdl(0,$hull->at(1,$i)),{color=>3});
     }
 
     print "Drawing hull....\n";
     # Draw all hull lines
     for my $i(0..$hull->dim(1)-1){
-	my $r = $hull->range([2,$i],[3,2],'p');
+        my $r = $hull->range([2,$i],[3,2],'p');
 
-	unless($r->at(2,0) || $r->at(2,1)) {
+        unless($r->at(2,0) || $r->at(2,1)) {
             $win->line($r->((0)), $r->((1)),{color=>4});
-	} elsif($r->at(2,0)) {
-	    my $x1 = $r->at(0,1) + 2000 * cos($r->at(1,0));
-	    my $y1 = $r->at(1,1) + 2000 * sin($r->at(1,0));
-	    $win->line(pdl($r->at(0,1),$x1),pdl($r->at(1,1),$y1),{color=>5});
-	} elsif($r->at(2,1)) {
-	    my $x1 = $r->at(0,0) + 2000 * cos($r->at(0,1));
-	    my $y1 = $r->at(1,0) + 2000 * sin($r->at(0,1));
-	    $win->line(pdl($r->at(0,0),$x1),pdl($r->at(1,0),$y1),{color=>6});
-	}
+        } elsif($r->at(2,0)) {
+            my $x1 = $r->at(0,1) + 2000 * cos($r->at(1,0));
+            my $y1 = $r->at(1,1) + 2000 * sin($r->at(1,0));
+            $win->line(pdl($r->at(0,1),$x1),pdl($r->at(1,1),$y1),{color=>5});
+        } elsif($r->at(2,1)) {
+            my $x1 = $r->at(0,0) + 2000 * cos($r->at(0,1));
+            my $y1 = $r->at(1,0) + 2000 * sin($r->at(0,1));
+            $win->line(pdl($r->at(0,0),$x1),pdl($r->at(1,0),$y1),{color=>6});
+        }
     }
 
     $win->points(0,0,{symsize=>3,charsize=>3,color=>1});
@@ -1871,23 +1871,23 @@ sub interpolate_value {
     my $offset;
 
     if((ref $w) ne 'Flux::World') {
-	die "Flux::World::interpolate_value needs a Flux::World\n";
+        die "Flux::World::interpolate_value needs a Flux::World\n";
     }
 
     if( ((ref $loc) ne 'PDL') || ($loc->ndims != 1) || $loc->dim(0) != 3 ) {
-	die "Flux::World::interpolate_value needs a 3-PDL location (no threading yet)\n";
+        die "Flux::World::interpolate_value needs a 3-PDL location (no threading yet)\n";
     }
 
     if( $Flux::codes->{vertex}->{$field}->[1] =~ m/num/ ) {
-	$offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
-	return _interpolate_value($w, $loc, $global, $seed, $offset);
+        $offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
+        return _interpolate_value($w, $loc, $global, $seed, $offset);
     }
     elsif( $Flux::codes->{vertex}->{$field}->[1] =~ m/vector/) {
-	$offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
-	return _interpolate_vector($w,$loc,$global,$seed,$offset);
+        $offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
+        return _interpolate_vector($w,$loc,$global,$seed,$offset);
     }
     else {
-	die "Flux::World::interpolate_value: field '$field' isn't a num or a vector...\n";
+        die "Flux::World::interpolate_value: field '$field' isn't a num or a vector...\n";
     }
 }
 
