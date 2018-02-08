@@ -2428,7 +2428,7 @@ int in_simplex_ratio( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X)
 
 
 /**********************************************************************
- * find_nsimplex_by_location
+ * find_simplex_by_location
  *
  * Given a location in 3-space, build a minimal simplex (tetrahedron) of
  * vertices around it. Attempts to provide a 'nice' simplex to comfortably
@@ -2454,10 +2454,10 @@ static DUMBLIST *fsbl_cache = 0;
 //   - v gets vc.
 #define f_s_copy_stuff(p,a,al,v,pc,ac,acl,vc) do { (p)=(pc); cp_3d((a),(ac)); (al)=(acl); (v)=(vc);} while(0)
 
-DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
+DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     VERTEX *vv;
-    static VERTEX *(simplex[6]);  // Gets the VERTEXes of the simplex
-    POINT3D a0, a1, a2a, a2b, a3a, a3b;       // These get the vectors relative to the desired point
+    static VERTEX *(simplex[6]);                // Gets the VERTEXes of the simplex
+    POINT3D a0, a1, a2a, a2b, a3a, a3b;         // These get the vectors relative to the desired point
     static POINT3D origin = {0,0,0};
     NUM *p0, *p1, *p2a, *p2b, *p3a, *p3b;       // These get the x vectors of the VERTEXes we're dealing with
     NUM a0l, a1l, a2al, a2bl, a3al, a3bl;
@@ -2524,7 +2524,7 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
       // Find the cosine of the angle between the first VERTEX found and the current one;
       // retain the lowest-cosine (highest angle) VERTEX.
       // An additional factor of vector lengths is provided to penalize distant points
-        costheta = fabs(inner_3d(ac,a0) * (acl * a0l * acl * a0l));
+        costheta = fabs(inner_3d(ac,a0) * (acl * a0l));
       if((costheta_min < 0) || (costheta < costheta_min)) { // assignment
           f_s_copy_stuff( p1, a1, a1l, simplex[1],        pc, ac, acl, vv );
           costheta_min = costheta;
@@ -2566,7 +2566,7 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
 
       f_s_calc_stuff(pc, ac, acl, vv);
       triple = inner_3d( ac, scr );                // triple is the triple product (ac . a0 x a1)
-      cosphi = triple / l0l1sintheta / acl / l0l1sintheta / acl;   // Divide out to get cos(phi); get absolute value
+      cosphi = triple / l0l1sintheta / acl;   // Divide out to get cos(phi); get absolute value
 
       if( (cosphi > 0) && (cosphi > cosphi_max) ) {
           f_s_copy_stuff( p2a, a2a, a2al, simplex[2],      pc, ac, acl, vv );
@@ -2641,8 +2641,8 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
         // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
         // Normalize with lengths to penalize distant points
         f_s_calc_stuff( pc, ac, acl, vv);
-        acosgamma = fabs(inner_3d(ac, ax012a)) / (acl * acl * axl012a * axl012a);
-        bcosgamma = fabs(inner_3d(ac, ax012b)) / (acl * acl * axl012b * axl012b);
+        acosgamma = fabs(inner_3d(ac, ax012a)) / (acl * axl012a);
+        bcosgamma = fabs(inner_3d(ac, ax012b)) / (acl * axl012b);
 
         // Check that this encloses the point x
         oka = in_simplex( a0, a1, a2a, ac, origin );
@@ -2676,6 +2676,15 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
     POINT3D ax012a, ax012b, ax013a, ax013b, ax123a, ax123b, ax023a, ax023b;
     NUM axl012a, axl012b, axl013a, axl013b, axl123a, axl123b, axl023a, axl023b;
     NUM avga, avgb, vara, varb;
+
+    // Output all of the simplex points for diagnostics
+    // dumblist_clear(fsbl_cache);
+    // dumblist_add(fsbl_cache, simplex[0]);
+    // dumblist_add(fsbl_cache, simplex[1]);
+    // dumblist_add(fsbl_cache, simplex[2]);
+    // dumblist_add(fsbl_cache, simplex[3]);
+    // dumblist_add(fsbl_cache, simplex[4]);
+    // dumblist_add(fsbl_cache, simplex[5]);
 
     // If both final simplex points are defined...
     if (simplex[4] && simplex[5]){
@@ -2769,12 +2778,15 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
 }
 
 /**********************************************************************
- * find_simplex_by_location
+ * find_nsimplex_by_location
  *
  * Given a location in 3-space, build a minimal simplex (tetrahedron) of
  * vertices around it.  Works by finding the nearest VERTEX, then attempting
  * to find other nearby vertices.   If the point is outside the cloud of
  * vertices, deliver only a plane.
+ *
+ * This offshoot of the simplex searcher fetches the neighbor expander
+ * to broaden the neighbor tree for an ideal fourth simplex point.
  *
  * Takes the same parameters as find_vertex_by_location; returns a DUMBLIST
  * containing the VERTEXes that were found.  The DUMBLIST is statically
@@ -2796,7 +2808,7 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
 //   - v gets vc.
 #define f_s_copy_stuff(p,a,al,v,pc,ac,acl,vc) do { (p)=(pc); cp_3d((a),(ac)); (al)=(acl); (v)=(vc);} while(0)
 
-DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
+DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
   VERTEX *vv;
   static VERTEX *(simplex[4]);  // Gets the VERTEXes of the simplex
   POINT3D a0, a1, a2, a3;       // These get the vectors relative to the desired point

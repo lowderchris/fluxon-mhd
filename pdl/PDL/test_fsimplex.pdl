@@ -121,29 +121,83 @@ sub plt_grid {
     $win -> replot(@splt);
 }
 
-sub plt_simplex {
+sub plt_fsimplex {
+    # Call by giving a PDL, $x, defining a set of xyz coordinates
+    # plt_simplex( pdl(0.0,0.0,0.0) )
+    # Plots all six candidate simplex points for diagnostics,
+    # followed by outline the chosen simplex.
+    # CL - must account for null simplex points here
+
+    my $sx = shift;
+
+    @splt = ();
+    @s = $world -> closest_simplex($sx,1);
+    @sf = @s[6..$#s]
+    @cols = ('red', 'orange', 'green', 'cyan', 'blue', 'violet');
+    push @splt, {with=>'points'}, $sx->using(0,1,2);
+    for $i(0..5){
+        $spt = @s[$i]->{'x'};
+        push @splt,{with=>'lines', lc=>$cols[$i]}, pdl($sx(0), $spt(0)), pdl($sx(1), $spt(1)), pdl($sx(2), $spt(2));
+    }
+    $win -> replot(@splt);
+}
+
+sub plt_nsimplex {
     # Call by giving a PDL, $x, defining a set of xyz coordinates
     # plt_simplex( pdl(0.0,0.0,0.0) )
 
     my $sx = shift;
+    my $ol = shift;
 
     @splt = ();
     @s = $world -> closest_nsimplex($sx,1);
     @cols = ('red', 'orange', 'green', 'blue');
     if (scalar(@s) == 4) {
         $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[3]->{'x'}, @s[0]->{'x'}, @s[2]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[3]->{'x'});
-    push @splt, {with=>'lines', lc=>'black'}, $splex->using(0,1,2);
+        push @splt, {with=>'lines', lc=>'black'}, $splex->using(0,1,2);
     } elsif (scalar(@s) == 3) {
         $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[0]->{'x'});
-    push @splt, {with=>'lines', lc=>'black', lt=>0}, $splex->using(0,1,2);
+        push @splt, {with=>'lines', lc=>'black', lt=>0}, $splex->using(0,1,2);
     } else {
         print 'Somethings gone terribly wrong (n_simplex < 3). Please do not push this button again.';
         return;
     }
     push @splt, {with=>'points'}, $sx->using(0,1,2);
-    for $i(0..scalar(@s)-1){
-        $spt = @s[$i]->{'x'};
-        push @splt,{with=>'lines', lc=>$cols[$i]}, pdl($sx(0), $spt(0)), pdl($sx(1), $spt(1)), pdl($sx(2), $spt(2));
+    if ($ol != 1){
+        for $i(0..scalar(@s)-1){
+            $spt = @s[$i]->{'x'};
+            push @splt,{with=>'lines', lc=>$cols[$i]}, pdl($sx(0), $spt(0)), pdl($sx(1), $spt(1)), pdl($sx(2), $spt(2));
+        }
+    }
+    $win -> replot(@splt);
+}
+
+sub plt_simplex {
+    # Call by giving a PDL, $x, defining a set of xyz coordinates
+    # plt_simplex( pdl(0.0,0.0,0.0) )
+
+    my $sx = shift;
+    my $ol = shift;
+
+    @splt = ();
+    @s = $world -> closest_simplex($sx,1);
+    @cols = ('red', 'orange', 'green', 'blue');
+    if (scalar(@s) == 4) {
+        $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[3]->{'x'}, @s[0]->{'x'}, @s[2]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[3]->{'x'});
+        push @splt, {with=>'lines', lc=>'black'}, $splex->using(0,1,2);
+    } elsif (scalar(@s) == 3) {
+        $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[0]->{'x'});
+        push @splt, {with=>'lines', lc=>'black', lt=>0}, $splex->using(0,1,2);
+    } else {
+        print 'Somethings gone terribly wrong (n_simplex < 3). Please do not push this button again.';
+        return;
+    }
+    push @splt, {with=>'points'}, $sx->using(0,1,2);
+    if ($ol != 1){
+        for $i(0..scalar(@s)-1){
+            $spt = @s[$i]->{'x'};
+            push @splt,{with=>'lines', lc=>$cols[$i]}, pdl($sx(0), $spt(0)), pdl($sx(1), $spt(1)), pdl($sx(2), $spt(2));
+        }
     }
     $win -> replot(@splt);
 }
@@ -167,5 +221,7 @@ sub sign {
     }
 }
 for $i(0..10){
-    plt_simplex(pdl(sign(rand(2)-1)*(rand(2)+1),sign(rand(2)-1)*(rand(2)+1),sign(rand(2)-1)*(rand(2)+1)));
+    $rp = pdl(sign(rand(2)-1)*(rand(2)+1),sign(rand(2)-1)*(rand(2)+1),sign(rand(2)-1)*(rand(2)+1))
+    plt_simplex($rp);
+    plt_nsimplex($rp, 1);
 }
