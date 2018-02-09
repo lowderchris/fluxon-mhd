@@ -2602,11 +2602,15 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     dumblist_add(cache, simplex[1]);
     dumblist_add(cache, simplex[2]);
     dumblist_add(cache, simplex[3]);
-    simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = simplex[3]->passno = passno;
+    simplex[0]->passno = simplex[1]->passno = passno;
+    if (simplex[2] != 0) simplex[2]->passno = passno;
+    if (simplex[3] != 0) simplex[3]->passno = passno;
     expand_lengthwise(cache, 0, passno);
     expand_via_neighbors(cache, 0, passno);
     expand_lengthwise(cache,0,passno);
-    simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = simplex[3]->passno = passno;
+    simplex[0]->passno = simplex[1]->passno = passno;
+    if (simplex[2] != 0) simplex[2]->passno = passno;
+    if (simplex[3] != 0) simplex[3]->passno = passno;
     {
       long n = cache->n;
       expand_lengthwise(cache,n,passno);
