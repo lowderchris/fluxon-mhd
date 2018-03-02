@@ -44,9 +44,9 @@ sub rad_test {
 
 # Load the example world
 $world = read_world('cartesian_interpolate_test_relaxed.flux');
+#$world = read_world('global_500_fluxons_step03000.flux');
 #$world = rad_test();
 
-# Do I need to check for a neighbor search here?
 # Performing an initial global recalculation of neighbors
 $world -> update_neighbors(1);
 
@@ -159,7 +159,7 @@ sub plt_nsimplex {
         $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[0]->{'x'});
         push @splt, {with=>'lines', lc=>'black', lt=>0}, $splex->using(0,1,2);
     } else {
-        print 'Somethings gone terribly wrong (n_simplex < 3). Please do not push this button again.';
+        print 'Something has gone terribly wrong (n_simplex < 3). Please do not push this button again.';
         return;
     }
     push @splt, {with=>'points'}, $sx->using(0,1,2);
@@ -189,7 +189,7 @@ sub plt_simplex {
         $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[0]->{'x'});
         push @splt, {with=>'lines', lc=>'black', lt=>0}, $splex->using(0,1,2);
     } else {
-        print 'Somethings gone terribly wrong (n_simplex < 3). Please do not push this button again.';
+        print 'Something has gone terribly wrong (n_simplex < 3). Please do not push this button again.';
         return;
     }
     push @splt, {with=>'points'}, $sx->using(0,1,2);

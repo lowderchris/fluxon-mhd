@@ -157,21 +157,21 @@ void diff_3d(NUM *out, NUM *a, NUM *b) {
  * centroid - Find the centroid of the plane formed from 3 3-vectors
  */
 void centroid(NUM *out, NUM *a, NUM *b, NUM *c) {
-  *(out++) = *(a++) + *(b++) + *(c++);
-  *(out++) = *(a++) + *(b++) + *(c++);
-  *(out) = (*(a) + *(b) + *(c))/3;
+  *(out++) = (*(a++) + *(b++) + *(c++))/3.;
+  *(out++) = (*(a++) + *(b++) + *(c++))/3.;
+  *(out) = (*(a) + *(b) + *(c))/3.;
 }
 
 
 /**********************************************************************
- * mpdist - Find the distance from the point x to the midpoint of the
+ * mpdist - Find the distance to the midpoint of the
  * vector from a-b
  */
-NUM mpdist(NUM *a, NUM*b, NUM *x) {
+NUM mpdist(NUM *a, NUM*b) {
   NUM out;
-  out = (0.5 * (*a - *b)) - *x; a++; b++; x++;
-  out += (0.5 * (*a - *b)) - *x; a++; b++; x++;
-  out += (0.5 * (*a - *b)) - *x;
+  out = (0.5 * (*a - *b)); a++; b++;
+  out += (0.5 * (*a - *b)); a++; b++;
+  out += (0.5 * (*a - *b));
   return out;
 }
 
@@ -2336,7 +2336,7 @@ VERTEX *find_vertex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
  *
  * Given three noncolinear points (which define an oriented plane)
  * determine whether a 4th point is above or below the plane.  Returns
- * 1 if the 4th point is above or on, 0 if it is  below.
+ * 1 if the 4th point is above, 0 if it is on or below.
  */
 int above_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
   POINT3D AB, AC, AX;
@@ -2345,7 +2345,25 @@ int above_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
   diff_3d(AC, C, A);
   diff_3d(AX, X, A);
   cross_3d(ABxAC, AC, AB);
-  return (  inner_3d(ABxAC, AX) >= 0  );
+  return (  inner_3d(ABxAC, AX) > 0  );
+}
+
+/**********************************************************************
+ * in_plane
+ *
+ * Given three noncolinear points (which define an oriented plane)
+ * determine whether a 4th point is above or below the plane.  Returns
+ * 1 if the 4th point is located on the plane, 0 otherwise.
+ */
+int in_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
+  POINT3D AB, AC, AX;
+  POINT3D ABxAC;
+  diff_3d(AB, B, A);
+  diff_3d(AC, C, A);
+  diff_3d(AX, X, A);
+  cross_3d(ABxAC, AC, AB);
+  //printf("inner_3d(ABxAC, AX) : %e \n", inner_3d(ABxAC, AX));
+  return (  fabs(inner_3d(ABxAC, AX)) < 1e-5  );
 }
 
 /**********************************************************************
@@ -2393,7 +2411,16 @@ int opposite_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X, POINT3D Y) {
  * determine whether a 5th point is inside or outside the simplex.
  */
 int in_simplex( POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X) {
-  POINT3D P01, P02, P03;
+  POINT3D P01, P02, P03; // CL - Is this line needed?
+  //printf("0123 : %d 012x : %d \n", above_plane(P0,P1,P2,P3), above_plane(P0,P1,P2,X));
+  //printf("XOR : 0123 ^ 012x : %d \n", above_plane(P0,P1,P2,P3) ^ above_plane(P0,P1,P2,X));
+  //printf("1230 : %d 123x : %d \n", above_plane(P1,P2,P3,P0), above_plane(P1,P2,P3,X));
+  //printf("XOR : 1230 ^ 123x : %d \n", above_plane(P1,P2,P3,P0) ^ above_plane(P1,P2,P3,X));
+  //printf("2301 : %d 230x : %d \n", above_plane(P2,P3,P0,P1), above_plane(P2,P3,P0,X));
+  //printf("XOR : 2301 ^ 230x : %d \n", above_plane(P2,P3,P0,P1) ^ above_plane(P2,P3,P0,X));
+  //printf("3012 : %d 301x : %d \n", above_plane(P3,P0,P1,P2), above_plane(P3,P0,P1,X));
+  //printf("XOR : 3012 ^ 301x : %d \n", above_plane(P3,P0,P1,P2) ^ above_plane(P3,P0,P1,X));
+  //printf("-----------------------------\n");
 
   return ( ! (  (above_plane(P0,P1,P2,P3) ^ above_plane(P0,P1,P2,X) ) ||
                 (above_plane(P1,P2,P3,P0) ^ above_plane(P1,P2,P3,X) ) ||
@@ -2576,7 +2603,6 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
           f_s_copy_stuff( p2b, a2b, a2bl, simplex[3],      pc, ac, acl, vv );
           cosphi_min = cosphi;
       }
-        // CL - Need to set up some logic if either of these points is not defined
     }
     if(!p2a && !p2b) {
       fprintf(stderr,"find_simplex_by_location: FAILED to find a third neighbor!\n");
@@ -2622,8 +2648,11 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     centroid(c012b, a0, a1, a2b);
 
     // Define the vector between these centroids and the point x
-    diff_3d(ax012a, x, c012a);
-    diff_3d(ax012b, x, c012b);
+    // CL - Aren't the centroids here defined with the point x as the origin?
+    //diff_3d(ax012a, x, c012a);
+    //diff_3d(ax012b, x, c012b);
+    cp_3d(ax012a, c012a);
+    cp_3d(ax012b, c012b);
     axl012a = norm_3d(ax012a);
     axl012b = norm_3d(ax012b);
 
@@ -2635,7 +2664,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     for(i=4; i<cache->n; i++){ // Skipping the first four simplex candidates
 
         // Define any variables
-        int oka, okb;
+        int oka, okb, outpa, outpb;
 
         // Check the vertex
         vv = ((VERTEX **)(cache->stuff))[i];
@@ -2645,22 +2674,53 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         // Calculate the angle between the candidate point and the {P0,P1,P2} centroid -> x vector
         // Normalize with lengths to penalize distant points
         f_s_calc_stuff( pc, ac, acl, vv);
-        acosgamma = fabs(inner_3d(ac, ax012a)) / (acl * axl012a);
-        bcosgamma = fabs(inner_3d(ac, ax012b)) / (acl * axl012b);
+        // CL - Absolute value previously here... does that make sense?
+        // CL - Use the sign here as another criteria for selection
+        acosgamma = -inner_3d(ac, ax012a) / (acl * axl012a);
+        bcosgamma = -inner_3d(ac, ax012b) / (acl * axl012b);
 
         // Check that this encloses the point x
-        oka = in_simplex( a0, a1, a2a, ac, origin );
-        okb = in_simplex( a0, a1, a2b, ac, origin );
+        oka = in_simplex( a0, a1, a2a, ac, origin);
+        okb = in_simplex( a0, a1, a2b, ac, origin);
+
+        // Check that this is not located on the plane
+        //printf("A: ");
+        outpa = in_plane(a0, a1, a2a, ac);
+        //printf("B: ");
+        outpb = in_plane(a0, a1, a2b, ac);
 
         // If the simplex contains x,
         //   and if either the simplex hasn't been filled or the weighted angle exceeds
         //   the current maximum, copy things over.
-        if ( oka && (simplex[2] != 0) && ((!simplex[4]) || (acosgamma > acosgamma_max ))) {
+        // CL - Note the removal of the !simplex[] || here to force a good point selection
+        if ( oka && (outpa != 1) && (simplex[2] != 0) && (acosgamma > acosgamma_max) ) {
+            //printf("FOUND A POINT P3A! \n");
+            //printf("oka : %d , outpa : %d \n", oka, outpa);
+            in_simplex( a0, a1, a2a, ac, origin);
             f_s_copy_stuff(p3a, a3a, a3al, simplex[4], pc, ac, acl, vv);
+            //printf("ac : %f, %f, %f \n", ac[0], ac[1], ac[2]);
+            //printf("a0 : %f, %f, %f \n", a0[0], a0[1], a0[2]);
+            //printf("a1 : %f, %f, %f \n", a1[0], a1[1], a1[2]);
+            //printf("a2a : %f, %f, %f \n", a2a[0], a2a[1], a2a[2]);
+            //printf("oka : %d \n", oka);
+            //printf("c012a : %f, %f, %f \n", c012a[0], c012a[1], c012a[2]);
+            //printf("ax012a : %f, %f, %f \n", ax012a[0], ax012a[1], ax012a[2]);
+            //printf("acosgamma : %f, acosgamma_max : %f \n", acosgamma, acosgamma_max);
             acosgamma_max = acosgamma;
         }
-        if ( okb && (simplex[3] != 0) && ((!simplex[5]) || (bcosgamma > bcosgamma_max ))) {
+        if ( okb && (outpb != 1) && (simplex[3] != 0) && (bcosgamma > bcosgamma_max) ) {
+            //printf("FOUND A POINT P3B! \n");
+            //printf("okb : %d , outpb : %d \n", okb, outpb);
+            in_simplex( a0, a1, a2b, ac, origin);
             f_s_copy_stuff(p3b, a3b, a3bl, simplex[5], pc, ac, acl, vv);
+            //printf("ac : %f, %f, %f \n", ac[0], ac[1], ac[2]);
+            //printf("a0 : %f, %f, %f \n", a0[0], a0[1], a0[2]);
+            //printf("a1 : %f, %f, %f \n", a1[0], a1[1], a1[2]);
+            //printf("a2b : %f, %f, %f \n", a2b[0], a2b[1], a2b[2]);
+            //printf("okb : %d \n", okb);
+            //printf("c012b : %f, %f, %f \n", c012b[0], c012b[1], c012b[2]);
+            //printf("ax012b : %f, %f, %f \n", ax012b[0], ax012b[1], ax012b[2]);
+            //printf("bcosgamma : %f, bcosgamma_max : %f \n", bcosgamma, bcosgamma_max);
             bcosgamma_max = bcosgamma;
         }
     }
@@ -2690,6 +2750,8 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     // dumblist_add(fsbl_cache, simplex[4]);
     // dumblist_add(fsbl_cache, simplex[5]);
 
+    // CL - Maybe check that the simplex has a non-zero volume, and include this in the logic below
+
     // If both final simplex points are defined...
     if (simplex[4] && simplex[5]){
         // Calculate some distances to face centroids
@@ -2705,14 +2767,23 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         centroid(c023b, a0, a2b, a3b);
 
         // Define the vector between these centroids and the point x
-        diff_3d(ax012a, x, c012a);
-        diff_3d(ax012b, x, c012b);
-        diff_3d(ax013a, x, c013a);
-        diff_3d(ax013b, x, c013b);
-        diff_3d(ax123a, x, c123a);
-        diff_3d(ax123b, x, c123b);
-        diff_3d(ax023a, x, c023a);
-        diff_3d(ax023b, x, c023b);
+        // CL - Again, shouldn't these be defined with x as the origin?
+        //diff_3d(ax012a, x, c012a);
+        //diff_3d(ax012b, x, c012b);
+        //diff_3d(ax013a, x, c013a);
+        //diff_3d(ax013b, x, c013b);
+        //diff_3d(ax123a, x, c123a);
+        //diff_3d(ax123b, x, c123b);
+        //diff_3d(ax023a, x, c023a);
+        //diff_3d(ax023b, x, c023b);
+        cp_3d(ax012a, c012a);
+        cp_3d(ax012b, c012b);
+        cp_3d(ax013a, c013a);
+        cp_3d(ax013b, c013b);
+        cp_3d(ax123a, c123a);
+        cp_3d(ax123b, c123b);
+        cp_3d(ax023a, c023a);
+        cp_3d(ax023b, c023b);
         axl012a = norm_3d(ax012a);
         axl012b = norm_3d(ax012b);
         axl013a = norm_3d(ax013a);
@@ -2756,11 +2827,12 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     // If neither the final a/b-simplex points are found...
     } else if (!simplex[4] && !simplex[5]){
         // Calculate some distances to edges for this case
-        ed01  = mpdist(a0,  a1, x);
-        ed02a = mpdist(a0, a2a, x);
-        ed02b = mpdist(a0, a2b, x);
-        ed12a = mpdist(a1, a2a, x);
-        ed12b = mpdist(a1, a2b, x);
+        // CL - Should this also take into account x as the origin for this coordinate system?
+        ed01  = mpdist(a0,  a1);
+        ed02a = mpdist(a0, a2a);
+        ed02b = mpdist(a0, a2b);
+        ed12a = mpdist(a1, a2a);
+        ed12b = mpdist(a1, a2b);
 
         // Calculate variances
         avga = (ed01 + ed02a + ed12a) / 3;
@@ -3188,11 +3260,16 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
 NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
   POINT3D xx;
   POINT3D a, aa;
+  POINT3D d01, d02, d03;              // Difference storage
+  POINT3D x01, x02, x12, x13, x23;    // Cross product storage
+  NUM px[4*3];                        // P values with x as the origin
   PLANE pl;
   NUM alpha;
   NUM wgt_acc = 1.0;
   NUM acc = 0;
-  int i;
+  int i, j;
+  int diag = 0;                       // Spit out diagnostic values
+
 
   /*  printf("interpolate_lin_3d: number of simplex points is %d, x is %f, %f, %f\n",n,x[0],x[1],x[2]);
   printf("interpolate_lin_3d: val is %f, %f, %f, %f\n",val[0],val[1],val[2],val[3]);
@@ -3205,65 +3282,161 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
       printf(") val = %f\n",val[i/3]);
   }
   */
-  switch(n) {
+  for (j = 0; j<4; j++){
+  for (i = 0; i<3; i++){
+      px[3*j + i] = p[3*j + i] - x[i];
+      if (diag){
+          printf("i : %d j : %d p : %f x : %f \n", i, j, p[3*j+i], x[i]);
+          printf("px : %f ij : %d \n", px[3*j + i], 3*j+i);
+      }
+  }
+  }
+
+  // CL - Some testing by assigning values to each vertex
+  //for (i = 0; i<4; i++){
+  //  val[i] = 2.;
+  //}
+  //val[0] = 1;
+  //val[1] = 2;
+  //val[2] = 2;
+  //val[3] = 2;
+
+  // CL - Some testing by assigning some known coordinates
+  //px[0]  = -20;
+  //px[1]  = -20;
+  //px[2]  = -20;
+  //px[3]  = 2;
+  //px[4]  = 0;
+  //px[5]  = 0;
+  //px[6]  = 0;
+  //px[7]  = 2;
+  //px[8]  = 0;
+  //px[9]  = 0;
+  //px[10] = 0;
+  //px[11] = 2;
+
+  switch(n){
   case 4:
-    // Full simplex: Find intersection of the line P3 -> X with the P0,P1,P2 plane,
-    // and reduce to the triangular (planar) case.
-    points2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
-    //printf("PLANE: origin (%f, %f, %f), normal (%f, %f, %f)\n",pl.origin[0],pl.origin[1],pl.origin[2],pl.normal[0],pl.normal[1],pl.normal[2]);
-    p_l_intersection(a, &pl, x, &p[3*3]);
-    //printf("OUT: a= (%f, %f, %f)\n",a[0],a[1],a[2]);
-
-    // Find relative length
-    diff_3d(xx, x, &p[3*3]); //xx gets the vector difference between x and the 4th simplex point.
-    diff_3d(aa, a, &p[3*3]); //aa gets the vector difference between a and the 4th simplex point.
-    alpha = inner_3d(xx,aa) / norm2_3d(aa);
-    if(isfinite(alpha)){
-      acc += wgt_acc * (1-alpha) * val[3];
-      wgt_acc *= alpha;
-      /*printf("a= %f, %f, %f\n",a[0],a[1],a[2]);
-      printf("xx= %f, %f, %f\n",xx[0],xx[1],xx[2]);
-      printf("aa= %f, %f, %f\n",aa[0],aa[1],aa[2]);
-      printf("n=4; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);*/
-      cp_3d(x,a); // Move X into the plane and fall through to planar case
+    diff_3d(d01, &px[3*0], &px[3*1]);
+    diff_3d(d02, &px[3*0], &px[3*2]);
+    diff_3d(d03, &px[3*0], &px[3*3]);
+    if (diag){
+        printf("d01 : %f, %f, %f \n", d01[0], d01[1], d01[2]);
+        printf("d02 : %f, %f, %f \n", d02[0], d02[1], d02[2]);
+        printf("d03 : %f, %f, %f \n", d03[0], d03[1], d03[2]);
     }
-  case 3:
-    // Triangle (plane): Find the intersection of the line from P2->X with the
-    // P0,P1 "line" (project everything down to the P0,P1,P2 plane), and reduce
-    // to the linear case.
-    lp2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
-    p_l_intersection(a, &pl, x, &p[2*3]);
-
-    // find relative length
-    diff_3d(xx, x, &p[2*3]);
-    diff_3d(aa, a, &p[2*3]);
-    alpha = inner_3d(xx,aa) / norm2_3d(aa);
-    if(isfinite(alpha)){
-      acc += wgt_acc * (1-alpha) * val[2];
-      wgt_acc *= alpha;
-      //printf("n=3; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
-      cp_3d(x,a); // Move X onto the P0-P1 line and fall through to the linear case
+    cross_3d(xx, d02, d03);
+    if (diag){
+        printf("xx : %f, %f, %f \n", xx[0], xx[1], xx[2]);
     }
-  case 2:
-    // Line: direct interpolation
-    diff_3d(xx, x, &p[3*1]);
-    diff_3d(a,  &p[3*0], &p[3*1]);
-
-    alpha = inner_3d( xx, a ) / norm2_3d(a);
-    if(isfinite(alpha)){
-      acc += wgt_acc * (1 - alpha) * val[1];
-      wgt_acc *= alpha;
-      //printf("n=2; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
+    wgt_acc = (1./6.) * fabs(inner_3d(d01, xx));
+    if (diag){
+        printf("wgt_acc : %f \n", wgt_acc);
     }
-  case 1:
-
-    acc += wgt_acc * val[0];
-    //printf("n=1; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
+    cross_3d(x23, &px[3*2], &px[3*3]);
+    cross_3d(x13, &px[3*1], &px[3*3]);
+    cross_3d(x12, &px[3*1], &px[3*2]);
+    if (diag){
+        printf("x23 : %f, %f, %f \n", x23[0], x23[1], x23[2]);
+        printf("x13 : %f, %f, %f \n", x13[0], x13[1], x13[2]);
+        printf("x12 : %f, %f, %f \n", x12[0], x12[1], x12[2]);
+        printf("p1 . x23 : %f \n", inner_3d(&px[3*1], x23));
+        printf("p0 . x23 : %f \n", inner_3d(&px[3*0], x23));
+        printf("p0 . x13 : %f \n", inner_3d(&px[3*0], x13));
+        printf("p0 . x12 : %f \n", inner_3d(&px[3*0], x12));
+    }
+    acc = (1/(6*wgt_acc)) * (val[0] * fabs(inner_3d(&px[3*1], x23)) + val[1] * fabs(inner_3d(&px[3*0], x23)) + val[2] * fabs(inner_3d(&px[3*0], x13)) + val[3] * fabs(inner_3d(&px[3*0], x12)));
+    if (diag){
+        printf("acc : %f \n", acc);
+    }
     break;
+  case 3:
+    diff_3d(d01, &px[3*0], &px[3*1]);
+    diff_3d(d02, &px[3*0], &px[3*2]);
+    cross_3d(xx, d01, d02);
+    wgt_acc = 0.5 * norm_3d(xx);
+    cross_3d(x01, &px[3*0], &px[3*1]);
+    cross_3d(x02, &px[3*0], &px[3*2]);
+    cross_3d(x12, &px[3*1], &px[3*2]);
+    acc = (0.5 / wgt_acc) * (val[0] * norm_3d(x12) + val[1] * norm_3d(x02) + val[2] * norm_3d(x01));
+    break;
+  case 2:
+    diff_3d(d01, &px[3*0], &px[3*1]);
+    wgt_acc = norm_3d(d01);
+    acc = (val[0] * norm_3d(&px[3*1]) + val[1] * norm_3d(&px[3*0])) / wgt_acc;
+    break;
+  case 1:
+    acc = val[0];
+    break;
+  }
+  if (diag){
+      printf("val : %f, %f, %f, %f \n",val[0],val[1],val[2],val[3]);
+      printf("p0 : %f, %f, %f \n",px[0],px[1],px[2]);
+      printf("p1 : %f, %f, %f \n",px[3],px[4],px[5]);
+      printf("p2 : %f, %f, %f \n",px[6],px[7],px[8]);
+      printf("p3 : %f, %f, %f \n",px[9],px[10],px[11]);
   }
   return acc;
 }
 
+//  switch(n) {
+//  case 4:
+//    // Full simplex: Find intersection of the line P3 -> X with the P0,P1,P2 plane,
+//    // and reduce to the triangular (planar) case.
+//    points2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
+//    //printf("PLANE: origin (%f, %f, %f), normal (%f, %f, %f)\n",pl.origin[0],pl.origin[1],pl.origin[2],pl.normal[0],pl.normal[1],pl.normal[2]);
+//    p_l_intersection(a, &pl, x, &p[3*3]);
+//    //printf("OUT: a= (%f, %f, %f)\n",a[0],a[1],a[2]);
+//
+//    // Find relative length
+//    diff_3d(xx, x, &p[3*3]); //xx gets the vector difference between x and the 4th simplex point.
+//    diff_3d(aa, a, &p[3*3]); //aa gets the vector difference between a and the 4th simplex point.
+//    alpha = inner_3d(xx,aa) / norm2_3d(aa);
+//    if(isfinite(alpha)){
+//      acc += wgt_acc * (1-alpha) * val[3];
+//      wgt_acc *= alpha;
+//      /*printf("a= %f, %f, %f\n",a[0],a[1],a[2]);
+//      printf("xx= %f, %f, %f\n",xx[0],xx[1],xx[2]);
+//      printf("aa= %f, %f, %f\n",aa[0],aa[1],aa[2]);
+//      printf("n=4; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);*/
+//      cp_3d(x,a); // Move X into the plane and fall through to planar case
+//    }
+//  case 3:
+//    // Triangle (plane): Find the intersection of the line from P2->X with the
+//    // P0,P1 "line" (project everything down to the P0,P1,P2 plane), and reduce
+//    // to the linear case.
+//    lp2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
+//    p_l_intersection(a, &pl, x, &p[2*3]);
+//
+//    // find relative length
+//    diff_3d(xx, x, &p[2*3]);
+//    diff_3d(aa, a, &p[2*3]);
+//    alpha = inner_3d(xx,aa) / norm2_3d(aa);
+//    if(isfinite(alpha)){
+//      acc += wgt_acc * (1-alpha) * val[2];
+//      wgt_acc *= alpha;
+//      //printf("n=3; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
+//      cp_3d(x,a); // Move X onto the P0-P1 line and fall through to the linear case
+//    }
+//  case 2:
+//    // Line: direct interpolation
+//    diff_3d(xx, x, &p[3*1]);
+//    diff_3d(a,  &p[3*0], &p[3*1]);
+//
+//    alpha = inner_3d( xx, a ) / norm2_3d(a);
+//    if(isfinite(alpha)){
+//      acc += wgt_acc * (1 - alpha) * val[1];
+//      wgt_acc *= alpha;
+//      //printf("n=2; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
+//    }
+//  case 1:
+//
+//    acc += wgt_acc * val[0];
+//    //printf("n=1; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
+//    break;
+//  }
+//  return acc;
+//  }
 
 /**********************************************************************
  * interpolate_value_simplex
@@ -3314,24 +3487,6 @@ NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offse
 
   return interpolate_value_simplex(x, dl, val_offset);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**********************************************************************
  * project_n_fill_photosphere
