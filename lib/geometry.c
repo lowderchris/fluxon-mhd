@@ -2401,7 +2401,6 @@ int in_plane(POINT3D A, POINT3D B, POINT3D C, POINT3D X) {
   diff_3d(AC, C, A);
   diff_3d(AX, X, A);
   cross_3d(ABxAC, AC, AB);
-  //printf("inner_3d(ABxAC, AX) : %e \n", inner_3d(ABxAC, AX));
   return (  fabs(inner_3d(ABxAC, AX)) < 1e-5  );
 }
 
@@ -2669,33 +2668,13 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         //   and if either the simplex hasn't been filled or the weighted angle exceeds
         //   the current maximum, copy things over.
         if ( oka && (outpa != 1) && (simplex[2] != 0) && (acosgamma > acosgamma_max) ) {
-            //printf("FOUND A POINT P3A! \n");
-            //printf("oka : %d , outpa : %d \n", oka, outpa);
             in_simplex( a0, a1, a2a, ac, origin);
             f_s_copy_stuff(p3a, a3a, a3al, simplex[4], pc, ac, acl, vv);
-            //printf("ac : %f, %f, %f \n", ac[0], ac[1], ac[2]);
-            //printf("a0 : %f, %f, %f \n", a0[0], a0[1], a0[2]);
-            //printf("a1 : %f, %f, %f \n", a1[0], a1[1], a1[2]);
-            //printf("a2a : %f, %f, %f \n", a2a[0], a2a[1], a2a[2]);
-            //printf("oka : %d \n", oka);
-            //printf("c012a : %f, %f, %f \n", c012a[0], c012a[1], c012a[2]);
-            //printf("ax012a : %f, %f, %f \n", ax012a[0], ax012a[1], ax012a[2]);
-            //printf("acosgamma : %f, acosgamma_max : %f \n", acosgamma, acosgamma_max);
             acosgamma_max = acosgamma;
         }
         if ( okb && (outpb != 1) && (simplex[3] != 0) && (bcosgamma > bcosgamma_max) ) {
-            //printf("FOUND A POINT P3B! \n");
-            //printf("okb : %d , outpb : %d \n", okb, outpb);
             in_simplex( a0, a1, a2b, ac, origin);
             f_s_copy_stuff(p3b, a3b, a3bl, simplex[5], pc, ac, acl, vv);
-            //printf("ac : %f, %f, %f \n", ac[0], ac[1], ac[2]);
-            //printf("a0 : %f, %f, %f \n", a0[0], a0[1], a0[2]);
-            //printf("a1 : %f, %f, %f \n", a1[0], a1[1], a1[2]);
-            //printf("a2b : %f, %f, %f \n", a2b[0], a2b[1], a2b[2]);
-            //printf("okb : %d \n", okb);
-            //printf("c012b : %f, %f, %f \n", c012b[0], c012b[1], c012b[2]);
-            //printf("ax012b : %f, %f, %f \n", ax012b[0], ax012b[1], ax012b[2]);
-            //printf("bcosgamma : %f, bcosgamma_max : %f \n", bcosgamma, bcosgamma_max);
             bcosgamma_max = bcosgamma;
         }
     }
@@ -2706,10 +2685,8 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     // *************************************
     // Keeping the simplex points P0 and P1, find the combination of remaining candidates that:
     //  - enclose the point x
-    //  ~ minimize simplex volume
     //  - maintain a close distribution of distances from x to simplex faces
     // If no adequate fourth point is found, return the best combination of three
-    // Define some lengths
     NUM ed01, ed02a, ed02b, ed12a, ed12b;
     POINT3D c012a, c012b, c013a, c013b, c123a, c123b, c023a, c023b;
     POINT3D ax012a, ax012b, ax013a, ax013b, ax123a, ax123b, ax023a, ax023b;
@@ -2800,6 +2777,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
         dumblist_add(fsbl_cache, simplex[0]);
         dumblist_add(fsbl_cache, simplex[1]);
 
+        // Ensure that the three points do not fall along the same fluxon
         if ((simplex[0]->line->label == simplex[1]->line->label) && (simplex[2] != 0) && (simplex[1]->line->label == simplex[2]->line->label)) {
             difffa = 0;
         }
@@ -2880,9 +2858,6 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
   f_s_calc_stuff(p0, a0, a0l, vv);
   dumblist_add(fsbl_cache,simplex[0]);
 
-  //  printf("x is (%g,%g,%g)\n",x[0],x[1],x[2]);
-  //  printf("p0 is vertex %ld (%g,%g,%g)\n",simplex[0]->label, simplex[0]->x[0], simplex[0]->x[1], simplex[0]->x[2]);
-
   if(simplex[0]->x[0]==x[0] && simplex[0]->x[1]==x[1] && simplex[0]->x[2]==x[2]){
     //printf("The interpolated point is exactly at one of the vertices: returning with only that one point\n");
     return fsbl_cache;
@@ -2926,10 +2901,6 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
           f_s_copy_stuff( p1, a1, a1l, simplex[1],        pc, ac, acl, vv );
           costheta_min = costheta;
       }
-//        printf("%d-%d:%g ",vv->label,simplex[0]->label,costheta );
-//            if(costheta<1e-100)
-//                printf("\n\t%d:%g,%g,%g;  %fd:%g,%g,%g\n", vv->label,ac[0],ac[1],ac[2],simplex[0]->label,a0[0],a0[1],a0[2]);
-//        fflush(stdout);
     }
 
     // printf("p1 is vertex %ld (%g,%g,%g)\n",simplex[1]->label, simplex[1]->x[0], simplex[1]->x[1], simplex[1]->x[2]);
@@ -3067,10 +3038,8 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
         //   and if either the simplex hasn't been filled or the weighted angle exceeds
         //   the current maximum, copy things over.
         if ( ok && opp && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
-        //if ( ok && (cosgamma > 0) && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
             f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
             cosgamma_max = cosgamma;
-            //printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
         }
     }
 
@@ -3113,74 +3082,8 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
         if ( ok && opp && ((!simplex[3]) || (cosgamma > cosgamma_max ))) {
             f_s_copy_stuff(p3, a3, a3l, simplex[3], pc, ac, acl, vv);
             cosgamma_max = cosgamma;
-            //printf("\n Good point : okay: %d , acl: %g , axl012: %g, cosgamma: %g, flxn: %ld", ok, acl, axl012, cosgamma, vv->line->label);
         }
     }
-
-    //// Original simplex volume minimization code
-    //passno = ++(vv->line->fc0->world->passno);
-    //dumblist_clear(cache);
-    //dumblist_add(cache,simplex[0]);
-    //dumblist_add(cache,simplex[1]);
-    //dumblist_add(cache,simplex[2]);
-
-    //// printf("passno is %ld...",passno);
-    //simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
-    //expand_lengthwise(cache,0,passno);
-    //expand_via_neighbors(cache,0,passno);
-    //expand_lengthwise(cache,0,passno);
-    //{
-    //  long n = cache->n;
-    //  expand_lengthwise(cache,n,passno);
-    //  expand_via_neighbors(cache,n,passno);
-    //}
-    ////    printf("Testing %d candidates for the final point of the simplex...\n",cache->n - 3);
-
-    //simplex[3] = 0;
-    //for(i=3; i<cache->n; i++) {
-    //  int ok;
-    //  vv =  ((VERTEX **)(cache->stuff)) [i] ;
-    //  if (V_ISDUMMY(vv))
-    //    continue;
-
-    //  // acl gets the volume of the simplex formed by the three prior points and the candidate.
-    //  // We want the smallest simplex that encloses the sample point.
-    //  f_s_calc_stuff(pc, ac, acl, vv);
-
-    //  // printf(" v%ld ",vv->label);
-    //  ok =  in_simplex( a0, a1, a2, ac, origin );
-    //
-    //  // Some diagnostics for funky simplex finding
-    //  //if( !ok && x[0] > 0 && x[0] < 0.5 && x[1] > 0 && x[1] < 0.5) {
-    //    //printf("\n \t %ld", vv->line->label);
-    //    //printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0], a0[1], a0[2]);
-    //    //printf("\n \t $a1 = pdl(%g, %g, %g)", a1[0], a1[1], a1[2]);
-    //    //printf("\n \t $a2 = pdl(%g, %g, %g)", a2[0], a2[1], a2[2]);
-    //    //printf("\n \t $ac = pdl(%g, %g, %g)", ac[0], ac[1], ac[2]);
-    //    //printf("\n \t $as = pdl($a0, $a1, $a2, $ac)");
-    //    //printf("\n \t $win->plot({trid=>1}, {with=>'points'},$as->using(0,1,2))");
-    //    //printf("\n");
-    //    //fflush(stdout);
-    //  //}
-    //
-    //  if( ok ) {
-    //    //printf("%d ",ok);
-    //    //printf("\n \t %ld", vv->line->label);
-    //    //printf("\n \t $a0 = pdl(%g, %g, %g)", a0[0], a0[1], a0[2]);
-    //    //printf("\n \t $a1 = pdl(%g, %g, %g)", a1[0], a1[1], a1[2]);
-    //    //printf("\n \t $a2 = pdl(%g, %g, %g)", a2[0], a2[1], a2[2]);
-    //    //printf("\n \t $ac = pdl(%g, %g, %g)", ac[0], ac[1], ac[2]);
-    //    //printf("\n \t $as = pdl($a0, $a1, $a2, $ac)");
-    //    //printf("\n \t $win->plot({trid=>1}, {with=>'points'},$as->using(0,1,2))");
-    //    //printf("\n");
-    //    //fflush(stdout);
-    //    // If the simplex hasn't been filled yet (always true on the first OK) or if
-    //    // we're better than the last simplex-filler, copy the fourth point to the simplex.
-    //    if(  (!simplex[3]) || (acl < a3l )  )
-    //      f_s_copy_stuff(p3, a3, a3l, simplex[3],          pc, ac, acl, vv);
-    //  }
-    //}
-    //  printf("\n");
 
     if(!simplex[3]) {
       // Not finding a 4th neighbor is not unusual if you are outside the sim, so we don't throw an error.
@@ -3218,116 +3121,61 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
   POINT3D a, aa;
   POINT3D d01, d02, d03;              // Difference storage
   POINT3D x01, x02, x12, x13, x23;    // Cross product storage
+  NUM dp1, dp2;                       // Dot product storage
   NUM px[4*3];                        // P values with x as the origin
-  NUM pxp[4*3];                        // P values with x-projection as the origin
+  NUM pxp[4*3];                       // P values with x-projection as the origin
   PLANE pl;
   NUM alpha;
   NUM wgt_acc = 1.0;
   NUM acc = 0;
   POINT3D pint;
   int i, j;
-  int diag = 0;                       // Spit out diagnostic values
 
-  /*  printf("interpolate_lin_3d: number of simplex points is %d, x is %f, %f, %f\n",n,x[0],x[1],x[2]);
-  printf("interpolate_lin_3d: val is %f, %f, %f, %f\n",val[0],val[1],val[2],val[3]);
-  printf("p (simplex points):\n");
-  for (i=0;i<3*n;i++){
-    if(i%3==0)
-      printf("(");
-    printf("%f, ",p[i]);
-    if(i%3==2)
-      printf(") val = %f\n",val[i/3]);
-  }
-  */
+  // Shift the origin to the interpolant point for vertex coordinates
   for (j = 0; j<4; j++){
   for (i = 0; i<3; i++){
       px[3*j + i] = p[3*j + i] - x[i];
-      if (diag){
-          printf("i : %d j : %d p : %f x : %f \n", i, j, p[3*j+i], x[i]);
-          printf("px : %f ij : %d \n", px[3*j + i], 3*j+i);
-      }
   }
   }
 
+  // Determine which interpolation scheme to utilize from the number of vertex points
   switch(n){
   case 4:
+    // For four points, interpolate based on simplex volumes
     diff_3d(d01, &px[3*0], &px[3*1]);
     diff_3d(d02, &px[3*0], &px[3*2]);
     diff_3d(d03, &px[3*0], &px[3*3]);
-    if (diag){
-        printf("d01 : %f, %f, %f \n", d01[0], d01[1], d01[2]);
-        printf("d02 : %f, %f, %f \n", d02[0], d02[1], d02[2]);
-        printf("d03 : %f, %f, %f \n", d03[0], d03[1], d03[2]);
-    }
     cross_3d(xx, d02, d03);
-    if (diag){
-        printf("xx : %f, %f, %f \n", xx[0], xx[1], xx[2]);
-    }
     wgt_acc = (1./6.) * fabs(inner_3d(d01, xx));
-    if (diag){
-        printf("wgt_acc : %f \n", wgt_acc);
-    }
     cross_3d(x23, &px[3*2], &px[3*3]);
     cross_3d(x13, &px[3*1], &px[3*3]);
     cross_3d(x12, &px[3*1], &px[3*2]);
-    if (diag){
-        printf("x23 : %f, %f, %f \n", x23[0], x23[1], x23[2]);
-        printf("x13 : %f, %f, %f \n", x13[0], x13[1], x13[2]);
-        printf("x12 : %f, %f, %f \n", x12[0], x12[1], x12[2]);
-        printf("p1 . x23 : %f \n", inner_3d(&px[3*1], x23));
-        printf("p0 . x23 : %f \n", inner_3d(&px[3*0], x23));
-        printf("p0 . x13 : %f \n", inner_3d(&px[3*0], x13));
-        printf("p0 . x12 : %f \n", inner_3d(&px[3*0], x12));
-    }
     acc = (1/(6*wgt_acc)) * (val[0] * fabs(inner_3d(&px[3*1], x23)) + val[1] * fabs(inner_3d(&px[3*0], x23)) + val[2] * fabs(inner_3d(&px[3*0], x13)) + val[3] * fabs(inner_3d(&px[3*0], x12)));
-    if (diag){
-        printf("acc : %f \n", acc);
-    }
     break;
   case 3:
+    // For three points, project the interpolant into the plane and interpolate based on triangle areas
     // Define plane with points2plane
     points2plane(&pl, &px[3*0], &px[3*1], &px[3*2]);
     // Calculate normal to plane with d01xd02
     diff_3d(d01, &px[3*1], &px[3*0]);
     diff_3d(d02, &px[3*2], &px[3*0]);
-    //printf("d01 : %f, %f, %f \n", d01[0], d01[1], d01[2]);
-    //printf("d02 : %f, %f, %f \n", d02[0], d02[1], d02[2]);
     cross_3d(xx, d01, d02);
-    //printf("xx : %f, %f, %f \n", xx[0], xx[1], xx[2]);
-    // Utilize p_l_intersection to pinpoint the projection
-    //printf("pl->origin : %f, %f, %f \n", (pl.origin)[0], (pl.origin)[1], (pl.origin)[2]);
-    //printf("pl->normal : %f, %f, %f \n", (pl.normal)[0], (pl.normal)[1], (pl.normal)[2]);
-    //p_l_intersection(&pint, &pl, ovec, xx);
+    // Utilize p_pnorm_intersection to pinpoint the projection
     p_pnorm_intersection(&pint, &pl, ovec);
-    //printf("pint : %f, %f, %f \n", pint[0], pint[1], pint[2]);
-    // Check that this projection point is interior with p_inside_tri?
+    // Check that this projection point is interior with p_inside_tri3d
     if (p_inside_tri3d(&px[3*0], &px[3*1], &px[3*2], &pint)) {
-        //printf("Triangle! \n");
         for (j = 0; j<4; j++){
         for (i = 0; i<3; i++){
             pxp[3*j + i] = px[3*j + i] - pint[i];
         }
         }
-        //printf("px0 : %f, %f, %f \n",px[0],px[1],px[2]);
-        //printf("px1 : %f, %f, %f \n",px[3],px[4],px[5]);
-        //printf("px2 : %f, %f, %f \n",px[6],px[7],px[8]);
-        //printf("pxp0 : %f, %f, %f \n",pxp[0],pxp[1],pxp[2]);
-        //printf("pxp1 : %f, %f, %f \n",pxp[3],pxp[4],pxp[5]);
-        //printf("pxp2 : %f, %f, %f \n",pxp[6],pxp[7],pxp[8]);
         diff_3d(d01, &pxp[3*0], &pxp[3*1]);
         diff_3d(d02, &pxp[3*0], &pxp[3*2]);
-        //printf("tri d01 : %f, %f, %f \n", d01[0], d01[1], d01[2]);
-        //printf("tri d02 : %f, %f, %f \n", d02[0], d02[1], d02[2]);
         cross_3d(xx, d01, d02);
-        //printf("tri xx : %f, %f, %f \n", xx[0], xx[1], xx[2]);
         wgt_acc = 0.5 * norm_3d(xx);
-        //printf("wgt_acc : %f \n", wgt_acc);
         cross_3d(x01, &pxp[3*0], &pxp[3*1]);
         cross_3d(x02, &pxp[3*0], &pxp[3*2]);
         cross_3d(x12, &pxp[3*1], &pxp[3*2]);
-        //printf("tri x01 : %f, %f, %f \n", x01[0], x01[1], x01[2]);
-        //printf("tri x02 : %f, %f, %f \n", x02[0], x02[1], x02[2]);
-        //printf("tri x12 : %f, %f, %f \n", x12[0], x12[1], x12[2]);
         acc = (0.5 / wgt_acc) * (val[0] * norm_3d(x12) + val[1] * norm_3d(x02) + val[2] * norm_3d(x01));
         break;
     } else {
@@ -3335,82 +3183,26 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
         break;
     }
   case 2:
+    // For two points, project into the line, and interpolate based on length
     diff_3d(d01, &px[3*0], &px[3*1]);
     wgt_acc = norm_3d(d01);
-    acc = (val[0] * fabs(inner_3d(&px[3*1], d01)) + val[1] * fabs(inner_3d(&px[3*0], d01))) / (wgt_acc * wgt_acc);
-    break;
+    dp1 = fabs(inner_3d(&px[3*1], d01));
+    dp2 = fabs(inner_3d(&px[3*0], d01));
+    // Ensure that the projected point is within the line span, and interpolate
+    if ((dp1 < wgt_acc) && (dp2 < wgt_acc)) {
+        acc = (val[0] * dp1  + val[1] * dp2) / (wgt_acc * wgt_acc);
+        break;
+    } else {
+        acc = 0. / 0.;
+        break;
+    }
   case 1:
+    // For a single point... well... just take that value.
     acc = val[0];
     break;
   }
-  if (diag){
-      printf("val : %f, %f, %f, %f \n",val[0],val[1],val[2],val[3]);
-      printf("p0 : %f, %f, %f \n",px[0],px[1],px[2]);
-      printf("p1 : %f, %f, %f \n",px[3],px[4],px[5]);
-      printf("p2 : %f, %f, %f \n",px[6],px[7],px[8]);
-      printf("p3 : %f, %f, %f \n",px[9],px[10],px[11]);
-  }
   return acc;
 }
-
-//  switch(n) {
-//  case 4:
-//    // Full simplex: Find intersection of the line P3 -> X with the P0,P1,P2 plane,
-//    // and reduce to the triangular (planar) case.
-//    points2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
-//    //printf("PLANE: origin (%f, %f, %f), normal (%f, %f, %f)\n",pl.origin[0],pl.origin[1],pl.origin[2],pl.normal[0],pl.normal[1],pl.normal[2]);
-//    p_l_intersection(a, &pl, x, &p[3*3]);
-//    //printf("OUT: a= (%f, %f, %f)\n",a[0],a[1],a[2]);
-//
-//    // Find relative length
-//    diff_3d(xx, x, &p[3*3]); //xx gets the vector difference between x and the 4th simplex point.
-//    diff_3d(aa, a, &p[3*3]); //aa gets the vector difference between a and the 4th simplex point.
-//    alpha = inner_3d(xx,aa) / norm2_3d(aa);
-//    if(isfinite(alpha)){
-//      acc += wgt_acc * (1-alpha) * val[3];
-//      wgt_acc *= alpha;
-//      /*printf("a= %f, %f, %f\n",a[0],a[1],a[2]);
-//      printf("xx= %f, %f, %f\n",xx[0],xx[1],xx[2]);
-//      printf("aa= %f, %f, %f\n",aa[0],aa[1],aa[2]);
-//      printf("n=4; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);*/
-//      cp_3d(x,a); // Move X into the plane and fall through to planar case
-//    }
-//  case 3:
-//    // Triangle (plane): Find the intersection of the line from P2->X with the
-//    // P0,P1 "line" (project everything down to the P0,P1,P2 plane), and reduce
-//    // to the linear case.
-//    lp2plane(&pl, &p[3*0], &p[3*1], &p[3*2]);
-//    p_l_intersection(a, &pl, x, &p[2*3]);
-//
-//    // find relative length
-//    diff_3d(xx, x, &p[2*3]);
-//    diff_3d(aa, a, &p[2*3]);
-//    alpha = inner_3d(xx,aa) / norm2_3d(aa);
-//    if(isfinite(alpha)){
-//      acc += wgt_acc * (1-alpha) * val[2];
-//      wgt_acc *= alpha;
-//      //printf("n=3; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
-//      cp_3d(x,a); // Move X onto the P0-P1 line and fall through to the linear case
-//    }
-//  case 2:
-//    // Line: direct interpolation
-//    diff_3d(xx, x, &p[3*1]);
-//    diff_3d(a,  &p[3*0], &p[3*1]);
-//
-//    alpha = inner_3d( xx, a ) / norm2_3d(a);
-//    if(isfinite(alpha)){
-//      acc += wgt_acc * (1 - alpha) * val[1];
-//      wgt_acc *= alpha;
-//      //printf("n=2; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
-//    }
-//  case 1:
-//
-//    acc += wgt_acc * val[0];
-//    //printf("n=1; alpha=%f,wgt_acc=%f,acc=%f\n",alpha,wgt_acc,acc);
-//    break;
-//  }
-//  return acc;
-//  }
 
 /**********************************************************************
  * interpolate_value_simplex
