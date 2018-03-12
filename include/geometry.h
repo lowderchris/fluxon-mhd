@@ -156,9 +156,9 @@ int in_simplex(POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X);
 DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global);
 DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global);
 
-NUM interpolate_lin_3d( POINT3D x, NUM p[12], NUM val[4], int n);
-NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset);
-NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset);
+NUM interpolate_lin_3d( POINT3D x, NUM p[12], NUM val[4], int n, int tint);
+NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset, int tint);
+NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset, int tint );
 /**********************************************************************
  *Photosphere only functions
  */

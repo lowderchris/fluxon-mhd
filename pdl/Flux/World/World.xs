@@ -1239,12 +1239,13 @@ OUTPUT:
  RETVAL
 
 NV
-_interpolate_value( wsv, xsv, gsv, vsv, offset )
+_interpolate_value( wsv, xsv, gsv, vsv, offset, tsv )
  SV *wsv
  SV *xsv
  SV *gsv
  SV *vsv
  IV offset
+ SV *tsv
 PREINIT:
  /***********************************************************************
  * _interpolate_value - takes a location and such as needed by _closest_simplex,
@@ -1257,6 +1258,7 @@ PREINIT:
  pdl *xpdl;
  POINT3D x;
  int global;
+ int tint;
  DUMBLIST *dl;
  int i;
 CODE:
@@ -1269,21 +1271,23 @@ CODE:
     croak("closest_vertex: takes a 3-PDL only!\n");
  }
  global = SvIV(gsv);
+ tint = SvIV(tsv);
 
  x[0] = ((PDL_Double *)(xpdl->data))[0];
  x[1] = ((PDL_Double *)(xpdl->data))[1];
  x[2] = ((PDL_Double *)(xpdl->data))[2];
 
- RETVAL = FLUX->interpolate_value(x, w, v, global, offset);
+ RETVAL = FLUX->interpolate_value(x, w, v, global, offset, tint);
 OUTPUT:
  RETVAL
 
 SV *
-_interpolate_vector( wsv, xsv, gsv, vsv, offset )
+_interpolate_vector( wsv, xsv, gsv, vsv, offset, tsv )
  SV *wsv
  SV *xsv
  SV *gsv
  SV *vsv
+ SV *tsv
  IV offset
 PREINIT:
  /***********************************************************************
@@ -1299,6 +1303,7 @@ PREINIT:
  pdl *xpdl;
  POINT3D x;
  int global;
+ int tint;
  DUMBLIST *dl;
  pdl *opdl;
  NUM *pd;
@@ -1314,6 +1319,7 @@ CODE:
     croak("closest_vertex: takes a 3-PDL only!\n");
  }
  global = SvIV(gsv);
+ tint = SvIV(tsv);
 
  x[0] = ((PDL_Double *)(xpdl->data))[0];
  x[1] = ((PDL_Double *)(xpdl->data))[1];
@@ -1327,9 +1333,9 @@ CODE:
  opdl->datatype = PDL_D;
  PDL->make_physical(opdl);
  pd = opdl->data;
- *(pd++) = FLUX->interpolate_value_simplex(x, dl, offset);
- *(pd++) = FLUX->interpolate_value_simplex(x, dl, offset + sizeof(NUM));
- *(pd++) = FLUX->interpolate_value_simplex(x, dl, offset + 2*sizeof(NUM));
+ *(pd++) = FLUX->interpolate_value_simplex(x, dl, offset, tint);
+ *(pd++) = FLUX->interpolate_value_simplex(x, dl, offset + sizeof(NUM), tint);
+ *(pd++) = FLUX->interpolate_value_simplex(x, dl, offset + 2*sizeof(NUM), tint);
  RETVAL = NEWSV(556,0); /* 556 is arbitrary */
  PDL->SetSV_PDL(RETVAL,opdl);
 OUTPUT:

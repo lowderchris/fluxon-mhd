@@ -3116,7 +3116,7 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
  *
  * Scrozzles the contents of the original arrays.
  */
-NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
+NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n, int tint) {
   POINT3D xx, ovec;
   POINT3D a, aa;
   POINT3D d01, d02, d03;              // Difference storage
@@ -3130,6 +3130,11 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
   NUM acc = 0;
   POINT3D pint;
   int i, j;
+
+  // Note that the parameter 'tint' here will toggle the 'trust' for interpolation
+  // If false, or not defined, don't bother interpolating for cases where
+  //   three or fewer points are available for interpolation, outputting NaN
+  //   here instead.
 
   // Shift the origin to the interpolant point for vertex coordinates
   for (j = 0; j<4; j++){
@@ -3153,53 +3158,68 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
     acc = (1/(6*wgt_acc)) * (val[0] * fabs(inner_3d(&px[3*1], x23)) + val[1] * fabs(inner_3d(&px[3*0], x23)) + val[2] * fabs(inner_3d(&px[3*0], x13)) + val[3] * fabs(inner_3d(&px[3*0], x12)));
     break;
   case 3:
-    // For three points, project the interpolant into the plane and interpolate based on triangle areas
-    // Define plane with points2plane
-    points2plane(&pl, &px[3*0], &px[3*1], &px[3*2]);
-    // Calculate normal to plane with d01xd02
-    diff_3d(d01, &px[3*1], &px[3*0]);
-    diff_3d(d02, &px[3*2], &px[3*0]);
-    cross_3d(xx, d01, d02);
-    // Utilize p_pnorm_intersection to pinpoint the projection
-    p_pnorm_intersection(&pint, &pl, ovec);
-    // Check that this projection point is interior with p_inside_tri3d
-    if (p_inside_tri3d(&px[3*0], &px[3*1], &px[3*2], &pint)) {
-        for (j = 0; j<4; j++){
-        for (i = 0; i<3; i++){
-            pxp[3*j + i] = px[3*j + i] - pint[i];
-        }
-        }
-        diff_3d(d01, &pxp[3*0], &pxp[3*1]);
-        diff_3d(d02, &pxp[3*0], &pxp[3*2]);
+    if (tint) {
+        // For three points, project the interpolant into the plane and interpolate based on triangle areas
+        // Define plane with points2plane
+        points2plane(&pl, &px[3*0], &px[3*1], &px[3*2]);
+        // Calculate normal to plane with d01xd02
+        diff_3d(d01, &px[3*1], &px[3*0]);
+        diff_3d(d02, &px[3*2], &px[3*0]);
         cross_3d(xx, d01, d02);
-        wgt_acc = 0.5 * norm_3d(xx);
-        cross_3d(x01, &pxp[3*0], &pxp[3*1]);
-        cross_3d(x02, &pxp[3*0], &pxp[3*2]);
-        cross_3d(x12, &pxp[3*1], &pxp[3*2]);
-        acc = (0.5 / wgt_acc) * (val[0] * norm_3d(x12) + val[1] * norm_3d(x02) + val[2] * norm_3d(x01));
-        break;
+        // Utilize p_pnorm_intersection to pinpoint the projection
+        p_pnorm_intersection(&pint, &pl, ovec);
+        // Check that this projection point is interior with p_inside_tri3d
+        if (p_inside_tri3d(&px[3*0], &px[3*1], &px[3*2], &pint)) {
+            for (j = 0; j<4; j++){
+            for (i = 0; i<3; i++){
+                pxp[3*j + i] = px[3*j + i] - pint[i];
+            }
+            }
+            diff_3d(d01, &pxp[3*0], &pxp[3*1]);
+            diff_3d(d02, &pxp[3*0], &pxp[3*2]);
+            cross_3d(xx, d01, d02);
+            wgt_acc = 0.5 * norm_3d(xx);
+            cross_3d(x01, &pxp[3*0], &pxp[3*1]);
+            cross_3d(x02, &pxp[3*0], &pxp[3*2]);
+            cross_3d(x12, &pxp[3*1], &pxp[3*2]);
+            acc = (0.5 / wgt_acc) * (val[0] * norm_3d(x12) + val[1] * norm_3d(x02) + val[2] * norm_3d(x01));
+            break;
+        } else {
+            acc = 0./0.;
+            break;
+        }
     } else {
         acc = 0./0.;
         break;
     }
   case 2:
-    // For two points, project into the line, and interpolate based on length
-    diff_3d(d01, &px[3*0], &px[3*1]);
-    wgt_acc = norm_3d(d01);
-    dp1 = fabs(inner_3d(&px[3*1], d01));
-    dp2 = fabs(inner_3d(&px[3*0], d01));
-    // Ensure that the projected point is within the line span, and interpolate
-    if ((dp1 < wgt_acc) && (dp2 < wgt_acc)) {
-        acc = (val[0] * dp1  + val[1] * dp2) / (wgt_acc * wgt_acc);
-        break;
+    if (tint) {
+        // For two points, project into the line, and interpolate based on length
+        diff_3d(d01, &px[3*0], &px[3*1]);
+        wgt_acc = norm_3d(d01);
+        dp1 = fabs(inner_3d(&px[3*1], d01));
+        dp2 = fabs(inner_3d(&px[3*0], d01));
+        // Ensure that the projected point is within the line span, and interpolate
+        if ((dp1 < wgt_acc) && (dp2 < wgt_acc)) {
+            acc = (val[0] * dp1  + val[1] * dp2) / (wgt_acc * wgt_acc);
+            break;
+        } else {
+            acc = 0. / 0.;
+            break;
+        }
     } else {
         acc = 0. / 0.;
         break;
     }
   case 1:
-    // For a single point... well... just take that value.
-    acc = val[0];
-    break;
+    if (tint) {
+        // For a single point... well... just take that value.
+        acc = val[0];
+        break;
+    } else {
+        acc = 0. / 0.;
+        break;
+    }
   }
   return acc;
 }
@@ -3213,7 +3233,7 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n) {
  *
  */
 
-NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset) {
+NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset, int tint) {
   POINT3D scr;
   NUM acc;
   NUM wgt_acc;
@@ -3230,7 +3250,7 @@ NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset) {
     val[i] = * ( (NUM *)( (void *)(dl->stuff[i]) + val_offset ) );
   }
   cp_3d(scr, x);
-  return interpolate_lin_3d(scr, p, val, dl->n);
+  return interpolate_lin_3d(scr, p, val, dl->n, tint);
 }
 
 /**********************************************************************
@@ -3241,7 +3261,7 @@ NUM interpolate_value_simplex( POINT3D x, DUMBLIST *dl, int val_offset) {
  * The calling parameters are the same as for find_simplex_by_location.
  */
 
-NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset ) {
+NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset, int tint) {
   DUMBLIST *dl;
   int i;
   dl = find_simplex_by_location(x, w, v, global);
@@ -3251,7 +3271,7 @@ NUM interpolate_value( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offse
   }
   printf("\n");
 
-  return interpolate_value_simplex(x, dl, val_offset);
+  return interpolate_value_simplex(x, dl, val_offset, tint);
 }
 
 /**********************************************************************

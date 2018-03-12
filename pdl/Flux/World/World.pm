@@ -1849,7 +1849,7 @@ This is actually just a jump point into the C routine "world_check", in model.c.
 
 =for usage
 
-    $val = $a->interpolate_value( $field_name, $loc, $global, $seed );
+    $val = $a->interpolate_value( $field_name, $loc, $global, $seed, $tint );
     $val = $a->interpolate_value( $field_name, $loc );
 
 =for ref
@@ -1868,6 +1868,7 @@ sub interpolate_value {
     my $loc = shift;
     my $global = shift || 0;
     my $seed = shift || 0;
+    my $tint = shift || 0;
     my $offset;
 
     if((ref $w) ne 'Flux::World') {
@@ -1880,11 +1881,11 @@ sub interpolate_value {
 
     if( $Flux::codes->{vertex}->{$field}->[1] =~ m/num/ ) {
         $offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
-        return _interpolate_value($w, $loc, $global, $seed, $offset);
+        return _interpolate_value($w, $loc, $global, $seed, $offset, $tint );
     }
     elsif( $Flux::codes->{vertex}->{$field}->[1] =~ m/vector/) {
         $offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
-        return _interpolate_vector($w,$loc,$global,$seed,$offset);
+        return _interpolate_vector($w,$loc,$global,$seed,$offset,$tint);
     }
     else {
         die "Flux::World::interpolate_value: field '$field' isn't a num or a vector...\n";
