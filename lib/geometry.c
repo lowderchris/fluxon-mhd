@@ -2476,7 +2476,7 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
     simplex[0] = simplex[1] = simplex[2] = simplex[3] = simplex[4] = simplex[5] = 0;
 
     if(!fsbl_cache) {
-    fsbl_cache = new_dumblist();
+        fsbl_cache = new_dumblist();
     }
     dumblist_clear(fsbl_cache);
 
@@ -2485,8 +2485,8 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
     vv = find_vertex_by_location(x,w,v,global);
     if(!vv) {
-    fprintf(stderr,"find_simplex_by_location: no vertices at all found for location (%g,%g,%g)!\n",x[0],x[1],x[2]);
-    return 0;
+        fprintf(stderr,"find_simplex_by_location: no vertices at all found for location (%g,%g,%g)!\n",x[0],x[1],x[2]);
+        return 0;
     }
 
     // Put the vertex in the simplex, and calculate its ancillary vectors
@@ -2496,8 +2496,8 @@ DUMBLIST *find_simplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) {
 
     // End early if the point is exactly atop a vertex
     if(simplex[0]->x[0]==x[0] && simplex[0]->x[1]==x[1] && simplex[0]->x[2]==x[2]){
-    //printf("The interpolated point is exactly at one of the vertices: returning with only that one point\n");
-    return fsbl_cache;
+        //printf("The interpolated point is exactly at one of the vertices: returning with only that one point\n");
+        return fsbl_cache;
     }
 
     // *************************************

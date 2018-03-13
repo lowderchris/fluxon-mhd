@@ -128,7 +128,7 @@ is($@,'','simple_relaxer with concurrency=2');
 {
     my $in_loc = $world->vertex($vertex_ids[$#vertex_ids/2])->{'x'};
     my $out_loc;
-    eval{$out_loc = $world->interpolate_value('x',$in_loc,1);};
+    eval{$out_loc = $world->interpolate_value('x',$in_loc,1,0,1);};
     is($@,'','interpolation of a coordinate value at a vertex location did not crash');
     ok(all($out_loc==$in_loc),'interpolation of a coordinate value at a vertex location gives correct value');
 }
