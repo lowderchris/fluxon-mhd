@@ -400,7 +400,7 @@ int p_l_intersection(NUM *out, PLANE *plane, NUM *p0, NUM *p1) {
  * p_pnorm_intersection - given a plane and a point, return the intersection
  * normal to the plane from this point.
  */
-int p_pnorm_intersection(NUM *out, PLANE *plane, NUM *p0) {
+void p_pnorm_intersection(NUM *out, PLANE *plane, NUM *p0) {
     NUM d0[3];
     NUM dp0;
 
@@ -3051,8 +3051,8 @@ DUMBLIST *find_nsimplex_by_location(POINT3D x, WORLD *w, VERTEX *v, int global) 
         int i;
 
         passno = ++(vv->line->fc0->world->passno);
-        n = ++n;
-        i = n;
+        i = ++n;
+
         simplex[0]->passno = simplex[1]->passno = simplex[2]->passno = passno;
         expand_lengthwise(cache, n, passno);
         expand_via_neighbors(cache, n, passno);
@@ -3167,9 +3167,9 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n, int tint) {
         diff_3d(d02, &px[3*2], &px[3*0]);
         cross_3d(xx, d01, d02);
         // Utilize p_pnorm_intersection to pinpoint the projection
-        p_pnorm_intersection(&pint, &pl, ovec);
+        p_pnorm_intersection(pint, &pl, ovec);
         // Check that this projection point is interior with p_inside_tri3d
-        if (p_inside_tri3d(&px[3*0], &px[3*1], &px[3*2], &pint)) {
+        if (p_inside_tri3d(&px[3*0], &px[3*1], &px[3*2], pint)) {
             for (j = 0; j<4; j++){
             for (i = 0; i<3; i++){
                 pxp[3*j + i] = px[3*j + i] - pint[i];
