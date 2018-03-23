@@ -5,7 +5,7 @@ use PDL::NiceSlice;
 use PDL::Constants qw/PI/;
 use File::Temp qw/tempfile/;
 
-use Test::More tests=>33;
+use Test::More tests=>37;
 
 BEGIN {use_ok('Flux');}
 
@@ -26,6 +26,7 @@ is($so->{auto_open},0,"Open boundary default no auto-open");
 #First get a list of available terminals:
 my @gpterms = @Alien::Gnuplot::terms;
 my @pref_terms = ('pngcairo','pdfcairo','wxt','x11','postscript','svg');
+
 my $dev;
 foreach (@pref_terms){
     if (grep $_,@gpterms){
@@ -130,7 +131,53 @@ is($@,'','simple_relaxer with concurrency=2');
     my $out_loc;
     eval{$out_loc = $world->interpolate_value('x',$in_loc,1,0,1);};
     is($@,'','interpolation of a coordinate value at a vertex location did not crash');
-    ok(all($out_loc==$in_loc),'interpolation of a coordinate value at a vertex location gives correct value');
+    ok(all(approx($out_loc,$in_loc,2**-52)),'interpolation of a coordinate value at a vertex location gives correct value');
+
+    $in_loc = pdl(0.43,-0.25,0.6);
+    $out_loc = $world->interpolate_value('x',$in_loc,1,0,0);
+    ok(all(approx($out_loc,$in_loc,2**-52)),'interpolation within the cartesian world works');
+
+    $in_loc = pdl(-1.25,0.3,0.35);
+    $out_loc = $world->interpolate_value('x',$in_loc,1,0,1);
+    ok(all(!isfinite($out_loc)),'interpolation outside the domain gives NaNs');
+
+
+my ($xcheck,$ycheck,$zcheck,$coord,$coord3pt,$coord2pt,$out_loc3,$out_loc2);
+my ($done3pt,$done2pt)=(0,0);
+my $try=0;
+do {
+    $xcheck = rand(1)*2 -1;
+    $ycheck = rand(1) * 2 -1;
+    $zcheck = rand(1) ;
+
+    $coord = pdl($xcheck,$ycheck,$zcheck);
+    my @vertices = $world->closest_simplex($coord,0);
+    $out_loc = $world->interpolate_value('x',$coord,0,0,1);
+    if (scalar(@vertices)==3 && all(isfinite($out_loc))) {
+        $done3pt=1;
+        $coord3pt = $coord;
+        $out_loc3 = $out_loc;
+    }
+    if (scalar(@vertices)==2 && all(isfinite($out_loc))) {
+        $done2pt=1;
+        $coord2pt = $coord;
+        $out_loc2 = $out_loc;
+    }
+
+    $try++;
+} until (($done3pt && $done2pt) || $try==1E4);
+
+SKIP: {
+          skip 'Did not find a location that gave 3 simplex points', 1 unless $done3pt;
+          ok(!all($coord3pt==$out_loc3),'trusting interpolation when only 3 simplex values found gives an incorrect interpolant');
+      };
+
+SKIP: {
+          skip 'Did not find a location that gave 2 simplex points (this is not unexpected)', 1 unless $done2pt;
+          ok(!all($coord2pt==$out_loc2),'trusting interpolation when only 2 simplex values found gives an incorrect interpolant');
+      };
+
+
 }
 
 =pod
