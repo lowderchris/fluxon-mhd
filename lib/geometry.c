@@ -3220,7 +3220,10 @@ NUM interpolate_lin_3d(POINT3D x, NUM p[4*3], NUM val[4], int n, int tint) {
         acc = 0. / 0.;
         break;
     }
-  }
+  default:
+    fprintf(stderr,"HOLY COW! Tried to interpolate a value using a 0-element simplex (should never happen)");
+    acc = 0. / 0.;
+  } //ends the switch statement
   return acc;
 }
 
