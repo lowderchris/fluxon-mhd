@@ -1461,19 +1461,22 @@ OUTPUT:
  RETVAL
 
 NV
-interpolate_lin_3d(xsv, psv, vsv)
+interpolate_lin_3d(xsv, psv, vsv, tsv)
 SV *xsv
 SV *psv
 SV *vsv
+SV *tsv
 PREINIT:
 pdl *xpdl, *ppdl, *vpdl;
 NUM *xd, *pd, *vd;
 NUM x[3],p[12],v[4];
-int i,j,n;
+int i,j,n,tint;
 CODE:
 	xpdl = PDL->SvPDLV(xsv);
 	ppdl = PDL->SvPDLV(psv);
 	vpdl = PDL->SvPDLV(vsv);
+
+    tint = SvIV(tsv);
 	
 	PDL->converttype(&xpdl, PDL_D, 1);
 	PDL->converttype(&ppdl, PDL_D, 1);
@@ -1514,7 +1517,7 @@ CODE:
         }
 
 	printf("calling interpolate_lin_3d...\n");
-	RETVAL = FLUX->interpolate_lin_3d(x, p, v, n);
+	RETVAL = FLUX->interpolate_lin_3d(x, p, v, n, tint);
 	printf("Got back %g\n",RETVAL);
 OUTPUT:
 	RETVAL

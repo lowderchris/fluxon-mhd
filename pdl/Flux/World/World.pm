@@ -22,13 +22,13 @@ Flux::World - Fluxon MHD simulation arena
 
 Flux objects are the perl interface to FLUX MHD models.  A Flux::World
 object is the interface to a global aspects of the simulation.
-A Flux::World object is just a pointer off into hyperspace.  
+A Flux::World object is just a pointer off into hyperspace.
 
 
 =head2 AUTHOR
 
-Copyright 2004-2008 Craig DeForest.  You may distribute this file 
-under the terms of the Gnu Public License (GPL), version  2. 
+Copyright 2004-2008 Craig DeForest.  You may distribute this file
+under the terms of the Gnu Public License (GPL), version  2.
 You should have received a copy of the GPL with this file.  If not,
 you may retrieve it from "http://www.gnu.org".
 
@@ -132,7 +132,7 @@ sub str2world {
   shift if(substr($_[0],0,length(__PACKAGE__)) eq __PACKAGE__);
 
     if(@_ == 1 && ref $_[0] eq 'ARRAY') {
-	@_ = @{$_[0]};
+        @_ = @{$_[0]};
     }
     my $fname = "/tmp/fluxtmp-$$";
     open FLUXSYSTEM_TMP,">$fname" || die "Can't open tmp file $fname\n";
@@ -167,19 +167,19 @@ If the file name ends in ".gz", the file is automatically gzipped on-the-fly.
 sub write_world {
     my $world = shift;
     my $fname = shift;
-    
+
     unless($fname =~ m/\.gz$/) {
-	_write_world($world,$fname);
+        _write_world($world,$fname);
     } else {
-	my $tmpfname = "/tmp/fluxtmp-$$";
-	eval {unlink $tmpfname;};
-	my $wwo = _write_world($world, $tmpfname);
-	`gzip $tmpfname`;
-	`mv ${tmpfname}.gz $fname`;
-	return $wwo;
+        my $tmpfname = "/tmp/fluxtmp-$$";
+        eval {unlink $tmpfname;};
+        my $wwo = _write_world($world, $tmpfname);
+        `gzip $tmpfname`;
+        `mv ${tmpfname}.gz $fname`;
+        return $wwo;
     }
 }
-    
+
 
 =pod
 
@@ -189,7 +189,7 @@ sub write_world {
 
 Convert a fluxon model to an ASCII string or (in list context) list.
 
-Works mighty cheesily, by using the C code to write the string out to 
+Works mighty cheesily, by using the C code to write the string out to
 a temporary file, then snarfing the temp file back in.
 
 
@@ -197,7 +197,7 @@ a temporary file, then snarfing the temp file back in.
 
 sub string {
     my $me = shift;
-    
+
     my $tmpfile = "/tmp/fluxtmp-$$";
     eval {unlink $tmpfile;};
     write_world($me,$tmpfile);
@@ -220,7 +220,7 @@ a World to an ASCII string whenever it is used in string context.
 
 
 =cut
-    
+
 sub _stringify {
     my $me = shift;
 
@@ -228,10 +228,10 @@ sub _stringify {
     my @lines = grep(m/^\s*LINE/,@s);
     my @vertices = grep(m/^\s*VERTEX/,@s);
     my @bounds = ( sub {"None. "}
-		   ,sub {"Plane; origin: $_[0],$_[1],$_[2]; normal: $_[3],$_[4],$_[5]";}
-		   ,sub {"Sphere; origin: $_[0],$_[1],$_[2]; radius: $_[3]"}
-		   ,sub {"Cylinder origin: $_[0],$_[1],$_[2], normal: $_[3],$_[4],$_[5], radius:".sqrt($_[3]**2+$_[4]**2+$_[5]**2)}
-		   );
+                   ,sub {"Plane; origin: $_[0],$_[1],$_[2]; normal: $_[3],$_[4],$_[5]";}
+                   ,sub {"Sphere; origin: $_[0],$_[1],$_[2]; radius: $_[3]"}
+                   ,sub {"Cylinder origin: $_[0],$_[1],$_[2], normal: $_[3],$_[4],$_[5], radius:".sqrt($_[3]**2+$_[4]**2+$_[5]**2)}
+                   );
     my @ph = $me->photosphere;
     my @ph2 = $me->photosphere2;
     my $btype = $ph[6];
@@ -242,10 +242,10 @@ sub _stringify {
 
     no warnings;    # shut up about undefined elements while printing
     return "Fluxon geometry object; ".(@lines+0)." fluxons, ".(@vertices+0)." vertices\n"
-	."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
-	."\tGlobal b2: ".&{$bounds[$btype2]}(@ph2)."\n"
-	."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash))."\n\n"
-	;
+        ."\tGlobal boundary: ".&{$bounds[$btype]}(@ph)."\n"
+        ."\tGlobal b2: ".&{$bounds[$btype2]}(@ph2)."\n"
+        ."\tForce scaling powers: ".join("; ",(map { "$_=$scalehash->{$_}" } keys %$scalehash))."\n\n"
+        ;
     use warnings;
 
 }
@@ -256,7 +256,7 @@ sub _stringify {
 
 =for ref
 
-Produce a longer summary string describing a fluxon model.  This works by dumping the 
+Produce a longer summary string describing a fluxon model.  This works by dumping the
 value of each hash element on the tied-hash side.
 
 =cut
@@ -265,7 +265,7 @@ sub summary {
     my $me = shift;
     my $s = "";
     for my $k(keys %$me) {
-	$s .= sprintf( "%15s %s\n", $k.":", $me->{$k} );
+        $s .= sprintf( "%15s %s\n", $k.":", $me->{$k} );
     }
     $s;
 }
@@ -283,7 +283,7 @@ sub summary {
 
 Starting with FLUX 1.1, there is fine grained control over the power laws used for
 calculating the size of the steps taken by individual vertices.  The force laws all
-calculate force per unit length along the fluxon, so length compensation is needed; 
+calculate force per unit length along the fluxon, so length compensation is needed;
 also, the largest steps should in general be taken where the field is weak (and the
 forces are weak) so some scaling is required.  The step law is:
 
@@ -291,11 +291,11 @@ forces are weak) so some scaling is required.  The step law is:
 
 where d is the harmonic mean of relevant neighbor distances, B is the
 magnetic field strength, S is the stiffness coefficient of the force
-calculation (vector sum / magnitude sum  of the component forces), and 
+calculation (vector sum / magnitude sum  of the component forces), and
 DS is the difference-stiffness relating the point's force to its neighbors' forces.
 
 These global values are communicated to Perl via hash ref that is passed into and
-out of the WORLD. 
+out of the WORLD.
 
 =cut
 
@@ -318,7 +318,7 @@ The $thresh is the ratio of fluxel length / closest approach.  Fluxels that
 violate that criterion get divided by the addition of more vertices.
 You get back a count of the number of fluxels that required subdivision.
 
-You have to have primed the world with at least one timestep or 
+You have to have primed the world with at least one timestep or
 update_neighbors call before you do this -- otherwise horrible things might
 happen.
 
@@ -337,7 +337,7 @@ happen.
 
     $num_changed = $world->fix_curvature($thresh_high, $thresh_low);
     $num_changed = $world->fix_curvature($thresh_high);
-    
+
 =for ref
 
 Adds and subtracts vertices as needed to ensure that no vertices have too
@@ -353,7 +353,7 @@ happen.
 
 =cut
 
-sub fix_curvature { 
+sub fix_curvature {
     my $me = shift ;
     my $thresh_high = shift ;
     my $thresh_low = shift ;
@@ -374,7 +374,7 @@ Update the neighbor trees between adjacent fluxels.  If $globalflag is
 nonzero, then all previous neighbor information is discarded, causing
 a global neighbor search for each fluxel.  The global algorithm is
 O(n^2).  If $globalflag is zero, then a next-nearest-neighbors
-algorithm is used, which is O(n).  
+algorithm is used, which is O(n).
 
 The first time you call this, you had better set $globalflag=1, or
 horrible things will happen.  After that, you will want to set $globalflag=0
@@ -406,7 +406,7 @@ Some approximate meanings for each verbosity level:
 
 =over 3
 
-=item 0 
+=item 0
 
 Be as quiet as possible
 
@@ -418,7 +418,7 @@ Describe global items and iffy conditions
 
 Describe activity on a per-fluxon level
 
-=item 3 
+=item 3
 
 Describe activity on a per-vertex/per-fluxel level
 
@@ -446,7 +446,7 @@ Describe activity within each vertex operation -- notably neighbor searches.
 
 Return a list of all fluxon labels in the simulation
 
-Walks through the World all-fluxon tree and gives you the label numbers 
+Walks through the World all-fluxon tree and gives you the label numbers
 of all the fluxons, as a perl list.
 
 =cut
@@ -477,22 +477,22 @@ sub _conc_helper {
     my @a;
 
     if(exists($me->{links_left})) {
-	push(@a, _conc_helper($me->{links_left},$depth+1));
+        push(@a, _conc_helper($me->{links_left},$depth+1));
     }
 
     push(@a, $me);
 
     if(exists($me->{links_right})) {
-	push(@a, _conc_helper($me->{links_right},$depth+1));
+        push(@a, _conc_helper($me->{links_right},$depth+1));
     }
 
     return @a;
 }
 
-   
+
 sub concentrations {
     my $me = shift;
-    my @list =_conc_helper($me->{concentrations}); 
+    my @list =_conc_helper($me->{concentrations});
     print "_conc_helper returned ".(0+@list)." elements....\n" if $me->{verbosity};
     return @list;
 }
@@ -518,12 +518,12 @@ Return the flux concentration wtih the given ID, as a Flux::Concentration object
 =head2 fluxon
 
 =for usage
-  
+
   $fluxon = $world->fluxon($fid);
 
 =for ref
 
-Return the fluxon with the given ID, as a Flux::Fluxon object.  
+Return the fluxon with the given ID, as a Flux::Fluxon object.
 
 =cut
 
@@ -534,7 +534,7 @@ Return the fluxon with the given ID, as a Flux::Fluxon object.
 =head2 fluxons
 
 =for usage
- 
+
   @fluxons = $world->fluxons(@fids);
 
 =for ref
@@ -553,9 +553,9 @@ sub fluxons {
     my $id;
     my @fluxons;
     while(defined ($id=shift)) {
-	push(@fluxons, &fluxon($world,$id)) unless($id<0 && $id>=-11);
+        push(@fluxons, &fluxon($world,$id)) unless($id<0 && $id>=-11);
     }
-    
+
     return @fluxons;
 }
 
@@ -573,7 +573,7 @@ Return the vertex with the given ID, as a Flux::Vertex object.
 
 =cut
 
-# vertex is implemented in World.xs    
+# vertex is implemented in World.xs
 
 
 =head2 vertex_ids
@@ -601,7 +601,7 @@ sub vertex_ids {
 =head2 vertices
 
 =for usage
- 
+
  @vertices = $world->vertices(@v_ids)
 
 =for ref
@@ -615,12 +615,12 @@ sub vertices {
     my $world = shift;
     my @a = @_;
     if(!@a){
-	push(@a,@{$world->_vertex_ids});
+        push(@a,@{$world->_vertex_ids});
     }
     my $id;
     my @vertices;
     while(defined ($id=shift @a)) {
-	push(@vertices, $world->vertex($id));
+        push(@vertices, $world->vertex($id));
     }
     return @vertices;
 }
@@ -638,7 +638,7 @@ sub vertices {
 Adds a new flux concentration to the world at the given location --
 $where must be a 3-PDL or something convertible into one.  $flux is the
 amount of magnetic flux to be stored in the flux concentration.  If $label
-is nonzero then it will be used as the label field of the new concentration, 
+is nonzero then it will be used as the label field of the new concentration,
 otherwise a unique label will be autochosen.  If $end is present then it
 should be an end-condition string; otherwise the worldwide default end condition
 is used.
@@ -666,10 +666,10 @@ sub new_concentration {
 
 =for ref
 
-This is a convenience routine for producing two flux concentrations and a single-fluxon 
+This is a convenience routine for producing two flux concentrations and a single-fluxon
 loop at a desired location.  You specify the locations of the two concentrations (as 3-PDLs)
 and the flux (currently ignored of course but included as a placeholder for later).  If
-you hand in a 3xN PDL it is treated as a vertex location list.  If you hand in a scalar 
+you hand in a 3xN PDL it is treated as a vertex location list.  If you hand in a scalar
 (or 1 PDL) it is treated as a number of nontrivial vertices to include, and the fluxon is
 shaped as close to a straight line as possible consistent with the photosphere in the world.
 
@@ -683,12 +683,12 @@ sub emerge {
     barf "emerge needs a world"        unless(ref $world eq 'Flux::World');
     barf "emerge needs a 3-PDL source" unless(ref $src eq 'PDL' and $src->ndims==1 and $src->dim(0)==3);
     barf "emerge needs a 3-PDL sink"   unless(ref $snk eq 'PDL' and $snk->ndims==1 and $snk->dim(0)==3);
-    
+
     $flux = 1 unless($flux);
-    
-    barf "vertices must be a scalar or 3xN" if(ref $vertices eq 'PDL' and 
-					       $vertices->dim(0) != 3
-					       );
+
+    barf "vertices must be a scalar or 3xN" if(ref $vertices eq 'PDL' and
+                                               $vertices->dim(0) != 3
+                                               );
 
     my $fc0 = new_concentration($world, $src, 1, 0, undef);
     print "emerge: after first new_concentration, ref count is $world->{refct}\n" if($world->{verbosity});
@@ -699,60 +699,60 @@ sub emerge {
 
     if( ref $vertices eq 'PDL' && $vertices->dim(0)==3) {
 
-	$fl = $fc0->new_fluxon($fc1, 1, 0, $vertices);
-	print "emerge: after fluxon origination, ref count is $world->{refct}\n" if($world->{verbosity});
+        $fl = $fc0->new_fluxon($fc1, 1, 0, $vertices);
+        print "emerge: after fluxon origination, ref count is $world->{refct}\n" if($world->{verbosity});
 
     } else {
-	$fl = $fc0->new_fluxon($fc1, 1, 0);
-	print "emerge: after fluxon origination, ref count is $world->{refct} (nonspecified vertex case)\n" if($world->{verbosity});
+        $fl = $fc0->new_fluxon($fc1, 1, 0);
+        print "emerge: after fluxon origination, ref count is $world->{refct} (nonspecified vertex case)\n" if($world->{verbosity});
 
-	if("$vertices") {
-	    my $nv = ( pdl(0)+$vertices )->at(0);
+        if("$vertices") {
+            my $nv = ( pdl(0)+$vertices )->at(0);
 
-	    print "emerge: generating vertices ($vertices)\n" if($world->{verbosity});
+            print "emerge: generating vertices ($vertices)\n" if($world->{verbosity});
 
-	    my $svec = ($snk - $src)/($nv+1);
-	    my $sep = (($snk - $src) * ($snk - $src))->sumover->sqrt;
-	    my $ph = $world->{photosphere};
-	    my $vertex = $fl->{start};
-	    for my $i(1..$nv){
-		my $loc = $svec * $i + $src;
+            my $svec = ($snk - $src)/($nv+1);
+            my $sep = (($snk - $src) * ($snk - $src))->sumover->sqrt;
+            my $ph = $world->{photosphere};
+            my $vertex = $fl->{start};
+            for my $i(1..$nv){
+                my $loc = $svec * $i + $src;
 
-		if($ph->{type}==1) {
-		    ### Planar photosphere -- if it's below the photosphere, move it up to the surface
-		    ### plus 10% of the separation between the footpoints.
+                if($ph->{type}==1) {
+                    ### Planar photosphere -- if it's below the photosphere, move it up to the surface
+                    ### plus 10% of the separation between the footpoints.
 
-		    my $vertcoord = (($loc - $ph->{origin}) * ($ph->{normal}))->sumover;
-		    if($vertcoord < 0) {
-			$loc -= $vertcoord * $ph->{normal};
-			$loc += $sep * 0.1 * $ph->{normal};
-		    }
+                    my $vertcoord = (($loc - $ph->{origin}) * ($ph->{normal}))->sumover;
+                    if($vertcoord < 0) {
+                        $loc -= $vertcoord * $ph->{normal};
+                        $loc += $sep * 0.1 * $ph->{normal};
+                    }
 
-		} elsif($ph->{type}==2) {
-		    ### Spherical photosphere -- if it's below the photosphere, move it outward to 
-		    ### the surface plus 1% of the separation between the footpoints.
-		    
-		    my $radius = (($loc - $ph->{origin}) * ($loc - $ph->{origin}))->sumover->sqrt;
-		    if($radius < $ph->{normal}->((0))) {
-			my $rhat = ($loc - $ph->{origin}) / $radius;
-			my $disp = $ph->{normal}->((0)) + 0.1 * $sep - $radius;
-			$loc += $disp * $rhat;
-		    }
-		}
-		$vertex = $vertex->add_vertex_after( $loc );
-	    }
-	}
+                } elsif($ph->{type}==2) {
+                    ### Spherical photosphere -- if it's below the photosphere, move it outward to
+                    ### the surface plus 1% of the separation between the footpoints.
+
+                    my $radius = (($loc - $ph->{origin}) * ($loc - $ph->{origin}))->sumover->sqrt;
+                    if($radius < $ph->{normal}->((0))) {
+                        my $rhat = ($loc - $ph->{origin}) / $radius;
+                        my $disp = $ph->{normal}->((0)) + 0.1 * $sep - $radius;
+                        $loc += $disp * $rhat;
+                    }
+                }
+                $vertex = $vertex->add_vertex_after( $loc );
+            }
+        }
     }
     return $fc0;
 }
-    
+
 
 =pod
 
 =head2 forces - read or set the force laws used for a world
 
 =for usage
- 
+
   print $world->forces;
   $world->forces('t_curvature','t_vertex')
 
@@ -768,21 +768,21 @@ I don't mean you, John).
 
 Like all the original access methods, "forces" is deprecated -- you ought
 to be using the more regularized hash interface instead (the relevant
-field is $a->{forces}).  
+field is $a->{forces}).
 
 =cut
 
 sub forces {
     my $me = shift;
     if(@_==0) {
-	return @{_forces($me)};    # Retrieve forces (in World.xs)
+        return @{_forces($me)};    # Retrieve forces (in World.xs)
     } else {
-	my $i = 0;
-	my $s;
-	while($s=shift) {
-	    _set_force($me,$i++,$s); # Set forces one at a time (in World.xs)
-	}
-	_set_force($me,$i,'');
+        my $i = 0;
+        my $s;
+        while($s=shift) {
+            _set_force($me,$i++,$s); # Set forces one at a time (in World.xs)
+        }
+        _set_force($me,$i,'');
     }
 }
 
@@ -841,13 +841,13 @@ With no additional arguments, returns a seven-element perl list.  Elements
 the type code for the boundary.  If no boundary is in use, then the empty
 list is returned.
 
-If you pass in a list ref, then the contents should be a 
-seven-element list containing the 
+If you pass in a list ref, then the contents should be a
+seven-element list containing the
 (origin, normal-vector) coordinates of the photospheric plane, followed
-by a numeric type code, or a zero-element list indicating that there is no 
+by a numeric type code, or a zero-element list indicating that there is no
 photospheric plane.  If you
 pass in a list ref, it is used to set the photospheric plane parameters.
-The list ref is copied into the boundary parameter array internally.  The 
+The list ref is copied into the boundary parameter array internally.  The
 $type code should be the numeric type code for the boundary condition you want:
 0 is none, 1 is planar, 2 is spherical, and 3 is cylindrical.  More might be
 added later.  This is something of a kludge at the moment -- string parsing should
@@ -855,7 +855,7 @@ be in here (as in the force law parameters).
 
 =cut
 
-sub boundary { 
+sub boundary {
   return @{Flux::_photosphere(@_)};
 }
 sub photosphere {
@@ -877,10 +877,10 @@ $world->update_force($globalflag);
 
 =for ref
 
-Walks through the world and updates the forces on each vertex.  You should 
+Walks through the world and updates the forces on each vertex.  You should
 update the neighbors before the first time you run update_force.
 (the C side of this is called "world_update_mag" for historical reasons).
-The $globalflag determines whether the neighbor determination should be 
+The $globalflag determines whether the neighbor determination should be
 global (nonzero; slow) or local (zero; default; much faster).
 
 =cut
@@ -993,7 +993,7 @@ In this case, the entire dip is recorded out to the altitude of the lower
 If this is set, it should be a hash ref whose keys are the labels of
 particular fluxons that should *not* be dip-detected by the
 dip_detector or dip_detector2 options.  This is useful for masking out
-a particular locus of the sim that should be dip-detected.  
+a particular locus of the sim that should be dip-detected.
 
 =item rgb_fluxons
 
@@ -1002,7 +1002,7 @@ If present, this should be a hash ref whose keys are fluxon id numbers or the st
 
 =over 3
 
-=item a 3-PDL (RGB triplet) for the fluxon.  
+=item a 3-PDL (RGB triplet) for the fluxon.
 
 This sets the whole fluxon to the given color
 
@@ -1036,7 +1036,7 @@ the shape of the point given by the value of this option. (Default is
 =item rgb_fcs
 
 If present, this should be a hash ref whose keys are flux concentration labels
-and whose values are 3-PDLs with the color in which the concentration is to be 
+and whose values are 3-PDLs with the color in which the concentration is to be
 rendered.  (By default, source concentrations are blue, sink concentrations are
 red, unknown concentrations are white, and errors are green).
 
@@ -1066,7 +1066,7 @@ Flag indicating whether to label individual fluxons (at both endpoints).
 
 =item neighbors
 
-Flag indicating whether to render the closest approach of each fluxel's neighbors 
+Flag indicating whether to render the closest approach of each fluxel's neighbors
 in the perpendicular plane to the fluxel. (default is 0)
 
 =item hull
@@ -1102,19 +1102,19 @@ sub render {
 
     $gpwin->options(trid=>1,view=>[equal=>'xyz'],xyplane=>[relative=>0.1],xlabel=>'X',ylabel=>'Y',zlabel=>'Z');
     if (defined($opt->{'range'})){
-	my $range = $opt->{'range'};
-	barf "'range' option to Flux::World::render must be a reference to a 6-element list!" unless ((ref $range eq 'ARRAY') && $#$range==5);
-	$gpwin->options(xrange=>[@{$range}[0,1]],yrange=>[@{$range}[2,3]],zrange=>[@{$range}[4,5]]);
+        my $range = $opt->{'range'};
+        barf "'range' option to Flux::World::render must be a reference to a 6-element list!" unless ((ref $range eq 'ARRAY') && $#$range==5);
+        $gpwin->options(xrange=>[@{$range}[0,1]],yrange=>[@{$range}[2,3]],zrange=>[@{$range}[4,5]]);
     } else {
-	#delete any previously-used values for the axis ranges
-	delete $gpwin->options->{$_} foreach ('xrange','yrange','zrange');
+        #delete any previously-used values for the axis ranges
+        delete $gpwin->options->{$_} foreach ('xrange','yrange','zrange');
     }
 
     my (@rgb,@prgb);
     print "Defining RGB..." if($Flux::debug);
     my @fluxons = ();
     for my $id($w->fluxon_ids) {
-	push(@fluxons,$id) if($id>0 || $id<-11);
+        push(@fluxons,$id) if($id>0 || $id<-11);
     }
 
     my $fid;
@@ -1133,54 +1133,54 @@ sub render {
 
       for my $i(0..$#fluxons) {
 
-	my $spec = $opt->{'rgb_fluxons'}->{$fluxons[$i]+0};
-	unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
-	  $spec = $opt->{'rgb_fluxons'}->{default};
-	  unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
-	    $spec = pdl(1,1,1);
-	  }
-	}
+        my $spec = $opt->{'rgb_fluxons'}->{$fluxons[$i]+0};
+        unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
+          $spec = $opt->{'rgb_fluxons'}->{default};
+          unless (ref $spec eq 'PDL' || (ref $spec eq 'ARRAY' and @$spec > 0)) {
+            $spec = pdl(1,1,1);
+          }
+        }
 
-	# Convert 3 x n PDLs to lists of 3-PDLs
-	if(ref $spec eq 'PDL' and $spec->dims == 2 ) {
-	  $spec = [ dog $spec ];
-	}
+        # Convert 3 x n PDLs to lists of 3-PDLs
+        if(ref $spec eq 'PDL' and $spec->dims == 2 ) {
+          $spec = [ dog $spec ];
+        }
 
-	print "fluxon $i: spec is $spec...\n" if($Flux::debug);
+        print "fluxon $i: spec is $spec...\n" if($Flux::debug);
 
-	if(ref $spec eq 'PDL') {
+        if(ref $spec eq 'PDL') {
 
-	  push(@rgb, $spec * ones($poly[$i]));
+          push(@rgb, $spec * ones($poly[$i]));
 
-	} elsif(ref $spec eq 'ARRAY') {
+        } elsif(ref $spec eq 'ARRAY') {
 
-	  if( @$spec == 1 ) {
-	    push(@rgb, $spec->[0] * ones($poly[$i]));
+          if( @$spec == 1 ) {
+            push(@rgb, $spec->[0] * ones($poly[$i]));
 
-	  } elsif( @$spec == 2 ) {
-	    my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
-	    my $beta = 1.0 - $alpha;
-	    push(@rgb,  ($alpha * $spec->[0] +
-			 $beta  * $spec->[1]
-			 ));
+          } elsif( @$spec == 2 ) {
+            my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
+            my $beta = 1.0 - $alpha;
+            push(@rgb,  ($alpha * $spec->[0] +
+                         $beta  * $spec->[1]
+                         ));
 
-	  } elsif( @$spec >= 3 ) {
-	    my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
-	    my $beta = 1.0-$alpha;
-	    my $gamma = sin($alpha * 3.14159);
-	    push(@rgb, ($alpha * $spec->[0] +
-			$beta  * $spec->[2] +
-			$gamma * $spec->[1]
-			)
-		 );
-	  }
+          } elsif( @$spec >= 3 ) {
+            my $alpha = double yvals($poly[$i]) / (($poly[$i]->dim(1) - 1)||1);
+            my $beta = 1.0-$alpha;
+            my $gamma = sin($alpha * 3.14159);
+            push(@rgb, ($alpha * $spec->[0] +
+                        $beta  * $spec->[2] +
+                        $gamma * $spec->[1]
+                        )
+                 );
+          }
 
-	} else {
+        } else {
 
-	  ## Error -- should not happen ##
-	  push(@rgb, pdl(1,0.25,0) * ones($poly[$i]));
+          ## Error -- should not happen ##
+          push(@rgb, pdl(1,0.25,0) * ones($poly[$i]));
 
-	}
+        }
       }
 
     } elsif(defined $opt->{'rgb'}) {
@@ -1227,47 +1227,47 @@ sub render {
     # Having defined the colors of everything, check for sophisticated dip detection and execute if necessary
     if(ref $opt->{'dip_detector2'} eq 'PDL') {
       print "Detecting dips...\n" if($Flux::debug);
-      # Walk through the fluxons and identify any midpoint vertices that are lower than their 
+      # Walk through the fluxons and identify any midpoint vertices that are lower than their
       # neighbors on the same fluxon
       for my $i(0..$#poly) {
-	next if((ref $opt->{'no_dip'} eq 'HASH') && ($opt->{'no_dip'}->{$fluxons[$i]}));
-	my $poly = $poly[$i];
-	my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
-	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
-	$mask->(0) .= 0;
-	$mask->(-1) .= 0;
+        next if((ref $opt->{'no_dip'} eq 'HASH') && ($opt->{'no_dip'}->{$fluxons[$i]}));
+        my $poly = $poly[$i];
+        my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
+        my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
+        $mask->(0) .= 0;
+        $mask->(-1) .= 0;
 
-	# Now spread outward in the forward direction till we reach a local maximum
-	my @dips = list which($mask);
-	my @mw = ();
+        # Now spread outward in the forward direction till we reach a local maximum
+        my @dips = list which($mask);
+        my @mw = ();
 
-	for my $dip(@dips) {
-	    my ($before, $after) = ($dip, $dip);
-	    while($before >= 2 && $poly->(2,$before-1)>$poly->(2,$before)) {
-		$before--;
-	    }
-	    while($after < $poly->dim(1) - 1 && $poly->(2,$after+1)>$poly->(2,$after) &&
-		  ($after==$dip || $poly->(2,$after+1)<= $poly->(2,$before))) {
-		$after++;
-	    }
-	    while($before < $dip-1 && $poly->(2,$before) > $poly->(2,$after)) {
-		$before++;
-	    }
+        for my $dip(@dips) {
+            my ($before, $after) = ($dip, $dip);
+            while($before >= 2 && $poly->(2,$before-1)>$poly->(2,$before)) {
+                $before--;
+            }
+            while($after < $poly->dim(1) - 1 && $poly->(2,$after+1)>$poly->(2,$after) &&
+                  ($after==$dip || $poly->(2,$after+1)<= $poly->(2,$before))) {
+                $after++;
+            }
+            while($before < $dip-1 && $poly->(2,$before) > $poly->(2,$after)) {
+                $before++;
+            }
 
-	    push(@mw,$before..$after);
-	}
-	
-	if(@mw) {
-	    my $mw = pdl(@mw);
-	    my $prgb = $prgb[$i];
-	    if($mw->nelem) {
-		my $prgb = $prgb[$i];
-		$prgb->(:,$mw) .= $opt->{'dip_detector2'};
-		my $rgb= $rgb[$i];
-		$rgb->(:,$mw-1) .= $opt->{'dip_detector2'};
-		$rgb->(:,$mw) .= $opt->{'dip_detector2'};
-	    }
-	}	
+            push(@mw,$before..$after);
+        }
+
+        if(@mw) {
+            my $mw = pdl(@mw);
+            my $prgb = $prgb[$i];
+            if($mw->nelem) {
+                my $prgb = $prgb[$i];
+                $prgb->(:,$mw) .= $opt->{'dip_detector2'};
+                my $rgb= $rgb[$i];
+                $rgb->(:,$mw-1) .= $opt->{'dip_detector2'};
+                $rgb->(:,$mw) .= $opt->{'dip_detector2'};
+            }
+        }
       }
     }
 
@@ -1276,24 +1276,24 @@ sub render {
     # Having defined the colors of everything, check for simplistic dip detection and execute if necessary
     if(ref $opt->{'dip_detector'} eq 'PDL') {
       print "Detecting dips...\n" if($Flux::debug);
-      # Walk through the fluxons and identify any midpoint vertices that are lower than their 
+      # Walk through the fluxons and identify any midpoint vertices that are lower than their
       # neighbors on the same fluxon
       for my $i(0..$#poly) {
-	my $poly = $poly[$i];
-	my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
-	my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
-	$mask->(0) .= 0;
-	$mask->(-1) .= 0;
-	print "mask is $mask\n" if($Flux::debug);
-	my $mw = which($mask);
-	my $prgb = $prgb[$i];
-	if($mw->nelem) {
-	  $prgb->(:,$mw) .= $opt->{'dip_detector'};
-	  my $rgb= $rgb[$i];
-	  $rgb->(:,$mw) .= $opt->{'dip_detector'};
-	  $rgb->(:,$mw+1) .= $opt->{'dip_detector'};
-	}
-	
+        my $poly = $poly[$i];
+        my $stack = $poly->range([[2,-1],[2,0],[2,1]],[0,$poly->dim(1)],'e');
+        my $mask =  ($stack->((1)) <= $stack->((0))) & ($stack->((1)) <= $stack->((2)));
+        $mask->(0) .= 0;
+        $mask->(-1) .= 0;
+        print "mask is $mask\n" if($Flux::debug);
+        my $mw = which($mask);
+        my $prgb = $prgb[$i];
+        if($mw->nelem) {
+          $prgb->(:,$mw) .= $opt->{'dip_detector'};
+          my $rgb= $rgb[$i];
+          $rgb->(:,$mw) .= $opt->{'dip_detector'};
+          $rgb->(:,$mw+1) .= $opt->{'dip_detector'};
+        }
+
       }
     }
 
@@ -1309,7 +1309,7 @@ sub render {
     my @plot;
 
     if($opt->{points} || !defined($opt->{points})) {
-	push @plot,{with=>'points',lc=>'rgb variable',pointsize=>($opt->{psize}||1)},$poly->using(0,1,2),$prgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+        push @plot,{with=>'points',lc=>'rgb variable',pointsize=>($opt->{psize}||1)},$poly->using(0,1,2),$prgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
     }
 
     ##############################
@@ -1321,37 +1321,37 @@ sub render {
 
     print "Defining line strips...\n" if($Flux::debug);
     for my $i(0..$#id) {
-	my $fp = $w->fluxon($id[$i])->polyline;
+        my $fp = $w->fluxon($id[$i])->polyline;
 
-	push @plot,{with=>'lines',lc=>'rgb variable',lw=>($opt->{linewidth}||1)},$fp->using(0,1,2),$rgb[$i]->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
-	#DL3D could do this and the 'points' in one step with a switch between 'lines' or 'linespoints'? Yes, except for the prgb/rgb duplication
+        push @plot,{with=>'lines',lc=>'rgb variable',lw=>($opt->{linewidth}||1)},$fp->using(0,1,2),$rgb[$i]->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+        #DL3D could do this and the 'points' in one step with a switch between 'lines' or 'linespoints'? Yes, except for the prgb/rgb duplication
 
-	##############################
-	# Label fluxon endpoints if desired
-	if($opt->{label_fluxons}) {
-	    $gpwin->options(label=>["N-$id[$i]-N",at=>join(',',$fp->(:,(0) )->list),'front']);
-	    $gpwin->options(label=>["S-$id[$i]-S",at=>join(',',$fp->(:,(-1))->list),'front']);
-	}
+        ##############################
+        # Label fluxon endpoints if desired
+        if($opt->{label_fluxons}) {
+            $gpwin->options(label=>["N-$id[$i]-N",at=>join(',',$fp->(:,(0) )->list),'front']);
+            $gpwin->options(label=>["S-$id[$i]-S",at=>join(',',$fp->(:,(-1))->list),'front']);
+        }
 
-	##############################
-	# Label every vertex if desired
-	if($opt->{label}) {
+        ##############################
+        # Label every vertex if desired
+        if($opt->{label}) {
 
-	    next if(ref $opt->{label} eq 'ARRAY' && 
-		    which( $id[$i] == $olabel )->nelem != 1
-		    );
+            next if(ref $opt->{label} eq 'ARRAY' &&
+                    which( $id[$i] == $olabel )->nelem != 1
+                    );
 
-		
-	    my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
 
-	    if(ref $opt->{label} eq 'ARRAY') {
-		
-	    }
-		    
-	    label:for my $j(0..$#labels) {
-		$gpwin->options(label=>[qq/"$labels[$j]"/,at=>join(',',$fp->(:,($j))->list),'front']);
-	    }
-	}
+            my @labels = map { $_->id } $w->fluxon($id[$i])->vertices ;
+
+            if(ref $opt->{label} eq 'ARRAY') {
+
+            }
+
+            label:for my $j(0..$#labels) {
+                $gpwin->options(label=>[qq/"$labels[$j]"/,at=>join(',',$fp->(:,($j))->list),'front']);
+            }
+        }
 
 
     }
@@ -1360,158 +1360,158 @@ sub render {
     # Generate flux concentrations if desired
 
     if($opt->{'concentrations'} || !defined($opt->{'concentrations'})) {
-	my @fc_points = ();
-	my @fc_rgb = ();
-	for my $fc( $w->concentrations ) {
-	    if($fc->{label} < -99 || $fc->{label} > 0) {
-		push( @fc_points, $fc->{x} );
-		if($opt->{'rgb_fcs'} && defined $opt->{'rgb_fcs'}->{$fc->{label}}) {
-		    push(@fc_rgb, $opt->{'rgb_fcs'}->{$fc->{label}});
-		} else {
-		    if($fc->{lines}) {
-			if( $fc->{lines}->{fc_start}->{label} == $fc->{label} ) {
-			    push(@fc_rgb, pdl(0,0.25,1));
-			} elsif( $fc->{lines}->{fc_end}->{label} == $fc->{label} ) {
-			    push(@fc_rgb, pdl(1,0.25,0));
-			} else {
-			    push(@fc_rgb, pdl(0.25,1,0.25));
-			}
-		    } else {
-			push(@fc_rgb, pdl(1,1,1));
-		    }
-		}
-	    }
-	}
-	if(@fc_points) {
-	    my $fc_points = cat(@fc_points);
-	    my $fc_rgb = cat(@fc_rgb);
-	    push @plot,{with=>'points',lc=>'rgb variable',pointsize=>2,pointtype=>$opt->{'concentrations'}||7},$fc_points->using(0,1,2),$fc_rgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
-	}
+        my @fc_points = ();
+        my @fc_rgb = ();
+        for my $fc( $w->concentrations ) {
+            if($fc->{label} < -99 || $fc->{label} > 0) {
+                push( @fc_points, $fc->{x} );
+                if($opt->{'rgb_fcs'} && defined $opt->{'rgb_fcs'}->{$fc->{label}}) {
+                    push(@fc_rgb, $opt->{'rgb_fcs'}->{$fc->{label}});
+                } else {
+                    if($fc->{lines}) {
+                        if( $fc->{lines}->{fc_start}->{label} == $fc->{label} ) {
+                            push(@fc_rgb, pdl(0,0.25,1));
+                        } elsif( $fc->{lines}->{fc_end}->{label} == $fc->{label} ) {
+                            push(@fc_rgb, pdl(1,0.25,0));
+                        } else {
+                            push(@fc_rgb, pdl(0.25,1,0.25));
+                        }
+                    } else {
+                        push(@fc_rgb, pdl(1,1,1));
+                    }
+                }
+            }
+        }
+        if(@fc_points) {
+            my $fc_points = cat(@fc_points);
+            my $fc_rgb = cat(@fc_rgb);
+            push @plot,{with=>'points',lc=>'rgb variable',pointsize=>2,pointtype=>$opt->{'concentrations'}||7},$fc_points->using(0,1,2),$fc_rgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover;
+        }
     }
-	    
+
 
     print "Neighbors?\n" if($Flux::debug);
     my $nscale = $opt->{'nscale'} || 0.25;
 
     if($opt->{'neighbors'}){
-	my @neighbors;
+        my @neighbors;
 
-	for my $v (map { $_->vertices } $w->fluxons) {
-	    next unless($v->next && ($v->id<-9 || $v->id>0));
-	    my $xcen = 0.5 * ($v->x + $v->next->x);
+        for my $v (map { $_->vertices } $w->fluxons) {
+            next unless($v->next && ($v->id<-9 || $v->id>0));
+            my $xcen = 0.5 * ($v->x + $v->next->x);
 
-	    my $pm = $v->projmatrix;
+            my $pm = $v->projmatrix;
 
-	    my $neigh = $v->proj_neighbors; 
+            my $neigh = $v->proj_neighbors;
 
-	    for my $i(0..$neigh->dim(1)-1) {
-		my $x = zeroes(3);
-		$x->(0:1) .= $neigh->(0:1,($i));
-		$x *= $nscale;
-		my $xx = Flux::World::_vec_mmult_3d($pm->list,$x->list);
-		$xx += $xcen;
-		push(@neighbors,$xx);
-	    }
-	}
-	
-	my $fp = cat(@neighbors);
-	push @plot,{with=>'points',pointsize=>2},$fp->using(0,1,2);
+            for my $i(0..$neigh->dim(1)-1) {
+                my $x = zeroes(3);
+                $x->(0:1) .= $neigh->(0:1,($i));
+                $x *= $nscale;
+                my $xx = Flux::World::_vec_mmult_3d($pm->list,$x->list);
+                $xx += $xcen;
+                push(@neighbors,$xx);
+            }
+        }
+
+        my $fp = cat(@neighbors);
+        push @plot,{with=>'points',pointsize=>2},$fp->using(0,1,2);
 
     }
 
     if($opt->{'hull'}) {
 
-	my $hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
-	print "hullrgb: $hullrgb...\n" if($Flux::debug);
+        my $hullrgb = defined($opt->{'hullrgb'}) ? $opt->{'hullrgb'} : pdl(0.3,0.3,0);
+        print "hullrgb: $hullrgb...\n" if($Flux::debug);
 
-	my $hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
-	print "hullopen: $hullopen...\n" if($Flux::debug);
+        my $hullopen = defined($opt->{'hullopen'}) ? $opt->{'hullopen'} : 10;
+        print "hullopen: $hullopen...\n" if($Flux::debug);
 
-	my $zz = 0;
-	for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
-	    next unless($v->next && ($v->id<-9 || $v->id>0));
+        my $zz = 0;
+        for my $v( $w->vertices ) { ### map { $_->vertices } $w->fluxons) {
+            next unless($v->next && ($v->id<-9 || $v->id>0));
 
-	    my $xcen = 0.5 * ($v->x + $v->next->x);
-	    
-	    my $pm = $v->projmatrix;
-	    
-	    my $hull = $v->hull(0);
+            my $xcen = 0.5 * ($v->x + $v->next->x);
 
-	    my @hpoints = ();
+            my $pm = $v->projmatrix;
 
-	    for my $i(0..$hull->dim(1)-1) {
+            my $hull = $v->hull(0);
 
-		my $rows = $hull->range([0,$i],[7,2],'p');
-		if( ! ($rows->((4),:)->any) ) {
-		    my $x = zeroes(3);
-		    $x->(0:1) .= $rows->(2:3,(0));
-		    $x *= $nscale;
-		    my $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
+            my @hpoints = ();
 
-		    $x->(0:1) .= $rows->(2:3,(1));
-		    $x->(2) .= 0;
-		    $x *= $nscale;
-		    $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
-		} elsif($rows->((4),0)) {
-		    if(@hpoints) {
-			my $fp = cat(@hpoints)->(:,(0),:);
+            for my $i(0..$hull->dim(1)-1) {
 
-			push @plot, {with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
+                my $rows = $hull->range([0,$i],[7,2],'p');
+                if( ! ($rows->((4),:)->any) ) {
+                    my $x = zeroes(3);
+                    $x->(0:1) .= $rows->(2:3,(0));
+                    $x *= $nscale;
+                    my $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
 
+                    $x->(0:1) .= $rows->(2:3,(1));
+                    $x->(2) .= 0;
+                    $x *= $nscale;
+                    $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
+                } elsif($rows->((4),0)) {
+                    if(@hpoints) {
+                        my $fp = cat(@hpoints)->(:,(0),:);
 
-			@hpoints = ();
-		    }
+                        push @plot, {with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
 
 
-		    my $x = zeroes(3);
-		    $x->(0) .= $rows->((2),(1)) + $hullopen * cos($rows->((6),(0)));
-		    $x->(1) .= $rows->((3),(1)) + $hullopen * sin($rows->((6),(0)));
-		    $x *= $nscale;
-		    my $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
-		    
-		    $x->(0:1) .= $rows->(2:3,(1));
-		    $x->(2) .= 0;
-		    $x *= $nscale;
-		    $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
-		} elsif($rows->((4),1)) {
+                        @hpoints = ();
+                    }
 
-		    my $x = zeroes(3);
-		    $x->(0:1) .= $rows->(2:3,(0));
-		    $x *= $nscale;
-		    my $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
 
-		    $x->(0) .= $rows->((2),(0)) + $hullopen * cos($rows->((5),(1)));
-		    $x->(1) .= $rows->((3),(0)) + $hullopen * sin($rows->((5),(1)));
-		    $x *= $nscale;
-		    $xx = $x x $pm;
-		    $xx += $xcen;
-		    push(@hpoints,$xx);
-		}
-	    }
+                    my $x = zeroes(3);
+                    $x->(0) .= $rows->((2),(1)) + $hullopen * cos($rows->((6),(0)));
+                    $x->(1) .= $rows->((3),(1)) + $hullopen * sin($rows->((6),(0)));
+                    $x *= $nscale;
+                    my $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
 
-	    if(@hpoints) {
+                    $x->(0:1) .= $rows->(2:3,(1));
+                    $x->(2) .= 0;
+                    $x *= $nscale;
+                    $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
+                } elsif($rows->((4),1)) {
 
-		my $fp = cat(@hpoints)->(:,(0),:);
+                    my $x = zeroes(3);
+                    $x->(0:1) .= $rows->(2:3,(0));
+                    $x *= $nscale;
+                    my $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
 
-		push @plot,{with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
-	    }
-	}    
+                    $x->(0) .= $rows->((2),(0)) + $hullopen * cos($rows->((5),(1)));
+                    $x->(1) .= $rows->((3),(0)) + $hullopen * sin($rows->((5),(1)));
+                    $x *= $nscale;
+                    $xx = $x x $pm;
+                    $xx += $xcen;
+                    push(@hpoints,$xx);
+                }
+            }
+
+            if(@hpoints) {
+
+                my $fp = cat(@hpoints)->(:,(0),:);
+
+                push @plot,{with=>'lines',lc=>[sprintf("#%06x",$hullrgb->mult(255,0)->shiftleft(pdl(16,8,0),0)->sumover)]},$fp->using(0,1,2);
+            }
+        }
     }
 
     @Flux::World::plotlist = @plot;
 
     unless($gpwin) {
-	$gpwin = gpwin($dev,size=>[9,9]);
+        $gpwin = gpwin($dev,size=>[9,9]);
     }
     $gpwin->plot3d(@plot);
     $window = $gpwin;
@@ -1560,7 +1560,7 @@ sub bfield {
 
 =head2 energy
 
-=for usage 
+=for usage
 
 $w->energy
 
@@ -1576,15 +1576,15 @@ sub energy {
     my $w = shift;
 
     my $E = 0;
-    
+
     for ($w->vertices) {
-	$E += $_->{energy};
+        $E += $_->{energy};
     }
 
     return $E;
 
 }
-	    
+
 
 =pod
 
@@ -1614,8 +1614,8 @@ $vertex = $world->closest_vertex(pdl($x,$y,$z), [$global, [$start_vertex]]);
 
 =for ref
 
-Return the closest vertex to a given spatial location.  At a minimum, you 
-supply a 3-PDL containing the location.  The <code>$global</code> flag 
+Return the closest vertex to a given spatial location.  At a minimum, you
+supply a 3-PDL containing the location.  The <code>$global</code> flag
 indicates whether a global search or a more direct linear search should
 be performed.
 
@@ -1628,7 +1628,7 @@ to the desired location!).  If you feed in a <code>$start_vertex</code> and
 the <code>$global</code> flag is 0, then the search starts from the given
 start vertex.
 
-You can call _closest_vertex instead and gain a little speed, but then you 
+You can call _closest_vertex instead and gain a little speed, but then you
 must include all arguments (even if they are simply undef).
 
 =cut
@@ -1651,13 +1651,13 @@ sub closest_vertex {
 
 =for ref
 
-Return four vertices forming a tetrahedron that encloses the requested point.
+Return up to four vertices forming a tetrahedron that encloses the requested point.
 If that is not possible (e.g. point is outside the outermost fluxon) then return
 the nearest three.
 
 The vertices come back as a list.  The parameters are the same as closest_vertex.
 
-BEWARE: although the initial point is found by calling closest_vertex, subseqent 
+BEWARE: although the initial point is found by calling closest_vertex, subseqent
 stages of the simplex construction require neighbor initialization, so you can't just
 set the global flag to 1 and expect everything to be OK on an unknown world -- it
 must have appropriate neighbors already calculated.
@@ -1671,9 +1671,49 @@ sub closest_simplex {
     my $start_vertex = shift || undef;
     my $a = _closest_simplex($w,$x,$global,$start_vertex);
     if(ref $a) {
-	return @$a;
+        return @$a;
     } else {
-	return ();
+        return ();
+    }
+}
+
+=pod
+
+=head2 closest_nsimplex
+
+=for usage
+
+@list = $world->closest_nsimplex(pdl($x,$y,$z), [$global, [$start_vertex]]);
+
+=for ref
+
+Return up to four vertices forming a tetrahedron that encloses the requested point.
+If that is not possible (e.g. point is outside the outermost fluxon) then return
+the nearest three.
+
+This is a revamped version of the routine closest_simplex, with a new methodology
+for simplex searching. In particular, the goal is finding a 'nice' simplex, enclosing
+the given point with comfortable padding.
+
+The vertices come back as a list.  The parameters are the same as closest_vertex.
+
+BEWARE: although the initial point is found by calling closest_vertex, subseqent
+stages of the simplex construction require neighbor initialization, so you can't just
+set the global flag to 1 and expect everything to be OK on an unknown world -- it
+must have appropriate neighbors already calculated.
+
+=cut
+
+sub closest_nsimplex {
+    my $w = shift;
+    my $x = shift;
+    my $global = shift || 0;
+    my $start_vertex = shift || undef;
+    my $a = _closest_nsimplex($w,$x,$global,$start_vertex);
+    if(ref $a) {
+        return @$a;
+    } else {
+        return ();
     }
 }
 
@@ -1702,7 +1742,7 @@ The coordinates of a neighbor point
 =item 2,3
 
 The coordinates of the corresponding leftward hull point if it exists, or the
-(left,right) exit angles in radians if it doesn't.  
+(left,right) exit angles in radians if it doesn't.
 
 =item 4
 
@@ -1735,7 +1775,7 @@ The output is suitable to feeding into _plot_hull, below.
 Interprets and plots a 6xN hull PDL returned by _hull_points.  If you
 include the optional $points parameter, then those points are all plotted too.
 
-If you want a particular title or scaling you should call $win->env beforehand and then 
+If you want a particular title or scaling you should call $win->env beforehand and then
 hold $win.  $win is released on exit.
 
 =cut
@@ -1747,43 +1787,43 @@ sub _plot_hull {
 
     # Plot all points in set, if presented
     if(defined $points) {
-	$win->points($points->((0)),$points->((1)),{color=>2});
-	$win->hold;
-	for my $i(0..$points->dim(1)-1){
-	    $win->text($i,$points->((0),($i)),$points->((1),($i)),{color=>2});
-	}
+        $win->points($points->((0)),$points->((1)),{color=>2});
+        $win->hold;
+        for my $i(0..$points->dim(1)-1){
+            $win->text($i,$points->((0),($i)),$points->((1),($i)),{color=>2});
+        }
     }
 
     # Plot all points in neighbors.
     $win->points($hull->((0)),$hull->((1)),{color=>3});
     $win->hold;
     for my $i(0..$hull->dim(1)-1){
-	$win->text($hull->at(5,$i),$hull->at(0,$i),$hull->at(1,$i),{color=>3});
-	$win->line(pdl(0,$hull->at(0,$i)),pdl(0,$hull->at(1,$i)),{color=>3});
+        $win->text($hull->at(5,$i),$hull->at(0,$i),$hull->at(1,$i),{color=>3});
+        $win->line(pdl(0,$hull->at(0,$i)),pdl(0,$hull->at(1,$i)),{color=>3});
     }
 
     print "Drawing hull....\n";
     # Draw all hull lines
     for my $i(0..$hull->dim(1)-1){
-	my $r = $hull->range([2,$i],[3,2],'p');
+        my $r = $hull->range([2,$i],[3,2],'p');
 
-	unless($r->at(2,0) || $r->at(2,1)) {
-	    $win->line($r->((0)), $r->((1)),{color=>4});
-	} elsif($r->at(2,0)) {
-	    my $x1 = $r->at(0,1) + 2000 * cos($r->at(1,0));
-	    my $y1 = $r->at(1,1) + 2000 * sin($r->at(1,0));
-	    $win->line(pdl($r->at(0,1),$x1),pdl($r->at(1,1),$y1),{color=>5});
-	} elsif($r->at(2,1)) {
-	    my $x1 = $r->at(0,0) + 2000 * cos($r->at(0,1));
-	    my $y1 = $r->at(1,0) + 2000 * sin($r->at(0,1));
-	    $win->line(pdl($r->at(0,0),$x1),pdl($r->at(1,0),$y1),{color=>6});
-	}
+        unless($r->at(2,0) || $r->at(2,1)) {
+            $win->line($r->((0)), $r->((1)),{color=>4});
+        } elsif($r->at(2,0)) {
+            my $x1 = $r->at(0,1) + 2000 * cos($r->at(1,0));
+            my $y1 = $r->at(1,1) + 2000 * sin($r->at(1,0));
+            $win->line(pdl($r->at(0,1),$x1),pdl($r->at(1,1),$y1),{color=>5});
+        } elsif($r->at(2,1)) {
+            my $x1 = $r->at(0,0) + 2000 * cos($r->at(0,1));
+            my $y1 = $r->at(1,0) + 2000 * sin($r->at(0,1));
+            $win->line(pdl($r->at(0,0),$x1),pdl($r->at(1,0),$y1),{color=>6});
+        }
     }
 
     $win->points(0,0,{symsize=>3,charsize=>3,color=>1});
 
     $win->release;
-}		
+}
 
 
 =head2 check
@@ -1794,8 +1834,9 @@ sub _plot_hull {
 
 =for ref
 
-Performs some consistency checks on the World, and executes minor fixes where possible.  Returns 0 if the World
-looked OK, 1 if it got fixed up, and -1 if it is damaged beyond simple repair.  
+Performs some consistency checks on the World, and executes minor fixes where
+possible.  Returns 0 if the World looked OK, 1 if it got fixed up, and -1 if
+it is damaged beyond simple repair.
 
 This is actually just a jump point into the C routine "world_check", in model.c.
 
@@ -1809,16 +1850,25 @@ This is actually just a jump point into the C routine "world_check", in model.c.
 
 =for usage
 
-    $val = $a->interpolate_value( $field_name, $loc, $global, $seed );
+    $val = $a->interpolate_value( $field_name, $loc, $global, $seed, $tint );
     $val = $a->interpolate_value( $field_name, $loc );
 
 =for ref
-    
-Uses the initial string to identify a field type to interpolate, and returns an interpolated value for it. 
-If the field type is a 'num', you get back the straight interpolation.  If it is a 'vec', you get back a 3-PDL 
+
+Uses the initial string $field_name to identify a field type to interpolate,
+and returns an interpolated value for it. If the field type is a 'num', you
+get back the straight interpolation.  If it is a 'vec', you get back a 3-PDL
 containing all interpolated components.  Other types get undef.
 
-If $global exists and is nonzero, then a global (rather than local) search is done.
+If $global exists and is nonzero, then a global (rather than local) search is
+done for the first vertex in the interpolating simplex.  If $global is 0, you
+may supply $seed, a Flux::Vertex object around which to begin the search.
+
+Occasionally 4 vertices in the interpolating simplex can not be found.  By
+default, the interpolated value in this case will be 'Nan'. However if $tint
+(_t_rust _int_erpolation) is true, then the interpolation will be performed
+using the 3 or fewer vertices that could be found. This introduces error into
+the interpolation, but that may be acceptable in some cases.
 
 =cut
 
@@ -1828,26 +1878,27 @@ sub interpolate_value {
     my $loc = shift;
     my $global = shift || 0;
     my $seed = shift || 0;
+    my $tint = shift || 0;
     my $offset;
-    
+
     if((ref $w) ne 'Flux::World') {
-	die "Flux::World::interpolate_value needs a Flux::World\n";
+        die "Flux::World::interpolate_value needs a Flux::World\n";
     }
 
     if( ((ref $loc) ne 'PDL') || ($loc->ndims != 1) || $loc->dim(0) != 3 ) {
-	die "Flux::World::interpolate_value needs a 3-PDL location (no threading yet)\n";
+        die "Flux::World::interpolate_value needs a 3-PDL location (no threading yet)\n";
     }
-    
+
     if( $Flux::codes->{vertex}->{$field}->[1] =~ m/num/ ) {
-	$offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
-	return _interpolate_value($w, $loc, $global, $seed, $offset);
+        $offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
+        return _interpolate_value($w, $loc, $global, $seed, $offset, $tint );
     }
     elsif( $Flux::codes->{vertex}->{$field}->[1] =~ m/vector/) {
-	$offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
-	return _interpolate_vector($w,$loc,$global,$seed,$offset);
-    }	
+        $offset = Flux::_ptr_offset( $Flux::typecodes->{vertex}, $Flux::codes->{vertex}->{$field}->[0] );
+        return _interpolate_vector($w,$loc,$global,$seed,$offset,$tint);
+    }
     else {
-	die "Flux::World::interpolate_value: field '$field' isn't a num or a vector...\n";
+        die "Flux::World::interpolate_value: field '$field' isn't a num or a vector...\n";
     }
 }
 
@@ -1878,9 +1929,9 @@ sub EXISTS {
 sub FETCH {
     my($me, $field)=@_;
     my $code = $Flux::codes->{world}->{$field};
- 
+
     return undef unless defined($code);
-    
+
     Flux::r_val( $me, $Flux::typecodes->{world}, @$code[0..1] );
 }
 
@@ -1908,7 +1959,7 @@ sub FIRSTKEY {
 sub NEXTKEY {
     my ($class,$prev) = @_;
     return $Flux::ordering->{world}->{$prev};
-    
+
 }
 
 sub SCALAR {
@@ -1916,6 +1967,5 @@ sub SCALAR {
 }
 
 
-  
-1;
 
+1;

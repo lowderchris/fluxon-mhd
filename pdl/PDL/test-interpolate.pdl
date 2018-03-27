@@ -1,0 +1,63 @@
+# Here's a code for the testing of the interpolation routines
+
+push(@PDLLIB,"+/Users/clowder/work/fluxon-mhd/pdl/PDL");
+
+#use strict;
+use warnings;
+use PDL::Transform;
+use PDL::NiceSlice;
+
+use PDL::Graphics::Gnuplot;
+
+use Flux;
+
+# Load the example world
+$world = read_world('cartesian_interpolate_test_relaxed.flux');
+#$world = read_world('global_500_fluxons_step03000.flux');
+
+# Performing an initial global recalculation of neighbors
+$world -> update_neighbors(1);
+
+#$e = pdl(0.75,0.75,0.5);
+#$e = pdl(-1.0725, -0.825, 0.1);
+$e = pdl(0.165, -0.4125, 0.21);
+$g = $world -> interpolate_value('x', $e, 0);
+print $e;
+print $g;
+
+sub plt_simplex {
+    # Call by giving a PDL, $x, defining a set of xyz coordinates
+    # plt_simplex( pdl(0.0,0.0,0.0) )
+
+    my $sx = shift;
+    my $ol = shift || 0;
+
+    @splt = ();
+    @s = $world -> closest_simplex($sx,0);
+    @cols = ('red', 'orange', 'green', 'blue');
+    if (scalar(@s) == 4) {
+        $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[3]->{'x'}, @s[0]->{'x'}, @s[2]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[3]->{'x'});
+        push @splt, {with=>'lines', lc=>'black'}, $splex->using(0,1,2);
+    } elsif (scalar(@s) == 3) {
+        $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[0]->{'x'});
+        push @splt, {with=>'lines', lc=>'black', lt=>0}, $splex->using(0,1,2);
+    } else {
+        print 'Something has gone terribly wrong (n_simplex < 3). Please do not push this button again.';
+        return;
+    }
+    push @splt, {with=>'points'}, $sx->using(0,1,2);
+    if ($ol != 1){
+        for $i(0..scalar(@s)-1){
+            $spt = @s[$i]->{'x'};
+            push @splt,{with=>'lines', lc=>$cols[$i]}, pdl($sx(0), $spt(0)), pdl($sx(1), $spt(1)), pdl($sx(2), $spt(2));
+        }
+    }
+    $win -> replot(@splt);
+}
+
+$win = $world -> render();
+
+#$e = pdl(-0.1925, -0.605, 0.2);
+#$e = pdl(-1.0725, -0.825, 0.1);
+$e = pdl(0.165, -0.4125, 0.21);
+plt_simplex($e);

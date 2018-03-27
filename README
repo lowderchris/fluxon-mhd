@@ -56,14 +56,21 @@ ExtUtils::MakeMaker don't play nicely together, and libflux.a needs to
 be installed before the Perl module is built.  Therefore, we build and
 install the C and Perl components separately.
 
-You should declare two environment variables (the example below
-assumes a bash shell), which are only needed for build and
+You should declare up to two environment variables, which are only needed for build and
 installation:
 
-FL_PREFIX: where the FLUX simulation library and include files should
-be installed (e.g., /usr/local or ~/local).
+FL_PREFIX (required, defaults to /usr/local):
+    Where the FLUX simulation library and include files should be installed.
 
-PL_PREFIX: where the Perl front-end module should be installed.
+PL_PREFIX (optional, no default):
+    Where the Perl front-end module should be installed.
+    This location should be in Perl's @INC list. Try doing
+    ' perl -e "print join(qq|\n|,@INC,q||);" ' at the command line to see the
+    contents of this list. If $PL_PREFIX/lib/perl5 is not included in
+    @INC, then Perl will not be able to find the Flux module after installation.
+    You can add $PL_PREFIX/lib/perl5 to your PERL5LIB environment variable
+    to solve that problem.  Or you can just leave PL_PREFIX undefined and
+    Perl will do the Right Thing.
 
 After installation, some autoloading routines will be installed for
 you.  See the docs for PDL::AutoLoader

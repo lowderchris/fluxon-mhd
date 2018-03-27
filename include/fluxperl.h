@@ -25,7 +25,7 @@
  */
 
 #define FC FLUX_CONCENTRATION
-#define FLUX_CORE_VERSION 17
+#define FLUX_CORE_VERSION 18
 
 typedef struct FluxCore {
 
@@ -222,11 +222,12 @@ typedef struct FluxCore {
   int (*in_simplex)(POINT3D P0, POINT3D P1, POINT3D P2, POINT3D P3, POINT3D X);
   int (*above_plane)(POINT3D A, POINT3D B, POINT3D C, POINT3D X);
   DUMBLIST *(*find_simplex_by_location)(POINT3D x, WORLD *w, VERTEX *v, int global);
+  DUMBLIST *(*find_nsimplex_by_location)(POINT3D x, WORLD *w, VERTEX *v, int global);
   VERTEX *(*find_vertex_by_location)(POINT3D x, WORLD *w, VERTEX *v, int global);
 
-  NUM (*interpolate_lin_3d)( POINT3D x, NUM p[12], NUM val[4], int n);
-  NUM (*interpolate_value_simplex)( POINT3D x, DUMBLIST *dl, int val_offset);
-  NUM (*interpolate_value)( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset);
+  NUM (*interpolate_lin_3d)( POINT3D x, NUM p[12], NUM val[4], int n, int tint);
+  NUM (*interpolate_value_simplex)( POINT3D x, DUMBLIST *dl, int val_offset, int tint);
+  NUM (*interpolate_value)( POINT3D x, WORLD *w, VERTEX *v, int global, int val_offset, int tint);
   void (*project_n_fill_photosphere)(VERTEX *v, DUMBLIST *horde);
   void (*hull_2d_us_photosphere)(HULL_VERTEX *hull, DUMBLIST *horde, VERTEX *central_v);
 
