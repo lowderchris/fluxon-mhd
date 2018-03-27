@@ -18,7 +18,7 @@ libinstall: libbuild
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make install';
 
 pdlMakefile:
-	/bin/sh -c 'if [[ -n $(PL_PREFIX) ]]; then echo "Will install Flux perl modules into $(PL_PREFIX). Make sure this is in your @INC (see README)."; fi'; \
+	/bin/sh -c 'if [[ -n "$(PL_PREFIX)" ]]; then echo "\n\nWill install Flux perl modules into $(PL_PREFIX). Make sure this is in your @INC (see README).\n\n"; fi'; \
 	/bin/sh -c 'cd pdl; if [[ ! (-f Makefile) ]]; then perl Makefile.PL INSTALL_BASE=$(PL_PREFIX); fi';
 
 pdlbuild: pdlMakefile
