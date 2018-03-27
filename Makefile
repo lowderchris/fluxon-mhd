@@ -25,12 +25,11 @@ pdlbuild:
 	cd .. ;
 
 pdltest:
-	{ cd pdl; } && { make test; } && { cd ..; }
+	/bin/sh -c 'cd pdl; make test ;';
 
 pdlinstall:
-	cd pdl ; \
-	make install ; \
-	cd .. ;
+	/bin/sh -c 'cd pdl; make install;';
+
 
 clean:
 	rm -f *~ \#* ; \

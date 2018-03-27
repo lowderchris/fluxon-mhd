@@ -23,7 +23,7 @@ install:
 - make libbuild
 - make libinstall
 script:
-- export PL_PREFIX=~
+#- export PL_PREFIX=~
 - make pdlbuild
 - make pdltest
 - make pdlinstall
