@@ -1651,7 +1651,7 @@ sub closest_vertex {
 
 =for ref
 
-Return four vertices forming a tetrahedron that encloses the requested point.
+Return up to four vertices forming a tetrahedron that encloses the requested point.
 If that is not possible (e.g. point is outside the outermost fluxon) then return
 the nearest three.
 
@@ -1687,7 +1687,7 @@ sub closest_simplex {
 
 =for ref
 
-Return four vertices forming a tetrahedron that encloses the requested point.
+Return up to four vertices forming a tetrahedron that encloses the requested point.
 If that is not possible (e.g. point is outside the outermost fluxon) then return
 the nearest three.
 
@@ -1834,8 +1834,9 @@ sub _plot_hull {
 
 =for ref
 
-Performs some consistency checks on the World, and executes minor fixes where possible.  Returns 0 if the World
-looked OK, 1 if it got fixed up, and -1 if it is damaged beyond simple repair.
+Performs some consistency checks on the World, and executes minor fixes where
+possible.  Returns 0 if the World looked OK, 1 if it got fixed up, and -1 if
+it is damaged beyond simple repair.
 
 This is actually just a jump point into the C routine "world_check", in model.c.
 
@@ -1854,11 +1855,20 @@ This is actually just a jump point into the C routine "world_check", in model.c.
 
 =for ref
 
-Uses the initial string to identify a field type to interpolate, and returns an interpolated value for it.
-If the field type is a 'num', you get back the straight interpolation.  If it is a 'vec', you get back a 3-PDL
+Uses the initial string $field_name to identify a field type to interpolate,
+and returns an interpolated value for it. If the field type is a 'num', you
+get back the straight interpolation.  If it is a 'vec', you get back a 3-PDL
 containing all interpolated components.  Other types get undef.
 
-If $global exists and is nonzero, then a global (rather than local) search is done.
+If $global exists and is nonzero, then a global (rather than local) search is
+done for the first vertex in the interpolating simplex.  If $global is 0, you
+may supply $seed, a Flux::Vertex object around which to begin the search.
+
+Occasionally 4 vertices in the interpolating simplex can not be found.  By
+default, the interpolated value in this case will be 'Nan'. However if $tint
+(_t_rust _int_erpolation) is true, then the interpolation will be performed
+using the 3 or fewer vertices that could be found. This introduces error into
+the interpolation, but that may be acceptable in some cases.
 
 =cut
 
