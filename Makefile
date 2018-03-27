@@ -18,8 +18,8 @@ libinstall: libbuild
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make install';
 
 pdlMakefile:
-	/bin/sh -c 'if [[ -n "$(PL_PREFIX)" ]]; then echo "\n\nWill install Flux perl modules into $(PL_PREFIX). Make sure this is in your @INC (see README).\n\n"; fi'; \
-	/bin/sh -c 'cd pdl; if [[ ! (-f Makefile) ]]; then perl Makefile.PL INSTALL_BASE=$(PL_PREFIX); fi';
+	/bin/sh -c 'if [ -n "$(PL_PREFIX)" ]; then echo "\n\nWill install Flux perl modules into $(PL_PREFIX). Make sure this is in your @INC. See README.\n\n"; else echo "INFO: PL_PREFIX is not defined (this is probably OK)."; fi'; \
+	/bin/sh -c 'cd pdl; if [ ! -f Makefile ]; then perl Makefile.PL INSTALL_BASE=$(PL_PREFIX); fi';
 
 pdlbuild: pdlMakefile
 	/bin/sh -c 'cd pdl; if !(PERL_INSTALL_QUIET=1 make all); then (echo "\n\nRunning make for you. You are welcome!\n"; PERL_INSTALL_QUIET=1 make all); fi';
