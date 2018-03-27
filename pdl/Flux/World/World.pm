@@ -941,13 +941,13 @@ Mnemonic: Flux World stats.
 
  $world->render; #use default options
 
- $world->render({rgb=>pdl(1,0,0),prgb=>pdl(0,0,1)}); #make the fluxons red and the vertices (except the endpoints) blue
+ $world->render({rgb=>pdl(1,0,0),prgb=>pdl(0,0,1)}); #make the fluxons red and the vertices blue
 
 =for ref
 
 Produces a simple 3-D plot of all the field lines in a World, using PDL::Graphics::Gnuplot.
 
-C<$opt> is an reference to an options hash.
+C<$opt> is a reference to an options hash.
 
 Currently useful options are:
 
@@ -1042,17 +1042,16 @@ red, unknown concentrations are white, and errors are green).
 
 =item points
 
-Flag indicating whether or not to draw vertices separately from field lines,
-using a Points object.  (Default is 1).
+Flag indicating whether or not to draw vertices separately from field lines.  (Default is 1).
 
 =item psize
 
-Flag indicating the size, in screen pixels, of the points as rendered.
+Flag indicating the size of the points as rendered.
 (Default is 1; 0 is not allowed, but fractional values are)
 
 =item linewidth
 
-Flag indicating the width of the LineStrip objects used to render the fluxons.
+Flag indicating the width of the rendered fluxons.
 (Default is 1; 2-3 is useful for generating figures)
 
 =item label
@@ -1192,13 +1191,13 @@ sub render {
     } else {
       ### Default case - blue->red color scheme for all fluxons
       @rgb = map {
-        my $alpha = double yvals($_);
-        $alpha /= max($alpha);
-            my $beta = 1.0 - $alpha;
-            my $gamma = sin($alpha*3.14159)**2;
-            my $prgb = $beta * pdl(1,0,0) + $alpha * pdl(0,0,1) + $gamma * pdl(0,1,0);
-            $prgb;
-        } @poly;
+	my $alpha = double yvals($_);
+	$alpha /= max($alpha);
+	    my $beta = 1.0 - $alpha;
+	    my $gamma = sin($alpha*3.14159)**2;
+	    my $rgb = $alpha * pdl(1,0,0) + $beta * pdl(0,0,1) + $gamma * pdl(0,1,0);
+	    $rgb;
+	} @poly;
     }
 
     print "Defining PRGB..." if($Flux::debug);
@@ -1208,17 +1207,18 @@ sub render {
 
     } elsif(defined $opt->{'prgb'}) {
 
-      @prgb = map { (yvals($_)!=0) * $opt->{'prgb'} } @poly;
+        #@prgb = map { (yvals($_)!=0) * $opt->{'prgb'} } @poly; #this leaves the first point black.
+	@prgb = map { ones($_) * $opt->{'prgb'} } @poly; #this colors all the points
 
     } else {
 
-      @prgb = map {
-        my $alpha = double yvals($_);
-        $alpha /= max($alpha);
-        my $beta = 1.0 - $alpha;
-        my $gamma = sin($alpha*3.14159)**2;
-        my $prgb = $beta * pdl(1,0,0) + $alpha * pdl(0,0,1) + $gamma * pdl(0,1,0);
-        $prgb;
+      @prgb = map { 
+	my $alpha = double yvals($_);
+	$alpha /= max($alpha);
+	my $beta = 1.0 - $alpha;
+	my $gamma = sin($alpha*3.14159)**2;
+	my $prgb = $alpha * pdl(1,0,0) + $beta * pdl(0,0,1) + $gamma * pdl(0,1,0);
+	$prgb;
       } @poly;
     }
 
