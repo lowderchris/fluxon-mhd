@@ -17,12 +17,12 @@ libbuild:
 libinstall: libbuild
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make install';
 
-pdlbuild:
-	@echo "Using $(PL_PREFIX) in INSTALL_BASE"; \
-	cd pdl ; \
-	perl Makefile.PL INSTALL_BASE=$(PL_PREFIX); \
-	PERL_INSTALL_QUIET=1 make all ; \
-	cd .. ;
+pdlMakefile:
+	/bin/sh -c 'if [[ -n $(PL_PREFIX) ]]; then echo "Will install Flux perl modules into $(PL_PREFIX). Make sure this is in your @INC (see README)."; fi'; \
+	/bin/sh -c 'cd pdl; if [[ ! (-f Makefile) ]]; then perl Makefile.PL INSTALL_BASE=$(PL_PREFIX); fi';
+
+pdlbuild: pdlMakefile
+	/bin/sh -c 'cd pdl; if !(PERL_INSTALL_QUIET=1 make all); then (echo "\n\nRunning make for you. You are welcome!\n"; PERL_INSTALL_QUIET=1 make all); fi';
 
 pdltest:
 	/bin/sh -c 'cd pdl; make test ;';
