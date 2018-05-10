@@ -126,6 +126,8 @@ Subdirectories include:
 
 	pdl/PDL -- PDL autoload subroutines
 
+        py -- Python visualization and analysis tools
+
 RELEASE NOTES FOR v2.2 (22-Nov-2008):
   - Mass is actively tracked in the data structures
   - Binary save files are supported; all files are auto-gzipped if they have a '.gz' extension
