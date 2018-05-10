@@ -16,12 +16,12 @@ $world = read_world('cartesian_interpolate_test_relaxed.flux');
 #$world = read_world('global_500_fluxons_step03000.flux');
 
 # Performing an initial global recalculation of neighbors
-$world -> update_neighbors(1);
+$world->update_neighbors(1);
 
 #$e = pdl(0.75,0.75,0.5);
 #$e = pdl(-1.0725, -0.825, 0.1);
 $e = pdl(0.165, -0.4125, 0.21);
-$g = $world -> interpolate_value('x', $e, 0);
+$g = $world->interpolate_value('x', $e, 0);
 print $e;
 print $g;
 
@@ -33,7 +33,7 @@ sub plt_simplex {
     my $ol = shift || 0;
 
     @splt = ();
-    @s = $world -> closest_simplex($sx,0);
+    @s = $world->closest_simplex($sx,0);
     @cols = ('red', 'orange', 'green', 'blue');
     if (scalar(@s) == 4) {
         $splex = pdl(@s[0]->{'x'}, @s[1]->{'x'}, @s[3]->{'x'}, @s[0]->{'x'}, @s[2]->{'x'}, @s[1]->{'x'}, @s[2]->{'x'}, @s[3]->{'x'});
@@ -52,10 +52,10 @@ sub plt_simplex {
             push @splt,{with=>'lines', lc=>$cols[$i]}, pdl($sx(0), $spt(0)), pdl($sx(1), $spt(1)), pdl($sx(2), $spt(2));
         }
     }
-    $win -> replot(@splt);
+    $win->replot(@splt);
 }
 
-$win = $world -> render();
+$win = $world->render();
 
 #$e = pdl(-0.1925, -0.605, 0.2);
 #$e = pdl(-1.0725, -0.825, 0.1);
