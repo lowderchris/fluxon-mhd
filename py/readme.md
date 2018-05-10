@@ -25,11 +25,13 @@ A saved fluxon world can be restored to life using,
 This resulting world class contains some (for now) of the information contained within the original PDL .flux world file.
 
 Flux concentrations:
+
     world.fc.x(,y,z)    - Cartesian position
     world.fc.fl         - Magnetic flux
     world.fc.id         - Flux concentration ID
 
 Fluxons:
+
     world.fx.x(,y,z)    - Cartesian positions of vertex points
     world.fx.fc0(,fc1)  - Associated flux concentration IDs
     world.fx.fl         - Magnetic flux
