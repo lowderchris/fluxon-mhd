@@ -43,4 +43,12 @@ More details (connectivity, etc) can be siphoned from the original .flux world f
 
 Python 3, NumPy, Scipy are the standard set that these routines rely upon. iPython is optional, but provides a friendly environment in which to work.
 
-For the visualization routines, the package MayaVi is required, which provides a more user-friendly interface for VTK. The pip3 version of this package weaves a tangled web of dependencies, but at the time of writing this, the bleeding-edge Github version of [MayaVi](https://github.com/enthought/mayavi) version is working.
+For the visualization routines, the package MayaVi is required, which provides a more user-friendly interface for VTK. Installation has in the past proven a tangled web of dependencies and abandoned packages, but as of recent versions installation should be possible via:
+
+    brew install vtk --with-python --with-qt --without-python@2
+    pip3 install (--user) PyQt5
+    pip3 install (--user) mayavi
+
+Note that as of late, the installation / compilation of new(er) versions of VTK appears to be problematic, with a fix requiring installing from the most updated source. This causes problems down the road with installing mayavi, as it is unable to see a specific release version number of VTK.
+
+Good luck.
