@@ -1,0 +1,18 @@
+# FLUX Python Tools
+
+Here find some assembled Python tools for interfacing with and interpreting results from the FLUX core PDL code.
+
+## Plotting tools
+- plt-world.py - Plots a single snapshot of a fluxon world
+- plt-relax.py - Plots a sequence of relaxation steps for a fluxon world
+
+Other tools to be added after this initial test commit.
+
+## Installation requirements
+- Python 3
+- NumPy
+- SciPy
+- SunPy
+- MayaVi
+
+Note that the MayaVi / VTK installation is a bit more involved, and will be updated fully in time. The Enthought Python installation claims to have all of this bundled, and may be tested in the meantime. 
