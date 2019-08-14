@@ -103,10 +103,11 @@ $ export PL_PREFIX FL_PREFIX
 $ [sudo] make everything
 $ export -n FL_PREFIX PL_PREFIX
 
-for example, to install everything into your home directory ~/local/lib, ~/local/include, etc., you could do
+for example, to install everything into your home directory /home/user/local/lib, /home/user/local/include, etc., you could do (making sure to substitute the user home directory path, without tildes):
 
-$ PL_PREFIX=~/local FL_PREFIX=~/local make everything
-
+$ export PL_PREFIX='/home/user/local'
+$ export FL_PREFIX='/home/user/local'
+$ make everything
 
 --------
 
