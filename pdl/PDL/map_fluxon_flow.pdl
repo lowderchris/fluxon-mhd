@@ -12,7 +12,7 @@ use PDL::Options;
 
 sub map_fluxon_flow {
     my @fluxons = @_;
-    my $fn = 'fluxon_map_flow.dat';
+    my $fn = 'cr2193-rlx10000.dat';
 
 print @fluxons;
 
