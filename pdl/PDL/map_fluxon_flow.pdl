@@ -26,6 +26,7 @@ my @vrb = ();   # Beginning and end wind velocity
 my @vre = ();
 my @frb = ();   # Beginning and end expansion factors
 my @fre = ();
+my @fre2 = ();
 
 #die "I need something to work on!" if $#$fluxons<0;
 
@@ -56,16 +57,17 @@ for my $fid(0..scalar(@fluxons)-1){
     push(@the, squeeze($bth(0,1)));
     push(@vrb, $farr(1,0));
     push(@vre, $farr(1,-1));
-    push(@frb, $fr(0,1));
-    push(@fre, $fr(0,-1));
+    push(@frb, $fr(1,1));
+    push(@fre, $fr(-2,1));
+    push(@fre2, $fr(-1,1));
 
     # Output this data to disk
-    wcols pdl(@fps), pdl(@phb), pdl(@thb), pdl(@phe), pdl(@the), squeeze(pdl(@vrb)), squeeze(pdl(@vre)), squeeze(pdl(@frb)), squeeze(pdl(@fre)), $fn; 
+    wcols pdl(@fps), pdl(@phb), pdl(@thb), pdl(@phe), pdl(@the), squeeze(pdl(@vrb)), squeeze(pdl(@vre)), squeeze(pdl(@frb)), squeeze(pdl(@fre)), squeeze(pdl(@fre2)), $fn; 
 
 }
 
 # Output this data to disk
-wcols pdl(@fps), pdl(@phb), pdl(@thb), pdl(@phe), pdl(@the), squeeze(pdl(@vrb)), squeeze(pdl(@vre)), squeeze(pdl(@frb)), squeeze(pdl(@fre)), $fn; 
+wcols pdl(@fps), pdl(@phb), pdl(@thb), pdl(@phe), pdl(@the), squeeze(pdl(@vrb)), squeeze(pdl(@vre)), squeeze(pdl(@frb)), squeeze(pdl(@fre)), squeeze(pdl(@fre2)), $fn; 
 
 }
 
