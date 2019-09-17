@@ -48,7 +48,8 @@ sub gen_fluxon_flow {
         my $x = squeeze($me->dump_vecs->(0));
         my $y = squeeze($me->dump_vecs->(1));
         my $z = squeeze($me->dump_vecs->(2));
-        our $r = ($x**2 + $y**2 + $z**2)->sqrt * $opt{r0};
+        our $r1 = ($x**2 + $y**2 + $z**2)->sqrt * $opt{r0};
+        our $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
         our $th = acos($z/$r*$opt{r0});
         our $ph = atan2($y, $x);
         our $A = pdl(map {$_->{A}} ($me->vertices)) * $opt{r0} * $opt{r0};
@@ -56,10 +57,12 @@ sub gen_fluxon_flow {
         my $x = squeeze($me->dump_vecs->(0,-1:0:-1));
         my $y = squeeze($me->dump_vecs->(1,-1:0:-1));
         my $z = squeeze($me->dump_vecs->(2,-1:0:-1));
-        our $r = ($x**2 + $y**2 + $z**2)->sqrt * $opt{r0};
+        our $r1 = ($x**2 + $y**2 + $z**2)->sqrt * $opt{r0};
+        our $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
         our $th = acos($z/$r*$opt{r0});
         our $ph = atan2($y, $x);
         our $A = pdl(map { $_->{A}} ($me->vertices))->(-1:0:-1) * $opt{r0} * $opt{r0};
+        $A(0:-2) .= $A(1:-1);
     }
 
     # Get rid of end anomalies
@@ -71,7 +74,8 @@ sub gen_fluxon_flow {
     our $g = $g0 * ($opt{r0} / $r)**2;
 
     # Define an expansion factor
-    our $fr = $A / $A->((0)) * $opt{r0} * $opt{r0} / $r / $r;
+    # Note the direction has been set in the reading
+    our $fr = $A / $A->((1)) * ($r->((1))) * ($r->((1))) / $r / $r;
 
     # Smooth slightly to remove numerical issues
     $fr->inplace->convolveND(pdl(1,2,3,2,1)/9,{bound=>'e'});
