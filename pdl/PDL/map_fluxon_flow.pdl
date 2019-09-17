@@ -11,10 +11,9 @@ Given a world and list of fluxons, generates a mapping of the solar wind flow al
 use PDL::Options;
 
 sub map_fluxon_flow {
-    my @fluxons = @_;
-    my $fn = 'cr2193-rlx10000.dat';
-
-print @fluxons;
+    my $fn = shift;
+    my $fluxons = shift;
+    my @fluxons = @{$fluxons};
 
 # Generate some blank storage arrays
 my @fps = ();   # Fluxon array position
