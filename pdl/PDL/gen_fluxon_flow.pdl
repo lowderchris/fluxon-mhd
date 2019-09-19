@@ -50,7 +50,7 @@ sub gen_fluxon_flow {
         my $z = squeeze($me->dump_vecs->(2));
         our $r1 = ($x**2 + $y**2 + $z**2)->sqrt * $opt{r0};
         our $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
-        our $th = acos($z/$r*$opt{r0});
+        our $th = acos($z/$r1*$opt{r0});
         our $ph = atan2($y, $x);
         our $A = pdl(map {$_->{A}} ($me->vertices)) * $opt{r0} * $opt{r0};
     } else {
@@ -59,7 +59,7 @@ sub gen_fluxon_flow {
         my $z = squeeze($me->dump_vecs->(2,-1:0:-1));
         our $r1 = ($x**2 + $y**2 + $z**2)->sqrt * $opt{r0};
         our $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
-        our $th = acos($z/$r*$opt{r0});
+        our $th = acos($z/$r1*$opt{r0});
         our $ph = atan2($y, $x);
         our $A = pdl(map { $_->{A}} ($me->vertices))->(-1:0:-1) * $opt{r0} * $opt{r0};
         $A(0:-2) .= $A(1:-1);
