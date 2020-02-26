@@ -1061,7 +1061,7 @@ int fprint_world(FILE *file, WORLD *world, char *header) {
   fprintf(file,"GLOBAL SKEW_HANDLING %d\n", world->handle_skew);
 
   fprintf(file,"GLOBAL CONCURRENCY %ld\n",world->concurrency);
-  
+
   fprintf(file,"\n\n"); /* leave an extra space after the globals */
     
   /* Write out all flux concentration locations */
@@ -1198,7 +1198,7 @@ void fdump_fluxon(FILE *f, FLUXON *foo, int indent) {
   fprint_all_fluxon_node(f,foo,indent);
 
   for((i=0),(v = foo->start); v ; v=v->next) {
-    fprintf(f,"%s v %3d: lab %11ld, loc %lx x:(%6.3g, %6.3g, %6.3g) neigh: %3d, near: %3d, next: %lx, prev: %lx\n"
+    fprintf(f,"%s v %3d: lab %11ld, loc %lx x:(%.17g, %.17g, %.17g) neigh: %3d, near: %3d, next: %lx, prev: %lx\n"
 	    ,buf
 	    , i
 	    , v->label
@@ -1277,7 +1277,7 @@ void fprint_fc_line(FILE *f,
   FLUX_CONCENTRATION *fc=foo;
   static char fc_line_format[80]="";
   if(!*fc_line_format) {
-    sprintf(fc_line_format,"NEW\t%%ld\t%%%sf\t%%%sf\t%%%sf\t%%%sg\t%%s\t%%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+    sprintf(fc_line_format,"NEW\t%%ld\t%%%s.17f\t%%%s.17f\t%%%s.17f\t%%%sg\t%%s\t%%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
   }
   fprintf(f, fc_line_format,fc->label, fc->x[0], fc->x[1], fc->x[2], fc->flux, boundary_ptr_to_name(fc->bound), fc->locale_radius );
 }
@@ -1314,11 +1314,11 @@ void fprint_fls_by_fc(FILE *f,
 void fprint_fl_vertices(FILE *f,
 			void *fl0, int i, int lab_of, int lin_of) {
   FLUXON *fl = fl0;
-  static char fl_format[80]="";
-  static char v_format[80]="";
+  static char fl_format[180]="";
+  static char v_format[180]="";
   if(!*fl_format) {
-    sprintf(fl_format,"LINE\t%%ld\t%%ld\t%%ld\t%%ld\t%%ld\t%%%sg            %%%sg %%%sg %%%sg   %%%sg %%%sg %%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
-    sprintf( v_format,"\tVERTEX\t%%ld\t%%ld\t%%ld\t%%%sf\t%%%sf\t%%%sf\n",
+    sprintf(fl_format,"LINE\t%%ld\t%%ld\t%%ld\t%%ld\t%%ld\t%%%sg            %%%s.17g %%%s.17g %%%s.17g   %%%s.17g %%%s.17g %%%s.17g\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+    sprintf( v_format,"\tVERTEX\t%%ld\t%%ld\t%%ld\t%%%s.17f\t%%%s.17f\t%%%s.17f\n",
 	     NUMCHAR,NUMCHAR,NUMCHAR);
   }
 
