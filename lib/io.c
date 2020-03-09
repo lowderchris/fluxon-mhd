@@ -1277,7 +1277,7 @@ void fprint_fc_line(FILE *f,
   FLUX_CONCENTRATION *fc=foo;
   static char fc_line_format[80]="";
   if(!*fc_line_format) {
-    sprintf(fc_line_format,"NEW\t%%ld\t%%%s.17f\t%%%s.17f\t%%%s.17f\t%%%sg\t%%s\t%%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+    sprintf(fc_line_format,"NEW\t%%ld\t%%.17%sf\t%%.17%sf\t%%.17%sf\t%%%sg\t%%s\t%%%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
   }
   fprintf(f, fc_line_format,fc->label, fc->x[0], fc->x[1], fc->x[2], fc->flux, boundary_ptr_to_name(fc->bound), fc->locale_radius );
 }
@@ -1317,8 +1317,8 @@ void fprint_fl_vertices(FILE *f,
   static char fl_format[180]="";
   static char v_format[180]="";
   if(!*fl_format) {
-    sprintf(fl_format,"LINE\t%%ld\t%%ld\t%%ld\t%%ld\t%%ld\t%%%sg            %%%s.17g %%%s.17g %%%s.17g   %%%s.17g %%%s.17g %%%s.17g\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
-    sprintf( v_format,"\tVERTEX\t%%ld\t%%ld\t%%ld\t%%%s.17f\t%%%s.17f\t%%%s.17f\n",
+    sprintf(fl_format,"LINE\t%%ld\t%%ld\t%%ld\t%%ld\t%%ld\t%%%sg            %%.17%sg %%.17%sg %%.17%sg   %%.17%sg %%.17%sg %%.17%sg\n",NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR,NUMCHAR);
+    sprintf( v_format,"\tVERTEX\t%%ld\t%%ld\t%%ld\t%%.17%sf\t%%.17%sf\t%%.17%sf\n",
 	     NUMCHAR,NUMCHAR,NUMCHAR);
   }
 
