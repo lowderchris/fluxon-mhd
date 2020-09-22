@@ -76,7 +76,7 @@ sub fluxon_placement_hilbert {
     $siz = 2 ** (( log($siz * $density_mult)/log(2) )->ceil->at(0)) ;
 	print "siz is $siz\n";
     
-    my $path = hilbert($siz,$siz);
+    my $path = double(hilbert($siz,$siz));
     $path->((0)) *= $bgram->dim(0)/$siz;
     $path->((1)) *= $bgram->dim(1)/$siz;
 
