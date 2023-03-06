@@ -74,9 +74,9 @@ CODE:
 	sprintf(str,"vertex %5ld (fl %5ld): xyz=%7.3g,%7.3g,%7.3g, |B|=%7.3g, n=%5ld,p=%5ld, out/in:%2d/%2d\n",
 	v->label,
 	v->line->label,
-	v->x ? v->x[0]:-1e64,
-	v->x ? v->x[1]:-1e64,
-	v->x ? v->x[2]:-1e64,
+	v->x[0],
+	v->x[1],
+	v->x[2],
 	v->b_mag,
 	v->next ? v->next->label : 0,
 	v->prev ? v->prev->label : 0, 
@@ -84,7 +84,7 @@ CODE:
         v->nearby.n
         );
   } else {
-	sprintf(str,"vertex %5ld (IMAGE; xyz may be invalid): xyz=%7.3g,%7.3g,%7.3g\n",v->label, v->x?v->x[0]:-1e64, v->x?v->x[1]:-1e64, v->x?v->x[2]:-1e64);
+	sprintf(str,"vertex %5ld (IMAGE; xyz may be invalid): xyz=%7.3g,%7.3g,%7.3g\n",v->label, v->x[0], v->x[1], v->x[2]);
   }
 
   RETVAL = str;
