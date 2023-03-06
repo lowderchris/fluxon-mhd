@@ -885,11 +885,11 @@ CODE:
  ptr = (void *)(FLUX->SvFluxPtr(sv,"_rbound", "Flux",0,1));
  field = fieldptr(ptr,typeno, fieldno);
 
- for(i=0;FLUX->F_B_NAMES[i].name && 
+ for(i=0;FLUX->F_B_NAMES[i].name[0] &&
 	( (void *)(FLUX->F_B_NAMES[i].func) != *field);
 	i++)
 	;
- if(FLUX->F_B_NAMES[i].name) {
+ if(FLUX->F_B_NAMES[i].name[0]) {
      sv = newSVpv(FLUX->F_B_NAMES[i].name,
 	 strlen(  FLUX->F_B_NAMES[i].name));
  } else {
@@ -925,12 +925,12 @@ CODE:
 	*field = 0;
  } else {
 	 for(j=0;
-	     FLUX->F_B_NAMES[j].name &&
+	     FLUX->F_B_NAMES[j].name[0] &&
 	     strcmp(FLUX->F_B_NAMES[j].name, what);
 	     j++)
 	printf("Trying 0x%lx (%s); value is %lx\n",(unsigned long)(FLUX->F_B_NAMES[j].func),FLUX->F_B_NAMES[j].name,(unsigned long)(*field));
 	       ;
-	 if(!(FLUX->F_B_NAMES[j].name)) {
+	 if(!(FLUX->F_B_NAMES[j].name[0])) {
 		char buf[10240];
 		sprintf(buf, "Unknown fluxon end condition '%s' (must be one of: %s", what, FLUX->F_B_NAMES[0].name);
 		for(j=1;FLUX->F_B_NAMES[j].func;j++) {
