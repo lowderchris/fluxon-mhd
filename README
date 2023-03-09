@@ -16,11 +16,11 @@ All source files are copyright (C) 2004-2023 by the authors unless otherwise mar
 THIS SOFTWARE COMES WITH NO WARRANTY OF ANY KIND.
 
 Authors:
-	Craig DeForest	 	deforest@boulder.swri.edu
-	Charles Kankelborg 	kankel@solar.physics.montana.edu
-	Derek Lamb 	derek@boulder.swri.edu
-	Chris Lowder 	chris.lowder@swri.org
-	Laurel Rachmeler	laurel@boulder.swri.edu
+	Craig DeForest		deforest@boulder.swri.edu
+	Charles Kankelborg		kankel@solar.physics.montana.edu
+	Derek Lamb		derek@boulder.swri.edu
+	Chris Lowder		chris.lowder@swri.org
+	Laurel Rachmeler		laurel@boulder.swri.edu
 	Alisdair Davey		adavey@spd.org
 
 Contributors (gratefully acknowledged):
@@ -54,25 +54,25 @@ After installation, some autoloading routines will be installed for you.  See th
 
 Note the 'sudo' on lines 2 and [if required based on PL_PREFIX] 4
 
-$ export FL_PREFIX PL_PREFIX
-$ make libbuild
-$ sudo make libinstall
-$ make pdlbuild
-$ make pdltest
-$ [sudo] make pdlinstall
-$ export -n FL_PREFIX PL_PREFIX
+% export FL_PREFIX PL_PREFIX
+% make libbuild
+% sudo make libinstall
+% make pdlbuild
+% make pdltest
+% [sudo] make pdlinstall
+% export -n FL_PREFIX PL_PREFIX
 
 IFF both the library and the module are going to be installed in root-owned or user-owned locations, you can shortcut the above with
 
-$ export PL_PREFIX FL_PREFIX
-$ [sudo] make everything
-$ export -n FL_PREFIX PL_PREFIX
+% export PL_PREFIX FL_PREFIX
+% [sudo] make everything
+% export -n FL_PREFIX PL_PREFIX
 
 for example, to install everything into your home directory /home/user/local/lib, /home/user/local/include, etc., you could do (making sure to substitute the user home directory path, without tildes):
 
-$ export PL_PREFIX='/home/user/local'
-$ export FL_PREFIX='/home/user/local'
-$ make everything
+% export PL_PREFIX='/home/user/local'
+% export FL_PREFIX='/home/user/local'
+% make everything
 
 --------
 
@@ -120,11 +120,9 @@ RELEASE NOTES FOR v2.0 (1-Nov-2007):
   - Now includes reconnection via the "reconnect" Flux::World method
   - Updated and validated force laws
   - Full plasmoid support
-  - Full open-field boundary support, including omega and U loop
-	interactions with the boundary
+  - Full open-field boundary support, including omega and U loop interactions with the boundary
   - Includes a Floyd-Steinberg ditherer for footpoint placement
-  - Includes techniques ("ductions") for moving footpoints in
-	time-dependent simulations
+  - Includes techniques ("ductions") for moving footpoints in time-dependent simulations
   - Better control over relaxation parameters
   - Emergence/cancellation support
   - Better interaction with Perl:
