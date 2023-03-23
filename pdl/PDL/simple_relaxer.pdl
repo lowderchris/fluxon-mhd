@@ -129,8 +129,8 @@ sub simple_relaxer {
     my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
     my $conv = 180.0 / (atan2(1,1)*4.);
 
-    $step = $w->{rel_step} || 0;
-    $final_step=$n;
+    my $step = $w->{rel_step} || 0;
+    my $final_step=$n;
     $final_step = $step + $n if $final_step <= $step;
 
 #    $w = read_world($w)
@@ -161,7 +161,7 @@ sub simple_relaxer {
 		$w->update_neighbors(-1);
 	    }
 	    print "parallel update_force... ";
-	    $fmax = $w->update_force_parallel($global);
+	    my $fmax = $w->update_force_parallel($global);
 	    print "parallel relax_step... ";
 	    $w->relax_step_parallel($dt);
 	} else {
@@ -170,13 +170,13 @@ sub simple_relaxer {
 		printf("computing inital fast neighbor search...\n");
 		$w->update_neighbors(-1);
 	    }
-	    $fmax = $w->update_force($global);
+	    my $fmax = $w->update_force($global);
 	    $w->relax_step($dt);
 	}
-	$t += $dt;
+	my $t += $dt;
         $w->{rel_step}++;
 
-	$h = $w->fw_stats;
+	my $h = $w->fw_stats;
 
 
 	eval { printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av},$w->{max_angle}, $w->{mean_angle}); };
@@ -186,8 +186,8 @@ sub simple_relaxer {
 
 	if($@) { print "printf err:", $@; $@='';}
 
-	push(@f_av,$h->{f_av});
-	push(@fs_av,$h->{fs_av});
+	push(my @f_av,$h->{f_av});
+	push(my @fs_av,$h->{fs_av});
 
 	unless($save_n==0 || $step % $save_n) {
 	    my $s = sprintf($save_f,$step);
@@ -200,16 +200,16 @@ sub simple_relaxer {
 	    $w->render_lines($opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
 	    if($movie_n) { #DAL: this doesn't agree with the description of movie_n in the POD.
 	      my $fname = sprintf($movie_f,$step);
-	      $w->render_lines($opt->{movie_opt} // $opt->{render_opt}, $gpw=gpwin($png_term, output=>$fname));
+	      $w->render_lines($opt->{movie_opt} // $opt->{render_opt}, my $gpw=gpwin($png_term, output=>$fname));
 	      $gpw->close;
 	      print "wrote $fname...\n";
 	    }
 	}
 
 if($auto) {
-	   $dt0 = $dt unless(defined $dt0);
-	   $ratio = $h->{f_av}/$h->{fs_av};
-	   $dt = $dt0 * $ratio;
+	   my $dt0 = $dt unless(defined my $dt0);
+	   my $ratio = $h->{f_av}/$h->{fs_av};
+	   my $dt = $dt0 * $ratio;
 	   print "\t\tratio=$ratio; new dt=$dt\n";
 	}
 
