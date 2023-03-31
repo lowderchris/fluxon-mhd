@@ -48,6 +48,7 @@ PHYSICS_FUNC f_pressure_equi2;
 PHYSICS_FUNC f_pressure_equi2a;
 PHYSICS_FUNC f_pressure_equi2b;
 
+PHYSICS_FUNC f_p_eqa_perp;
 PHYSICS_FUNC f_p_eqa_radial;
 PHYSICS_FUNC f_curv_hm;
 PHYSICS_FUNC f_curv_m;

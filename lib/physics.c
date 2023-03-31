@@ -1829,7 +1829,7 @@ void f_p_eqa_perp(VERTEX *V, HULL_VERTEX *verts, int segflag) {
      */
     factor = - fac * (2 * 8) / (v->r * v->r * v->r);
     
-    fperp = factor * (lefta-righta + 0.5* (sin(2*lefta) - sin(2*righta));
+    fperp = factor * (lefta-righta + 0.5* (sin(2*lefta) - sin(2*righta)));
     fpar = 0;
 
     /* Rotate into the absolute coordinate system */
@@ -1919,7 +1919,7 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts, int segflag) {
      */
     factor = - fac * (2 * 8) / (v->r * v->r * v->r);
     
-    fperp = factor * (lefta-righta + 0.5 * (sin(2*lefta) - sin(2*righta));
+    fperp = factor * (lefta-righta + 0.5 * (sin(2*lefta) - sin(2*righta)));
     fpar  = factor * ( cos(2*righta) - cos(2*lefta) );
 
     /* Rotate into the absolute coordinate system */
