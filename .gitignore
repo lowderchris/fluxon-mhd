@@ -6,6 +6,7 @@
 *.gcov
 *.gcda
 *.gcno
+*.png
 cover_db/
 
 #the local sandbox build

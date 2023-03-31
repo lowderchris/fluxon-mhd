@@ -1097,7 +1097,7 @@ our $window;
 sub render {
     my $w = shift;
     my $opt=shift // {};
-    my $dev = $opt->{dev} // 'wxt';
+    my $dev = $opt->{dev} // 'qt';
     my $gpwin = shift // $opt->{window} // $window // ($window=gpwin($dev,size=>[9,9],dashed=>0));
 
     $gpwin->options(trid=>1,view=>[equal=>'xyz'],xyplane=>[relative=>0.1],xlabel=>'X',ylabel=>'Y',zlabel=>'Z');
