@@ -17,10 +17,10 @@ THIS SOFTWARE COMES WITH NO WARRANTY OF ANY KIND.
 
 Authors:
 	Craig DeForest		deforest@boulder.swri.edu
-	Charles Kankelborg		kankel@solar.physics.montana.edu
+	Charles Kankelborg	kankel@solar.physics.montana.edu
 	Derek Lamb		derek@boulder.swri.edu
 	Chris Lowder		chris.lowder@swri.org
-	Laurel Rachmeler		laurel@boulder.swri.edu
+	Laurel Rachmeler	laurel@boulder.swri.edu
 	Alisdair Davey		adavey@spd.org
 
 Contributors (gratefully acknowledged):
@@ -107,7 +107,6 @@ RELEASE NOTES FOR v2.2 (22-Nov-2008):
   - There is better support for motion and interaction of flux concentrations.
 
 RELEASE NOTES FOR v2.1 (3-Apr-2008):
-
   - Many, many bug fixes
   - Photospheres and other refs handled correctly by hash interface
   - Reworked Perl hash interface to eliminate stale pointers altogether
@@ -116,7 +115,6 @@ RELEASE NOTES FOR v2.1 (3-Apr-2008):
   - Better auto-open support
 
 RELEASE NOTES FOR v2.0 (1-Nov-2007):
-
   - Now includes reconnection via the "reconnect" Flux::World method
   - Updated and validated force laws
   - Full plasmoid support
