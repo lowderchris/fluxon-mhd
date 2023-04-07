@@ -59,6 +59,7 @@ PHYSICS_FUNC f_vertex3;
 PHYSICS_FUNC f_vertex4;
 PHYSICS_FUNC f_vertex5;
 PHYSICS_FUNC f_vert;
+PHYSICS_FUNC f_vert4;
 
 /* F_CONV_TABLE is an array that associates function names with 
  * jumptable entries.  The actual array is defined in physics.c.

@@ -68,6 +68,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_vertex4","Vertex distribution pseudo-force (r^2 repulsion)",f_vertex4},
   {"f_vertex5","Vertex distribution pseudo-force",f_vertex5},
   {"f_vert","Vertex distribution pseudo-force",f_vert},
+  {"f_vert4","Vertex distribution pseudo-force",f_vert4},
   //  {"m_hydrostatic","Quasi-hydrostatic mass loading with N_0 and T_0 from powers of B_base; requires a b_",m_hydrostatic},
   {0,0,0}
 };
@@ -826,6 +827,101 @@ void f_vert(VERTEX *V, HULL_VERTEX *verts, int segflag) {
 }
 
 /**********************************************************************
+ * f_vert4
+ * Pseudoforce that moves vertices along field lines.  Used to keep them 
+ * nicely evened out along the lines and to attract them to 
+ * curvature.
+ * 
+ * Strictly speaking, this is two forces:  a vertex repulsive force
+ * and another force that attracts vertices toward curvature.  But
+ * the two should always be used together, so they're included together.
+ *
+ * f_vert4 is optimized for use with the newer forces that are straight
+ * force-per-unit-length: it is artificially strengthened by the 
+ * local B field magnitude.
+ * 
+ */
+void f_vert4(VERTEX *V, HULL_VERTEX *verts, int segflag) {
+  NUM force[3];
+  NUM d1[3], d1n [3], d2[3], d2n[3];
+  NUM d1nr,d2nr,fn1,fn2,fn3; /* fn's are scalers */
+  NUM l1, l2, l_fac;
+  NUM dpp[3], dnn[3];
+  NUM alpha_p, alpha_n, lnn, lpp, i1; 
+
+  NUM r_clp, r_cln;
+  NUM Bmag;
+
+  /* Exclude endpoints and image charges */
+  if(!V->next || !V->prev || V->label < 0)
+    return;
+
+  /* Scale forces to the maximum of the B values in our vicinity */
+  Bmag = (V->b_mag > V->prev->b_mag) ? V->b_mag : V->prev->b_mag ;
+
+  // Find the normal vectors pointing along the previous and next segments,
+  // and collect the lengths of the original vectors...
+
+  diff_3d(d1,V->x,V->prev->x);
+  scale_3d(d1n, d1, (d1nr = 1.0 / (l1=norm_3d(d1)))); /* assignment */
+
+  diff_3d(d2,V->next->x, V->x);
+  scale_3d(d2n, d2, (d2nr = 1.0 / (l2=norm_3d(d2)))); /* assignment */
+
+
+  /* Repulsive force from nearest neighbors.  The force drops as 
+   *  1/r^2 but is normalized l to yield something like 1.
+   */
+  fn1 = (d1nr*d1nr-d2nr*d2nr) * ( (l1+l2)*0.5 ) * ( (l1+l2)*0.5 );
+  //fn1 *= 0.5;
+
+  /* Curvature-attractive force.  This attracts vertices toward
+   * curvature so that sharp angles attract vertices to smooth
+   * themselves out.
+   */
+
+  if(V->prev->prev && V->next->next) {
+
+    diff_3d(dnn,V->next->next->x,V->next->x);
+    lnn = norm_3d(dnn);
+
+    diff_3d(dpp,V->prev->x,V->prev->prev->x);
+    lpp = norm_3d(dpp);
+
+    alpha_p = M_PI - acos( (1-1e-6) * (inner_3d(dpp, d1)) / (l1 * lpp) );
+    alpha_n = M_PI - acos( (1-1e-6) * (inner_3d(dnn, d2)) / (l2 * lnn) );
+    
+    fn3 = 1.0 * (alpha_p - alpha_n);
+    V->f_v_tot += fabs(fn3);
+     
+    //fn3 *= 0.5;
+  } else {
+
+    fn3 = 0.0;
+  
+  }
+
+  /* Generate a unit vector along the field line and scale it to the
+   * calculated force.
+   */
+
+  sum_3d(force,d1n, d2n);
+  scale_3d(force, force, (fn1 + fn3) * Bmag / norm_3d(force) / (l1+l2) / 2);
+
+  /* Stick the force where it belongs in the VERTEX's force vector.*/
+
+  if (!isfinite(norm_3d(force))) {
+    printf("something is wrong with the vertex4 force on vertex %ld on fl%ld (non-finite). ln is %ld on %ld, nn is %ld on %ld, l1=%g,l2=%g,lnn=%g,lpp=%g,x=(%g,%g,%g),xn=(%g,%g,%g),xnn=(%g,%g,%g)\n",V->label,V->line->label,V->next->label,V->next->line->label, V->next->next->label,V->next->next->line->label,l1,l2,lnn,lpp,V->x[0],V->x[1],V->x[2],V->next->x[0],V->next->x[1],V->next->x[2],V->next->next->x[0],V->next->next->x[1],V->next->next->x[2]);
+      }
+
+
+  sum_3d(V->f_v, V->f_v, force);
+  V->f_v_tot+= norm_3d(force);
+
+  return;
+}
+
+/**********************************************************************
  * f_vertex
  * Pseudoforce that moves vertices along field lines.  Used to keep them 
  * nicely evened out along the lines and to attract them to 
@@ -1173,7 +1269,7 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts, int segflag) {
 }
 
 /**********************************************************************
- * f_vertex4 
+ * f_vertex5
  *
  * Similar to f_vertex3, it has vertex repulstion, curvature
  * attraction, and attraction to close fluxons. It is modified
