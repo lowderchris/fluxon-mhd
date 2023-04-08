@@ -62,13 +62,13 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_curv_m","Curvature force law (mean curvature)",f_curv_m},
   {"f_p_eqa_perp","Angular equipartition pressure, perpendicular force",f_p_eqa_perp},
   {"f_p_eqa_radial","Angular equipartition pressure, radial forces",f_p_eqa_radial},
+  {"f_vert","Vertex distribution pseudo-force",f_vert},
+  {"f_vert4","Vertex distribution pseudo-force",f_vert4},
   {"f_vertex","Vertex distribution pseudo-force (DEPRECATED)",f_vertex},
   {"f_vertex2","Vertex distribution pseudo-force",f_vertex2},
   {"f_vertex3","Vertex distribution pseudo-force",f_vertex3},
   {"f_vertex4","Vertex distribution pseudo-force (r^2 repulsion)",f_vertex4},
   {"f_vertex5","Vertex distribution pseudo-force",f_vertex5},
-  {"f_vert","Vertex distribution pseudo-force",f_vert},
-  {"f_vert4","Vertex distribution pseudo-force",f_vert4},
   //  {"m_hydrostatic","Quasi-hydrostatic mass loading with N_0 and T_0 from powers of B_base; requires a b_",m_hydrostatic},
   {0,0,0}
 };
@@ -1749,7 +1749,7 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts, int segflag) {
 
   }
   
-  Bmag *= V->line->flux * PI * PI;
+  Bmag *= V->line->flux / (4 * PI * PI);
 
   V->b_mag = Bmag;
 
@@ -1835,12 +1835,16 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM l1, l2, recip_len, len;
   NUM b1hat[3];
   NUM b2hat[3];
+  NUM Bmag;
   NUM curve[3];
   NUM force[3];
 
 
   if(!V->next || !V->prev) 
     return;
+
+  /* Scale forces to the mean of the B values in our vicinity */
+  Bmag = (V->b_mag + V->prev->b_mag) / 2;
 
   diff_3d(b2hat,V->next->x,V->x);
   scale_3d(b2hat,b2hat, 1.0 / (l2 = norm_3d(b2hat)));
@@ -1851,9 +1855,7 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   recip_len =  2 / ( l1 + l2 );
   
   diff_3d(curve,b2hat,b1hat);
-  scale_3d(curve, curve, recip_len * V->line->flux);
-
-  //  scale_3d(curve,curve, recip_len * 0.5 * (V->prev->b_mag + V->b_mag));
+  scale_3d(curve, curve, recip_len * Bmag * V->line->flux);
 
   sum_3d(V->f_v,V->f_v,curve);
 
