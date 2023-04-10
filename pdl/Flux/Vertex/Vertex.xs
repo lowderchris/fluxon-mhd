@@ -74,9 +74,9 @@ CODE:
 	sprintf(str,"vertex %5ld (fl %5ld): xyz=%7.3g,%7.3g,%7.3g, |B|=%7.3g, n=%5ld,p=%5ld, out/in:%2d/%2d\n",
 	v->label,
 	v->line->label,
-	v->x ? v->x[0]:-1e64,
-	v->x ? v->x[1]:-1e64,
-	v->x ? v->x[2]:-1e64,
+	v->x[0],
+	v->x[1],
+	v->x[2],
 	v->b_mag,
 	v->next ? v->next->label : 0,
 	v->prev ? v->prev->label : 0, 
@@ -84,7 +84,7 @@ CODE:
         v->nearby.n
         );
   } else {
-	sprintf(str,"vertex %5ld (IMAGE; xyz may be invalid): xyz=%7.3g,%7.3g,%7.3g\n",v->label, v->x?v->x[0]:-1e64, v->x?v->x[1]:-1e64, v->x?v->x[2]:-1e64);
+	sprintf(str,"vertex %5ld (IMAGE; xyz may be invalid): xyz=%7.3g,%7.3g,%7.3g\n",v->label, v->x[0], v->x[1], v->x[2]);
   }
 
   RETVAL = str;
@@ -233,7 +233,7 @@ CODE:
  loc = PDL->SvPDLV(locsv);
  if(!loc || loc->ndims<1 || loc->dims[0] != 3) 
 	croak("Flux::Vertex::add_vertex_after- requires a 3-PDL location");
- PDL->converttype(&loc, PDL_D, 1);
+ PDL->converttype(loc, PDL_D);
  PDL->make_physical(loc);
  nv = FLUX->new_vertex(0, 
 	((PDL_Double *)(loc->data))[0],
@@ -265,7 +265,7 @@ CODE:
  hull_verts = FLUX->vertex_update_neighbors(v, global);
  
  /* Now stuff the hull vertices into the first PDL. */
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  dims[0] = 7;
  dims[1] = v->neighbors.n;
  PDL->setdims(p,dims,2);	
@@ -310,7 +310,7 @@ CODE:
  hull_verts = FLUX->photosphere_vertex_update_neighbors(v, global, &n);
  
  /* Now stuff the hull vertices into the first PDL. */
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  dims[0] = 4;
  dims[1] = n;
  PDL->setdims(p,dims,2);	
@@ -347,7 +347,7 @@ CODE:
  if( ! v->next ) {
 	RETVAL = &PL_sv_undef;
  } else {
-	p = PDL->create(PDL_PERM);
+	p = PDL->pdlnew();
 	dims[0]=3;
 	dims[1]=3;
 	PDL->setdims(p,dims,2);
@@ -397,7 +397,7 @@ CODE:
  FLUX->project_n_fill(v,dl);
  
  /* Now stuff the dumblist of vertices into the return PDL. */
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  dims[0] = 3;
  dims[1] = dl->n;
  PDL->setdims(p,dims,2);	
@@ -447,7 +447,7 @@ PREINIT:
  PDL_Indx dims[1];
 CODE:
  v = SvVertex(svrt,"Flux::Vertex::x",1);
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  dims[0] = 3;
  PDL->setdims(p,dims,1);
  p->datatype = PDL_D;
