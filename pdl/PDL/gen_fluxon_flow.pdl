@@ -1,18 +1,20 @@
 use PDL::NiceSlice;
-=head2 calculate_flow_in_fluxon
+=head2 gen_fluxon_flow
 
 =for ref
 
 Given a fluxon and some options, calculate the flow and density in the fluxon if it is open (or leave it blank if it is closed).
 
-Returns a 3xN PDL, containing (r, vr, rho).  By default, it also updates these fields in the fluxon itself.
+Returns a 2xN PDL, containing (r, vr).  By default, it also updates these fields in the fluxon itself. Returns two PDLs containing the starting / ending theta and phi values for the fluxon.
 
 If the fluxon is doubly open or doubly closed or a plasmoid, return udnef.
 
 =cut
 use PDL::Options;
+use Math::RungeKutta;
+use PDL::GSL::INTEG;
 
-sub calculate_flow_in_fluxon {
+sub gen_fluxon_flow {
     my $me = shift;
     my $u_opt = shift // {};
 
@@ -21,7 +23,8 @@ sub calculate_flow_in_fluxon {
         steps => 500,
         g0 => 280,      # m/s^2
         r0 => 696e6,    # m
-        v0 => 10,       # km/sec
+        #v0 => 10,       # km/sec
+        v0 => rand(10)+10,       # km/sec
         cs => 180,      # km/sec at 2e6K and fully ionized protons
                         },
                         $u_opt
@@ -40,14 +43,27 @@ sub calculate_flow_in_fluxon {
     my $r0 = $opt{r0};
     my $cs = $opt{cs} * 1e3; ## convert to m/s from km/s
 
-    # Calculate array of positional radius and areas along the fluxon
-    # Work along the correction direction depending on which end is open
+    # Calculate array of spherical coordinate positions and areas along the fluxon
+    # Work along the correct direction depending on which end is open
     if($en_open) {
-        our $r = ($me->dump_vecs->(0:2)**2)->sumover->sqrt * $opt{r0};
+        my $x = squeeze($me->dump_vecs->(0));
+        my $y = squeeze($me->dump_vecs->(1));
+        my $z = squeeze($me->dump_vecs->(2));
+        our $r1 = ($x**2 + $y**2 + $z**2)->sqrt * $opt{r0};
+        our $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
+        our $th = acos($z/$r1*$opt{r0});
+        our $ph = atan2($y, $x);
         our $A = pdl(map {$_->{A}} ($me->vertices)) * $opt{r0} * $opt{r0};
     } else {
-        our $r = ($me->dump_vecs->(0:2,-1:0:-1)**2)->sumover->sqrt * $opt{r0};
+        my $x = squeeze($me->dump_vecs->(0,-1:0:-1));
+        my $y = squeeze($me->dump_vecs->(1,-1:0:-1));
+        my $z = squeeze($me->dump_vecs->(2,-1:0:-1));
+        our $r1 = ($x**2 + $y**2 + $z**2)->sqrt * $opt{r0};
+        our $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
+        our $th = acos($z/$r1*$opt{r0});
+        our $ph = atan2($y, $x);
         our $A = pdl(map { $_->{A}} ($me->vertices))->(-1:0:-1) * $opt{r0} * $opt{r0};
+        $A(0:-2) .= $A(1:-1);
     }
 
     # Get rid of end anomalies
@@ -59,7 +75,8 @@ sub calculate_flow_in_fluxon {
     our $g = $g0 * ($opt{r0} / $r)**2;
 
     # Define an expansion factor
-    our $fr = $A / $A->((0)) * $opt{r0} * $opt{r0} / $r / $r;
+    # Note the direction has been set in the reading
+    our $fr = $A / $A->((1)) * ($r->((1))) * ($r->((1))) / $r / $r;
 
     # Smooth slightly to remove numerical issues
     $fr->inplace->convolveND(pdl(1,2,3,2,1)/9,{bound=>'e'});
@@ -73,26 +90,27 @@ sub calculate_flow_in_fluxon {
     # Chunk of code to calculate
     $dydx = sub {
         my $rnow = shift;
-        my $vnow = shift;
+        #my $vnow = shift;
 
         my $front = $vnow/$rnow;
         my $denominator = $cs * $cs  -  $vnow * $vnow;
 
-        my $gnow = ($rnow->interpolate($r,$g))[0];
-        my $frnow = ($rnow->interpolate($r,$fr))[0];
-        my $dfr_drnow = ($rnow->interpolate($r,$dfr_dr))[0];
+        my ($gnow,$gerr) = interpolate($rnow,$r,$g);
+        my ($frnow,$frerr) = interpolate($rnow,$r,$fr);
+        my ($dfr_drnow,$dfrerr) = interpolate($rnow,$r,$dfr_dr);
+        #my $dfr_drnow = 0;
 
         my $numerator = $gnow * $rnow   -   2 * $cs * $cs * (  1   +   $rnow / 2 / $frnow * $dfr_drnow  );
-        return ($front * $numerator / $denominator, $numerator, $denominator);
+        #return ($front * $numerator / $denominator, $numerator, $denominator);
+        return $front * $numerator / $denominator;
     };
 
     # Calculate average steps in r
-    # CL - Is the average value here the right one to use?
     $dr = ($r->max - $r->min) / $opt{steps};
 
     # Define v0 and r0 values, and push into a list for storage
     @rv = ();
-    $vnow = $opt{v0} * 1e3; # Convert to m/sec from km/sec
+    our $vnow = $opt{v0} * 1e3; # Convert to m/sec from km/sec
     $rnow = $r->minimum;
     push(@rv, pdl($rnow,$vnow));
 
@@ -100,51 +118,19 @@ sub calculate_flow_in_fluxon {
     @num = ();
     @denom = ();
 
-    # Stupid Eulerian steps: walk out to the end or to the first failed critical point.
     my ($dvdr, $oldnum, $olddenom) = &$dydx($rnow,$vnow);
 
-    # Step along
-    for($step=0; $step<$opt{steps};$step++){
-        # Calculate dv/dr
-        my ($dv, $num, $denom) = &$dydx($rnow,$vnow);
-        # Advance values of r and v
+    for ($step=0; $step<$opt{steps};$step++){
+        #($rnow, $vnow) = rk4([$vnow], \&$dydx, $rnow, $dr);
+        ($vint, $abserr, $ierr) = gslinteg_qags($dydx, $rnow, $rnow+$dr, 0, 1e-6, 1000,{Warn => 'y'});
         $rnow += $dr;
-        $vnow += $dv * $dr;
-        # Append numerator and denominator values to lists
-        push(@num, $num);
-        push(@denom, $denom);
-        # Check for a change in sign of the denominator
-        # Does this indicate v overtaking cs?
-        if($denom * $olddenom < 0) {
-            # Check that the numerator does *not* change in sign
-            if($num * $oldnum > 0) {
-                # Set vnow to NaN, and push r and v values to the list @rv
-                $vnow = pdl(asin(1.1));
-                push(@rv, pdl($rnow,$vnow));
-                # Exit the stepping loop
-                last;
-            }
-        }
-        # Save old values for comparison with the next iteration
-        $olddenom = $denom;
-        $oldnum = $num;
-        # Push r and v values to the list @rv
+        $vint = squeeze($vint);
+        $vnow += $vint;
         push(@rv, pdl($rnow,$vnow));
-        # Exit the loop if vnow is not a finite number
-        last unless(isfinite($vnow));
     }
+
     # Return a list of r and v values, in units of r_sun and m/s
-    return pdl(@rv) * pdl(1.0/$opt{r0},1e-3);
+    return (pdl(@rv) * pdl(1.0/$opt{r0},1e-3), pdl($r/$opt{r0}, $fr), pdl($th(0), $th(-1)), pdl($ph(0), $ph(-1)));
 }
 
 __END__
-
-    for ($step=0; $step<$opt{steps};$step++){
-        $vnow = rk4($rnow, $dr, $dydx, $vnow);
-        $rnow += $dr;
-        push(@rv, pdl($rnow,$vnow));
-    }
-    return pdl(@rv) * pdl(1.0/$opt{r0},1e-3);
-
-
-}
