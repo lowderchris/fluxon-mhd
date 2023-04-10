@@ -77,6 +77,10 @@ Format string for naming relaxation save-sequence frames (see below)
 
 If this is specified, the state of the simulation is saved every n frames.
 
+=item print_n
+
+If this is specified, the state of the simulation is printed to the console every n frames.
+
 =item render_opt
 
 Contains a hash ref to be fed to Flux::World::render() when the field is
@@ -110,6 +114,7 @@ This file is part of FLUX 2.0, released 31-Oct-2007.
 =cut
 
 use PDL::Graphics::Gnuplot 2.006_001;
+use Time::HiRes qw( clock_gettime); 
 
 sub simple_relaxer {
     if( defined($_[1]) && defined($_[2]) && defined($_[3]) &&
@@ -122,13 +127,14 @@ sub simple_relaxer {
     my $n=shift||0;
     my $opt = shift || {};
     my $auto = $opt->{auto};
-    my $save_n = $opt->{save_n};
+    my $save_n = $opt->{save_n} || 0;
     my $save_f = $opt->{save_f} || "step-%5.5d.flux.gz";
     my $movie_n = $opt->{movie_n};
     my $movie_f = $opt->{movie_f} || "flux-movie-%5.5d.png";
     my $disp_n = defined($opt->{disp_n})?$opt->{disp_n}:($movie_n || 10);
     my $conv = 180.0 / (atan2(1,1)*4.);
-
+	my $print_n = $opt->{print_n} || 1;
+	my $do_print = 1;
     my $step = $w->{rel_step} || 0;
     my $final_step=$n;
     $final_step = $step + $n if $final_step <= $step;
@@ -147,22 +153,26 @@ sub simple_relaxer {
       open LOG,">$opt->{log}";
       print LOG $opt->{loghdr};
     }
+	my $before = clock_gettime();
 
     while(!$final_step || $step<$final_step) {
 
+	if ($step % $print_n == 0) {
+		$do_print = 1;
+	} else {$do_print = 0;}
 
 	if ($w->{auto_open}){
 	    $w->f_length_check($global);
 	}
-
+		# $step % $disp_n 
 	if($w->{concurrency}) {
 	    if ($w->{rel_step} == 0){
 		printf("computing inital fast neighbor search...\n");
 		$w->update_neighbors(-1);
 	    }
-	    print "parallel update_force... ";
+
 	    my $fmax = $w->update_force_parallel($global);
-	    print "parallel relax_step... ";
+		
 	    $w->relax_step_parallel($dt);
 	} else {
 	    ##problem here!
@@ -178,9 +188,9 @@ sub simple_relaxer {
 
 	my $h = $w->fw_stats;
 
-
-	eval { printf("step $step: time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av},$w->{max_angle}, $w->{mean_angle}); };
-
+	if ($do_print){
+		eval { printf("\nstep $step: time is now %10.4g \n(%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g max_angle: %6.2f, mean_angle: %6.2f)\n", $t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av}, $h->{fs_av}, $h->{n_av},$w->{max_angle}, $w->{mean_angle}); };
+	}
 	eval { printf LOG " time is now %10.4g (%d vertices; stiffness=%7.3g%%, fmax=%7.3g, f_av=%7.3g, fs_av=%7.3g, n_av=%7.3g)\n",$t,$h->{n},$h->{f_av}/$h->{fs_av}*100, $h->{f_ma},$h->{f_av},$h->{fs_av},$h->{n_av} if($opt->{log});
 	};
 
@@ -221,6 +231,11 @@ if($auto) {
 # ARD Update world
     $w->{dtau} = $dt;
     $w->{rel_step} = $step;
+
+	my $after = clock_gettime();
+	my $elapsed = $after-$before;
+	my $concs = $w->{concurrency} || 1;
+	print "\nTime Elapsed: $elapsed with print_n = $print_n and Concurrency = $concs";
 }
 
 
