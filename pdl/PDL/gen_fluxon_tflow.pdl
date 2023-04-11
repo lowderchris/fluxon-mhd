@@ -22,7 +22,7 @@ return undef if( $me->{plasmoid} || ($st_open + $en_open != 1));
 
 # Plot... while diagnosing things
 $doplot = 0;
-if ($doplot) {$win = gpwin("wxt",(font=>",16"),{size=>8});}
+if ($doplot) {$win = gpwin("qt",(font=>",16"),{size=>8});}
 
 # Define any other required quantities
 $t0 = 1e6;

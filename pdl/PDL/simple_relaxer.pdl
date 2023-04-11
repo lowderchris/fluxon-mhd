@@ -271,7 +271,7 @@ sub gnuplot_terms{
     shift @terminfo_lines until $terminfo_lines[0] =~ /FILE TERMINALS/;
     shift @terminfo_lines;
     foreach (@terminfo_lines){if($_ =~ /^\s*(png\w*):/) {push @png_terms,$1;}}
-    foreach my $iterm('wxt','x11','aqua','windows'){ #in order of preference
+    foreach my $iterm('qt','wxt','x11','aqua','windows'){ #in order of preference
 	if (grep {$_ eq $iterm} @display_terms){
 	    $display_term = $iterm;
 	    last;

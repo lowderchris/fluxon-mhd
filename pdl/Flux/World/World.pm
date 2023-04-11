@@ -953,9 +953,9 @@ Currently useful options are:
 
 =over 3
 
-=item dev (default 'wxt')
+=item dev (default 'qt')
 
-Gnuplot device type to use for plotting.  Needs to be a terminal that accepts the 'dashed' term option.  Suggested terminals that should be common across different operating systems are (static files:) 'pngcairo', 'pdfcairo', 'postscript', 'svg', (interactive:) 'wxt', 'x11'.
+Gnuplot device type to use for plotting.  Needs to be a terminal that accepts the 'dashed' term option.  Suggested terminals that should be common across different operating systems are (static files:) 'pngcairo', 'pdfcairo', 'postscript', 'svg', (interactive:) 'qt', 'wxt', 'x11'.
 
 =item window
 
