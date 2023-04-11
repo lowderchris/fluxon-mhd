@@ -51,7 +51,7 @@ $world = read_world('cartesian_interpolate_test_relaxed.flux');
 $world->update_neighbors(1);
 
 # Render the world
-#$win = gpwin('wxt', size=>15)
+#$win = gpwin('qt', size=>15)
 $win = $world->render({label_fluxons=>0});
 
 # In probing through the C find_vertex_by_location subroutine, closest_vertex stands as the PDL interface for this through World.pm
