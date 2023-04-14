@@ -76,7 +76,7 @@ sub map_fluxon_fr {
 
         ## Write to file
         for my $i(0..$r->getdim(0)-1){
-            printf $fh "%05d %.8f %.8f %.8f %.8f %.8f %.8f %.8f\n", $fid, $x($i)->sclr, $y($i)->sclr, $z($i)->sclr, $r($i)->sclr, $th($i)->sclr, $ph($i)->sclr, $A($i)->sclr;
+            printf $fh "%05d %.8f %.8f %.8f %.8e %.8f %.8f %.8e\n", $fid, $x($i)->sclr, $y($i)->sclr, $z($i)->sclr, $r($i)->sclr, $th($i)->sclr, $ph($i)->sclr, $A($i)->sclr;
         }
     }
 
