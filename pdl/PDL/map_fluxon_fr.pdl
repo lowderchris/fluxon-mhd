@@ -63,17 +63,6 @@ sub map_fluxon_fr {
             $A(0) .= $A(1);
         }
 
-        my $bfield0 = $me->bfield();
-
-        my $bmag = cat squeeze(sqrt($bfield0(0,:)**2 + $bfield0(1,:)**2 + $bfield0(2,:)**2)), squeeze(sqrt($bfield0(3,:)**2 + $bfield0(4,:)**2 + $bfield0(5,:)**2));
-
-        if ($bmag(0,0) > $bmag(-1,0)){
-            $bmag = $bmag->(-1:0:-1,:);
-        }
-
-        ## First / last two points without b-field
-        $bmag = $bmag->slice('2:-2,:');
-
         ## Write to file
         for my $i(0..$r->getdim(0)-1){
             printf $fh "%05d %.8f %.8f %.8f %.8e %.8f %.8f %.8e\n", $fid, $x($i)->sclr, $y($i)->sclr, $z($i)->sclr, $r($i)->sclr, $th($i)->sclr, $ph($i)->sclr, $A($i)->sclr;
