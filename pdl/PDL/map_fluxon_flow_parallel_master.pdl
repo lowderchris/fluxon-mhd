@@ -1,0 +1,148 @@
+use strict;
+use warnings;
+use PDL::NiceSlice;
+use PDL::Options;
+use Parallel::ForkManager;
+use PDL::IO::Storable;
+use File::Path qw(make_path);
+use Time::HiRes qw(clock_gettime);
+# use PDL::Graphics::Gnuplot qw(gnuplot_closeall);
+# Control Flags
+    $PDL::verbose = 0;
+    # no warnings 'cleanup';
+    # my $do_max = 10000;
+    my $concurrency = 12;
+    my $temp_dir = "wind/windtemp";
+
+#TODO Make the gen_fluxon_flow and gen_fluxon_tflow functions get loaded only once.
+
+=head2 map_fluxon_flow_parallel_master
+
+=for ref
+
+Given a world and list of fluxons, generates a mapping of the solar wind flow along these fluxon structures.
+
+=cut
+
+sub map_fluxon_flow_parallel_master {
+    my $fn      = shift;
+    my $fluxons = shift;
+    my @fluxons = @{$fluxons};
+        make_path($temp_dir) unless -d $temp_dir;
+    my $max_processes = shift || $concurrency;    # Set the number of parallel processes
+    my $fork_manager = Parallel::ForkManager->new( $max_processes, $temp_dir );
+    # PDL::Graphics::Gnuplot::gnuplot_closeall();
+
+    # Generate a blank storage array
+    my @results = ();
+
+    # Define the callback to collect results from child processes
+    $fork_manager->run_on_finish(
+        sub {
+            my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $result ) = @_;
+            if ( defined $result ) {
+                push @results, $result;
+            }
+        }
+    );
+
+    # Loop through open fluxons and generate wind profiles
+
+    print "\nRunning with $max_processes Cores!\nBeginning Calculation...";
+
+    my $before = clock_gettime();
+
+    for my $fid ( 0 .. scalar(@fluxons) - 1 ) {
+        ## Inside the Loop ##################################################
+        $PDL::verbose = 0;
+        no warnings;
+        # Start a new process and proceed to the next iteration
+        print "1";
+        $fork_manager->start and next;    
+
+        # if ( $fid > $do_max ) { # For only doing a subset of the inputs
+        #     # Finish the process and move to the next iteration
+        #     $fork_manager->finish;    
+        #     next;
+        # }
+
+
+        ## Condition the Input ####
+        my $me = $fluxons[$fid];
+
+        # Check for open fieldlines
+        my $st_open = ( $me->{fc_start}->{label} == -1 );
+        my $en_open = ( $me->{fc_end}->{label} == -2 );
+        if ( $me->{plasmoid} || ( $st_open + $en_open != 1 ) ) {
+            $fork_manager->finish;    # Finish the process and move to the next iteration
+            next;
+        }
+        print "2";
+
+        ## Run the Main Algorithm ####
+        # Find the transonic wind solution
+        ( my $farr, my $fr, my $bth, my $bph ) = gen_fluxon_tflow($me);
+
+        print "3";
+        ## Report the Results ####
+        # Create a result hash
+        my $result = {
+            fps  => $fid,
+            phb  => squeeze( $bph ( 0, 0 ) ),
+            thb  => squeeze( $bth ( 0, 0 ) ),
+            phe  => squeeze( $bph ( 0, 1 ) ),
+            the  => squeeze( $bth ( 0, 1 ) ),
+            vrb  => $farr ( 1, 0 ),
+            vre  => $farr ( 1, -1 ),
+            frb  => $fr   ( 1,  1 ),
+            fre  => $fr   ( -2, 1 ),
+            fre2 => $fr   ( -1, 1 ),
+        };
+
+        # Print timing information
+        my $after   = clock_gettime();
+        my $elapsed = $after - $before;
+        my $round_elapsed = rint($elapsed*10) / 10;
+        print "\r", '  Calculated fluxons:', $fid, '/', scalar(@fluxons), ", ", $round_elapsed, "(s) elapsed \n";
+
+        # Finish the process and return the result
+        $fork_manager->finish( 0, $result );  
+    }
+
+    ## Outside of the Loop ## #############################################
+    $fork_manager->wait_all_children;    # Wait for all processes to finish
+
+    my $after   = clock_gettime();
+    my $elapsed = $after - $before;
+    my $round_elapsed = rint($elapsed*10) / 10;
+    print "\nTime Elapsed: $round_elapsed, with # cores = $max_processes\n";
+
+    ## Output the Results ##
+    # Sort the results by fps
+    @results = sort { $a->{fps} <=> $b->{fps} } @results;
+
+    # Write the results to disk
+    wcols pdl( map { $_->{fps} } @results ),
+      pdl( map { $_->{phb} } @results ),
+      pdl( map { $_->{thb} } @results ),
+      pdl( map { $_->{phe} } @results ),
+      pdl( map { $_->{the} } @results ),
+      squeeze( pdl( map { $_->{vrb} } @results ) ),
+      squeeze( pdl( map { $_->{vre} } @results ) ),
+      squeeze( pdl( map { $_->{frb} } @results ) ),
+      squeeze( pdl( map { $_->{fre} } @results ) ),
+      squeeze( pdl( map { $_->{fre2} } @results ) ),
+      $fn;
+}
+
+__END__
+
+
+            # Pass the functions to the child processes using run_on_start callback
+            # $fork_manager->run_on_start(sub {
+            #     my ($pid, $ident) = @_;
+            #     # Access the function references from the global variable
+            #     my $gen_fluxon_tflow = $FUNCTION_REFERENCES->{gen_fluxon_tflow};
+            #     my $gen_fluxon_flow = $FUNCTION_REFERENCES->{gen_fluxon_flow};
+            #     # Now $gen_fluxon_tflow and $gen_fluxon_flow contain the functions in the child process
+            # });

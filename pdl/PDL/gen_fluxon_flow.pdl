@@ -10,9 +10,10 @@ Returns a 2xN PDL, containing (r, vr).  By default, it also updates these fields
 If the fluxon is doubly open or doubly closed or a plasmoid, return udnef.
 
 =cut
-use PDL::Options;
-use Math::RungeKutta;
-use PDL::GSL::INTEG;
+use PDL::Options;  ## This is where the 'parse' function comes from
+use PDL::ImageND;  ## This is where the ConvolveND comes from
+use Math::RungeKutta; ## This requires extra package: cpan install Math::RungeKutta
+use PDL::GSL::INTEG; ## This requires extra package: cpan install PDL::GSL::INTEG, and ALSO you have to install GSL to the machine, first. 
 
 sub gen_fluxon_flow {
     my $me = shift;
@@ -30,6 +31,7 @@ sub gen_fluxon_flow {
                         $u_opt
         );
 
+    # print $opt{v0};
     # Check for start and ending points being open
     our $st_open = ($me->{fc_start}->{label}==-1);
     our $en_open = ($me->{fc_end}->{label}==-2);
@@ -66,10 +68,28 @@ sub gen_fluxon_flow {
         $A(0:-2) .= $A(1:-1);
     }
 
+    ## Declare Variables
+    our $A;
+    our $r;
+    our $th;
+    our $ph;
+    # our $vu;
+    my $vnow;
+    my $dr;
+    my @rv;
+    my $rnow;
+    my @num;
+    my @denom;
+    my $step;
+    my $vint;
+    my $abserr;
+    my $ierr;
+
     # Get rid of end anomalies
     # CL - Equating these values does make for some strange end/open point behavior later...
     $A->((0)) .= $A->((1));
     $A->((-1)) .= $A->((-2));
+    
 
     # Define gravitational acceleration g as a function of radius
     our $g = $g0 * ($opt{r0} / $r)**2;
@@ -88,7 +108,9 @@ sub gen_fluxon_flow {
     $dfr_dr->(-1) .= ($fr->(-1) - $fr->(-2)) / ($r->(-1) - $r->(-2));
 
     # Chunk of code to calculate
-    $dydx = sub {
+
+
+    my $dydx = sub {
         my $rnow = shift;
         #my $vnow = shift;
 
@@ -110,7 +132,7 @@ sub gen_fluxon_flow {
 
     # Define v0 and r0 values, and push into a list for storage
     @rv = ();
-    our $vnow = $opt{v0} * 1e3; # Convert to m/sec from km/sec
+    $vnow = $opt{v0} * 1e3; # Convert to m/sec from km/sec
     $rnow = $r->minimum;
     push(@rv, pdl($rnow,$vnow));
 
@@ -132,5 +154,5 @@ sub gen_fluxon_flow {
     # Return a list of r and v values, in units of r_sun and m/s
     return (pdl(@rv) * pdl(1.0/$opt{r0},1e-3), pdl($r/$opt{r0}, $fr), pdl($th(0), $th(-1)), pdl($ph(0), $ph(-1)));
 }
-
+1;
 __END__
