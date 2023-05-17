@@ -12,7 +12,7 @@ use Time::HiRes qw(clock_gettime);
     # no warnings 'cleanup';
     # my $do_max = 10000;
     my $concurrency = 12;
-    my $temp_dir = "wind/windtemp";
+    my $temp_dir = "fluxon/windtemp";
 
 #TODO Make the gen_fluxon_flow and gen_fluxon_tflow functions get loaded only once.
 
@@ -28,7 +28,7 @@ sub map_fluxon_flow_parallel_master {
     my $fn      = shift;
     my $fluxons = shift;
     my @fluxons = @{$fluxons};
-        make_path($temp_dir) unless -d $temp_dir;
+    make_path($temp_dir) unless -d $temp_dir;
     my $max_processes = shift || $concurrency;    # Set the number of parallel processes
     my $fork_manager = Parallel::ForkManager->new( $max_processes, $temp_dir );
     # PDL::Graphics::Gnuplot::gnuplot_closeall();
@@ -57,7 +57,7 @@ sub map_fluxon_flow_parallel_master {
         $PDL::verbose = 0;
         no warnings;
         # Start a new process and proceed to the next iteration
-        print "1";
+        # print "1";
         $fork_manager->start and next;    
 
         # if ( $fid > $do_max ) { # For only doing a subset of the inputs
@@ -77,13 +77,13 @@ sub map_fluxon_flow_parallel_master {
             $fork_manager->finish;    # Finish the process and move to the next iteration
             next;
         }
-        print "2";
+        # print "2";
 
         ## Run the Main Algorithm ####
         # Find the transonic wind solution
         ( my $farr, my $fr, my $bth, my $bph ) = gen_fluxon_tflow($me);
 
-        print "3";
+        # print "3";
         ## Report the Results ####
         # Create a result hash
         my $result = {

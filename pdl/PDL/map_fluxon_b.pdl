@@ -18,7 +18,7 @@ sub map_fluxon_b {
 # Generate some blank storage arrays
 my @fps = ();   # Fluxon array position
 my @phb = ();   # Begining coordinates
-my @thb = ();
+my @thb = ();   
 my @phe = ();   # End coordinates
 my @the = ();
 my @brb = ();   # Beginning and end magnetic field
