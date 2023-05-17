@@ -19,53 +19,54 @@ use Time::HiRes qw(clock_gettime);
 # use PDL::Graphics::TriD;
 $do_download =          0;
 $process_magnetogram =  0;
-$doPfss =               1;
+$do_pfss =              0;
 $makeworld =            0;
 $do_relax =             0;
 $do_png =               0;
 $do_interactive =       0; 
 $do_wind_calc =         0;
 
-$N_fluxons = 1000;
-$reduction = $ARGV[1] || 3;
 $do_steps = 2000;
 $relax_threshold = 0.49;
 $max_cycles = 5; 
 $lim = 2.5;
 $lim2 = 7.5;
 $do_interactive = 0;
-$top_time = clock_gettime();
 $CR = $ARGV[0] || 2193;
-
+$reduction = $ARGV[1] || 5;
+$recompute = $ARGV[3] || 1;
+$N_fluxons = $ARGV[4] || 1000;
+$top_time = clock_gettime();
+$stepnum=0;
 ## TODO make the wind calculation less verbose
 
 #######################################################################################################
 ## Job Settings #######################################################################################
 #######################################################################################################
 
+if ($recompute){
 # ## Download the magnetogram from JSOC
     # $do_download = 1; #1; # $ARGV[2] || 1;
-    $reduction = 5; #5; #$ARGV[1] || 5;
+    # $reduction = 5; #5; #$ARGV[1] || 5;
 # ## Ingest the magnetogram and find the footpoints of the magnetic field lines
-#     $process_magnetogram = 1;
-#     $N_fluxons = 200; # TODO Try 750 to 1000 to see how/when it breaks
-# # ## Run a pfss model in python on the ingested magnetogram
-#     $doPfss = 1;
+    $process_magnetogram = 1;
+    # $N_fluxons = 1000; # TODO Try 750 to 1000 to see how/when it breaks
+    $do_pfss = 1;
 ## Create the world from the output of the pfss.py code
     $makeworld = 1;
 ## Top Level Relaxation Instructions
     $do_relax = 1;
-        $do_steps = 2000; # relaxation steps between checking stiffness target
-        $relax_threshold = 0.49; # stiffness target to stop relaxation
-        $max_cycles = 5; 
+        # $do_steps = 2000; # relaxation steps between checking stiffness target
+        # $relax_threshold = 0.49; # stiffness target to stop relaxation
+        # $max_cycles = 5; 
 ## Plotting the worlds
     $do_png = 1;
-        $lim = 2.5;
-        $lim2 = 7.5; # For the wide versions
+        # $lim = 2.5;
+        # $lim2 = 7.5; # For the wide versions
         $do_interactive = 0; #will open a gnuplot window
+}
 ## Calculate the Solar Wind
     $do_wind_calc = 1;
-
 
 #######################################################################################################
 ## Initialize Environment #############################################################################
@@ -155,6 +156,8 @@ if ($process_magnetogram or $no_floc){
     print "\n";
     print "\n**Placing $N_fluxons Fluxons using Hilbert Curves...\n";
     $floc = fluxon_placement_hilbert($smag, $N_fluxons);
+    $N_actual = $floc->nelem;
+    print("\n \n   N_fluxons placed: " . $N_actual . "\n \n");
 
     ## Write to disk ############################################
     print "\n";
@@ -163,7 +166,11 @@ if ($process_magnetogram or $no_floc){
     wcols $floc->transpose, $out_path;
 }
 else {
-    print "Skipped!"
+    $floc = rcols $out_path;
+    $floc = $floc->transpose;
+    $N_actual = $floc->nelem;
+
+    print "Loaded from Disk!"
 }
 print "\n";
 
@@ -175,13 +182,13 @@ print "\n";
 # print "**PDL Portion Complete!!\n\n";
 
 print "\n**Calling pfss code (python)...";
-if ($doPfss){
-    system("python3 get_pfss.py") == 0 or (die "Python script returned error $?", exit);
-    # print "\n**Python Portion Complete!!\n\n";
-} else {
-    print "Skipped!";
-}
-    print "\n";
+system("python3 get_pfss.py $do_pfss") == 0 or (die "Python script returned error $?", exit);
+# if ($doPfss){
+#     # print "\n**Python Portion Complete!!\n\n";
+# } else {
+#     print "Skipped!";
+# }
+#     print "\n";
 
 # Set Ranges of Plots
 ($xmin_i,$xmax_i,$ymin_i,$ymax_i,$zmin_i,$zmax_i) = (-$lim, $lim, -$lim, $lim, -$lim, $lim);
@@ -194,14 +201,24 @@ $range_f2 = [$xmin_f2,$xmax_f2,$ymin_f2,$ymax_f2,$zmin_f2,$zmax_f2];
 #######################################################################################################
 ## Generate World from PFSS ###########################################################################
 #######################################################################################################
+print "\n \n**Making the world from the pfss...";
 
-print "**Making the world from the pfss...";
-if ($makeworld){
+$world_out_dir = $datdir.'fluxon/cr'.$cr.'/rlx/';
+$floc_path   = $datdir.'fluxon/cr'.$cr.'/floc/';
+$open_file   =$floc_path . 'floc_open_cr'.$cr.'.dat';
+$closed_file =$floc_path . 'floc_closed_cr'.$cr.'.dat';
+
+$need_world=0;
+if (! -d $world_out_dir ) {
+    $need_world=1;
+    }
+
+if ($makeworld or $need_world){
     ## Read python-processed data ###############################
     print "\n \n**Loading Open and Closed line files...";
 
-    ($oflnum, $oflx, $olat, $olon, $orad) = rcols $datdir.'fluxon/cr'.$cr.'/floc/floc_open_cr'.$cr.'.dat';
-    ($cflnum, $cflx, $clat, $clon, $crad) = rcols $datdir.'fluxon/cr'.$cr.'/floc/floc_closed_cr'.$cr.'.dat';
+    ($oflnum, $oflx, $olat, $olon, $orad) = rcols $open_file;
+    ($cflnum, $cflx, $clat, $clon, $crad) = rcols $closed_file;
 
     ## Define a blank world ###############################
     @flines = ();
@@ -262,15 +279,17 @@ print "\n \n**Generating the World...\n";
     ## Save the initial world state  ###############################
     print "\n**Saving the World...";
 
-    $world_out_dir = $datdir.'fluxon/cr'.$cr.'/rlx/';
+    $flen = @flines+0;
+    $world_out_path = $world_out_dir .'cr'.$cr.'_'.$flen.'.flux';
     $world_out_path = $world_out_dir .'cr'.$cr.'.flux';
     if (! -d $world_out_dir ) {mkpath($world_out_dir) or die "Failed to create directory: $world_out_dir $!\n";}
     $world->write_world($world_out_path);
 
     ## Display ####################################################
     print "\n \n**Plotting the World...";
-    $world_png_path = $world_out_dir .'cr'.$cr.'.png';
-    $world_png_path2 = $world_out_dir .'cr'.$cr.'_wide.png';
+    # number of open fluxons, number of fluxons, number of fluxons requested
+    $world_png_path = $world_out_dir .'cr'.$cr.'_tracePFSS_'.$flen.'_'.$N_actual.'_'.$N_fluxons.'.png';
+    $world_png_path2 = $world_out_dir .'cr'.$cr.'_tracePFSS_wide_'.$flen.'_'.$N_actual.'_'.$N_fluxons.'.png';
 
     $window00 = gpwin('pngcairo',size=>[9,9], dashed=>0, output=> $world_png_path);
     $world->render( {'window'=>$window00, range=>$range_i});
@@ -280,8 +299,11 @@ print "\n \n**Generating the World...\n";
     # $world -> render({'dev'=>'qt'});
 
 } else {
-    print "Skipped! "
+    print "Skipped! Loading .flux from file.\n"
 }
+print "\n>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<";
+print "\n>>>>>>>Relaxing the World<<<<<<<";
+print "\n>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<";
 
 
 
@@ -289,25 +311,57 @@ print "\n \n**Generating the World...\n";
 ## Relax the initial world state ######################################################################
 #######################################################################################################
 
-print "\n \n \n \n**Relaxing the World...";
 
 # Select the World
 $world_out_dir = $datdir.'fluxon/cr'.$cr.'/rlx/';
 $full_world_path = $world_out_dir .'cr'.$cr.'.flux';
 
-if ($do_relax){
+# print "\n \n";
+# print $full_world_path;
+$need_relax=0;
+$directory = $world_out_dir;
+
+sub find_file_with_string {
+    my ($directory) = @_;
+    opendir(my $dir_handle, $directory) or die "Cannot open directory: $!";
+    my @files = grep { !/^\.{1,2}$/ } readdir($dir_handle);
+    closedir $dir_handle;
+
+    my $highest_numbered_file;
+    my $highest_number = -1;
+    my $found = 0;
+    for my $file_name (@files) {
+        # Match file names containing "_relaxed", a number, and ".flux"
+        if ($file_name =~ /_relaxed_(\d+)\.flux/) {
+            my $number = $1;
+            if ($number > $highest_number) {
+                $highest_number = $number;
+                $highest_numbered_file = $file_name;
+            }
+            $found = 1;
+        }
+    }
+    return $highest_numbered_file ? "$directory$highest_numbered_file" : 0;
+}
+
+$found_file_path = find_file_with_string($directory);
+# print "\n";
+# print $found_file_path;
+# print "\n";
+
+$do_the_relax = ($do_relax or not $found_file_path);
+
+if ($do_the_relax){
     # print "Press Enter to Confirm...";
     $this_world_orig = read_world($full_world_path);
     $this_world_relaxed = read_world($full_world_path);
     $this_world_relaxed->forces('f_pressure_equi2b', 'f_curvature', 'f_vertex4', 'b_eqa'); # NEW
     $this_world_relaxed->{concurrency} = 12;
 
-    # $do_steps = 2000; ################### THIS IS AN OVERRIDE!!!
-
     $cycle = 0;
     $stiff = 100;
     # # # Begin the Computation!! # # #
-    print("for " . $do_steps . " steps\n  \n");
+    print("\n \nfor " . $do_steps . " steps\n  \n");
 
     while ($stiff > $relax_threshold and $cycle < $max_cycles) {
         $cycle = $cycle + 1;
@@ -327,20 +381,23 @@ if ($do_relax){
     print "\n\n**Saving the World... $world_out_dir";
     if (! -d $world_out_dir ) {mkpath($world_out_dir) or die "Failed to create directory: $world_out_dir $!\n";}
 
+
+    ## print $out_world;
     $out_world=$full_world_path;
     substr($out_world, -5)="_relaxed_$stepnum.flux";
-    ## print $out_world;
-
     $this_world_relaxed->write_world($out_world);
 
     print "\nWorld saved to $out_world";
 
 
 } else {
-    print "Skipped!\n \n";
-    # print"Loading " . $full_world_path;
+    print "\n \nSkipped! Already have relaxed file.\n \n";
+    # print $found_file_path;
+    print"Loading Worlds...\n";
     $this_world_relaxed = read_world($full_world_path);
-    $this_world_orig = $this_world_relaxed;
+    $this_world_orig = read_world($found_file_path);
+    # print($found_file_path)
+    # $this_world_orig = read_world($found_file_path);
 
 }
 
@@ -349,9 +406,7 @@ if ($do_relax){
 ## Plot the world states  #############################################################################
 #######################################################################################################
 
-print "\n**Plotting the Worlds...";
-
-
+print "\n \n**Plotting the Worlds...";
 
 if ($do_interactive){
     # Plot to interactive window
@@ -377,7 +432,7 @@ if ($do_interactive){
 
 if($do_png){
     ## Plot to Png
-
+    $stepnum = $stepnum or "unkn";
     use PDL::IO::Misc;
     use File::Basename qw(fileparse);
 
@@ -420,6 +475,8 @@ if($do_png){
 
 if (not $do_png and not $do_interactive) {
     print "Skipped!\n";
+} else {
+    print "Done!\n"
 }
 
 ## Begin solar wind computation ######################################################################
@@ -427,7 +484,7 @@ if (not $do_png and not $do_interactive) {
 $this_world_relaxed->update_force(0);
 @fluxons = $this_world_relaxed->fluxons;
 
-print "\n<<<<<< Calculating Solar Wind Plasma Parameters >>>>>>\n\n";
+print "\n \n <<<<<< Calculating Solar Wind Plasma Parameters >>>>>>\n\n";
 
 if ($do_wind_calc){
     $wind_out_dir = $datdir.'fluxon/cr'.$cr.'/wind';
@@ -465,6 +522,6 @@ $after   = clock_gettime();
 $elapsed = $after - $very_beginning + $top_duration;
 $round_elapsed = rint($elapsed*10) / 10;
 
-print "\n**Program Complete for CR$cr in $round_elapsed Seconds, press ENTER to exit...\n\n\n";
+print "\n \n**Program Complete for CR$cr in $round_elapsed Seconds, press ENTER to exit...\n\n\n";
 # <STDIN>;  # Wait for user input
 

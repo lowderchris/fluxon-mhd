@@ -36,6 +36,11 @@ ph1, th1 = phi1+np.pi, -theta1+(np.pi/2)
 
 
 # Do some data manipulation
+
+#remove strongest
+np.sort(vel0.flatten())
+
+
 vel0[vel0<0.]= np.mean(vel0[vel0>0.])
 vel1[vel1<0.]= np.mean(vel1[vel1>0.])
 fr0[fr0<0.]  = np.nan

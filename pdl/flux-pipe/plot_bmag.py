@@ -13,7 +13,7 @@ import argparse
 from astropy.io import fits
 from magnetoget import load_fits_magnetogram
 
-default_cr = 2163
+default_cr = 2193
 
 
 print("Plotting Bmag...", end="")
@@ -87,7 +87,8 @@ for ax in (ax0, ax1):
 
 fig.set_size_inches((8,8))
 plt.tight_layout()
-pngname = filename.replace(".dat", ".png")
+pngname = filename.replace(".dat", f"_{len(ph0)}_{len(ph1)}.png")
+# pngname = filename.replace(".dat", ".png")
 plt.savefig(pngname)
 if args.show:
     plt.show()

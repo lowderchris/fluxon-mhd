@@ -32,8 +32,13 @@ from magnetoget import load_magnetogram_params, read_fits_data
 
 # Helper Function to Read the Fits Files
 
+if len(sys.argv)>1: 
+    # print(int(sys.argv[1])>0)
+    do_pfss = force_plot = force_trace = True if int(sys.argv[1])>0 else False
+else:
+    do_pfss = force_plot = force_trace = False
 
-do_pfss = False
+# print(do_pfss, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 # Load the parameters, basically just which magnetogram is used
 print("\n -->Loading Parameters...")
@@ -147,7 +152,6 @@ if do_pfss or load_failure:
 
 
 # CL - DOUBLE CHECK THE LATITUTE DIRECTION HERE, and plot the polarity inversion line.
-
 fluxon_location = np.genfromtxt(datdir + 'fluxon/cr' + cr + '/floc/floc_cr'+cr+'.dat')
 shp = br_safe.data.shape
 n_lat = shp[0]
@@ -155,14 +159,15 @@ lat_center = n_lat // 2
 f_lon = np.deg2rad(fluxon_location[:,0] * br_safe.meta['cdelt1'])
 f_lat = (fluxon_location[:,1]-lat_center) * br_safe.meta['cdelt2']
 f_sgn = fluxon_location[:,2]
-n_flux = len(f_lon)
+n_flux = len(f_sgn)
+
+fluxon_map_output_path = path.join(path.dirname(path.dirname(fits_path)), f'{n_flux}_footprint.png')
 
 print("\n -->Plotting Fluxon Locs...", end="")
-if True:
+if not path.exists(fluxon_map_output_path) or force_plot:
     # br = sunpy.map.Map(datdir + 'hmi.Synoptic_Mr.polfil/hmi.synoptic_mr_polfil_720s.' + cr + '.Mr_polfil.fits')
     # fluxon_map_output_path = fits_path.replace('.fits', '_fluxons.png')
     # fluxon_map_output_path = path.join(path.dirname(path.dirname(fits_path)), path.basename(fits_path).replace('.fits', f'_{n_flux}_fluxons.png'))
-    fluxon_map_output_path = path.join(path.dirname(path.dirname(fits_path)), f'{n_flux}_fluxons.png')
 
     ## Print the Fluxon Map
     fig, ax = plt.subplots()
@@ -214,7 +219,7 @@ if True:
 
         ax.scatter(long, lat, color=color)
     # fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), path.basename(fits_path).replace('.fits', f'_latlon_{n_flux}_fluxons.png'))
-    fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), f'{n_flux}_fluxons_latlon.png')
+    fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), f'{n_flux}_footprints_latlon.png')
     plt.axis('off')
     fig.set_size_inches((sz1, sz0))
     plt.tight_layout()
@@ -223,17 +228,19 @@ if True:
     # plt.show()
     print("Success!")
 else:
-    print("Skipped!")
+    print("Skipped! File Already Exists")
 
 print("\n -->Tracing Open and Closed Fluxons...")
 
 # Note that this code was originally developed using an older version of the pfsspy code - improvements look to be able to handle bundles of fieldlines, which would greatly simplify some of the code. Do this.
 
+open_path = datdir + 'fluxon/cr' + cr + '/floc/' + 'floc_open_cr'+cr+'.dat'
+closed_path = datdir + 'fluxon/cr' + cr + '/floc/' + 'floc_closed_cr'+cr+'.dat'
+
 
 from tqdm import tqdm
 import timeout_decorator
 
-tracer = tracing.PythonTracer()
 
 # Capture an array of starting and endpoints for open fieldlines 2x(r, lat, lon) + sgn of starting point
 fl_open = np.zeros([1,5])
@@ -247,7 +254,7 @@ r0 = 1.01 * const.R_sun
 coord_frame = output.coordinate_frame
 
 @timeout_decorator.timeout(1)
-def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed):
+def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer):
     #x0 = np.array(coords.sph2cart(r0, f_lat[i], flon[i]))
     (this_flon, this_flat) = coords
     x0 = SkyCoord(this_flon * u.rad, this_flat * u.rad, r0, frame=coord_frame)
@@ -283,14 +290,15 @@ def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed):
                     fl_closed = np.append(fl_closed, [[flnum_closed, f_sgn[i], fl.lat[j].value, fl.lon[j].value, (fl.distance[j]/const.R_sun).value]], axis=0)
                     prev_rad = fl_rads[j]
         flnum_closed += 1
-    return output, fl_open, fl_closed, flnum_open, flnum_closed
+    return output, fl_open, fl_closed, flnum_open, flnum_closed, tracer
 
 def trace_lines(output, f_lon, f_lat, fl_open, fl_closed, flnum_open, flnum_closed):
     skip_num = 0
     timeout_num = 0
+    tracer = tracing.PythonTracer()
     for i, coords in enumerate(tqdm(zip(f_lon, f_lat), desc="Tracing Field Lines", total=len(f_lat))):
         try:
-            output, fl_open, fl_closed, flnum_open, flnum_closed = trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed)
+            output, fl_open, fl_closed, flnum_open, flnum_closed, tracer = trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer)
         except timeout_decorator.TimeoutError as e:
             # print(f"Timeout Occured in Iteration {i}")
             timeout_num += 1
@@ -310,19 +318,27 @@ def trace_lines(output, f_lon, f_lat, fl_open, fl_closed, flnum_open, flnum_clos
         print(f"\n\nSome iterations failed. Timed-out: {timeout_num} ({t_perc:0.2f}%), ValueError: {skip_num} ({s_perc:0.2f}%)\n\n")
 
     print(f"\n\tOpen Lines: {len(fl_open)}, Closed Lines: {len(fl_closed)}, Failures: {skip_num+timeout_num}")
-          
+        
     fl_open = fl_open[1:]
     fl_closed = fl_closed[1:]
     return fl_open, fl_closed
+    
+if not os.path.exists(open_path) or force_trace:
+    fl_open, fl_closed = trace_lines(output, f_lon, f_lat, fl_open, fl_closed, flnum_open, flnum_closed)
 
-fl_open, fl_closed = trace_lines(output, f_lon, f_lat, fl_open, fl_closed, flnum_open, flnum_closed)
+    # Output is flnum, polarity, latitude, longitude, radius
+
+    # Save these coordinates to file
+    print("\n -->Saving Fluxons...", end="")
+    np.savetxt(open_path, fl_open)
+    np.savetxt(closed_path, fl_closed)
+    print("Success!")
+else:
+    print("\tSkipped! floc dat files already exist.")
 
 
-# Save these coordinates to file
-print("\n -->Saving Fluxons...", end="")
-np.savetxt(datdir + 'fluxon/cr' + cr + '/floc/' + 'floc_open_cr'+cr+'.dat', fl_open)
-np.savetxt(datdir + 'fluxon/cr' + cr + '/floc/' + 'floc_closed_cr'+cr+'.dat', fl_closed)
-print("Success!")
+
+
 
 # # print("\n-->>>>>>>>>>>>>>\n-->>>>Main Program Complete!<<<<\n<<<<<<<<<<<<<<\n")
 # print(" -->Plotting: ", bool(doplot), end="\n\n")

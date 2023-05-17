@@ -1,4 +1,5 @@
 import argparse
+import os
 from magnetoget import get_magnetogram_files, reduce_fits_image
 magneto_file = None
 
@@ -15,12 +16,31 @@ args = parser.parse_args()
 (hmi_path, mdi_path) = get_magnetogram_files(cr=args.cr, date=None, data_dir=args.dat_dir, do_download=args.do_download)
 
 
+
+def find_file_with_string(directory, search_string):
+    for file_name in os.listdir(directory):
+        if search_string in file_name:
+            return os.path.join(directory, file_name)
+    return None
+
+file_path = find_file_with_string(os.path.dirname(hmi_path), "_small")
+
+# if file_path:
+#     print(f"File found: {file_path}")
+# else:
+#     print("File not found")
+
+
 # reduce the FITS image
-if args.reduce:
+print("**Reducing Image Size...", end="")
+if not file_path:
     magneto_path = reduce_fits_image(hmi_path, target_resolution=None, reduction_amount=args.reduce)
     magneto_file = magneto_path.replace(args.dat_dir, "")
     if magneto_file[0] == "/":
         magneto_file = magneto_file[1:]
+    print("Success!\n")
+else:
+    print("Skipped! Reduced file already exists")
 
 # write the parameter file
 if magneto_file is not None:
