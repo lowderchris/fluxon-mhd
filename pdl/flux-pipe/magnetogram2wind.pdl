@@ -279,7 +279,7 @@ print "\n \n**Generating the World...\n";
     ## Save the initial world state  ###############################
     print "\n**Saving the World...";
 
-    $flen = @flines+0;
+    $flen = $oflnum->max(); #@flines+0;
     $world_out_path = $world_out_dir .'cr'.$cr.'_'.$flen.'.flux';
     $world_out_path = $world_out_dir .'cr'.$cr.'.flux';
     if (! -d $world_out_dir ) {mkpath($world_out_dir) or die "Failed to create directory: $world_out_dir $!\n";}
@@ -360,17 +360,27 @@ if ($do_the_relax){
 
     $cycle = 0;
     $stiff = 100;
+    $broken = 0;
     # # # Begin the Computation!! # # #
     print("\n \nfor " . $do_steps . " steps\n  \n");
 
-    while ($stiff > $relax_threshold and $cycle < $max_cycles) {
+    while ($stiff > $relax_threshold and $cycle < $max_cycles and $broken < 3) {
         $cycle = $cycle + 1;
 
         simple_relaxer($this_world_relaxed,0,$do_steps,{disp_n=>0, movie_n=>50, print_n=>500});
 
         $h = $this_world_relaxed->fw_stats;
         $stiff = $h->{f_av}/$h->{fs_av}*100;
+
+        if ($stiff > 99.5){
+            $broken = $broken + 1;
+        } else {
+            $broken = 0;
+        }
         # print "\n \nSTIFFNESS IS $stiff, cycle = $cycle\n";
+    }
+    if ($broken >= 3){
+        print "TOO MANY FLUXONS! Reduce N_flux."
     }
     $stepnum = $cycle * $do_steps;
 
