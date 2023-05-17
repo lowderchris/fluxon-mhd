@@ -31,9 +31,9 @@ def get_magnetogram_files(cr=None, date=None, data_dir=None, email=None, do_down
     else:
         which = 2193
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(f"\nDownloading Magnetograms for {which}...")
+    print(f"\n\tDownloading Magnetograms for {which}...")
 
-    print("\nConfiguring Download...")
+    # print("\nConfiguring Download...")
     try:
         jsoc_email = email or os.environ["JSOC_EMAIL"]
     except KeyError:
@@ -75,36 +75,43 @@ def get_magnetogram_files(cr=None, date=None, data_dir=None, email=None, do_down
         cr1 = cr0
 
     # Start the client
-    if do_download:
-        print("\nDownloading HMI from JSOC...")
-        c = drms.Client()
+    load_failed = False
+    if not do_download:
+        try:
+            import pathlib
+            use_path = which
+            # print(which)
+            if not "CR" in use_path:
+                use_path = "CR" + use_path
+            if not "mag" in data_dir:
+                data_dir = data_dir + f"/fluxon/{use_path}/mag/"
+            if not "hmi.Synoptic_Mr.polfil" in data_dir:
+                data_dir = data_dir + "/hmi.Synoptic_Mr.polfil"
+            hmi_object = pathlib.Path(data_dir)
+            # print(hmi_object)
+            file_list = list(hmi_object.iterdir())
+            for file in file_list:
+                ff = str(file)
+                if 'fits' in ff and 'small' not in ff:
+                    hmi_path_out = ff
+        except FileNotFoundError as e:
+            # print(e)
+            # print("This file hasn't been downloaded yet!")
+            load_failed = True
 
-        # Generate a search
-        crots = a.jsoc.PrimeKey('CAR_ROT', str(cr0) + '-' + str(cr1))
-        res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crots, 
-                        a.jsoc.Notify(jsoc_email))
+        if do_download or load_failed:
+            print("\n\tDownloading HMI from JSOC...")
+            c = drms.Client()
 
-        # Once the query is made and trimmed down...
-        hmi_path = hmidat+'/{file}.fits'
-        hmi_path_out = Fido.fetch(res, path=hmi_path)[0]
-    else:
-        import pathlib
-        use_path = which
-        # print(which)
-        if not "CR" in use_path:
-            use_path = "CR" + use_path
-        if not "mag" in data_dir:
-            data_dir = data_dir + f"/fluxon/{use_path}/mag/"
-        if not "hmi.Synoptic_Mr.polfil" in data_dir:
-            data_dir = data_dir + "/hmi.Synoptic_Mr.polfil"
-        hmi_object = pathlib.Path(data_dir)
-        # print(hmi_object)
-        file_list = list(hmi_object.iterdir())
-        for file in file_list:
-            ff = str(file)
-            if 'fits' in ff and 'small' not in ff:
-                hmi_path_out = ff
+            # Generate a search
+            crots = a.jsoc.PrimeKey('CAR_ROT', str(cr0) + '-' + str(cr1))
+            res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crots, 
+                            a.jsoc.Notify(jsoc_email))
 
+            # Once the query is made and trimmed down...
+            hmi_path = hmidat+'/{file}.fits'
+            hmi_path_out = Fido.fetch(res, path=hmi_path)[0]
+    
     # MDI data
 
     # # Grab MDI
@@ -122,7 +129,7 @@ def get_magnetogram_files(cr=None, date=None, data_dir=None, email=None, do_down
     #     mdi_path = None
     #     print("\n !! No MDI data available for this time period !!\n")
 
-    print("Download Complete!\n")
+    print("\tDownload Complete!\n")
 
     return (hmi_path_out, None)
 
@@ -146,7 +153,7 @@ def reduce_fits_image(fits_path, target_resolution=None, reduction_amount=None, 
     :param func: numpy function, optional, function to use for the reduction
                               defaults to np.nanmean
     """
-    print(f"Reducing {fits_path}...")
+    print(f"\tReducing {fits_path}...")
     # Open the FITS file and read the data
     with fits.open(fits_path, ignore_missing_simple=True) as hdul:
         hdul.verify('silentfix')
@@ -155,7 +162,7 @@ def reduce_fits_image(fits_path, target_resolution=None, reduction_amount=None, 
             data = hdul[1].data
             
         current_resolution = max(data.shape)
-        print("Original Size: ", data.shape)
+        print("\tOriginal Size: ", data.shape)
 
         # Calculate the reduction amount if target resolution is specified
         if target_resolution is not None:
@@ -185,14 +192,14 @@ def reduce_fits_image(fits_path, target_resolution=None, reduction_amount=None, 
 
         fits.writeto(output_path, small_image, useheader, overwrite=True)
 
-        print("Final Size:    ", small_image.shape)
+        print("\tFinal Size:    ", small_image.shape)
         # print("CDELTA 1 and 2: ", useheader['CDELT1'], useheader['CDELT2'])
         # print(small_image.shape[0] * useheader['CDELT2'] * np.pi/2)
         # print(useheader['CDELT1'] * small_image.shape[1])
 
         plot_images(fits_path, data, small_image)
 
-        print("\nReduction Complete!\n")
+        print("\n\tReduction Complete!\n")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     return output_path

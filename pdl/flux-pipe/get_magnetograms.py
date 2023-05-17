@@ -11,6 +11,7 @@ parser.add_argument('--do_download', type=int, default=1, help='download the fil
 args = parser.parse_args()
 
 # get the magnetogram files
+
 (hmi_path, mdi_path) = get_magnetogram_files(cr=args.cr, date=None, data_dir=args.dat_dir, do_download=args.do_download)
 
 

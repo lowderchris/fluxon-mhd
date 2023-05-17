@@ -135,33 +135,65 @@ if do_pfss or load_failure:
     with open(pickle_path, 'wb') as outp:
         pickle.dump(output, outp, pickle.HIGHEST_PROTOCOL)
 
+    
+# output.bg
+# output.bc
+# output.bunit
+
+#bc: B on the centres of the cell faces.
+#bg: B as a (weighted) averaged on grid points.
+#bunit: Unit of the input map data.
 ###############################################################################
 
 
 # CL - DOUBLE CHECK THE LATITUTE DIRECTION HERE, and plot the polarity inversion line.
 
 fluxon_location = np.genfromtxt(datdir + 'fluxon/cr' + cr + '/floc/floc_cr'+cr+'.dat')
-f_sgn = fluxon_location[:,2]
 shp = br_safe.data.shape
 n_lat = shp[0]
 lat_center = n_lat // 2
 f_lon = np.deg2rad(fluxon_location[:,0] * br_safe.meta['cdelt1'])
 f_lat = (fluxon_location[:,1]-lat_center) * br_safe.meta['cdelt2']
 f_sgn = fluxon_location[:,2]
+n_flux = len(f_lon)
 
 print("\n -->Plotting Fluxon Locs...", end="")
-if False:
+if True:
     # br = sunpy.map.Map(datdir + 'hmi.Synoptic_Mr.polfil/hmi.synoptic_mr_polfil_720s.' + cr + '.Mr_polfil.fits')
-    fluxon_map_output_path = fits_path.replace('.fits', '_fluxons.png')
+    # fluxon_map_output_path = fits_path.replace('.fits', '_fluxons.png')
+    # fluxon_map_output_path = path.join(path.dirname(path.dirname(fits_path)), path.basename(fits_path).replace('.fits', f'_{n_flux}_fluxons.png'))
+    fluxon_map_output_path = path.join(path.dirname(path.dirname(fits_path)), f'{n_flux}_fluxons.png')
 
     ## Print the Fluxon Map
     fig, ax = plt.subplots()
-    ax.imshow(br_safe.data, cmap='gray', interpolation=None, origin="lower")
-
+    ax.imshow(br_safe.data, cmap='gray', interpolation=None, origin="lower", zorder=-10)
     ratio = shp[1]/shp[0]
     for (x, y, sig) in fluxon_location:
         color = 'red' if sig > 0 else "teal"
         ax.scatter(x, y, c=color, alpha=0.4)
+
+    # import pdb
+    # pdb.set_trace()
+    # ax.imshow(output.bc[0], cmap='RdBu', interpolation=None, origin="lower", zorder=-5, alpha= 0.33)
+    # pfss_out = output
+    # ss_br = pfss_out.source_surface_br
+    # # Create the figure and axes
+    # # fig2 = plt.figure()
+    # ax = plt.subplot(projection=ss_br)
+    # fig, ax = plt.subplots()
+    # # Plot the source surface map
+    # ss_br.plot()
+    # # Plot the polarity inversion line
+    # ax.plot_coord(pfss_out.source_surface_pils[0])
+    # # Plot formatting
+    # plt.colorbar()
+    # ax.set_title('Source surface magnetic field')
+
+    # plt.show()
+    # output.bc
+    # output.bg
+    # output.bunit
+
     plt.axis('off')
     sz0=6 #inches
     sz1=sz0*ratio #inches
@@ -181,7 +213,8 @@ if False:
         color = 'red' if sig > 0 else "teal"
 
         ax.scatter(long, lat, color=color)
-    fluxon_map_output_path2 = fits_path.replace('.fits', '_latlon_fluxons.png')
+    # fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), path.basename(fits_path).replace('.fits', f'_latlon_{n_flux}_fluxons.png'))
+    fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), f'{n_flux}_fluxons_latlon.png')
     plt.axis('off')
     fig.set_size_inches((sz1, sz0))
     plt.tight_layout()
@@ -250,14 +283,14 @@ def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed):
                     fl_closed = np.append(fl_closed, [[flnum_closed, f_sgn[i], fl.lat[j].value, fl.lon[j].value, (fl.distance[j]/const.R_sun).value]], axis=0)
                     prev_rad = fl_rads[j]
         flnum_closed += 1
-    return fl_open, fl_closed
+    return output, fl_open, fl_closed, flnum_open, flnum_closed
 
 def trace_lines(output, f_lon, f_lat, fl_open, fl_closed, flnum_open, flnum_closed):
     skip_num = 0
     timeout_num = 0
     for i, coords in enumerate(tqdm(zip(f_lon, f_lat), desc="Tracing Field Lines", total=len(f_lat))):
         try:
-            fl_open, fl_closed = trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed)
+            output, fl_open, fl_closed, flnum_open, flnum_closed = trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed)
         except timeout_decorator.TimeoutError as e:
             # print(f"Timeout Occured in Iteration {i}")
             timeout_num += 1
@@ -276,7 +309,7 @@ def trace_lines(output, f_lon, f_lat, fl_open, fl_closed, flnum_open, flnum_clos
         s_perc = 100*skip_num/len(f_lon)
         print(f"\n\nSome iterations failed. Timed-out: {timeout_num} ({t_perc:0.2f}%), ValueError: {skip_num} ({s_perc:0.2f}%)\n\n")
 
-    print(f"Open Lines: {len(fl_open)}, Closed Lines: {len(fl_closed)}")
+    print(f"\n\tOpen Lines: {len(fl_open)}, Closed Lines: {len(fl_closed)}, Failures: {skip_num+timeout_num}")
           
     fl_open = fl_open[1:]
     fl_closed = fl_closed[1:]
@@ -373,5 +406,6 @@ print("Success!")
 #     plt.show()
 
 
-
+# if __name__ == "__main__":
+#     sys.exec("python3 mag_runner.py")
 

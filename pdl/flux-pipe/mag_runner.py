@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 # Carrington Rotations to Treat
 # rotations = [2101, 2134, 2135, 2150, 2159, 2192, 2193, 2219]
-rotations = [2135] #, 2135, 2160]
+rotations = [2183] #, 2135, 2160]
 
 # Path to the PDL script
 pdl_script_path = "magnetogram2wind.pdl"
