@@ -12,15 +12,22 @@ import matplotlib.pyplot as plt
 import argparse
 from magnetoget import load_fits_magnetogram
 
-default_cr = 2163
+from magnetoget import load_magnetogram_params
+
 
 # create the argument parser
 parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
-parser.add_argument('--cr', type=int, default=default_cr, help='Carrington Rotation')
+parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
 parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/Fluxon-Scripts-Gilly', help='data directory')
 parser.add_argument('--show', type=int, default=1)
+parser.add_argument('--interp', type=str, default="cubic")
 args = parser.parse_args()
-filename = f'{args.dat_dir}/fluxon/cr{args.cr}/wind/radial_wind.dat'
+
+(hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
+CR = args.cr or cr or 2183
+
+print(f"plotting CR{CR}...", end="\n" if __name__=="__main__" else "")
+filename = f'{args.dat_dir}/fluxon/cr{CR}/wind/radial_wind.dat'
 
 # Load the dat file
 arr = np.loadtxt(filename).T
@@ -35,22 +42,23 @@ ph0, th0 = phi0+np.pi, -theta0+(np.pi/2)
 ph1, th1 = phi1+np.pi, -theta1+(np.pi/2)
 
 
-# Do some data manipulation
 
-#remove strongest
-np.sort(vel0.flatten())
+#############################################
+#  Manipulate Data - More Art than Science  #
+#############################################
 
 
-vel0[vel0<0.]= np.mean(vel0[vel0>0.])
-vel1[vel1<0.]= np.mean(vel1[vel1>0.])
-fr0[fr0<0.]  = np.nan
-fr1[fr1<0.]  = np.nan
+# Find the positive mean
+v0mean = np.nanmean(vel0[vel0>0.])
+v1mean = np.nanmean(vel1[vel1>0.])
+v0std = np.nanstd(vel0[vel0>0.])
+v1std = np.nanstd(vel1[vel1>0.])
 
-arg0 = np.argwhere(vel0[vel0<0.])
-arg1 = np.argwhere(vel1[vel1<0.])
-arg2 = np.argwhere(fr0[fr0<0.]  )
-arg3 = np.argwhere(fr1[fr1<0.]  )
+# Set the negative values to the mean
+vel0[vel0<0.]= v0mean
+vel1[vel1<0.]= v1mean
 
+# Find the positive max, and min
 vel0_max = np.nanmax(np.abs(vel0)) 
 vel1_max = np.nanmax(np.abs(vel1)) 
 fr0_max  = np.nanmax(np.abs(fr0))  
@@ -60,6 +68,13 @@ vel0_min = np.nanmin(np.abs(vel0))
 vel1_min = np.nanmin(np.abs(vel1)) 
 fr0_min  = np.nanmin(np.abs(fr0))  
 fr1_min  = np.nanmin(np.abs(fr1)) 
+
+# Set the large values to less large
+sig=2
+v0big = (v0mean+sig*v0std)
+v1big = (v1mean+sig*v1std)
+vel0[vel0>v0big] = v0big
+vel1[vel1>v1big] = v1big
 
 scale = 15**2
 power = 1
@@ -73,10 +88,10 @@ f1 = scale * ((np.abs(fr1 ) - fr1_min ) / (fr1_max -fr1_min ))**power
 fig, (ax0, ax1, ax2) = plt.subplots(3, sharex = True, sharey= False)
 
 magnet = load_fits_magnetogram()
-ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), aspect='auto')
+magimg = ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), aspect='auto', vmin=-1500, vmax=1500)
 
-sc00 = ax0.scatter(ph0, th0, c= vel0, s=v0, alpha=0.75, label='V(1.0R$_\odot$)'  , cmap="winter",  )
-sc01 = ax0.scatter(ph1, th1, c= vel1, s=v1, alpha=0.75, label='V(21.5R$_\odot$)' , cmap="autumn",  marker='s')
+sc00 = ax0.scatter(ph0, th0, c= vel0, s=v0, alpha=0.5, label='V(1.0R$_\odot$)'  , cmap="winter",  )
+sc01 = ax0.scatter(ph1, th1, c= vel1, s=v1, alpha=0.5, label='V(21.5R$_\odot$)' , cmap="autumn",  marker='s')
 # sc01 = ax1.scatter(ph1, th1, c= vel1, s=v1, alpha=0.75, label='V(21.5R$_\odot$)' , cmap="autumn",  marker='s')
 # sc10 = ax1.scatter(ph0, th0, c= fr0 , s=f0, alpha=0.75, label='Fr(1.0R$_\odot$)' , cmap="winter", )
 # sc11 = ax1.scatter(ph1, th1, c= fr1 , s=f1, alpha=0.75, label='Fr(21.5R$_\odot$)', cmap="autumn", marker='s')
@@ -84,36 +99,78 @@ sc01 = ax0.scatter(ph1, th1, c= vel1, s=v1, alpha=0.75, label='V(21.5R$_\odot$)'
 
 from scipy.interpolate import griddata
 
-# ax1.imshow(magnet, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), aspect='auto', zorder=-10)
-sc00 = ax1.scatter(ph0, th0, c= vel0, s=v0, alpha=1, label='V(1.0R$_\odot$)'  , cmap="winter",  edgecolors='k')
-sc01 = ax2.scatter(ph1, th1, c= vel1, s=v1, alpha=1, label='V(21.5R$_\odot$)' , cmap="autumn",  marker='s',  edgecolors='k')
+dont_wrap = False
+if dont_wrap:
+
+    #### ax1.imshow(magnet, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), aspect='auto', zorder=-10)
+    sc00 = ax1.scatter(ph0, th0, c= vel0, s=v0, alpha=1, label='V(1.0R$_\odot$)'  , cmap="winter",  edgecolors='k')
+    sc01 = ax2.scatter(ph1, th1, c= vel1, s=v1, alpha=1, label='V(21.5R$_\odot$)' , cmap="autumn",  marker='s',  edgecolors='k')
 
 
-# Create a grid for interpolation
-Ny, Nx = magnet.shape
-grid_x, grid_y = np.linspace(0, 2*np.pi, Nx), np.linspace(-1, 1,  Ny)
-grid_x, grid_y = np.meshgrid(grid_x, grid_y)
+    # Create a grid for interpolation
+    Ny, Nx = magnet.shape
+    grid_x, grid_y = np.linspace(0, 2*np.pi, Nx), np.linspace(-1, 1,  Ny)
+    grid_x, grid_y = np.meshgrid(grid_x, grid_y)
 
-# Interpolate values on the grid
-points0 = [(ph, th) for ph, th in zip(ph0,th0)]
-points1 = [(ph, th) for ph, th in zip(ph1,th1)]
-grid_z0 = griddata(points0, vel0, (grid_x, grid_y), method='nearest', fill_value=0)
-grid_z1 = griddata(points1, vel1, (grid_x, grid_y), method='nearest', fill_value=0)
+    # Interpolate values on the grid
+    points0 = [(ph, th) for ph, th in zip(ph0,th0)]
+    points1 = [(ph, th) for ph, th in zip(ph1,th1)]
+    grid_z0 = griddata(points0, vel0, (grid_x, grid_y), method=args.interp, fill_value=0)
+    grid_z1 = griddata(points1, vel1, (grid_x, grid_y), method=args.interp, fill_value=0)
 
-# Create a contour plot
-# fig, ax = plt.subplots()
-contour0 = ax1.contourf(grid_x, grid_y, grid_z0, zorder=0, alpha = 1, cmap="winter")
-contour1 = ax2.contourf(grid_x, grid_y, grid_z1, zorder=0, alpha = 1, cmap="autumn")
+    # Create a contour plot
+    # fig, ax = plt.subplots()
+    contour0 = ax1.contourf(grid_x, grid_y, grid_z0, zorder=0, alpha = 1, cmap="winter")
+    contour1 = ax2.contourf(grid_x, grid_y, grid_z1, zorder=0, alpha = 1, cmap="autumn")
+
+else:
+    # Define the x-boundaries of the domain
+    x_min = 0
+    x_max = 2*np.pi
+
+    # Wrap the data around the edges of the domain
+    ph0_wrapped = np.concatenate((ph0 - x_max, ph0, ph0 + x_max))
+    th0_wrapped = np.concatenate((th0, th0, th0))
+    vel0_wrapped = np.concatenate((vel0, vel0, vel0))
+
+    ph1_wrapped = np.concatenate((ph1 - x_max, ph1, ph1 + x_max))
+    th1_wrapped = np.concatenate((th1, th1, th1))
+    vel1_wrapped = np.concatenate((vel1, vel1, vel1))
+
+    # Create a grid for interpolation
+    Ny, Nx = magnet.shape
+    grid_x, grid_y = np.linspace(x_min, x_max, Nx, endpoint=False), np.linspace(-1, 1, Ny)
+    grid_x, grid_y = np.meshgrid(grid_x, grid_y)
+
+    # Interpolate values on the grid
+    points0 = [(ph, th) for ph, th in zip(ph0_wrapped, th0_wrapped)]
+    points1 = [(ph, th) for ph, th in zip(ph1_wrapped, th1_wrapped)]
+    grid_z0 = griddata(points0, vel0_wrapped, (grid_x, grid_y), method=args.interp, fill_value=0)
+    grid_z1 = griddata(points1, vel1_wrapped, (grid_x, grid_y), method=args.interp, fill_value=0)
+
+    # Create a scatter plot
+    sc00 = ax1.scatter(ph0, th0, c=vel0, s=v0, alpha=1, label='V(1.0R$_\odot$)', cmap="winter", edgecolors='k'             )
+    sc01 = ax2.scatter(ph1, th1, c=vel1, s=v1, alpha=1, label='V(21.5R$_\odot$)', cmap="autumn", marker='s', edgecolors='k')
+
+    # Create a contour plot
+    contour0 = ax1.contourf(grid_x, grid_y, grid_z0, zorder=0, alpha=1, cmap="winter")
+    contour1 = ax2.contourf(grid_x, grid_y, grid_z1, zorder=0, alpha=1, cmap="autumn")
+
+
+
+
 
 # Add a colorbar
 cbar0 = fig.colorbar(contour0, ax=ax1)
 cbar1 = fig.colorbar(contour1, ax=ax2)
-cbar0.set_label('Interpolated Wind [km/s]')
-cbar1.set_label('Interpolated Wind [km/s]')
+cbar0.set_label('Interpolated Wind [km/s]\nV( 1.0R$_\odot$)')
+cbar1.set_label('Interpolated Wind [km/s]\nV(21.5R$_\odot$)')
 
 # ax0.set_
 
 
+cbar01 = fig.colorbar(magimg, ax=ax0)
+cbar01.set_label("Mag Field Anomaly [Gauss]")
 
 # cbar01 = fig.colorbar(sc01, ax=ax0)
 # cbar00 = fig.colorbar(sc00, ax=ax0)
@@ -126,7 +183,7 @@ cbar1.set_label('Interpolated Wind [km/s]')
 # cbar11.set_label("Fr(21.5R$_\odot$) ")
 
 
-fig.suptitle(F"Fluxon Wind Strength for CR {args.cr}")
+fig.suptitle(F"Fluxon Wind Strength for CR {CR}")
 # ax1.set_title(F"Fluxon Expansion for CR {args.cr}")
 for ax in [ax0, ax1, ax2]:
     ax.set_xlabel('Longitude (Radians)')
@@ -137,14 +194,27 @@ for ax in [ax0, ax1, ax2]:
     ax.axvline(0, c='lightgrey', zorder=-10)
     ax.axvline(2*np.pi, c='lightgrey', zorder=-10)
 
-ax0.legend(loc="lower right")
+# ax0.legend(loc="lower right")
+ax0.set_ylim((-1, 1))
 ax1.set_ylim((-1, 1))
 ax2.set_ylim((-1, 1))
 
 fig.set_size_inches((8,8))
 plt.tight_layout()
-pngname = filename.replace(".dat", "_map.png")
+pngname = filename.replace(".dat", f"_map_{args.interp}.png")
 plt.savefig(pngname)
+
+import os.path as path
+import os
+
+file = f"cr{CR}_radial_wind_map_{len(vel1)}.png"
+directory = f"{args.dat_dir}/fluxon/imgs/wind_maps"
+if not path.exists(directory):
+    os.makedirs(directory)
+    
+save_path = path.join(directory, file)
+plt.savefig(save_path)
+
 # if args.show:
 #     plt.show()
 plt.close(fig)

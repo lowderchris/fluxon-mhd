@@ -13,17 +13,18 @@ import argparse
 from astropy.io import fits
 from magnetoget import load_fits_magnetogram
 
-default_cr = 2193
-
-
 print("Plotting Bmag...", end="")
 # create the argument parser
 parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
-parser.add_argument('--cr', type=int, default=default_cr, help='Carrington Rotation')
+parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
 parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/Fluxon-Scripts-Gilly', help='data directory')
 parser.add_argument('--show', type=int, default=0)
 args = parser.parse_args()
-filename = f'{args.dat_dir}/fluxon/cr{args.cr}/wind/radial_bmag.dat'
+from magnetoget import load_magnetogram_params
+(hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
+CR = args.cr or cr or 2183
+
+filename = f'{args.dat_dir}/fluxon/cr{CR}/wind/radial_bmag.dat'
 
 # Load the dat file
 arr = np.loadtxt(filename).T

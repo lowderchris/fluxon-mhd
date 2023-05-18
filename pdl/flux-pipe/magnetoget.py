@@ -9,7 +9,7 @@ import glob
 
 
 
-def get_magnetogram_files(cr=None, date=None, data_dir=None, email=None, do_download=True):
+def get_magnetogram_files(cr=None, date=None, data_dir=None, email=None, do_download=False):
     """
     Function to grab and update MDI and HMI data.
 
@@ -99,18 +99,18 @@ def get_magnetogram_files(cr=None, date=None, data_dir=None, email=None, do_down
             # print("This file hasn't been downloaded yet!")
             load_failed = True
 
-        if do_download or load_failed:
-            print("\n\tDownloading HMI from JSOC...")
-            c = drms.Client()
+    if do_download or load_failed:
+        print("\n\tDownloading HMI from JSOC...")
+        c = drms.Client()
 
-            # Generate a search
-            crots = a.jsoc.PrimeKey('CAR_ROT', str(cr0) + '-' + str(cr1))
-            res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crots, 
-                            a.jsoc.Notify(jsoc_email))
+        # Generate a search
+        crots = a.jsoc.PrimeKey('CAR_ROT', str(cr0) + '-' + str(cr1))
+        res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crots, 
+                        a.jsoc.Notify(jsoc_email))
 
-            # Once the query is made and trimmed down...
-            hmi_path = hmidat+'/{file}.fits'
-            hmi_path_out = Fido.fetch(res, path=hmi_path)[0]
+        # Once the query is made and trimmed down...
+        hmi_path = hmidat+'/{file}.fits'
+        hmi_path_out = Fido.fetch(res, path=hmi_path)[0]
     
     # MDI data
 
@@ -237,7 +237,7 @@ def plot_images(fits_path, data, small_image):
 
 
 def load_magnetogram_params(datdir):
-    params_path = datdir + "magnetic_target.params"
+    params_path = os.path.join(datdir,"magnetic_target.params")
     with open(params_path, 'r') as fp:
         hdr = fp.readline().rstrip()
         cr = fp.readline().rstrip()
@@ -250,7 +250,7 @@ def load_magnetogram_params(datdir):
 
 def read_fits_data(fname):
     """Reads FITS data and fixes/ignores any non-standard FITS keywords."""
-    hdulist = fits.open(fname)
+    hdulist = fits.open(fname, ignore_missing_simple=True)
     hdulist.verify('silentfix+warn')
     return hdulist
 
@@ -264,7 +264,10 @@ def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/
 
     fname = load_magnetogram_params(datdir)[2]
     fits_path = datdir + fname
-    hdulist = read_fits_data(fits_path)
+    try:
+        hdulist = read_fits_data(fits_path)
+    except FileNotFoundError as e:
+        hdulist = read_fits_data(fname)
     brdat = hdulist[0].data
     header= hdulist[0].header
     brdat = brdat - np.mean(brdat)

@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(description='This script downloads a magnetogra
 parser.add_argument('--cr', type=int, default=2219, help='Carrington Rotation')
 parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/Fluxon-Scripts-Gilly', help='data directory')
 parser.add_argument('--reduce', type=int, default=10, help='factor by which the magnetogram is reduced')
-parser.add_argument('--do_download', type=int, default=1, help='download the files')
+parser.add_argument('--do_download', type=int, default=0, help='download the files')
 args = parser.parse_args()
 
 # get the magnetogram files
@@ -23,7 +23,7 @@ def find_file_with_string(directory, search_string):
             return os.path.join(directory, file_name)
     return None
 
-file_path = find_file_with_string(os.path.dirname(hmi_path), "_small")
+file_path = find_file_with_string(os.path.dirname(hmi_path), "_small.fits")
 
 # if file_path:
 #     print(f"File found: {file_path}")
@@ -38,17 +38,18 @@ if not file_path:
     magneto_file = magneto_path.replace(args.dat_dir, "")
     if magneto_file[0] == "/":
         magneto_file = magneto_file[1:]
+    file_path = magneto_file
     print("Success!\n")
 else:
     print("Skipped! Reduced file already exists")
 
 # write the parameter file
-if magneto_file is not None:
-    params_path = args.dat_dir + "/magnetic_target.params"
-    with open(params_path, 'w') as fp:
-        fp.write("## CR_int, Filename_str, Adapt_bool, Doplot_bool, reduction ##\n")
-        fp.write(str(args.cr)+"\n")
-        fp.write(str(magneto_file)+"\n")
-        fp.write(str(0)+"\n")
-        fp.write(str(0)+"\n")
-        fp.write(str(args.reduce))
+# if magneto_file is not None:
+params_path = args.dat_dir + "/magnetic_target.params"
+with open(params_path, 'w') as fp:
+    fp.write("## CR_int, Filename_str, Adapt_bool, Doplot_bool, reduction ##\n")
+    fp.write(str(args.cr)+"\n")
+    fp.write(str(file_path)+"\n")
+    fp.write(str(0)+"\n")
+    fp.write(str(0)+"\n")
+    fp.write(str(args.reduce))

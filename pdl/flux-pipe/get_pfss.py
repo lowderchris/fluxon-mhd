@@ -58,8 +58,15 @@ print("\n -->Loading Parameters...")
 
 # Load the fits file and format the data and header
 print("\n -->Loading and conditioning fits file...")
-fits_path = datdir + fname
-hdulist = read_fits_data(fits_path)
+
+try:
+    fits_path = fname
+    print(fname)
+    hdulist = read_fits_data(fits_path)
+except FileNotFoundError as e:
+    fits_path = os.path.join(datdir, fname)
+    hdulist = read_fits_data(fits_path)
+
 brdat = hdulist[0].data
 header= hdulist[0].header
 
@@ -163,6 +170,12 @@ n_flux = len(f_sgn)
 
 fluxon_map_output_path = path.join(path.dirname(path.dirname(fits_path)), f'{n_flux}_footprint.png')
 
+top_dir = path.join(datdir,"fluxon/imgs/footpoints")
+fluxon_map_output_path_top = path.join(top_dir, f'cr{cr}_footpoints_{n_flux}.png')
+
+if not path.exists(top_dir):
+    os.makedirs(top_dir)
+
 print("\n -->Plotting Fluxon Locs...", end="")
 if not path.exists(fluxon_map_output_path) or force_plot:
     # br = sunpy.map.Map(datdir + 'hmi.Synoptic_Mr.polfil/hmi.synoptic_mr_polfil_720s.' + cr + '.Mr_polfil.fits')
@@ -207,6 +220,7 @@ if not path.exists(fluxon_map_output_path) or force_plot:
     fig.set_size_inches((sz1, sz0))
     plt.tight_layout()
     plt.savefig(fluxon_map_output_path, bbox_inches='tight', dpi=4*DPI)
+    plt.savefig(fluxon_map_output_path_top, bbox_inches='tight', dpi=4*DPI)
     plt.close()
 
     ## Plot the fluxon map in lat/lon
