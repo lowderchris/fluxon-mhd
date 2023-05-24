@@ -36,11 +36,11 @@ System requirements
 
 FLUX needs:
 
--   a POSIX system under which to run. It has been tested under Fedora Linux, Ubuntu Linux, and MacOS X. It is thought to work under Cygwin (but why bother?)
+-   a POSIX system under which to run. It has been tested under Fedora Linux, Ubuntu Linux, and macOS.
 
--   Perl 5.8.x or 5.10.x (standard on most POSIX systems these days)
+-   Perl 5.10+
 
--   PDL 2.4.x (standard on most Linuxes and available through Fink; source is available from [<http://pdl.perl.org>](http://pdl.perl.org)
+-   PDL v2.081+ (source is available from [<http://pdl.perl.org>](http://pdl.perl.org)
 
 -   gcc & make (standard essentially everywhere). (Other C compilers may work; nobody has yet tried.)
 

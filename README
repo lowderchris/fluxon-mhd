@@ -16,17 +16,18 @@ All source files are copyright (C) 2004-2023 by the authors unless otherwise mar
 THIS SOFTWARE COMES WITH NO WARRANTY OF ANY KIND.
 
 Authors:
-	Craig DeForest		deforest@boulder.swri.edu
-	Charles Kankelborg	kankel@solar.physics.montana.edu
-	Derek Lamb		derek@boulder.swri.edu
-	Chris Lowder		chris.lowder@swri.org
-	Laurel Rachmeler	laurel@boulder.swri.edu
-	Alisdair Davey		adavey@spd.org
+	Craig DeForest (SwRI)
+	Charles Kankelborg (MSU)
+	Derek Lamb (SwRI)
+	Chris Lowder (SwRI)
+  Chris Gilly (SwRI)
+	Laurel Rachmeler (then at CU Boulder & SwRI)
+	Alisdair Davey (then at SwRI)
 
 Contributors (gratefully acknowledged):
-	     Nathan Schwadron
-	     Teddy Walls
-	     Christopher Plumberg
+  Nathan Schwadron
+	Teddy Walls
+	Christopher Plumberg
 
 --------
 INSTALLATION INSTRUCTIONS
@@ -41,7 +42,7 @@ FL_PREFIX (required, defaults to /usr/local):
 PL_PREFIX (optional, no default):
     Where the Perl front-end module should be installed. This location should be in Perl's @INC list. Try doing ' perl -e "print join(qq|\n|,@INC,q||);" ' at the command line to see the contents of this list. If $PL_PREFIX/lib/perl5 is not included in @INC, then Perl will not be able to find the Flux module after installation. You can add $PL_PREFIX/lib/perl5 to your PERL5LIB environment variable to solve that problem.  Or you can just leave PL_PREFIX undefined and Perl will do the Right Thing.
 
-After installation, some autoloading routines will be installed for you.  See the docs for PDL::AutoLoader (http://pdl.perl.org/PDLdocs/PDL/AutoLoader.html) for a description of this handy feature of PDL.  Instructions come at the end of the installation script.
+After installation, some autoloading routines will be installed for you.  See the docs for PDL::AutoLoader (https://metacpan.org/pod/PDL::AutoLoader) for a description of this handy feature of PDL.  Instructions come at the end of the installation script.
 
 
 0) The zeroth line exports the environment variables you have already declared.
@@ -54,25 +55,25 @@ After installation, some autoloading routines will be installed for you.  See th
 
 Note the 'sudo' on lines 2 and [if required based on PL_PREFIX] 4
 
-% export FL_PREFIX PL_PREFIX
-% make libbuild
-% sudo make libinstall
-% make pdlbuild
-% make pdltest
-% [sudo] make pdlinstall
-% export -n FL_PREFIX PL_PREFIX
+$ export FL_PREFIX PL_PREFIX
+$ make libbuild
+$ sudo make libinstall
+$ make pdlbuild
+$ make pdltest
+$ [sudo] make pdlinstall
+$ export -n FL_PREFIX PL_PREFIX
 
 IFF both the library and the module are going to be installed in root-owned or user-owned locations, you can shortcut the above with
 
-% export PL_PREFIX FL_PREFIX
-% [sudo] make everything
-% export -n FL_PREFIX PL_PREFIX
+$ export PL_PREFIX FL_PREFIX
+$ [sudo] make everything
+$ export -n FL_PREFIX PL_PREFIX
 
 for example, to install everything into your home directory /home/user/local/lib, /home/user/local/include, etc., you could do (making sure to substitute the user home directory path, without tildes):
 
-% export PL_PREFIX='/home/user/local'
-% export FL_PREFIX='/home/user/local'
-% make everything
+$ export PL_PREFIX='/home/user/local'
+$ export FL_PREFIX='/home/user/local'
+$ make everything
 
 --------
 
