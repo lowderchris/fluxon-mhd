@@ -26,3 +26,4 @@ pdl/flux-pipe/fluxon/windtemp/*
 pdl/flux-pipe/__pycache__/
 *.pyc
 *.pkl
+*scratch*
