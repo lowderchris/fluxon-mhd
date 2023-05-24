@@ -4,26 +4,31 @@ import os
 
 # Carrington Rotations to Treat
 # rotations = [2101, 2134, 2135, 2150, 2159, 2192, 2193, 2219]
-rotations = [
-             2101,
-             2110,
-            #  2120,
-             2135,    # very little polar field
-            #  2140,
-            #  2150, 
-             2160,      # mixed polarities at the equator
-            #  2170,
-             2183,    # mixed polarities at the equator
-             2193,    # a good dipole, or polar field
-            #  2200,
-             2210, 
-            #  2215,
-            #  2219, 
-             2231,    # literally only 8 open field lines
-            #  2240,
-             2250, 
-             ]
-recompute = 0
+# rotations = [
+#              2101,
+#              2110,
+#             #  2120,
+#              2135,    # very little polar field
+#             #  2140,
+#             #  2150, 
+#              2160,      # mixed polarities at the equator
+#             #  2170,
+#              2183,    # mixed polarities at the equator
+#              2193,    # a good dipole, or polar field
+#             #  2200,
+#              2210, 
+#             #  2215,
+#             #  2219, 
+
+#              2231,    # literally only 8 open field lines
+#             #  2240,
+#              2250, 
+#              ]
+rotations = [2160]
+recompute = 1
+nflux = 10000
+reduction = 2
+do_survey = True
 
 
 # Path to the PDL script
@@ -32,11 +37,9 @@ pdl_script_path = flux_pipe_path + "magnetogram2wind.pdl"
 os.chdir(flux_pipe_path)
 
 # Options
-nflux = 1500
 capture = False
 verbose = True
 do_download = 0
-reduction = 5
 
 
 
@@ -52,17 +55,51 @@ if capture:
 else:
     print("\n\nProcessing the following CR: ", rotations, "\n\n")
     
+
+
 # Run the PDL script using subprocess
 for rot in tqdm(rotations, desc="    Processing Rotations. Overall progress", unit="rotation"):
     try:
-        result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux)], capture_output=capture)
+        if do_survey:
+            recompute = 1
+            for reduction in [2]:
+                to_break = 0
+                if reduction == 3:
+                    do_flux = [
+                    # 250, 500, 1000, 1500, 2000, 2500, 
+                    # 500, 1000, 2000,
+                    5000, 
+                    6000, 8000, 10000
+                    ]
+                else:
+                    do_flux = [
+                    # 250, 500, 1000, 1500, 2000, 2500, 
+                    # 500, 1000, 2000,
+                    # 3000, 
+                    5000, 
+                    6000, 8000, 10000,
+                    12000, 14000, 16000
+                    ]
+
+                for nflux in do_flux:
+                    result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux)], capture_output=capture)
+                    if capture and verbose:
+                        print(result.stdout.decode())
+                    if result.returncode != 0:
+                        to_break += 1
+                        if to_break > 2:
+                            break
+        else:
+            result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux)], capture_output=capture)
+            if capture and verbose:
+                print(result.stdout.decode())
+            if result.returncode != 0:
+                to_break += 1
+                if to_break > 2:
+                    break
     except Exception as e:
         print(e)
-        # result = subprocess.run(["perl", os.path.join("/pdl/flux-pipe",pdl_script_path), str(rot), str(reduction), str(do_download), str(recompute), str(nflux)], capture_output=capture)
-
-    if capture and verbose:
-        print(result.stdout.decode())
-    # exit()
+    
 
 
 
