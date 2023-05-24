@@ -139,7 +139,7 @@ from astropy.io import fits
 import numpy as np
 
 
-def reduce_fits_image(fits_path, target_resolution=None, reduction_amount=None, func=np.nanmean):
+def reduce_fits_image(fits_path, target_resolution=None, reduction_amount=None, func=np.nansum):
     """
     Open a FITS file, reduce the size of the image using astropy's block_reduce
     function, and save a new copy of the FITS file with the smaller image in the
@@ -162,7 +162,7 @@ def reduce_fits_image(fits_path, target_resolution=None, reduction_amount=None, 
             data = hdul[1].data
             
         current_resolution = max(data.shape)
-        print("\tOriginal Size: ", data.shape)
+        print("\tOriginal Shape: ", data.shape)
 
         # Calculate the reduction amount if target resolution is specified
         if target_resolution is not None:
@@ -173,8 +173,15 @@ def reduce_fits_image(fits_path, target_resolution=None, reduction_amount=None, 
             raise ValueError("Either target_resolution or reduction_amount must be specified.")
 
         # Reduce the image and save it to a new file with "_small" appended to the filename
+
+
+        before_sum = np.sum(data)
         small_image = block_reduce(data, reduction_amount, func)
-        output_path = fits_path.replace('.fits', '_small.fits')
+        after_sum = np.sum(small_image)
+        if not np.isclose(before_sum, after_sum):
+            print("\tREDUCTION WARNING: \n\tSum before:    ", before_sum, "\n\tSum after:     ", after_sum)
+        
+        output_path = fits_path.replace('.fits', f'_{reduction_amount}_small.fits')
         try:
             hdul[0].header["DATE"]
             useheader = hdul[0].header
@@ -192,7 +199,7 @@ def reduce_fits_image(fits_path, target_resolution=None, reduction_amount=None, 
 
         fits.writeto(output_path, small_image, useheader, overwrite=True)
 
-        print("\tFinal Size:    ", small_image.shape)
+        print("\tFinal Shape:    ", small_image.shape)
         # print("CDELTA 1 and 2: ", useheader['CDELT1'], useheader['CDELT2'])
         # print(small_image.shape[0] * useheader['CDELT2'] * np.pi/2)
         # print(useheader['CDELT1'] * small_image.shape[1])
@@ -237,6 +244,7 @@ def plot_images(fits_path, data, small_image):
 
 
 def load_magnetogram_params(datdir):
+    """Reads the magnetic_target.params file and returns the parameters."""
     params_path = os.path.join(datdir,"magnetic_target.params")
     with open(params_path, 'r') as fp:
         hdr = fp.readline().rstrip()
