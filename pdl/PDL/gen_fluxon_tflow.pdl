@@ -1,4 +1,5 @@
 use PDL::NiceSlice;
+use warnings;
 =head2 gen_fluxon_tflow
 
 =for ref
@@ -7,6 +8,7 @@ Iterate through wind solutions in a (hopefully) clever method to find a transoni
 
 =cut
 use PDL::Options;
+$PDL::verbose = 0;
 
 sub gen_fluxon_tflow {
     my $me = shift;
@@ -15,28 +17,29 @@ sub gen_fluxon_tflow {
 # Check for start and ending points being open
 my $st_open = ($me->{fc_start}->{label}==-1);
 my $en_open = ($me->{fc_end}->{label}==-2);
+my $vu=0;
 
 # Return undefined value if the given fluxon structure is labeled as a plasmoid, or if
 #   both ends are open
 return undef if( $me->{plasmoid} || ($st_open + $en_open != 1));
 
 # Plot... while diagnosing things
-$doplot = 0;
-if ($doplot) {$win = gpwin("qt",(font=>",16"),{size=>8});}
+my $doplot = 0;
+## if ($doplot) {my $win = gpwin("qt",(font=>",16"),{size=>8});}
 
 # Define any other required quantities
-$t0 = 1e6;
-$cs = sqrt(2 * 1.381e-23 * $t0 / 0.5 / 1.673e-27) / 1e3;
-$dv = 25;
+my $t0 = 1e6;
+my $cs = sqrt(2 * 1.381e-23 * $t0 / 0.5 / 1.673e-27) / 1e3;
+my $dv = 25;
 
 # Define an initial lower bound with a breeze solution
-$vl = 10;
-($farr, $fr, $bth, $bph) = gen_fluxon_flow($me, {'v0'=>$vl, 'cs'=>$cs});
-if ($doplot) {$win->plot({ylabel=>'Wind speed (km/s)', xlabel=>'Radius (R_{sun})'}, squeeze($farr(0,:)), squeeze($farr(1,:)));}
+my $vl = 10;
+(my $farr, my $fr, my $bth, my $bph) = gen_fluxon_flow($me, {'v0'=>$vl, 'cs'=>$cs});
+## if ($doplot) {my $win->plot({ylabel=>'Wind speed (km/s)', xlabel=>'Radius (R_{sun})'}, squeeze($farr(0,:)), squeeze($farr(1,:)));}
 
 # Jump up in large steps to find a transonic solution, updating the lower breeze bound along the way
-$srchvu = 1;
-$vt = $vl;
+my $srchvu = 1;
+my $vt = $vl;
 while ($srchvu) {
     $vl = $vt;
     $vt = $vt + $dv;
@@ -47,11 +50,16 @@ while ($srchvu) {
     }
     # CL - Temp break statement to cutoff wind velocities of unusual size
     if ($vt > 1000) {last;}
-    if ($doplot) {$win->replot({ylabel=>'Wind speed (km/s)', xlabel=>'Radius (R_{sun})'}, squeeze($farr(0,:)), squeeze($farr(1,:)));}
+    ## if ($doplot) {my $win->replot({ylabel=>'Wind speed (km/s)', xlabel=>'Radius (R_{sun})'}, squeeze($farr(0,:)), squeeze($farr(1,:)));}
 }
 
 # Hone in on the ideal transonic solution
-$cit = 0;
+my $cit = 0;
+if (!ref($vu) || ref($vu) ne 'PDL') {
+    $vu = $vl; # Initialize the PDL variable if it's not already declared
+    # print "Weird INIT---------------------------------------------------->";
+}
+# my $vu;
 while ($cit < 10) {
     # Test the mean velocity between the upper (transonic / misbehaved) and lower (breeze) bounds. Define it as the new upper or lower bound accordingly.
     $vt = ($vl + $vu) / 2;
@@ -63,16 +71,16 @@ while ($cit < 10) {
     }
 
     $cit += 1;
-    if ($doplot) {$win->replot({ylabel=>'Wind speed (km/s)', xlabel=>'Radius (R_{sun})'}, squeeze($farr(0,:)), squeeze($farr(1,:)));}
+    ## if ($doplot) {my $win->replot({ylabel=>'Wind speed (km/s)', xlabel=>'Radius (R_{sun})'}, squeeze($farr(0,:)), squeeze($farr(1,:)));}
 }
 
 # Take this final upper limit and generate a wind solution
 ($farr, $fr, $bth, $bph) = gen_fluxon_flow($me, {'v0'=>$vu, 'cs'=>$cs});
-if ($doplot) {$win->replot({ylabel=>'Wind speed (km/s)', xlabel=>'Radius (R_{sun})'}, squeeze($farr(0,:)), squeeze($farr(1,:)));}
+## if ($doplot) {my $win->replot({ylabel=>'Wind speed (km/s)', xlabel=>'Radius (R_{sun})'}, squeeze($farr(0,:)), squeeze($farr(1,:)));}
 
 # Don't forget to return these values
 return ($farr, $fr, $bth, $bph);
 
 }
-
+1;
 __END__
