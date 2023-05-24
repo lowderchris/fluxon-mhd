@@ -48,6 +48,7 @@ PHYSICS_FUNC f_pressure_equi2;
 PHYSICS_FUNC f_pressure_equi2a;
 PHYSICS_FUNC f_pressure_equi2b;
 
+PHYSICS_FUNC f_p_eqa_perp;
 PHYSICS_FUNC f_p_eqa_radial;
 PHYSICS_FUNC f_curv_hm;
 PHYSICS_FUNC f_curv_m;
@@ -58,6 +59,7 @@ PHYSICS_FUNC f_vertex3;
 PHYSICS_FUNC f_vertex4;
 PHYSICS_FUNC f_vertex5;
 PHYSICS_FUNC f_vert;
+PHYSICS_FUNC f_vert4;
 
 /* F_CONV_TABLE is an array that associates function names with 
  * jumptable entries.  The actual array is defined in physics.c.

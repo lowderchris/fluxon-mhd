@@ -60,13 +60,15 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_pressure_equi2b","(OLD) 2001 pressure law (B-normalized; patched for open field)",f_pressure_equi2b},
   {"f_curv_hm","Curvature force law (harmonic mean curvature)",f_curv_hm},
   {"f_curv_m","Curvature force law (mean curvature)",f_curv_m},
+  {"f_p_eqa_perp","Angular equipartition pressure, perpendicular force",f_p_eqa_perp},
   {"f_p_eqa_radial","Angular equipartition pressure, radial forces",f_p_eqa_radial},
+  {"f_vert","Vertex distribution pseudo-force",f_vert},
+  {"f_vert4","Vertex distribution pseudo-force",f_vert4},
   {"f_vertex","Vertex distribution pseudo-force (DEPRECATED)",f_vertex},
   {"f_vertex2","Vertex distribution pseudo-force",f_vertex2},
   {"f_vertex3","Vertex distribution pseudo-force",f_vertex3},
   {"f_vertex4","Vertex distribution pseudo-force (r^2 repulsion)",f_vertex4},
   {"f_vertex5","Vertex distribution pseudo-force",f_vertex5},
-  {"f_vert","Vertex distribution pseudo-force",f_vert},
   //  {"m_hydrostatic","Quasi-hydrostatic mass loading with N_0 and T_0 from powers of B_base; requires a b_",m_hydrostatic},
   {0,0,0}
 };
@@ -673,6 +675,7 @@ void f_pressure_equi2a(VERTEX *V, HULL_VERTEX *verts, int segflag) {
  * 
  * In this version only the normal wall force, and not the parallel
  * wall force, is doubled.
+ * 
  */
 
 void f_pressure_equi2b(VERTEX *V, HULL_VERTEX *verts, int segflag) {
@@ -819,6 +822,101 @@ void f_vert(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   scale_3d(force, force, 0.5 * fn * Bmag / norm_3d(force) );
   
   sum_3d(V->f_v, V->f_v, force);
+
+  return;
+}
+
+/**********************************************************************
+ * f_vert4
+ * Pseudoforce that moves vertices along field lines.  Used to keep them 
+ * nicely evened out along the lines and to attract them to 
+ * curvature.
+ * 
+ * Strictly speaking, this is two forces:  a vertex repulsive force
+ * and another force that attracts vertices toward curvature.  But
+ * the two should always be used together, so they're included together.
+ *
+ * f_vert4 is optimized for use with the newer forces that are straight
+ * force-per-unit-length: it is artificially strengthened by the 
+ * local B field magnitude.
+ * 
+ */
+void f_vert4(VERTEX *V, HULL_VERTEX *verts, int segflag) {
+  NUM force[3];
+  NUM d1[3], d1n [3], d2[3], d2n[3];
+  NUM d1nr,d2nr,fn1,fn2,fn3; /* fn's are scalers */
+  NUM l1, l2, l_fac;
+  NUM dpp[3], dnn[3];
+  NUM alpha_p, alpha_n, lnn, lpp, i1; 
+
+  NUM r_clp, r_cln;
+  NUM Bmag;
+
+  /* Exclude endpoints and image charges */
+  if(!V->next || !V->prev || V->label < 0)
+    return;
+
+  /* Scale forces to the maximum of the B values in our vicinity */
+  Bmag = (V->b_mag > V->prev->b_mag) ? V->b_mag : V->prev->b_mag ;
+
+  // Find the normal vectors pointing along the previous and next segments,
+  // and collect the lengths of the original vectors...
+
+  diff_3d(d1,V->x,V->prev->x);
+  scale_3d(d1n, d1, (d1nr = 1.0 / (l1=norm_3d(d1)))); /* assignment */
+
+  diff_3d(d2,V->next->x, V->x);
+  scale_3d(d2n, d2, (d2nr = 1.0 / (l2=norm_3d(d2)))); /* assignment */
+
+
+  /* Repulsive force from nearest neighbors.  The force drops as 
+   *  1/r^2 but is normalized l to yield something like 1.
+   */
+  fn1 = (d1nr*d1nr-d2nr*d2nr) * ( (l1+l2)*0.5 ) * ( (l1+l2)*0.5 );
+  //fn1 *= 0.5;
+
+  /* Curvature-attractive force.  This attracts vertices toward
+   * curvature so that sharp angles attract vertices to smooth
+   * themselves out.
+   */
+
+  if(V->prev->prev && V->next->next) {
+
+    diff_3d(dnn,V->next->next->x,V->next->x);
+    lnn = norm_3d(dnn);
+
+    diff_3d(dpp,V->prev->x,V->prev->prev->x);
+    lpp = norm_3d(dpp);
+
+    alpha_p = M_PI - acos( (1-1e-6) * (inner_3d(dpp, d1)) / (l1 * lpp) );
+    alpha_n = M_PI - acos( (1-1e-6) * (inner_3d(dnn, d2)) / (l2 * lnn) );
+    
+    fn3 = 1.0 * (alpha_p - alpha_n);
+    V->f_v_tot += fabs(fn3);
+     
+    //fn3 *= 0.5;
+  } else {
+
+    fn3 = 0.0;
+  
+  }
+
+  /* Generate a unit vector along the field line and scale it to the
+   * calculated force.
+   */
+
+  sum_3d(force,d1n, d2n);
+  scale_3d(force, force, (fn1 + fn3) * Bmag / norm_3d(force) / (l1+l2) / 2);
+
+  /* Stick the force where it belongs in the VERTEX's force vector.*/
+
+  if (!isfinite(norm_3d(force))) {
+    printf("something is wrong with the vertex4 force on vertex %ld on fl%ld (non-finite). ln is %ld on %ld, nn is %ld on %ld, l1=%g,l2=%g,lnn=%g,lpp=%g,x=(%g,%g,%g),xn=(%g,%g,%g),xnn=(%g,%g,%g)\n",V->label,V->line->label,V->next->label,V->next->line->label, V->next->next->label,V->next->next->line->label,l1,l2,lnn,lpp,V->x[0],V->x[1],V->x[2],V->next->x[0],V->next->x[1],V->next->x[2],V->next->next->x[0],V->next->next->x[1],V->next->next->x[2]);
+      }
+
+
+  sum_3d(V->f_v, V->f_v, force);
+  V->f_v_tot+= norm_3d(force);
 
   return;
 }
@@ -1171,7 +1269,7 @@ void f_vertex4(VERTEX *V, HULL_VERTEX *verts, int segflag) {
 }
 
 /**********************************************************************
- * f_vertex4 
+ * f_vertex5
  *
  * Similar to f_vertex3, it has vertex repulstion, curvature
  * attraction, and attraction to close fluxons. It is modified
@@ -1651,7 +1749,7 @@ void b_eqa(VERTEX *V, HULL_VERTEX *verts, int segflag) {
 
   }
   
-  Bmag *= V->line->flux * PI * PI;
+  Bmag *= V->line->flux / (4 * PI * PI);
 
   V->b_mag = Bmag;
 
@@ -1737,12 +1835,16 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   NUM l1, l2, recip_len, len;
   NUM b1hat[3];
   NUM b2hat[3];
+  NUM Bmag;
   NUM curve[3];
   NUM force[3];
 
 
   if(!V->next || !V->prev) 
     return;
+
+  /* Scale forces to the mean of the B values in our vicinity */
+  Bmag = (V->b_mag + V->prev->b_mag) / 2;
 
   diff_3d(b2hat,V->next->x,V->x);
   scale_3d(b2hat,b2hat, 1.0 / (l2 = norm_3d(b2hat)));
@@ -1753,9 +1855,7 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   recip_len =  2 / ( l1 + l2 );
   
   diff_3d(curve,b2hat,b1hat);
-  scale_3d(curve, curve, recip_len * V->line->flux);
-
-  //  scale_3d(curve,curve, recip_len * 0.5 * (V->prev->b_mag + V->b_mag));
+  scale_3d(curve, curve, recip_len * Bmag * V->line->flux);
 
   sum_3d(V->f_v,V->f_v,curve);
 
@@ -1765,24 +1865,28 @@ void f_curv_m(VERTEX *V, HULL_VERTEX *verts, int segflag) {
     V->a = len;
 }
 
+
+
 /**********************************************************************
  *
- * f_p_eqa_radial
+ * f_p_eqa_perp
  *
- * Magnetic pressure force, acting radially all the way around the 
- * Voronoi cell boundary (acts like springs on a corrugated boundary)
+ * Magnetic pressure force, acting perpendicular to the hull boundary
+ * 
  *
  * See DeForest notebooks, Vol. VIII, pp 75-76.
  *
  */
 
-void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts, int segflag) {
+void f_p_eqa_perp(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   static NUM scr2d[3],scr3d[3];
   int i,n;
   NUM sina, cosa;
   NUM pmatrix[9];
   VERTEX **nv = (VERTEX **)(V->neighbors.stuff);
-  NUM fac = V->line->flux * V->line->flux / (PI*PI*PI);
+
+  /* $ \Phi^2 / 8 \pi^3 $ -- this is the CGS version of $ \Phi^2/2\mu_0\pi^2 $. --CED 23-Mar-2023 */
+  NUM fac = V->line->flux * V->line->flux / (PI*PI*PI) / 8;
   
   if(!(V->next) || segflag)
     return;
@@ -1817,14 +1921,109 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts, int segflag) {
     if(  (lefta - righta) > PI ) 
       printf("ASSERTION FAILED: lefta-righta >0 (lefta = %5.3g, righta=%5.3g)\n",lefta,righta);
     
-    /* Assemble perpendicular and parallel force components */
-    factor = -fac / (v->r * v->r * v->r);
+    /* Assemble perpendicular force component */
+    /* The factor-of-8 comes from v->r being the distance to the neighbor, while the formula uses the distance to the hull.
+     * --CED 23-Mar-2023
+     */
+    factor = - fac * (2 * 8) / (v->r * v->r * v->r);
     
-    fperp= factor * (0.25 * (sin(2*lefta) - sin(2*righta)) 
-		     + 0.5 * (lefta-righta)
-		     );
-    fpar = factor * ( cos(2*righta) - cos(2*lefta) );
+    fperp = factor * (lefta-righta + 0.5* (sin(2*lefta) - sin(2*righta)));
+    fpar = 0;
 
+    /* Rotate into the absolute coordinate system */
+    {
+      NUM s, c;
+      s = sin(v->a);
+      c = cos(v->a);
+      scr2d[0] += c * fperp - s * fpar;
+      scr2d[1] += s * fperp +  c * fpar;
+    }
+
+    if(V->line->fc0->world->verbosity >= 4) {printf("f_p_eqa_perp: VERTEX %4ld, neighbor %5ld, a=%7.3g, r=%7.3g, righta=%7.3g(%c), lefta=%7.3g(%c), fperp=%7.3g, fpar=%7.3g\n",V->label,v->label,v->a*180/PI,v->r,lefta*180/PI,left->open?'o':'c',righta*180/PI,right->open?'o':'c',fperp,fpar);
+    }
+
+
+  } /* end of neighbor loop */
+  
+   vec_mmult_3d(scr3d,pmatrix,scr2d); /* Convert to 3-D */
+
+  if(V->line->fc0->world->verbosity >= 3) { printf("f_p_eqa_perp: VERTEX %4ld (fluxon %4ld); total force is %7.3g, %7.3g, %7.3g\n", V->label, V->line->label, scr3d[0],scr3d[1],scr3d[2]); }
+
+  sum_3d(V->f_s,V->f_s,scr3d);
+
+  V->f_s_tot += norm_3d(scr3d);
+  
+  return;
+}
+	
+/**********************************************************************
+ *
+ * f_p_eqa_radial
+ *
+ * Magnetic pressure force, acting perpendicular to the hull boundary
+ * 
+ *
+ * See DeForest notebooks, Vol. VIII, pp 75-76.
+ *
+ */
+
+void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts, int segflag) {
+  static NUM scr2d[3],scr3d[3];
+  int i,n;
+  NUM sina, cosa;
+  NUM pmatrix[9];
+  VERTEX **nv = (VERTEX **)(V->neighbors.stuff);
+
+  /* $ \Phi^2 / 8 \pi^3 $ -- this is the CGS version of $ \Phi^2/2\mu_0\pi^2 $. --CED 23-Mar-2023 */
+  NUM fac = V->line->flux * V->line->flux / (PI*PI*PI) / 8;
+  
+  if(!(V->next) || segflag)
+    return;
+
+  /* Get the perpendicular-plane projection matrix */
+  /* (This is wasteful - it is generated in geometry.c as well. */
+  /* Is there an easy way to pass it around? */
+  projmatrix(pmatrix,V->x,V->next->x);
+  
+  scr2d[0] = scr2d[1] = scr2d[2] = 0;
+
+  n = V->neighbors.n;
+  for(i=0; i< n; i++) {
+    NUM fperp;
+    NUM fpar;
+    NUM factor;
+    HULL_VERTEX *left = &(verts[i]);
+    HULL_VERTEX *right = (i!=0) ? &(verts[i-1]) : &(verts[n-1]);
+    VERTEX *v = nv[i];
+    NUM righta, lefta;
+
+    righta = right->a_r - v->a;   
+    TRIM_ANGLE(righta);
+
+    lefta = left->a_l - v->a;
+    TRIM_ANGLE(lefta);
+
+    
+    if(lefta<righta) 
+      lefta += 2*PI;
+
+    if(  (lefta - righta) > PI ) 
+      printf("ASSERTION FAILED: lefta-righta >0 (lefta = %5.3g, righta=%5.3g)\n",lefta,righta);
+    
+    /* Assemble perpendicular force component */
+    /* The factor-of-8 comes from v->r being the distance to the neighbor, 
+     * while the formula uses the distance to the hull.
+     * --CED 23-Mar-2023
+     */
+    factor = - fac * (2 * 8) / (v->r * v->r * v->r);
+    
+    fperp = factor * (lefta-righta + 0.5 * (sin(2*lefta) - sin(2*righta)));
+    fpar  = factor * ( cos(2*righta) - cos(2*lefta) );
+
+    /* Rotate into the absolute coordinate system */
+    /* Check for bugs -- look at the use of N->scr in f_pressure_equi2b; 
+     * maybe try duplicating that? -- CED 24-Mar-2023
+     */
     {
       NUM s, c;
       s = sin(v->a);
@@ -1839,11 +2038,16 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts, int segflag) {
 
   } /* end of neighbor loop */
   
+   /* n f_pressure_equi2b, this conversion is done in the neighbor loop and the 
+    *  force is acccumulated acrosss neighbors in 3-D.  Here, we accumulate in 2-D 
+    *  across neighbors and then convert to 3-D.  Potential bug but probably not, 
+    *  since we're using the same pmatrix the whole time.
+    */
    vec_mmult_3d(scr3d,pmatrix,scr2d); /* Convert to 3-D */
-   //  mat_vmult_3d(scr3d,pmatrix,scr2d); /* COnvert to 3-D */
+
+    /* Accumulate closest neighbor here? (see f_pressure_equi2b) */
 
   if(V->line->fc0->world->verbosity >= 3) { printf("f_p_eqa_radial: VERTEX %4ld (fluxon %4ld); total force is %7.3g, %7.3g, %7.3g\n", V->label, V->line->label, scr3d[0],scr3d[1],scr3d[2]); }
-
 
   sum_3d(V->f_s,V->f_s,scr3d);
 
