@@ -23,7 +23,7 @@ def find_file_with_string(directory, search_string):
             return os.path.join(directory, file_name)
     return None
 
-file_path = find_file_with_string(os.path.dirname(hmi_path), "_small.fits")
+file_path = find_file_with_string(os.path.dirname(hmi_path), f"_{args.reduce}_small.fits")
 
 # if file_path:
 #     print(f"File found: {file_path}")
