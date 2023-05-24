@@ -29,7 +29,7 @@ from pfsspy import coords
 from pfsspy import tracing
 import pickle
 from magnetoget import load_magnetogram_params, read_fits_data
-
+from time import time
 # Helper Function to Read the Fits Files
 
 if len(sys.argv)>1: 
@@ -43,7 +43,7 @@ else:
 # Load the parameters, basically just which magnetogram is used
 print("\n -->Loading Parameters...")
 (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(datdir)
-
+elapsed = 0
 
 ###############################################################################
 # We can now use SunPy to load the HMI fits file, and extract the magnetic
@@ -111,7 +111,7 @@ rss = 2.5
 print("\n -->Getting Pfss...", end="")
 import os.path as path
 pickle_dir = path.dirname(path.dirname(fits_path))
-pickle_path = path.join(pickle_dir, "pfss_output.pkl")
+pickle_path = path.join(pickle_dir, f"pfss_output_{reduce}.pkl")
 
 load_failure = False
 if not do_pfss:
@@ -122,26 +122,29 @@ if not do_pfss:
             output = pickle.load(inp)
         print("Success!")
     except FileNotFoundError as e:
-        print("File not found!")
+        print("File not found.")
         # print(e, file=sys.stderr,)
         load_failure = True
-        print("\n -->Computing PFSS...", end="")
         
+
+
+
+
+
 ###############################################################################
 # Now calculate the PFSS solution
 if do_pfss or load_failure:
+
+    shp = br_safe.data.shape
+    print(f"\n -->Computing PFSS on {shp} magnetogram...", end="")
+    before = time()
     input = pfsspy.Input(br_safe, nrho, rss)
-
-    # An attempt to use the performance cores
-    # from os import setpriority, getpid, getpriority
-    # PRIO_DARWIN_THREAD  = 0b0011
-    # PRIO_DARWIN_PROCESS = 0b0100
-    # PRIO_DARWIN_BG      = 0x1000
-    # setpriority(PRIO_DARWIN_PROCESS, 0, 0)
-
-    # Actually do the math
     output = pfsspy.pfss(input)
-    print("Done! Saving Pickled Result.")
+    elapsed = time() - before
+    print("Done! Took {:.2f} seconds.".format(elapsed))
+
+
+    print("\tSaving Pickled Result...")
 
     # Save the results
     with open(pickle_path, 'wb') as outp:
@@ -155,6 +158,7 @@ if do_pfss or load_failure:
 #bc: B on the centres of the cell faces.
 #bg: B as a (weighted) averaged on grid points.
 #bunit: Unit of the input map data.
+# PLOT FLUXON LOCATIONS
 ###############################################################################
 
 
@@ -168,57 +172,77 @@ f_lat = (fluxon_location[:,1]-lat_center) * br_safe.meta['cdelt2']
 f_sgn = fluxon_location[:,2]
 n_flux = len(f_sgn)
 
-fluxon_map_output_path = path.join(path.dirname(path.dirname(fits_path)), f'{n_flux}_footprint.png')
+the_dir = path.dirname(path.dirname(fits_path))
+fluxon_map_output_path = path.join(the_dir, f'{n_flux}_footprint.png')
 
 top_dir = path.join(datdir,"fluxon/imgs/footpoints")
 fluxon_map_output_path_top = path.join(top_dir, f'cr{cr}_footpoints_{n_flux}.png')
+
+fluxon_map_output_path_blank = path.join(the_dir, f'cr{cr}_footpoints_blank.png')
+fluxon_map_output_path_blank_top = path.join(top_dir, f'cr{cr}_footpoints_blank.png')
+
 
 if not path.exists(top_dir):
     os.makedirs(top_dir)
 
 print("\n -->Plotting Fluxon Locs...", end="")
-if not path.exists(fluxon_map_output_path) or force_plot:
+if not path.exists(fluxon_map_output_path) or force_plot or True:
     # br = sunpy.map.Map(datdir + 'hmi.Synoptic_Mr.polfil/hmi.synoptic_mr_polfil_720s.' + cr + '.Mr_polfil.fits')
     # fluxon_map_output_path = fits_path.replace('.fits', '_fluxons.png')
     # fluxon_map_output_path = path.join(path.dirname(path.dirname(fits_path)), path.basename(fits_path).replace('.fits', f'_{n_flux}_fluxons.png'))
 
     ## Print the Fluxon Map
     fig, ax = plt.subplots()
-    ax.imshow(br_safe.data, cmap='gray', interpolation=None, origin="lower", zorder=-10)
-    ratio = shp[1]/shp[0]
-    for (x, y, sig) in fluxon_location:
-        color = 'red' if sig > 0 else "teal"
-        ax.scatter(x, y, c=color, alpha=0.4)
 
-    # import pdb
-    # pdb.set_trace()
-    # ax.imshow(output.bc[0], cmap='RdBu', interpolation=None, origin="lower", zorder=-5, alpha= 0.33)
-    # pfss_out = output
-    # ss_br = pfss_out.source_surface_br
-    # # Create the figure and axes
-    # # fig2 = plt.figure()
-    # ax = plt.subplot(projection=ss_br)
-    # fig, ax = plt.subplots()
-    # # Plot the source surface map
-    # ss_br.plot()
-    # # Plot the polarity inversion line
-    # ax.plot_coord(pfss_out.source_surface_pils[0])
-    # # Plot formatting
-    # plt.colorbar()
-    # ax.set_title('Source surface magnetic field')
+    magnet = br_safe.data
+    # find the max and min of the magnetogram plot for use in setting the colormap, 
+    sigma = 2
+    mmean = np.nanmean(magnet)
+    msig = np.nanstd(magnet)
+    
+    mvmin = mmean - sigma*msig
+    mvmax = mmean + sigma*msig
 
-    # plt.show()
-    # output.bc
-    # output.bg
-    # output.bunit
+    # Plot the magnetogram
+        # ax.imshow(br_safe.data, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), vmin=mvmin, vmax=mvmax,aspect='auto')
+
+
+    # plt.savefig(fluxon_map_output_path_top, bbox_inches='tight', dpi=4*DPI)
+
+    # ax.imshow(br_safe.data, cmap='gray', interpolation=None, origin="lower", zorder=-10)
+    # ratio = shp[1]/shp[0]
+    # for (x, y, sig) in fluxon_location:
+    #     color = 'red' if sig > 0 else "teal"
+    #     ax.scatter(x, y, c=color, alpha=0.4)
+
+
+
+    magimg = ax.imshow(magnet, cmap='gray', interpolation=None, origin="lower", aspect='auto', vmin=mvmin, vmax=mvmax)
 
     plt.axis('off')
     sz0=6 #inches
+    ratio = shp[1]/shp[0]
     sz1=sz0*ratio #inches
     shp #pixels
     DPI = shp[1] / sz1 #pixels/inch
     fig.set_size_inches((sz1, sz0))
     plt.tight_layout()
+
+    # plot a blank version of the map
+    plt.savefig(fluxon_map_output_path_blank, bbox_inches='tight', dpi=4*DPI)
+
+    # plot a blank version of the map
+    magimg = ax.imshow(magnet, cmap='gray', interpolation=None, origin="lower", aspect='auto', vmin=mvmin, vmax=mvmax)
+    plt.savefig(fluxon_map_output_path_blank_top, bbox_inches='tight', dpi=4*DPI)
+
+    # scatter the fluxons on top of the map
+    magimg = ax.imshow(magnet, cmap='gray', interpolation=None, origin="lower", aspect='auto', vmin=mvmin, vmax=mvmax)
+
+    x, y, sig = zip(*fluxon_location)
+    colors = ['red' if s > 0 else 'teal' for s in sig]
+    ax.scatter(x, y, c=colors, alpha=0.4)
+
+    # plot the fluxons scattered on top of the map
     plt.savefig(fluxon_map_output_path, bbox_inches='tight', dpi=4*DPI)
     plt.savefig(fluxon_map_output_path_top, bbox_inches='tight', dpi=4*DPI)
     plt.close()
@@ -226,14 +250,20 @@ if not path.exists(fluxon_map_output_path) or force_plot:
     ## Plot the fluxon map in lat/lon
  
     fig, ax = plt.subplots()
-    ax.imshow(br_safe.data, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), aspect='auto')
+    ax.imshow(br_safe.data, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), vmin=mvmin, vmax=mvmax,aspect='auto')
+    
+    # Plot the fluxons
+    colors = ['red' if s > 0 else 'teal' for s in f_sgn]
+    ax.scatter(f_lon, f_lat, c=colors, alpha=0.4)
 
-    for (long, lat, sig) in zip(f_lon, f_lat, f_sgn):
-        color = 'red' if sig > 0 else "teal"
+    # for (long, lat, sig) in zip(f_lon, f_lat, f_sgn):
+    #     color = 'red' if sig > 0 else "teal"
+    #     ax.scatter(long, lat, color=color)
+    # # rewrite the previous for loop without a loop
 
-        ax.scatter(long, lat, color=color)
+
     # fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), path.basename(fits_path).replace('.fits', f'_latlon_{n_flux}_fluxons.png'))
-    fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), f'{n_flux}_footprints_latlon.png')
+    fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), f'r{reduce}_n{n_flux}_footprints_latlon.png')
     plt.axis('off')
     fig.set_size_inches((sz1, sz0))
     plt.tight_layout()
@@ -267,7 +297,7 @@ flnum_closed = 0
 r0 = 1.01 * const.R_sun
 coord_frame = output.coordinate_frame
 
-@timeout_decorator.timeout(1)
+@timeout_decorator.timeout(5)
 def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer):
     #x0 = np.array(coords.sph2cart(r0, f_lat[i], flon[i]))
     (this_flon, this_flat) = coords
@@ -335,10 +365,14 @@ def trace_lines(output, f_lon, f_lat, fl_open, fl_closed, flnum_open, flnum_clos
         
     fl_open = fl_open[1:]
     fl_closed = fl_closed[1:]
-    return fl_open, fl_closed
+    return fl_open, fl_closed, skip_num, timeout_num
     
+
+skip_num = 'x'
+timeout_num = 'x'
+
 if not os.path.exists(open_path) or force_trace:
-    fl_open, fl_closed = trace_lines(output, f_lon, f_lat, fl_open, fl_closed, flnum_open, flnum_closed)
+    fl_open, fl_closed, skip_num, timeout_num = trace_lines(output, f_lon, f_lat, fl_open, fl_closed, flnum_open, flnum_closed)
 
     # Output is flnum, polarity, latitude, longitude, radius
 
@@ -347,12 +381,43 @@ if not os.path.exists(open_path) or force_trace:
     np.savetxt(open_path, fl_open)
     np.savetxt(closed_path, fl_closed)
     print("Success!")
+
+
 else:
     print("\tSkipped! floc dat files already exist.")
 
+pix = shp[0]*shp[1]
+timefile = datdir + 'fluxon/pfss_time.txt'
+with open(timefile, 'a+') as f:
+    # a good name for the variable
+    elap =f"\ncr: {cr}, r: {reduce}, rx: {shp[0]}, ry: {shp[1]}, pf_elp: {elapsed:0>3.3f}, t_kpix: {1000*elapsed/pix:0.3f}"
+    nlines = f"TrOpen: {len(fl_open)}, TrClosed: {len(fl_closed)}, TrFail: {skip_num+timeout_num}, n_pfss: {n_flux}, "
+    f.write(f"{elap}, {nlines}")
+    # f.write(")
 
+# import pandas as pd
 
+# # assuming shp and reduce are already defined
 
+# # create a dictionary of the data to be appended
+# data = {
+#     'r': [reduce],
+#     'rez': [shp],
+#     'TrOpen': [len(fl_open)],
+#     'TrClosed': [len(fl_closed)],
+#     'Fail': [skip_num+timeout_num],
+#     'elapsed': [elapsed],
+#     'pix_time': [1000*elapsed/pix],
+# }
+
+# # create a DataFrame from the data
+# df = pd.DataFrame(data)
+
+# # define the file path to append the data
+# timefile = datdir + 'fluxon/pfss_time.txt'
+
+# # append the data to the file
+# df.to_csv(timefile, mode='a', header=False, index=False, sep='\t')
 
 # # print("\n-->>>>>>>>>>>>>>\n-->>>>Main Program Complete!<<<<\n<<<<<<<<<<<<<<\n")
 # print(" -->Plotting: ", bool(doplot), end="\n\n")
@@ -439,3 +504,133 @@ else:
 # if __name__ == "__main__":
 #     sys.exec("python3 mag_runner.py")
 
+
+
+    # An attempt to use the performance cores
+    # from os import setpriority, getpid, getpriority
+    # PRIO_DARWIN_THREAD  = 0b0011
+    # PRIO_DARWIN_PROCESS = 0b0100
+    # PRIO_DARWIN_BG      = 0x1000
+    # setpriority(PRIO_DARWIN_PROCESS, 0, 0)
+
+    # # Actually do the math
+    # import subprocess
+    # import time
+    # before = time.time()
+
+    # # Serialize the input object and write it to a file
+    # with open('input.pkl', 'wb') as file:
+    #     pickle.dump(input, file)
+
+    # # Create a subprocess
+    # command = f"import pfsspy; import pickle; pickle.dump(pfsspy.pfss(pickle.load(open('input.pkl', 'rb'))), open('{pickle_path}', 'wb'), pickle.HIGHEST_PROTOCOL)"
+    # process = subprocess.Popen(['python', '-c', command])
+
+    # # Loop to periodically check the subprocess status
+    # while True:
+    #     time.sleep(2)  # Wait for 2 seconds before checking again
+
+    #     # Check if the subprocess has completed
+    #     if process.poll() is not None:
+    #         # Subprocess has completed
+    #         break
+
+    #     # Subprocess is still running
+    #     print('.', end="")
+
+    # # Subprocess has completed, retrieve the output
+    # output = process.communicate()[0]
+
+    # # Process the output as desired
+    # print(output)
+
+    # import multiprocessing
+    # import time
+
+    # input_object = input  # Replace with your actual input object
+
+    # # Define a function to run in the subprocess
+    # def run_pfss(input_obj, output_queue):
+    #     import pfsspy
+
+    #     output = pfsspy.pfss(input_obj)
+    #     output_queue.put(output)
+
+    # # Create a queue for receiving the output
+    # output_queue = multiprocessing.Queue()
+
+    # # Create a subprocess
+    # process = multiprocessing.Process(target=run_pfss, args=(input_object, output_queue))
+    # print("Starting process...")
+    # process.start()
+    # print("Process started!")
+    # exit()
+
+    # # Loop to periodically check the subprocess status
+    # while True:
+    #     time.sleep(2)  # Wait for 2 seconds before checking again
+
+    #     # Check if the subprocess has completed
+    #     if not process.is_alive():
+    #         # Subprocess has completed
+    #         break
+
+    #     # Subprocess is still running
+    #     # Perform any other tasks or checks here
+    #     print('.', end="")
+
+    # # Subprocess has completed, retrieve the output
+    # output = output_queue.get()
+
+
+
+    # exit()
+
+
+    # import subprocess
+    # # import time
+
+    # # Create a subprocess
+    # process = subprocess.Popen(['python', '-c', 'import pfsspy; output = pfsspy.pfss(input)'])
+
+    # # Loop to periodically check the subprocess status
+    # while True:
+    #     time.sleep(5)  # Wait for 2 seconds before checking again
+        
+    #     # Check if the subprocess has completed
+    #     if process.poll() is not None:
+    #         # Subprocess has completed
+    #         break
+        
+    #     # Subprocess is still running
+    #     # Perform any other tasks or checks here
+    #     print(".", end="")
+    # # Subprocess has completed, retrieve the output
+    # output = process.communicate()[0]
+
+    # # Process the output as desired
+    # # print(output)
+
+
+
+    # import pdb
+    # pdb.set_trace()
+    # ax.imshow(output.bc[0], cmap='RdBu', interpolation=None, origin="lower", zorder=-5, alpha= 0.33)
+    # pfss_out = output
+    # ss_br = pfss_out.source_surface_br
+    # # Create the figure and axes
+    # # fig2 = plt.figure()
+    # ax = plt.subplot(projection=ss_br)
+    # fig, ax = plt.subplots()
+    # # Plot the source surface map
+    # ss_br.plot()
+    # # Plot the polarity inversion line
+    # ax.plot_coord(pfss_out.source_surface_pils[0])
+    # # Plot formatting
+    # plt.colorbar()
+    # ax.set_title('Source surface magnetic field')
+
+    # plt.show()
+    # output.bc
+    # output.bg
+    # output.bunit
