@@ -1,7 +1,16 @@
-# # A script to read and assimilate a given input magnetogram
+# # A script to run the entire FLUX pipeline on a single Carrington Rotation.
 
 # # Note that until the homebrew issues are fixed, plot using the command:
 # # $world -> render({'dev'=>'qt'});
+
+# The hilbert curve code defines where fluxons should be rooted based on the distribution of flux at 1R_sun. 
+    # Since each contains a discretized amount of magnetic flux, we need to subdivide the domain to reflect how to represent that with fluxons.
+
+# Then we take those root points and use the pfss tracer to map upward from those initial points into the corona to define an initial placeholder geometry. 
+    # This lets us extend this into 3d space with real linking topology.
+
+# Then we take that initial guess from pfss.py and relax down using the fluxon code, which gets us realistic topology, and a near force-free state, 
+# but allowing for currents (not a potential field any longer).
 
 use PDL::AutoLoader;
 # use strict;
@@ -26,50 +35,38 @@ $do_png =               0;
 $do_interactive =       0; 
 $do_wind_calc =         0;
 
-$do_steps = 1000;
-$relax_threshold = 0.49;
+$do_steps = 1000; # relaxation steps between checking stiffness target
+$relax_threshold = 0.49; # stiffness target to stop relaxation
 $max_cycles = 10; 
 $lim = 2.5;
 $lim2 = 7.5;
-$do_interactive = 0;
+$do_interactive = 0; #will open a gnuplot window
 $CR = $ARGV[0] || 2193;
 $reduction = $ARGV[1] || 5;
 $recompute = $ARGV[3];
 $N_fluxons = $ARGV[4] || 1000;
 $top_time = clock_gettime();
 $stepnum=0;
-## TODO make the wind calculation less verbose
+$do_wind_calc = 1; ## Calculate the Solar Wind
 
-print ">>>>>>>>>>>>>>>>>>Recompute = $recompute<<<<<<<<<<<<<<<<<<<<";
+## TODO make the wind calculation less verbose
+print "\n>>>>>>>>>>>>>>>>>>Recompute = $recompute<<<<<<<<<<<<<<<<<<<<";
 
 #######################################################################################################
 ## Job Settings #######################################################################################
 #######################################################################################################
 
 if ($recompute){
-    print "\n                      RECOMPUTING!\n";
+    print "\n                  RECOMPUTING!\n";
 # ## Download the magnetogram from JSOC
     # $do_download = 1; #1; # $ARGV[2] || 1;
-    # $reduction = 5; #5; #$ARGV[1] || 5;
-# ## Ingest the magnetogram and find the footpoints of the magnetic field lines
-    $process_magnetogram = 1;
-    # $N_fluxons = 1000; # TODO Try 750 to 1000 to see how/when it breaks
+    $process_magnetogram = 1; # ## Ingest the magnetogram and find the footpoints of the magnetic field lines
     $do_pfss = 1;
-## Create the world from the output of the pfss.py code
-    $makeworld = 1;
-## Top Level Relaxation Instructions
-    $do_relax = 1;
-        # $do_steps = 2000; # relaxation steps between checking stiffness target
-        # $relax_threshold = 0.49; # stiffness target to stop relaxation
-        # $max_cycles = 5; 
-## Plotting the worlds
-    $do_png = 1;
-        # $lim = 2.5;
-        # $lim2 = 7.5; # For the wide versions
-        $do_interactive = 0; #will open a gnuplot window
+    $makeworld = 1; ## Create the world from the output of the pfss.py code
+    $do_relax = 1; ## Top Level Relaxation 
+    $do_png = 1; ## Plotting the worlds
 }
-## Calculate the Solar Wind
-    $do_wind_calc = 1;
+
 
 #######################################################################################################
 ## Initialize Environment #############################################################################
@@ -86,6 +83,8 @@ push(@INC, "+/Users/cgilbert/opt");
 push(@INC, "/Users/cgilbert/.cpan/build");
 
 system("cd /Users/cgilbert/vscode/fluxon-mhd/pdl/flux-pipe");
+$timefile = $datdir . 'fluxon/pfss_time.txt';
+
 #######################################################################################################
 ## Download the Magnetogram #############################################################################
 #######################################################################################################
@@ -96,6 +95,9 @@ print "\n**Downloading Magnetograms with Python Script...  ";
 # } else {
     # print "Download Skipped!" }
 print "\n";
+
+
+
 
 #######################################################################################################
 ## Select the Magnetogram #############################################################################
@@ -133,8 +135,17 @@ print "\n\tCarrington Rotation: $cr";
 
 
 
+
+
+
+
+
+
+# The hilbert curve code defines where fluxons should be rooted based on the distribution of flux at 1R_sun. 
+# Since each contains a discretized amount of magnetic flux, we need to subdivide the domain to reflect how to represent that with fluxons.
+
 #######################################################################################################
-## Process the Magnetogram ############################################################################
+## Process the Magnetogram ## Find the Root Points ####################################################
 #######################################################################################################
 
 print "\n\n**Processing Magnetograms to get Footpoints...";
@@ -150,7 +161,7 @@ if (! -d $out_dir ) {
 if ($process_magnetogram || $no_floc){
     ## Read in the Magnetogram #################################
     print "\n";
-    print "\n**Reading Magnetogram...";
+    print "\n\t**Reading Magnetogram...";
 
     # $smag = rfits($fname);
     eval {$smag = rfits($fname)};
@@ -162,7 +173,7 @@ if ($process_magnetogram || $no_floc){
 
     ## Run the fluxon hilbert code ##############################
     print "\n";
-    print "\n**Placing $N_fluxons Fluxons using Hilbert Curves...\n";
+    print "\n\t**Placing $N_fluxons Fluxons using Hilbert Curves...\n";
 
     # TODO put a loop around this to make it get the right number of fluxons
     $width = 100;
@@ -170,22 +181,22 @@ if ($process_magnetogram || $no_floc){
     $least = $N_fluxons -$width;
     $iterate = 1;
     $try_fluxons = int($N_fluxons / 2);
-    $amount = 50;
+    $amount = 75;
     $count = 0;
     $maxreps = 30;
     while ($iterate and $count<$maxreps) {
         $floc = fluxon_placement_hilbert($smag, $try_fluxons);
         $N_actual = $floc->nelem;
         $count = $count + 1;
-        print("\n\tPlacing Fluxons:: iter: $count/$maxreps. Wanted: $N_fluxons, Tried: $try_fluxons, Placed: $N_actual...");
+        print("\t  Placing Fluxons:: iter: $count/$maxreps. Wanted: $N_fluxons, Tried: $try_fluxons, Placed: $N_actual...");
         if ($N_actual > $most){
             $try_fluxons = $try_fluxons - $amount;
             $iterate=1;
-            print "Trying again!\n \n";
+            print "Trying again!\n";
         } elsif ($N_actual < $least){
             $try_fluxons = $try_fluxons + $amount;
             $iterate=1;
-            print "Trying again!\n\n";
+            print "Trying again!\n";
         } else {
             print "Success!\n";
             $iterate=0;
@@ -196,7 +207,7 @@ if ($process_magnetogram || $no_floc){
 
     ## Write to disk ############################################
     print "\n";
-    print "**Writing Result to Disk...";
+    print "\t**Writing Result to Disk...";
 
     wcols $floc->transpose, $out_path;
 }
@@ -210,39 +221,39 @@ else {
 print "\n";
 
 
+
+
+
+
+
+
+
+# Then we take those root points and use the pfss tracer to map upward from those initial points into the corona to define an initial placeholder geometry. 
+    # This lets us extend this into 3d space with real linking topology.
+
 #######################################################################################################
-## Run the Python PFSS Code ###########################################################################
+## Run the Python PFSS Code ## Trace the Footpoints into the Corona ###################################
 #######################################################################################################
 
-# print "**PDL Portion Complete!!\n\n";
-
-print "\n**Calling pfss code (python)...";
+print "\n\n**Running PFSS Code to Trace Footpoints into Corona...";
 system("python3 get_pfss.py $do_pfss") == 0 or (die "Python script returned error $?", exit);
-# if ($doPfss){
-#     # print "\n**Python Portion Complete!!\n\n";
-# } else {
-#     print "Skipped!";
-# }
-#     print "\n";
 
-# Set Ranges of Plots
-($xmin_i,$xmax_i,$ymin_i,$ymax_i,$zmin_i,$zmax_i) = (-$lim, $lim, -$lim, $lim, -$lim, $lim);
-($xmin_f,$xmax_f,$ymin_f,$ymax_f,$zmin_f,$zmax_f) = (-$lim, $lim, -$lim, $lim, -$lim, $lim);
-($xmin_f2,$xmax_f2,$ymin_f2,$ymax_f2,$zmin_f2,$zmax_f2) = (-$lim2, $lim2, -$lim2, $lim2, -$lim2, $lim2);
-$range_i = [$xmin_i,$xmax_i,$ymin_i,$ymax_i,$zmin_i,$zmax_i];
-$range_f = [$xmin_f,$xmax_f,$ymin_f,$ymax_f,$zmin_f,$zmax_f];
-$range_f2 = [$xmin_f2,$xmax_f2,$ymin_f2,$ymax_f2,$zmin_f2,$zmax_f2];
 
-#######################################################################################################
+
 ## Generate World from PFSS ###########################################################################
-#######################################################################################################
-print "\n \n**Making the world from the pfss...";
+print "\n \n**Making the world from the pfss output...";
 
+# Define the output directory
 $world_out_dir = $datdir.'fluxon/cr'.$cr.'/rlx/';
 $floc_path   = $datdir.'fluxon/cr'.$cr.'/floc/';
 $open_file   =$floc_path . 'floc_open_cr'.$cr.'.dat';
 $closed_file =$floc_path . 'floc_closed_cr'.$cr.'.dat';
 
+
+
+
+
+# Make the world
 $need_world=0;
 if (! -d $world_out_dir ) {
     $need_world=1;
@@ -250,7 +261,7 @@ if (! -d $world_out_dir ) {
 
 if ($makeworld || $need_world){
     ## Read python-processed data ###############################
-    print "\n \n**Loading Open and Closed line files...";
+    print "\n \n  >>Loading Open and Closed line files...";
 
     ($oflnum, $oflx, $olat, $olon, $orad) = rcols $open_file;
     ($cflnum, $cflx, $clat, $clon, $crad) = rcols $closed_file;
@@ -262,7 +273,7 @@ if ($makeworld || $need_world){
 
 
     ## Generate open fieldlines ####################################
-    print "\n \n**Generating open fieldlines...";
+    print "\n \n  >>Generating open fieldlines...";
     ($ofln, $ofl) = rle($oflnum);
     $ofln = $ofln->cumusumover;
     $ofln = append(0, $ofln);
@@ -287,7 +298,7 @@ if ($makeworld || $need_world){
 
 
     ## Generate closed fieldlines  ###################################
-    print "\n \n**Generating closed fieldlines...";
+    print "\n \n  >>Generating closed fieldlines...";
     ($cfln, $cfl) = rle($cflnum);
     $cfln = $cfln->cumusumover;
     $cfln = append(0, $cfln);
@@ -306,13 +317,13 @@ if ($makeworld || $need_world){
 
 
 ## Generate the world  ############################################
-print "\n \n**Generating the World...\n";
+print "\n \n  >>Generating the World...\n";
 
     $fbg = make_world_sphere(@flines, {rmax=>21.5});
     $world = str2world($fbg);
 
     ## Save the initial world state  ###############################
-    print "\n**Saving the World...";
+    print "\n  >>Saving the World...";
 
     $flen = $oflnum->max(); #@flines+0;
     $world_out_path = $world_out_dir .'cr'.$cr.'_'.$flen.'.flux';
@@ -321,7 +332,16 @@ print "\n \n**Generating the World...\n";
     $world->write_world($world_out_path);
 
     ## Display ####################################################
-    print "\n \n**Plotting the World...";
+    print "\n \n  >>Plotting the World...";
+
+    # Set Ranges of Plots
+    ($xmin_i,$xmax_i,$ymin_i,$ymax_i,$zmin_i,$zmax_i) = (-$lim, $lim, -$lim, $lim, -$lim, $lim);
+    ($xmin_f,$xmax_f,$ymin_f,$ymax_f,$zmin_f,$zmax_f) = (-$lim, $lim, -$lim, $lim, -$lim, $lim);
+    ($xmin_f2,$xmax_f2,$ymin_f2,$ymax_f2,$zmin_f2,$zmax_f2) = (-$lim2, $lim2, -$lim2, $lim2, -$lim2, $lim2);
+    $range_i = [$xmin_i,$xmax_i,$ymin_i,$ymax_i,$zmin_i,$zmax_i];
+    $range_f = [$xmin_f,$xmax_f,$ymin_f,$ymax_f,$zmin_f,$zmax_f];
+    $range_f2 = [$xmin_f2,$xmax_f2,$ymin_f2,$ymax_f2,$zmin_f2,$zmax_f2];
+
     # number of open fluxons, number of fluxons, number of fluxons requested
     $top_dir = $datdir.'fluxon/imgs/initial/';
     if (! -d $top_dir ) {mkpath($top_dir) or die "Failed to create directory: $top_dir $!\n";}
@@ -330,9 +350,7 @@ print "\n \n**Generating the World...\n";
     $world_png_path_top = $top_dir.'cr'.$cr.'_tracePFSS_'.$flen.'_'.$N_actual.'_'.$N_fluxons.'.png';
     $world_png_path2 = $world_out_dir .'cr'.$cr.'_tracePFSS_wide_'.$flen.'_'.$N_actual.'_'.$N_fluxons.'.png';
 
-    # print $top_dir;
-    print $world_png_path_top;
-
+    # print $world_png_path_top;
     $window00 = gpwin('pngcairo',size=>[9,9], dashed=>0, output=> $world_png_path);
     $world->render( {'window'=>$window00, range=>$range_i});
     $window000 = gpwin('pngcairo',size=>[9,9], dashed=>0, output=> $world_png_path_top);
@@ -345,16 +363,25 @@ print "\n \n**Generating the World...\n";
 } else {
     print "Skipped! Loading .flux from file.\n"
 }
+
+
+
+
+
+
+
+
+# Then we take that initial guess from pfss.py and relax down using the fluxon code, which gets us realistic topology, and a near force-free state, 
+# but allowing for currents (not a potential field any longer).
+
+#######################################################################################################
+## Relax the initial world state ##Use the FLUX Code ##################################################
+#######################################################################################################
+print "\n\n**Running Fluxon Code to Relax the Initial World State...";
+
 print "\n>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<";
 print "\n>>>>>>>Relaxing the World<<<<<<<";
 print "\n>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<";
-
-
-
-#######################################################################################################
-## Relax the initial world state ######################################################################
-#######################################################################################################
-
 
 # Select the World
 $world_out_dir = $datdir.'fluxon/cr'.$cr.'/rlx/';
@@ -389,12 +416,8 @@ sub find_file_with_string {
 }
 
 $found_file_path = find_file_with_string($directory);
-# print "\n";
-# print $found_file_path;
-# print "\n";
 
 $do_the_relax = ($do_relax || not $found_file_path);
-
 if ($do_the_relax){
     # print "Press Enter to Confirm...";
     $this_world_orig = read_world($full_world_path);
@@ -402,13 +425,10 @@ if ($do_the_relax){
     $this_world_relaxed->forces('f_pressure_equi2b', 'f_curvature', 'f_vertex4', 'b_eqa'); # NEW
     $this_world_relaxed->{concurrency} = 12;
 
-
-
-
     $cycle = 0;
     $stiff = 100;
     $broken = 0;
-    
+
     # # # Begin the Computation!! # # #
     print("\n \nfor " . $do_steps . " steps\n  \n");
 
@@ -424,19 +444,34 @@ if ($do_the_relax){
         $h = $this_world_relaxed->fw_stats;
         $stiff = $h->{f_av}/$h->{fs_av}*100;
 
-        if ($stiff > 99.5){
+        $round_stiff = sprintf("%.2f", $stiff);
+
+        if ($stiff > 99){
             $broken = $broken + 1;
         } else {
             $broken = 0;
         }
         # print "\n \nSTIFFNESS IS $stiff, cycle = $cycle\n";
-    }
-    if ($broken >= 3){
-        print "TOO MANY FLUXONS! Reduce N_flux."
+    
+        if ($broken >= 2){
+            open $fhh, ">>", $timefile or die "Cannot open file: $!";
+            # printf $fhh, "Success: 0, fluxons: %d, steps: %d, stiff: %f, n_out: %d", $N_actual, $stepnum, $stiff, $flen;
+            print $fhh "n_want: $N_fluxons, n_actual: $N_actual, n_out: $flen, Success: 0, steps: $stepnum, stiff: $round_stiff";
+            close $fhh;
+            die "\n \n TOO MANY FLUXONS! Reduce N_flux.\n \n \n";
+            die;
+
+        }
     }
     $stepnum = $cycle * $do_steps;
+    print "\nRelaxation Complete in $stepnum Steps \n";
 
-    print "\nRelaxation Complete in $stepnum Steps";
+    open $fhh, ">>", $timefile or die "Cannot open file: $!";
+    # printf $fhh, "Success: 1, fluxons: %d, steps: %d, stiff %.2f, n_out: %d", $N_actual, $stepnum, $stiff, $flen;
+    print $fhh "n_want: $N_fluxons, n_actual: $N_actual, n_out: $flen, Success: 1, steps: $stepnum, stiff: $round_stiff, ";
+    close $fhh;
+
+
 
     # Save the World
     $world_out_dir = $datdir.'fluxon/cr'.$cr.'/rlx/';
@@ -584,22 +619,28 @@ if ($do_wind_calc){
     if (! -e $out_wind ) {$do_wind_map=1;}
     if ($do_wind_map){
     map_fluxon_flow_parallel_master($out_wind, \@fluxons);
-    }
     system("python3 plot_wind.py --cr $CR") == 0 or (die "Python script returned error $?", exit);
-    # system("python3 plot_wind_map.py --cr $CR") == 0 or (die "Python script returned error $?", exit);
-    system("python3 plot_wind_map.py --cr $CR --interp nearest") == 0 or (die "Python script returned error $?", exit);
-    system("python3 plot_wind_map.py --cr $CR --interp linear") == 0 or (die "Python script returned error $?", exit);
-    system("python3 plot_wind_map.py --cr $CR --interp cubic") == 0 or (die "Python script returned error $?", exit);
+    system("python3 plot_wind_map.py --cr $CR --interp 1") == 0 or (die "Python script returned error $?", exit);
+    }
     print "...done with radial wind!";
     use warnings 'misc'
 } else {
     print "            Wind Calculation Skipped!\n \n"
 }
 
+
+
 $after   = clock_gettime();
 $elapsed = $after - $very_beginning + $top_duration;
 $round_elapsed = rint($elapsed*10) / 10;
 
+
+open($fhh, ">>", $timefile) or die "Cannot open file: $!";
+printf $fhh "ttime: $round_elapsed";
+close $fhh;
+
+
+# system("python3 plot_scalability.py") == 0 or (die "Python script returned error $?", exit);
 print "\n \n**Program Complete for CR$cr in $round_elapsed Seconds, press ENTER to exit...\n\n\n";
 # <STDIN>;  # Wait for user input
 
