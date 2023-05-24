@@ -14,16 +14,3 @@ sandbox/
 
 #any Inline stuff
 _Inline/
-fluxon-with-scripts.code-workspace
-.vscode/perl-lang/Users/cgilbert/vscode/fluxon-mhd/pdl/Flux/Flux.pm
-.vscode/perl-lang/Users/cgilbert/vscode/fluxon-mhd/pdl/Flux/Concentration/Concentration.pm
-.vscode/perl-lang/Users/cgilbert/vscode/fluxon-mhd/pdl/Flux/Core/Core.pm
-.vscode/perl-lang/Users/cgilbert/vscode/fluxon-mhd/pdl/Flux/Fluxon/Fluxon.pm
-.vscode/perl-lang/Users/cgilbert/vscode/fluxon-mhd/pdl/Flux/Vertex/Vertex.pm
-.vscode/perl-lang/Users/cgilbert/vscode/fluxon-mhd/pdl/Flux/World/World.pm
-pdl/PDL/simple_relaxer_nominal.pdl
-pdl/flux-pipe/fluxon/windtemp/*
-pdl/flux-pipe/__pycache__/
-*.pyc
-*.pkl
-*scratch*
