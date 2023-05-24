@@ -25,3 +25,4 @@ pdl/PDL/simple_relaxer_nominal.pdl
 pdl/flux-pipe/fluxon/windtemp/*
 pdl/flux-pipe/__pycache__/
 *.pyc
+*.pkl
