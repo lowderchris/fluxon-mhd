@@ -953,9 +953,9 @@ Currently useful options are:
 
 =over 3
 
-=item dev (default 'wxt')
+=item dev (default 'qt')
 
-Gnuplot device type to use for plotting.  Needs to be a terminal that accepts the 'dashed' term option.  Suggested terminals that should be common across different operating systems are (static files:) 'pngcairo', 'pdfcairo', 'postscript', 'svg', (interactive:) 'wxt', 'x11'.
+Gnuplot device type to use for plotting.  Needs to be a terminal that accepts the 'dashed' term option.  Suggested terminals that should be common across different operating systems are (static files:) 'pngcairo', 'pdfcairo', 'postscript', 'svg', (interactive:) 'qt', 'wxt', 'x11'.
 
 =item window
 
@@ -1097,7 +1097,7 @@ our $window;
 sub render {
     my $w = shift;
     my $opt=shift // {};
-    my $dev = $opt->{dev} // 'wxt';
+    my $dev = $opt->{dev} // 'qt';
     my $gpwin = shift // $opt->{window} // $window // ($window=gpwin($dev,size=>[9,9],dashed=>0));
 
     $gpwin->options(trid=>1,view=>[equal=>'xyz'],xyplane=>[relative=>0.1],xlabel=>'X',ylabel=>'Y',zlabel=>'Z');

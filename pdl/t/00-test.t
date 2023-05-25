@@ -25,7 +25,7 @@ is($so->{auto_open},0,"Open boundary default no auto-open");
 #should not barf on rendering a simple world
 #First get a list of available terminals:
 my @gpterms = @Alien::Gnuplot::terms;
-my @pref_terms = ('pngcairo','pdfcairo','wxt','x11','postscript','svg');
+my @pref_terms = ('pngcairo','pdfcairo','qt','wxt','x11','postscript','svg');
 
 my $dev;
 foreach (@pref_terms){

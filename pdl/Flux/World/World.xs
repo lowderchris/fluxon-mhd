@@ -528,7 +528,7 @@ CODE:
  if(!x || x->ndims != 1 || x->dims[0] != 3) {
 	croak("Flux::World::new_concentration requires a 3-PDL location!");
  }
- PDL->converttype(&x, PDL_D, 1);
+ PDL->converttype(x, PDL_D);
  PDL->make_physical(x);
  fc = FLUX->new_flux_concentration(w,
 	((PDL_Double *)(x->data))[0],
@@ -886,7 +886,7 @@ CODE:
  a[0] = a_0; a[1] = a_1; a[2] = a_2;
  b[0] = b_0; b[1] = b_1; b[2] = b_2;
  FLUX->projmatrix(matrix,a,b);
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  dims[0] = 3;
  dims[1] = 3;
  PDL->setdims(p,dims,2);
@@ -933,7 +933,7 @@ CODE:
  m[3] = m_3; m[4] = m_4; m[5] = m_5;
  m[6] = m_6; m[7] = m_7; m[8] = m_8;
  FLUX->mat_vmult_3d(b,m,a);
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  dims[0] = 3;
  PDL->setdims(p,dims,1);
  p->datatype=PDL_D;
@@ -972,7 +972,7 @@ CODE:
  m[3] = m_3; m[4] = m_4; m[5] = m_5;
  m[6] = m_6; m[7] = m_7; m[8] = m_8;
  FLUX->vec_mmult_3d(b,m,a);
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  dims[0] = 3;
  PDL->setdims(p,dims,1);
  p->datatype=PDL_D;
@@ -1026,7 +1026,7 @@ if(p->ndims != 2 || p->dims[0] != 2) {
 	RETVAL = &PL_sv_undef;
 	goto _hull_exit;
 }
-PDL->converttype(&p,PDL_D,1);
+PDL->converttype(p,PDL_D);
 PDL->make_physdims(p);
 PDL->make_physical(p);
 printf("p is a %d-dim PDL (%"IND_FLAG" x %"IND_FLAG")\n",p->ndims,p->dims[0],p->dims[1]);
@@ -1057,7 +1057,7 @@ FLUX->hull_2d(hull,horde,rejects=new_dumblist());
 /******************************
  * Create an output PDL
  */
-o = PDL->create(PDL_PERM);
+o = PDL->pdlnew();
 {
  PDL_Indx dims[2];
  dims[0]=6;
@@ -1128,7 +1128,7 @@ CODE:
   printf("v is %p\n PL_sv_undef is %"IVdf"\n",v,SvIV(&PL_sv_undef)); /*DAL: or should this conversion be to UVs? (UVuf or UVxf & SvUV)*/
   v = (!vsv || vsv==&PL_sv_undef) ? 0 : SvVertex(vsv, "closest_vertex",0);
   xpdl = PDL->SvPDLV(xsv);
-  PDL->converttype(&xpdl,PDL_D,1);
+  PDL->converttype(xpdl,PDL_D);
   PDL->make_physical(xpdl);
   if(xpdl->ndims != 1 || xpdl->dims[0] != 3) {
 	croak("closest_vertex: takes a 3-PDL only!\n");
@@ -1169,7 +1169,7 @@ CODE:
 
   v = (!vsv || vsv==&PL_sv_undef)?0:SvVertex(vsv,"closest_vertex",0);
   xpdl = PDL->SvPDLV(xsv);
-  PDL->converttype(&xpdl,PDL_D,1);
+  PDL->converttype(xpdl,PDL_D);
   PDL->make_physical(xpdl);
   if(xpdl->ndims != 1 || xpdl->dims[0] != 3) {
 	croak("closest_vertex: takes a 3-PDL only!\n");
@@ -1215,7 +1215,7 @@ CODE:
 
   v = (!vsv || vsv==&PL_sv_undef)?0:SvVertex(vsv,"closest_vertex",0);
   xpdl = PDL->SvPDLV(xsv);
-  PDL->converttype(&xpdl,PDL_D,1);
+  PDL->converttype(xpdl,PDL_D);
   PDL->make_physical(xpdl);
   if(xpdl->ndims != 1 || xpdl->dims[0] != 3) {
 	croak("closest_vertex: takes a 3-PDL only!\n");
@@ -1265,7 +1265,7 @@ CODE:
  w = SvWorld(wsv, "_interpolate_value",1);
  v = (!vsv || vsv==&PL_sv_undef)?0:SvVertex(vsv, "closest_vertex",0);
  xpdl = PDL->SvPDLV(xsv);
- PDL->converttype(&xpdl, PDL_D, 1);
+ PDL->converttype(xpdl, PDL_D);
  PDL->make_physical(xpdl);
  if(xpdl->ndims != 1 || xpdl->dims[0] != 3) {
     croak("closest_vertex: takes a 3-PDL only!\n");
@@ -1313,7 +1313,7 @@ CODE:
  w = SvWorld(wsv, "_interpolate_value",1);
  v = (!vsv || vsv==&PL_sv_undef)?0:SvVertex(vsv, "closest_vertex",0);
  xpdl = PDL->SvPDLV(xsv);
- PDL->converttype(&xpdl, PDL_D, 1);
+ PDL->converttype(xpdl, PDL_D);
  PDL->make_physical(xpdl);
  if(xpdl->ndims != 1 || xpdl->dims[0] != 3) {
     croak("closest_vertex: takes a 3-PDL only!\n");
@@ -1327,7 +1327,7 @@ CODE:
 
  dl = find_simplex_by_location(x,w,v,global);
 
- opdl = PDL->create(PDL_PERM);
+ opdl = PDL->pdlnew();
  dims[0] = 3;
  PDL->setdims(opdl,dims,1);
  opdl->datatype = PDL_D;
