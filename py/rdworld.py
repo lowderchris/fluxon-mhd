@@ -1,4 +1,4 @@
-# A quick script to read output FLUX world data
+# A quick function to read output FLUX world data
 
 # Import libraries
 import numpy

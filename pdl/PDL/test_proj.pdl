@@ -16,7 +16,7 @@ sub _test_proj_ {
 	my $v = shift;
 	my $pm = Flux::World::_projmatrix(0,0,0,$v->list);
 	my $vp=($pm x $v->(*1))->((0));
-	my $dpvp = ($vp x $pm) -> (:,(0));
+	my $dpvp = ($vp x $pm)->(:,(0));
 	my $vp1 = Flux::World::_mat_vmult_3d($pm->list,$v->list);
 	my $dpvp1=Flux::World::_vec_mmult_3d($pm->list,$vp1->list);
 	print "v=$v; vp=$vp; dpvp=$dpvp\tvp1=$vp1; dpvp1=$dpvp1\n";

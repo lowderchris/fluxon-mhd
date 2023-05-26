@@ -1,82 +1,48 @@
-This is FLUX, the Field Line Universal Relaxer, v. 2.3_devel
+This is FLUX, the Field Line Universal Relaxer
 
 For full documentation visit the FLUX wiki:
      https://github.com/d-lamb/fluxon-mhd/wiki
 
-FLUX is a prototype MHD solver that is currently able to find
-nonlinear force-free fields with an exactly specified topology in a
-quasi-static, infinitely conductive, low-beta medium.  Unlike
-conventional extrapolation codes, FLUX accepts as input a collection
-of field line shapes that do not necessarily have physical meaning but
-that do have the correct topology that you want to study.
+FLUX is a prototype MHD solver that is currently able to find nonlinear force-free fields with an exactly specified topology in a quasi-static, infinitely conductive, low-beta medium.  Unlike conventional extrapolation codes, FLUX accepts as input a collection of field line shapes that do not necessarily have physical meaning but that do have the correct topology that you want to study.
 
-The FLUX engine relaxes the position of those field lines until they
-approximate the physical force-free state with the same topology that you
-specified.
+The FLUX engine relaxes the position of those field lines until they approximate the physical force-free state with the same topology that you specified.
 
-FLUX consists of two parts: a relaxation engine, written in C, and a
-control interface in Perl.  The control interface is intended to be
-used with Perl Data Language (PDL).  If you do not have PDL on your
-system, you can get it for free from http://pdl.perl.org.  PDL
-compiles "out of the box" on most UNIX systems, and a "native"
-version exists for Microsoft Windows.
+FLUX consists of two parts: a relaxation engine, written in C, and a control interface in Perl.  The control interface is intended to be used with Perl Data Language (PDL).  If you do not have PDL on your system, you can get it for free from http://pdl.perl.org.  PDL compiles "out of the box" on most UNIX systems, and a "native" version exists for Microsoft Windows.
 
-The authors gratefully acknowledge support from NASA's Living With A
-Star and Solar/Heliospheric Physics programs, and from the Southwest
-Research Institute.
+The authors gratefully acknowledge support from NASA's Living With A Star and Solar/Heliospheric Physics programs, and from the Southwest Research Institute.
 
-All source files are copyright (C) 2004-2008 by the authors unless
-otherwise marked.  You may modify and/or make copies of this software
-under the terms of the Gnu Public License, version 2 (GPL v2).  You
-should have received a copy of the GPL v2 with this software; it is
-present in the file "COPYING".  If you do not have a copy you may
-obtain one online from "http://www.gnu.org/licenses/gpl-2.0.html" or
-by writing to the Free Software Foundation, 59 Temple Place, Suite
-330, Boston, MA 0211-1307 USA.
+All source files are copyright (C) 2004-2023 by the authors unless otherwise marked.  You may modify and/or make copies of this software under the terms of the Gnu Public License, version 2 (GPL v2).  You should have received a copy of the GPL v2 with this software; it is present in the file "COPYING".  If you do not have a copy you may obtain one online from "http://www.gnu.org/licenses/gpl-2.0.html" or by writing to the Free Software Foundation, 59 Temple Place, Suite 330, Boston, MA 0211-1307 USA.
 
 THIS SOFTWARE COMES WITH NO WARRANTY OF ANY KIND.
 
 Authors:
-	Craig DeForest	 	deforest@boulder.swri.edu
-	Charles Kankelborg 	kankel@solar.physics.montana.edu
-	Laurel Rachmeler	laurel@boulder.swri.edu
-	Alisdair Davey		adavey@spd.org
+	Craig DeForest (SwRI)
+	Charles Kankelborg (MSU)
+	Derek Lamb (SwRI)
+	Chris Lowder (SwRI)
+	Chris Gilly (SwRI)
+	Laurel Rachmeler (then at CU Boulder & SwRI)
+	Alisdair Davey (then at SwRI)
 
 Contributors (gratefully acknowledged):
-	     Nathan Schwadron
-	     Teddy Walls
-	     Christopher Plumberg
+	Nathan Schwadron
+	Teddy Walls
+	Christopher Plumberg
 
 --------
 INSTALLATION INSTRUCTIONS
 
-There are two components to FLUX: a C simulation library (libflux.a)
-and a Perl module (Flux.pm, etc). Automake and Perl's
-ExtUtils::MakeMaker don't play nicely together, and libflux.a needs to
-be installed before the Perl module is built.  Therefore, we build and
-install the C and Perl components separately.
+There are two components to FLUX: a C simulation library (libflux.a) and a Perl module (Flux.pm, etc). Automake and Perl's ExtUtils::MakeMaker don't play nicely together, and libflux.a needs to be installed before the Perl module is built.  Therefore, we build and install the C and Perl components separately.
 
-You should declare up to two environment variables, which are only needed for build and
-installation:
+You should declare up to two environment variables, which are only needed for build and installation:
 
 FL_PREFIX (required, defaults to /usr/local):
     Where the FLUX simulation library and include files should be installed.
 
 PL_PREFIX (optional, no default):
-    Where the Perl front-end module should be installed.
-    This location should be in Perl's @INC list. Try doing
-    ' perl -e "print join(qq|\n|,@INC,q||);" ' at the command line to see the
-    contents of this list. If $PL_PREFIX/lib/perl5 is not included in
-    @INC, then Perl will not be able to find the Flux module after installation.
-    You can add $PL_PREFIX/lib/perl5 to your PERL5LIB environment variable
-    to solve that problem.  Or you can just leave PL_PREFIX undefined and
-    Perl will do the Right Thing.
+    Where the Perl front-end module should be installed. This location should be in Perl's @INC list. Try doing ' perl -e "print join(qq|\n|,@INC,q||);" ' at the command line to see the contents of this list. If $PL_PREFIX/lib/perl5 is not included in @INC, then Perl will not be able to find the Flux module after installation. You can add $PL_PREFIX/lib/perl5 to your PERL5LIB environment variable to solve that problem.  Or you can just leave PL_PREFIX undefined and Perl will do the Right Thing.
 
-After installation, some autoloading routines will be installed for
-you.  See the docs for PDL::AutoLoader
-(http://pdl.perl.org/PDLdocs/PDL/AutoLoader.html) for a description of
-this handy feature of PDL.  Instructions come at the end of the
-installation script.
+After installation, some autoloading routines will be installed for you.  See the docs for PDL::AutoLoader (https://metacpan.org/pod/PDL::AutoLoader) for a description of this handy feature of PDL.  Instructions come at the end of the installation script.
 
 
 0) The zeroth line exports the environment variables you have already declared.
@@ -103,10 +69,11 @@ $ export PL_PREFIX FL_PREFIX
 $ [sudo] make everything
 $ export -n FL_PREFIX PL_PREFIX
 
-for example, to install everything into your home directory ~/local/lib, ~/local/include, etc., you could do
+for example, to install everything into your home directory /home/user/local/lib, /home/user/local/include, etc., you could do (making sure to substitute the user home directory path, without tildes):
 
-$ PL_PREFIX=~/local FL_PREFIX=~/local make everything
-
+$ export PL_PREFIX='/home/user/local'
+$ export FL_PREFIX='/home/user/local'
+$ make everything
 
 --------
 
@@ -126,6 +93,14 @@ Subdirectories include:
 
 	pdl/PDL -- PDL autoload subroutines
 
+  py -- Python visualization and analysis tools
+  
+--------
+  
+RELEASE NOTES FOR v2.3 (3-Mar-2023):  
+  - Updated for compatibility with newer versions of PDL
+  - Other active development preparing for merging into new releases
+
 RELEASE NOTES FOR v2.2 (22-Nov-2008):
   - Mass is actively tracked in the data structures
   - Binary save files are supported; all files are auto-gzipped if they have a '.gz' extension
@@ -137,7 +112,6 @@ RELEASE NOTES FOR v2.2 (22-Nov-2008):
   - There is better support for motion and interaction of flux concentrations.
 
 RELEASE NOTES FOR v2.1 (3-Apr-2008):
-
   - Many, many bug fixes
   - Photospheres and other refs handled correctly by hash interface
   - Reworked Perl hash interface to eliminate stale pointers altogether
@@ -146,19 +120,15 @@ RELEASE NOTES FOR v2.1 (3-Apr-2008):
   - Better auto-open support
 
 RELEASE NOTES FOR v2.0 (1-Nov-2007):
-
   - Now includes reconnection via the "reconnect" Flux::World method
   - Updated and validated force laws
   - Full plasmoid support
-  - Full open-field boundary support, including omega and U loop
-	interactions with the boundary
+  - Full open-field boundary support, including omega and U loop interactions with the boundary
   - Includes a Floyd-Steinberg ditherer for footpoint placement
-  - Includes techniques ("ductions") for moving footpoints in
-	time-dependent simulations
+  - Includes techniques ("ductions") for moving footpoints in time-dependent simulations
   - Better control over relaxation parameters
   - Emergence/cancellation support
   - Better interaction with Perl:
 	- Support for all fields via the Perl hash interface
 	- No memory leaks (I think)
 	- No stale pointers (I think)
-

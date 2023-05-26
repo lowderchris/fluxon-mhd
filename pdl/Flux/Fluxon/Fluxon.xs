@@ -136,7 +136,7 @@ CODE:
  /* Create the PDL and allocate its data */
  dims[0] = 3;
  dims[1] = f->v_ct;
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  PDL->setdims(p,dims,2);
  p->datatype = PDL_D;
  PDL->allocdata(p);
@@ -177,7 +177,7 @@ CODE:
  /* Create the PDL and allocate its data */
  dims[0] = 6;
  dims[1] = f->v_ct;
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  PDL->setdims(p,dims,2);
  p->datatype = PDL_D;
  PDL->allocdata(p);
@@ -222,7 +222,7 @@ CODE:
  /* Create the PDL and allocate its data */
  dims[0] = 17;
  dims[1] = f->v_ct;
- p = PDL->create(PDL_PERM);
+ p = PDL->pdlnew();
  PDL->setdims(p,dims,2);
  p->datatype = PDL_D;
  PDL->allocdata(p);
@@ -304,7 +304,7 @@ CODE:
  		verts->dims[1]=1;
   		verts->dimincs[1]=3*verts->dimincs[0];
  	}
- 	PDL->converttype(&verts, PDL_D, 1);
+ 	PDL->converttype(verts, PDL_D);
          PDL->make_physical(verts);
  }
 
