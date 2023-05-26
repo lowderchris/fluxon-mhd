@@ -46,9 +46,9 @@ sub fluxon_placement_hilbert {
     $bgram = $bgram->copy;
     $bgram->where(!isfinite($bgram)) .= 0;
     
-    our $smooth = $bgram->convolveND(ones(3,3)/9,{b=>'m'});
-    our $sm_max = $smooth->abs->max;
-    our $sm_us_sum = $smooth->abs->sum;
+    my $smooth = $bgram->convolveND(ones(3,3)/9,{b=>'m'});
+    my $sm_max = $smooth->abs->max;
+    my $sm_us_sum = $smooth->abs->sum;
     
     unless($fluxon_count) {
 	print "Warning - no fluxon count specified; using 250\n";
@@ -75,12 +75,13 @@ sub fluxon_placement_hilbert {
 
     $siz = 2 ** (( log($siz * $density_mult)/log(2) )->ceil->at(0)) ;
     
-    our $path = hilbert($siz,$siz);
+    my $path = double(hilbert($siz,$siz));
     $path->((0)) *= $bgram->dim(0)/$siz;
     $path->((1)) *= $bgram->dim(1)/$siz;
 
-    our $bg2 = $bgram * $fluxon_count / $sm_us_sum * $bgram->dim(0) * $bgram->dim(1) / $siz / $siz;
-    our $bgseries = $bg2->interpND($path)->sever;
+    print "sm_us_sum is ".$sm_us_sum."\n";
+    my $bg2 = $bgram * $fluxon_count / $sm_us_sum * $bgram->dim(0) * $bgram->dim(1) / $siz / $siz;
+    my $bgseries = $bg2->interpND($path)->sever;
 
     if ($verb){
     print "density_mult is $density_mult\n";
@@ -92,7 +93,7 @@ sub fluxon_placement_hilbert {
     my $plist = [];
     PDL::fl_hi_helper($bgseries,$plist);
     my $points = pdl($plist);
-    our $pl = $plist;
+    my $pl = $plist;
     $points = ($path->(:,$points->abs))->glue(0, (1 - 2*($points->(*1) < 0)));
 }
 
