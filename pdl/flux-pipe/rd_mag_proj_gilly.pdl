@@ -1,0 +1,190 @@
+# # A script to read and assimilate a given input magnetogram
+
+# # Note that until the homebrew issues are fixed, plot using the command:
+# # $world -> render({'dev'=>'qt'});
+
+use PDL::AutoLoader;
+# use strict;
+use warnings;
+use PDL;
+use PDL::Transform;
+use PDL::NiceSlice;
+use PDL::Options;
+use PDL::ImageND;
+use Flux;
+use PDL::IO::Misc;
+use File::Path;
+$PDL::BIGPDL = 1;
+
+
+
+
+
+
+
+## Set paths
+$datdir = "/Users/cgilbert/vscode/fluxon-mhd/pdl/PDL/Fluxon-Scripts-Gilly";
+push(@PDLLIB,"+/Users/cgilbert/vscode/fluxon-mhd/pdl/PDL");
+push(@PDLLIB,"+".$datdir);
+push(@INC, "+/Users/cgilbert/opt");
+
+
+
+
+
+
+
+
+# # Set the CR, read the magnetogram, and compute fluxon footpoint locations
+print "**Loading Parameters...";
+## Select which magnetogram will be used
+$params_path = $datdir."magnetic_target.params";
+open(FH, "<", $params_path) or die "cannot open file: $!";
+{
+    $header = <FH>;
+    $cr = <FH>;
+    $fname = <FH>;
+    $adapt = <FH>;
+    $doplot = <FH>;
+}
+close FH;
+
+chomp $cr;
+chomp $fname;
+chomp $adapt;
+chomp $doplot;
+# $doplot = $doplot == 1;
+
+
+
+## Read in the Magnetogram
+print "**Reading Magnetogram...";
+$smag = rfits($datdir.$fname);
+
+## Extra step for adapt br maps
+if ($adapt) {$smag = $smag(:,:,2)->squeeze;}
+
+
+
+## Run the fluxon hilbert code
+print "**Placing Fluxons using Hilbert Curves...";
+$floc = fluxon_placement_hilbert($smag, 100);
+
+
+
+## Write to disk
+print "**Writing Result to Disk...";
+$out_dir = $datdir.'fluxon/cr'.$cr.'/floc/';
+$out_path = $out_dir .'floc_cr'.$cr.'.dat';
+if (! -d $out_dir ) {mkpath($out_dir) or die "Failed to create directory: $dir $!\n";}
+wcols $floc->transpose, $out_path;
+
+
+
+
+
+#####
+##... compute pfss topology in python code ...
+#####
+print "**PDL Portion Complete!!\n";
+
+print "**Calling python pfss code...";
+
+system("python3 gen-fmap-proj-gilly.py") == 0 or die "Python script returned error $?";
+
+
+
+
+
+## Read python-processed footpoint data, open and closed (o... and c...)
+print "**Loading Open and Closed file line files...";
+
+($oflnum, $oflx, $olat, $olon, $orad) = rcols $datdir.'fluxon/cr'.$cr.'/floc/floc_open_cr'.$cr.'.dat';
+($cflnum, $cflx, $clat, $clon, $crad) = rcols $datdir.'fluxon/cr'.$cr.'/floc/floc_closed_cr'.$cr.'.dat';
+
+## Define a blank world
+@flines = ();
+$world = ();
+
+$xform = !t_spherical() x t_scale([3.14159/180,3.14159/180,1]);
+
+
+
+## Generate open fieldlines
+print "**Generating open fieldlines...";
+
+($ofln, $ofl) = rle($oflnum);
+$ofln = $ofln->cumusumover;
+$ofln = append(0, $ofln);
+for my $i(0..nelem($ofl)-1){
+    my $flxlat = $olat($ofln($i):$ofln($i+1)-1);
+    my $flxlon = $olon($ofln($i):$ofln($i+1)-1);
+    my $flxrad = $orad($ofln($i):$ofln($i+1)-1);
+    my $open = pdl($flxlon, $flxlat, $flxrad)->transpose;
+    ## CL - DOUBLE CHECK THE FLUX DIRECTION HERE
+    ## if ($oflx->($ofln($i))<0){
+    ##    $open = $open->(:,-1:0:-1);
+    ## }
+    ## CL - ADD RADIAL EXTENSION HERE
+    ## $open = $open->glue(1,$open->(:,-1)->(*11)->transpose)->squeeze;
+    ## $open(2,-11:-1) .= pdl(xvals(11)*2+2.5)->transpose;
+    if ($oflx->($ofln($i))<0){
+        $open = $open->(:,-1:0:-1);
+    }
+    my $line = ($open)->apply($xform);
+    push(@flines,$line->copy);
+}
+
+
+
+print "**Generating closed fieldlines...";
+
+## Generate closed fieldlines
+($cfln, $cfl) = rle($cflnum);
+$cfln = $cfln->cumusumover;
+$cfln = append(0, $cfln);
+for my $i(0..nelem($cfl)-1){
+    my $flxlat = $clat($cfln($i):$cfln($i+1)-1);
+    my $flxlon = $clon($cfln($i):$cfln($i+1)-1);
+    my $flxrad = $crad($cfln($i):$cfln($i+1)-1);
+    my $closed = pdl($flxlon, $flxlat, $flxrad)->transpose;
+    ## CL - DOUBLE CHECK THE FLUX DIRECTION HERE
+    if ($cflx->($cfln($i))<0){
+        $closed = $closed->(:,-1:0:-1);
+    }
+    my $line = ($closed)->apply($xform);
+    push(@flines,$line->copy);
+}
+
+
+
+## Generate the world
+print "**Generating the World...";
+
+$fbg = make_world_sphere(@flines, {rmax=>21.5});
+$world = str2world($fbg);
+
+
+
+## Display
+if ($doplot){
+    print "**Plotting the World...";
+    $world -> render({'dev'=>'qt'});
+    }
+
+
+
+## Save this initial world state
+print "**Saving the World...";
+
+$world_out_dir = $datdir.'fluxon/cr'.$cr.'/rlx/';
+$world_out_path = $world_out_dir .'cr'.$cr.'.flux';
+if (! -d $world_out_dir ) {mkpath($world_out_dir) or die "Failed to create directory: $world_out_dir $!\n";}
+
+$world->write_world($world_out_path);
+
+
+
+print "**World is Saved, press ENTER to exit...\n";
+<STDIN>;  # Wait for user input
+

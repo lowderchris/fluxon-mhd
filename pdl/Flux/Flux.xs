@@ -508,7 +508,7 @@ CODE:
 		PDL_Double *d;
 		PDL_Indx dim=3;
 
-		p = PDL->create(PDL_PERM);
+		p = PDL->pdlnew();
 		PDL->setdims(p,&dim,1);
 		p->datatype = PDL_D;
 		PDL->allocdata(p);
@@ -567,7 +567,7 @@ CODE:
 			p = PDL->SvPDLV(sv_2mortal(ret));
 		}
 			
-		PDL->converttype(&p,PDL_D,1); // Promote to double
+		PDL->converttype(p,PDL_D); // Promote to double
 		PDL->make_physical(p);
 		if(p->nvals == 3) {
 	/* printf("3 vals\n"); */
@@ -751,7 +751,7 @@ CODE:
 	p = PDL->SvPDLV(sv_2mortal(ret));
  }
 
- PDL->converttype(&p,PDL_D,1); // Promote to double
+ PDL->converttype(p,PDL_D); // Promote to double
  PDL->make_physical(p);
 
  for (i=0;i<p->nvals;i++) world->coeffs[i] = ((double *)(p->data))[i];
@@ -885,11 +885,11 @@ CODE:
  ptr = (void *)(FLUX->SvFluxPtr(sv,"_rbound", "Flux",0,1));
  field = fieldptr(ptr,typeno, fieldno);
 
- for(i=0;FLUX->F_B_NAMES[i].name && 
+ for(i=0;FLUX->F_B_NAMES[i].name[0] &&
 	( (void *)(FLUX->F_B_NAMES[i].func) != *field);
 	i++)
 	;
- if(FLUX->F_B_NAMES[i].name) {
+ if(FLUX->F_B_NAMES[i].name[0]) {
      sv = newSVpv(FLUX->F_B_NAMES[i].name,
 	 strlen(  FLUX->F_B_NAMES[i].name));
  } else {
@@ -925,12 +925,12 @@ CODE:
 	*field = 0;
  } else {
 	 for(j=0;
-	     FLUX->F_B_NAMES[j].name &&
+	     FLUX->F_B_NAMES[j].name[0] &&
 	     strcmp(FLUX->F_B_NAMES[j].name, what);
 	     j++)
 	printf("Trying 0x%lx (%s); value is %lx\n",(unsigned long)(FLUX->F_B_NAMES[j].func),FLUX->F_B_NAMES[j].name,(unsigned long)(*field));
 	       ;
-	 if(!(FLUX->F_B_NAMES[j].name)) {
+	 if(!(FLUX->F_B_NAMES[j].name[0])) {
 		char buf[10240];
 		sprintf(buf, "Unknown fluxon end condition '%s' (must be one of: %s", what, FLUX->F_B_NAMES[0].name);
 		for(j=1;FLUX->F_B_NAMES[j].func;j++) {
@@ -1286,7 +1286,7 @@ CODE:
    apdl = PDL->SvPDLV(asv);
    if(apdl->ndims != 1 || apdl->dims[0] != 3) 
      croak("above_plane: four 3-PDLs required\n");	
-   PDL->converttype(&apdl, PDL_D, 1);
+   PDL->converttype(apdl, PDL_D);
    PDL->make_physical(apdl);
    a[0] = ((PDL_Double *)(apdl->data))[0];
    a[1] = ((PDL_Double *)(apdl->data))[1];
@@ -1295,7 +1295,7 @@ CODE:
    bpdl = PDL->SvPDLV(bsv);
    if(bpdl->ndims != 1 || bpdl->dims[0] != 3) 
      croak("above_plane: four 3-PDLs required\n");	
-   PDL->converttype(&bpdl, PDL_D, 1);
+   PDL->converttype(bpdl, PDL_D);
    PDL->make_physical(bpdl);
    b[0] = ((PDL_Double *)(bpdl->data))[0];
    b[1] = ((PDL_Double *)(bpdl->data))[1];
@@ -1304,7 +1304,7 @@ CODE:
    cpdl = PDL->SvPDLV(csv);
    if(cpdl->ndims != 1 || cpdl->dims[0] != 3) 
      croak("above_plane: four 3-PDLs required\n");	
-   PDL->converttype(&cpdl, PDL_D, 1);
+   PDL->converttype(cpdl, PDL_D);
    PDL->make_physical(cpdl);
    c[0] = ((PDL_Double *)(cpdl->data))[0];
    c[1] = ((PDL_Double *)(cpdl->data))[1];
@@ -1313,7 +1313,7 @@ CODE:
    xpdl = PDL->SvPDLV(xsv);
    if(xpdl->ndims != 1 || xpdl->dims[0] != 3) 
      croak("above_plane: four 3-PDLs required\n");	
-   PDL->converttype(&xpdl, PDL_D, 1);
+   PDL->converttype(xpdl, PDL_D);
    PDL->make_physical(xpdl);
    x[0] = ((PDL_Double *)(xpdl->data))[0];
    x[1] = ((PDL_Double *)(xpdl->data))[1];
@@ -1340,7 +1340,7 @@ CODE:
    apdl = PDL->SvPDLV(asv);
    if(apdl->ndims != 1 || apdl->dims[0] != 3) 
      croak("in_simplex: five 3-PDLs required\n");	
-   PDL->converttype(&apdl, PDL_D, 1);
+   PDL->converttype(apdl, PDL_D);
    PDL->make_physical(apdl);
    a[0] = ((PDL_Double *)(apdl->data))[0];
    a[1] = ((PDL_Double *)(apdl->data))[1];
@@ -1349,7 +1349,7 @@ CODE:
    bpdl = PDL->SvPDLV(bsv);
    if(bpdl->ndims != 1 || bpdl->dims[0] != 3) 
      croak("in_simplex: five 3-PDLs required\n");	
-   PDL->converttype(&bpdl, PDL_D, 1);
+   PDL->converttype(bpdl, PDL_D);
    PDL->make_physical(bpdl);
    b[0] = ((PDL_Double *)(bpdl->data))[0];
    b[1] = ((PDL_Double *)(bpdl->data))[1];
@@ -1358,7 +1358,7 @@ CODE:
    cpdl = PDL->SvPDLV(csv);
    if(cpdl->ndims != 1 || cpdl->dims[0] != 3) 
      croak("in_simplex: five 3-PDLs required\n");	
-   PDL->converttype(&cpdl, PDL_D, 1);
+   PDL->converttype(cpdl, PDL_D);
    PDL->make_physical(cpdl);
    c[0] = ((PDL_Double *)(cpdl->data))[0];
    c[1] = ((PDL_Double *)(cpdl->data))[1];
@@ -1367,7 +1367,7 @@ CODE:
    dpdl = PDL->SvPDLV(dsv);
    if(dpdl->ndims != 1 || dpdl->dims[0] != 3) 
      croak("in_simplex: five 3-PDLs required\n");	
-   PDL->converttype(&dpdl, PDL_D, 1);
+   PDL->converttype(dpdl, PDL_D);
    PDL->make_physical(dpdl);
    d[0] = ((PDL_Double *)(dpdl->data))[0];
    d[1] = ((PDL_Double *)(dpdl->data))[1];
@@ -1376,7 +1376,7 @@ CODE:
    xpdl = PDL->SvPDLV(xsv);
    if(xpdl->ndims != 1 || xpdl->dims[0] != 3) 
      croak("in_simplex: five 3-PDLs required\n");	
-   PDL->converttype(&xpdl, PDL_D, 1);
+   PDL->converttype(xpdl, PDL_D);
    PDL->make_physical(xpdl);
    x[0] = ((PDL_Double *)(xpdl->data))[0];
    x[1] = ((PDL_Double *)(xpdl->data))[1];
@@ -1478,9 +1478,9 @@ CODE:
 
     tint = SvIV(tsv);
 	
-	PDL->converttype(&xpdl, PDL_D, 1);
-	PDL->converttype(&ppdl, PDL_D, 1);
-	PDL->converttype(&vpdl, PDL_D, 1);
+	PDL->converttype(xpdl, PDL_D);
+	PDL->converttype(ppdl, PDL_D);
+	PDL->converttype(vpdl, PDL_D);
 	
 	PDL->make_physical(xpdl);
 	PDL->make_physical(ppdl);

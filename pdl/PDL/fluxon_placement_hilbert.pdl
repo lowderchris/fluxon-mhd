@@ -41,6 +41,7 @@ use PDL::ImageND;
 sub fluxon_placement_hilbert {
     my $bgram = shift;
     my $fluxon_count = shift;
+    my $verb = 0 || shift;
 
     $bgram = $bgram->copy;
     $bgram->where(!isfinite($bgram)) .= 0;
@@ -70,11 +71,9 @@ sub fluxon_placement_hilbert {
     my $density_mult = 2 * ($sm_max / ($sm_us_sum/$smooth->nelem)) * ($fluxon_count / $smooth->nelem);
     $density_mult = 1 unless($density_mult > 1);
     $density_mult = sqrt($density_mult);
-    print "density_mult is $density_mult\n";
 
 
     $siz = 2 ** (( log($siz * $density_mult)/log(2) )->ceil->at(0)) ;
-	print "siz is $siz\n";
     
     my $path = double(hilbert($siz,$siz));
     $path->((0)) *= $bgram->dim(0)/$siz;
@@ -84,8 +83,14 @@ sub fluxon_placement_hilbert {
     my $bg2 = $bgram * $fluxon_count / $sm_us_sum * $bgram->dim(0) * $bgram->dim(1) / $siz / $siz;
     my $bgseries = $bg2->interpND($path)->sever;
 
-    my $plist = [];
+    if ($verb){
+    print "density_mult is $density_mult\n";
+	print "siz is $siz\n";
+    print "sm_us_sum is ".$sm_us_sum."\n";
     print "Calling helper...\n";
+    }
+    
+    my $plist = [];
     PDL::fl_hi_helper($bgseries,$plist);
     my $points = pdl($plist);
     my $pl = $plist;
