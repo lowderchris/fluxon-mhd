@@ -1,7 +1,7 @@
 This is FLUX, the Field Line Universal Relaxer
 
 For full documentation visit the FLUX wiki:
-     https://github.com/d-lamb/fluxon-mhd/wiki
+     https://github.com/lowderchris/fluxon-mhd/wiki
 
 FLUX is a prototype MHD solver that is currently able to find nonlinear force-free fields with an exactly specified topology in a quasi-static, infinitely conductive, low-beta medium.  Unlike conventional extrapolation codes, FLUX accepts as input a collection of field line shapes that do not necessarily have physical meaning but that do have the correct topology that you want to study.
 
@@ -97,9 +97,11 @@ Subdirectories include:
   
 --------
   
-RELEASE NOTES FOR v2.3 (3-Mar-2023):  
+RELEASE NOTES FOR v2.3 (26-May-2023):
   - Updated for compatibility with newer versions of PDL
-  - Other active development preparing for merging into new releases
+  - Organization of solar wind processing codes
+  - Development of automated processing module
+  - Other consolidated changes and closing of branches
 
 RELEASE NOTES FOR v2.2 (22-Nov-2008):
   - Mass is actively tracked in the data structures
@@ -130,5 +132,5 @@ RELEASE NOTES FOR v2.0 (1-Nov-2007):
   - Emergence/cancellation support
   - Better interaction with Perl:
 	- Support for all fields via the Perl hash interface
-	- No memory leaks (I think)
-	- No stale pointers (I think)
+	- No memory leaks
+	- No stale pointers
