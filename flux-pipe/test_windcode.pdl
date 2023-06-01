@@ -1,0 +1,53 @@
+use warnings;
+use PDL::AutoLoader;
+use PDL;
+use PDL::Transform;
+use PDL::NiceSlice;
+use PDL::Options;
+# use PDL::ImageND;
+use Flux;
+use PDL::IO::Misc;
+use File::Path;
+use Time::HiRes qw(clock_gettime);
+use PDL::IO::Misc;
+use File::Basename qw(fileparse);
+
+$datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/";
+push(@PDLLIB,"+".$datdir);
+push(@PDLLIB,"+/Users/cgilbert/vscode/Fluxon-Scripts-Gilly");
+push(@PDLLIB,"+/Users/cgilbert/vscode/fluxon-mhd/pdl/PDL");
+push(@PDLLIB,"+/Users/cgilbert/vscode/fluxon-mhd/pdl/flux-pipe");
+push(@INC, "+/Users/cgilbert/opt");
+push(@INC, "/Users/cgilbert/.cpan/build");
+
+system("cd /Users/cgilbert/vscode/fluxon-mhd/pdl/flux-pipe");
+
+
+$cr = 2160;
+$batch_name = "fluxon_paperfigs";
+$datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/";
+
+# Pathing
+$world_out_dir = $datdir."$batch_name/cr".$cr.'/rlx/';
+$full_world_path = $world_out_dir . "cr2160_relaxed_s4000.flux";
+$wind_out_dir = $datdir."$batch_name/cr".$cr.'/wind';
+$wind_out_file = "$wind_out_dir/radial_wind.dat";
+
+# Loading the world
+$this_world_relaxed = read_world($full_world_path);
+$this_world_relaxed->update_force(0);
+@fluxons = $this_world_relaxed->fluxons;
+
+map_fluxon_flow_parallel_master($wind_out_file, \@fluxons);
+
+1;
+
+
+# if (! -e $out_wind ) {$do_wind_map=1;}
+# if ($do_wind_map){
+# # system("python3 plot_wind.py --cr $CR --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
+# # system("python3 plot_wind_map.py --cr $CR --interp 1 --nact $N_actual --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
+# system("python3 plot_wind_map_paper_brief.py --cr $CR --interp 1 --nact $N_actual --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
+# system("python3 plot_wind_map_paper_single.py --cr $CR --interp 1 --nact $N_actual --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
+# }
+
