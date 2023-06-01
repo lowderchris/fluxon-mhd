@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import argparse
 from magnetoget import load_fits_magnetogram
 import os.path as path
-from magnetoget import load_magnetogram_params
+from magnetoget import read_param_file
 from plot_wind_map_paper_brief import remove_outliers
 
 
@@ -31,7 +31,7 @@ interp = args.interp
 
 
 # Load the magnetogram parameters
-(hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
+(hdr, cr, fname, adapt, doplot, reduce) = read_param_file(args.dat_dir)
 CR = args.cr or cr or 2183
 print(f"plotting CR{CR}...", end="\n" if __name__=="__main__" else "")
 

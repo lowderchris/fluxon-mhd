@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import argparse
 from magnetoget import load_fits_magnetogram
 import os.path as path
-from magnetoget import load_magnetogram_params
+from magnetoget import read_param_file
 from plot_fieldmap import magnet_plot
 from scipy.interpolate import griddata
 
@@ -38,7 +38,7 @@ dat_dir = args.dat_dir
 
 # print(f"INTERP: {interp}")
 # Load the magnetogram parameters
-(hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
+(hdr, cr, fname, adapt, doplot, reduce) = read_param_file(dat_dir)
 CR = args.cr or cr
     
 print(f"\tPlotting CR{CR}...", end="\n" if __name__=="__main__" else "")

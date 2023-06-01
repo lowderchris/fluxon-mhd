@@ -17,7 +17,7 @@ mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
 from astropy.io import fits
-from magnetoget import load_fits_magnetogram, load_magnetogram_params
+from magnetoget import load_fits_magnetogram, read_param_file
 import os.path as path
 import os
 from pfss_funcs import pixel_to_latlon
@@ -55,7 +55,7 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False,
 
     # print(f"\tOpening {all_file}...")
     fluxon_location = np.genfromtxt(all_file)
-    from magnetoget import load_fits_magnetogram, load_magnetogram_params
+    from magnetoget import load_fits_magnetogram, read_param_file
 
     magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
     f_lat, f_lon, f_sgn, fnum = pixel_to_latlon(magnet, header, fluxon_location)
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     batch = args.batch
 
-    (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
+    (hdr, cr, fname, adapt, doplot, reduce) = read_param_file(args.dat_dir)
     CR = args.cr or cr
     
     magnet_plot(CR, args.dat_dir, batch, args.open, args.closed, do_print=True)
