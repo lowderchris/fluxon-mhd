@@ -79,7 +79,6 @@ sub fluxon_placement_hilbert {
     $path->((0)) *= $bgram->dim(0)/$siz;
     $path->((1)) *= $bgram->dim(1)/$siz;
 
-    print "sm_us_sum is ".$sm_us_sum."\n";
     my $bg2 = $bgram * $fluxon_count / $sm_us_sum * $bgram->dim(0) * $bgram->dim(1) / $siz / $siz;
     my $bgseries = $bg2->interpND($path)->sever;
 
