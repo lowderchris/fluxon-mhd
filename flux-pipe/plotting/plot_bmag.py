@@ -22,8 +22,8 @@ parser.add_argument('--show', type=int, default=0)
 parser.add_argument('--batch', type=str, default='fluxon')
 args = parser.parse_args()
 batch = args.batch
-from magnetoget import read_param_file
-(hdr, cr, fname, adapt, doplot, reduce) = read_param_file(args.dat_dir)
+from magnetoget import load_magnetogram_params
+(hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
 CR = args.cr or cr or 2183
 
 filename = f'{args.dat_dir}/{batch}/cr{CR}/wind/radial_bmag.dat'

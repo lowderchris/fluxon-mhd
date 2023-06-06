@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import argparse
 from magnetoget import load_fits_magnetogram
 import os.path as path
-from magnetoget import read_param_file
+from magnetoget import load_magnetogram_params
 from plot_fieldmap import magnet_plot
 from scipy.interpolate import griddata
 
@@ -38,7 +38,7 @@ dat_dir = args.dat_dir
 
 # print(f"INTERP: {interp}")
 # Load the magnetogram parameters
-(hdr, cr, fname, adapt, doplot, reduce) = read_param_file(dat_dir)
+(hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
 CR = args.cr or cr
     
 print(f"\tPlotting CR{CR}...", end="\n" if __name__=="__main__" else "")
@@ -240,7 +240,7 @@ hist_ax = ax[2]
 all_vmin, all_vmax = 450, 850
 drk=0.25
 
-n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500)
+n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce=reduce, nact=args.nact)
 hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=20, vmin=all_vmin, vmax=all_vmax)
 mean1, std1 = hist_plot(vel1_clean, ax=hist_ax, vmin=all_vmin, vmax=all_vmax, n_bins=16)
 
