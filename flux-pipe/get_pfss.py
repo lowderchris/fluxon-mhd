@@ -5,7 +5,7 @@ Generates a fluxon mapping from input GONG-sourced pfss coronal field solution
 """
 
 
-datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/"
+# datdir = "/Users/cgilbert/vscode/fluxon-data/"
 
 
 ###############################################################################
@@ -15,23 +15,40 @@ datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/"
 import os
 import sys
 import numpy as np
-from magnetoget import load_magnetogram_params
+# from magnetoget import load_magnetogram_params
 
-# Check for command line arguments
-if len(sys.argv)>1: 
-    force_plot = force_trace = True if int(sys.argv[1])>0 else False
-else:
-    force_plot = force_trace = False
 
-try:
-    batch = sys.argv[2]
-except IndexError:
-    batch = "fluxon_paperfigs_2"
+import argparse
+# create the argument parser
+parser = argparse.ArgumentParser(description='This script downloads a magnetogram for a particular Carrington Rotation')
+parser.add_argument('--cr', type=int, default=2219, help='Carrington Rotation')
+parser.add_argument('--batch', type=str, default='default_batch', help='batch name')
+parser.add_argument('--reduce', type=int, default=5, help='factor by which the magnetogram is reduced')
+parser.add_argument('--datdir', type=str, default=None, help='data directory')
+parser.add_argument('--magfile', type=str, default=None, help='magnetogram file')
+parser.add_argument('--nwant', type=int, default=None, help='magnetogram file')
+parser.add_argument('--force', type=int, default=0, help='force the computation of the PFSS mapping')
+args = parser.parse_args()
+
+magfile = args.magfile
+datdir = args.datdir
+cr = args.cr
+reduce = args.reduce
+force_plot = force_trace = args.force
+batch = args.batch
+nwant = args.nwant
+
+
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+print("Running PFSS Code to Trace Footpoints into the Corona")
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", flush=True)
+
+
 
 ###############################################################################
 # Load the parameters, basically just which magnetogram is used
-print("\n -->Loading Parameters...")
-(hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(datdir)
+# print("\n\tLoading Parameters...")
+# (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(datdir)
 elapsed = 0
 
 
@@ -39,13 +56,13 @@ elapsed = 0
 ###############################################################################
 # Load the fits file and format the data and header
 from pfss_funcs import load_and_condition_fits_file
-br_safe, fits_path = load_and_condition_fits_file(fname, datdir)
+br_safe, fits_path = load_and_condition_fits_file(magfile, datdir)
 
 
 
 ###############################################################################
 # Do the PFSS mapping
-from pfss_funcs import load_pfss, compute_pfss, fits_path_to_pickle_path
+from pfss_funcs import load_pfss, compute_pfss
 pickle_dir = os.path.join(datdir, "pfss")
 if not os.path.exists(pickle_dir): os.makedirs(pickle_dir)
 pickle_path = os.path.join(pickle_dir, f"pfss_cr{cr}_r{reduce}.pkl")
@@ -59,7 +76,7 @@ if not output:
 ###############################################################################
 # Plot the fluxon locations
 from pfss_funcs import plot_fluxon_locations
-f_lon, f_lat, f_sgn = plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce, force_plot, batch)
+f_lat, f_lon, f_sgn = plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce, force_plot, batch, nwant)
 n_flux = len(f_sgn)
 
 
@@ -69,21 +86,26 @@ n_flux = len(f_sgn)
 from pfss_funcs import trace_lines
 skip_num = 'x'
 timeout_num = 'x'
-open_path = datdir + f'{batch}/cr' + cr + '/floc/' + 'floc_open_cr'+cr+'.dat'
-closed_path = datdir + f'{batch}/cr' + cr + '/floc/' + 'floc_closed_cr'+cr+'.dat'
+open_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_open_cr{cr}_r{reduce}_f{nwant}.dat" 
+closed_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_closed_cr{cr}_r{reduce}_f{nwant}.dat"
 
-print("\n -->Tracing Open and Closed Fluxons...")
-
+print("\n\tTracing Open and Closed Fluxons...", end="")
+# print(open_path)
+# print(force_trace)
 if not os.path.exists(open_path) or force_trace:
-    fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed = trace_lines(output, f_lon, f_lat, f_sgn, open_path, closed_path)
+    trace_out = trace_lines(output, f_lon, f_lat, f_sgn, open_path, closed_path)
+    fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed = trace_out
 else:
     fl_open = np.loadtxt(open_path)
     fl_closed = np.loadtxt(closed_path)
     flnum_open = len(np.unique(fl_open[:, 0]))+1
     flnum_closed = 2*len(np.unique(fl_closed[:, 0]))
-    print("\tSkipped! floc dat files already exist.")
-    print(f"\tFootpoints:\t Open: {flnum_open}, Closed: {flnum_closed}, Total: {flnum_open+flnum_closed}")
+    print("Skipped! Floc dat files already exist:")
+    print(f"\t\t{open_path}")
+    print(f"\t\t{closed_path}")
+    print(f"\t\tFootpoints:\t Open: {flnum_open}, Closed: {flnum_closed}, Total: {flnum_open+flnum_closed}")
     # print(f"\tFluxons:\t Open: {flnum_open}, Closed: {flnum_closed//2}, Total: {flnum_open+flnum_closed//2}")
+
 
 
 
@@ -93,7 +115,7 @@ else:
 # Record stats in the output file
 shp = br_safe.data.shape
 pix = shp[0]*shp[1]
-timefile = datdir + f'{batch}/pfss_time.txt'
+timefile = f'{datdir}/batches/{batch}/pfss_time.txt'
 with open(timefile, 'a+') as f:
     # a good name for the variable
     elap =f"\ncr: {cr}, r: {reduce}, rx: {shp[0]}, ry: {shp[1]}, pf_elp: {elapsed:0>3.3f}, t_kpix: {1000*elapsed/pix:0.3f}"
@@ -101,6 +123,8 @@ with open(timefile, 'a+') as f:
     f.write(f"{elap}, {nlines}")
     # f.write(")
 
+
+print("\n````````````````````````````````")
 
 
 
@@ -144,8 +168,8 @@ with open(timefile, 'a+') as f:
 # # append the data to the file
 # df.to_csv(timefile, mode='a', header=False, index=False, sep='\t')
 
-# # print("\n-->>>>>>>>>>>>>>\n-->>>>Main Program Complete!<<<<\n<<<<<<<<<<<<<<\n")
-# print(" -->Plotting: ", bool(doplot), end="\n\n")
+# # print("\n>>>>>>>>>>>>>\n>>>Main Program Complete!<<<<\n<<<<<<<<<<<<<<\n")
+# print(" Plotting: ", bool(doplot), end="\n\n")
 # def set_axes_lims(ax):
 #     ax.set_xlim(0, 360)
 #     ax.set_ylim(0, 180)
@@ -153,7 +177,7 @@ with open(timefile, 'a+') as f:
 # # If you want to plot...
 # doplot = False
 # if doplot and False:
-#     print("\n -->Plotting...")
+#     print("\n Plotting...")
 
 #     fig = plt.figure()
 #     ax = fig.add_subplot(111, projection='3d')

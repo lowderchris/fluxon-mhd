@@ -23,7 +23,7 @@ from magnetoget import load_fits_magnetogram, load_magnetogram_params
 
 
 def load_and_condition_fits_file(fname, datdir):
-    print("\n -->Loading and conditioning fits file...")
+    print("\n\tLoading and conditioning fits file...")
     ###############################################################################
     # We can now use SunPy to load the HMI fits file, and extract the magnetic
     # field data. Interpolate the data down to a more reasonable resolution.
@@ -44,6 +44,8 @@ def load_and_condition_fits_file(fname, datdir):
     except FileNotFoundError as e:
         fits_path = os.path.join(datdir, fname)
         hdulist = read_fits_data(fits_path)
+    print("\t\t", fits_path)
+
 
     brdat = hdulist[0].data
     header= hdulist[0].header
@@ -72,12 +74,12 @@ def fits_path_to_pickle_path(fits_path, reduce):
 
 
 def load_pfss(pickle_path):
-    print(f"\n -->Getting Pfss from {pickle_path}...", end="")
+    print("\n\tGetting Pfss...", end="")
 
     try:
         with open(pickle_path, 'rb') as inp:
             output = pickle.load(inp)
-            print("Successfully loaded.")
+            print(f"Success! Loaded: \n\t\t {pickle_path}")
         return output
     except FileNotFoundError as e:
         print("File not found.")
@@ -92,7 +94,7 @@ def compute_pfss(br_safe, pickle_path, nrho=60, rss=2.5):
     elapsed = 0
 
     shp = br_safe.data.shape
-    print(f"\t-->Computing PFSS on {shp} magnetogram...", end="", flush=True)
+    print(f"\t\tComputing PFSS on {shp} magnetogram...", end="", flush=True)
     before = time()
     
     ###############################################################################
@@ -137,29 +139,50 @@ def pixel_to_latlon(mag_map, header, fluxon_location):
     return f_lat, f_lon, f_sgn, n_flux
 
 
-def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce, force_plot=False, batch='fluxon'):
-    # CL - DOUBLE CHECK THE LATITUTE DIRECTION HERE, and plot the polarity inversion line.
-    fluxon_location = np.genfromtxt(datdir + f'{batch}/cr' + cr + '/floc/floc_cr'+cr+'.dat')
+def get_fluxon_locations(floc_path, batch):
+    fluxon_location = np.genfromtxt(floc_path)
     magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
-
-
     f_lat, f_lon, f_sgn, n_flux = pixel_to_latlon(magnet, header, fluxon_location)
+    return f_lat, f_lon, f_sgn, n_flux
+
+def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce, force_plot=False, batch='fluxon', nwant=0, do_plot=False):
+    # CL - DOUBLE CHECK THE LATITUTE DIRECTION HERE, and plot the polarity inversion line.
+    floc_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
+    f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch)
+    # fluxon_location = np.genfromtxt(floc_path)
+    # magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
+    # f_lat, f_lon, f_sgn, n_flux = pixel_to_latlon(magnet, header, fluxon_location)
+
+    if not do_plot:
+        return f_lat, f_lon, f_sgn
 
     the_dir = path.dirname(path.dirname(fits_path))
     fluxon_map_output_path = path.join(the_dir, f'r{reduce}_f{n_flux}_footpoints.pdf')
 
-    top_dir = path.join(datdir,f"{batch}/imgs/footpoints")
-    fluxon_map_output_path_top = path.join(top_dir, f'cr{cr}_footpoints_f{n_flux}.pdf')
+    top_dir = path.join(datdir,f"batches/{batch}/imgs/footpoints")
+    fluxon_map_output_path_top = path.join(top_dir, f'cr{cr}_footpoints_r{reduce}_f{nwant}.pdf')
 
-    fluxon_map_output_path_blank = path.join(the_dir, f'r{reduce}_cr{cr}_footpoints_blank.png')
-    fluxon_map_output_path_blank_top = path.join(top_dir, f'r{reduce}_cr{cr}_footpoints_blank.png')
+    fluxon_map_output_path_blank =      path.join(the_dir, "magnetograms", f'footpoints_cr{cr}_r{reduce}_blank.png')
+    fluxon_map_output_path_blank_top =  path.join(top_dir, f'cr{cr}_footpoints_r{reduce}_blank.png')
+    # fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), f'r{reduce}_f{n_flux}_footpoints_latlon.png')
 
 
     if not path.exists(top_dir):
         os.makedirs(top_dir)
 
-    print("\n -->Plotting Fluxon Locs...", end="")
-    if not path.exists(fluxon_map_output_path_blank_top) or force_plot:
+    plot_paths = [
+                fluxon_map_output_path_top,
+                fluxon_map_output_path_blank_top,
+                fluxon_map_output_path_blank, 
+                ]
+
+    print("\n\tPlotting Fluxon Footpoint Locations...", end="")
+
+    need_plot = False
+    for testpath in plot_paths:
+        if not path.exists(testpath):
+            need_plot = True
+    if need_plot or force_plot:
         # br = sunpy.map.Map(datdir + 'hmi.Synoptic_Mr.polfil/hmi.synoptic_mr_polfil_720s.' + cr + '.Mr_polfil.fits')
         # fluxon_map_output_path = fits_path.replace('.fits', '_fluxons.png')
         # fluxon_map_output_path = path.join(path.dirname(path.dirname(fits_path)), path.basename(fits_path).replace('.fits', f'_{n_flux}_fluxons.png'))
@@ -217,37 +240,38 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce, force_plot=Fal
         ax.scatter(x, y, c=colors, alpha=0.4)
 
         # plot the fluxons scattered on top of the map
-        plt.savefig(fluxon_map_output_path, bbox_inches='tight', dpi=4*DPI)
-        # plt.savefig(fluxon_map_output_path_top, bbox_inches='tight', dpi=4*DPI)
+        # plt.savefig(fluxon_map_output_path, bbox_inches='tight', dpi=4*DPI)
+        plt.savefig(fluxon_map_output_path_top, bbox_inches='tight', dpi=4*DPI)
         plt.close()
 
         ## Plot the fluxon map in lat/lon
     
-        fig, ax = plt.subplots()
-        ax.imshow(br_safe.data, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), vmin=mvmin, vmax=mvmax,aspect='auto')
+        # fig, ax = plt.subplots()
+        # ax.imshow(br_safe.data, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), vmin=mvmin, vmax=mvmax,aspect='auto')
         
-        # Plot the fluxons
-        colors = ['red' if s > 0 else 'teal' for s in f_sgn]
-        ax.scatter(f_lon, f_lat, c=colors, alpha=0.4)
+        # # Plot the fluxons
+        # colors = ['red' if s > 0 else 'teal' for s in f_sgn]
+        # ax.scatter(f_lon, f_lat, c=colors, alpha=0.4)
 
-        # for (long, lat, sig) in zip(f_lon, f_lat, f_sgn):
-        #     color = 'red' if sig > 0 else "teal"
-        #     ax.scatter(long, lat, color=color)
-        # # rewrite the previous for loop without a loop
+        # # for (long, lat, sig) in zip(f_lon, f_lat, f_sgn):
+        # #     color = 'red' if sig > 0 else "teal"
+        # #     ax.scatter(long, lat, color=color)
+        # # # rewrite the previous for loop without a loop
 
 
-        # fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), path.basename(fits_path).replace('.fits', f'_latlon_{n_flux}_fluxons.png'))
-        fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), f'r{reduce}_f{n_flux}_footpoints_latlon.png')
-        plt.axis('off')
-        fig.set_size_inches((sz1, sz0))
-        plt.tight_layout()
-        plt.savefig(fluxon_map_output_path2, bbox_inches='tight', dpi=4*DPI)
-        plt.close()
+        # # fluxon_map_output_path2 = path.join(path.dirname(path.dirname(fits_path)), path.basename(fits_path).replace('.fits', f'_latlon_{n_flux}_fluxons.png'))
+        # plt.axis('off')
+        # fig.set_size_inches((sz1, sz0))
+        # plt.tight_layout()
+        # plt.savefig(fluxon_map_output_path2, bbox_inches='tight', dpi=4*DPI)
+        # plt.close()
         # plt.show()
-        print("Success!")
+        print("Success! Files saved to: ", end="\n\t\t")
     else:
-        print("Skipped! File Already Exists")
-    return f_lon, f_lat, f_sgn
+        print("Skipped! Files already exist:", end="\n\t\t")
+    for testpath in plot_paths:
+        print(testpath, end="\n\t\t")
+    return f_lat, f_lon, f_sgn
 
 from tqdm import tqdm
 import timeout_decorator
@@ -298,7 +322,7 @@ def trace_lines(output, f_lon, f_lat, f_sgn, open_path, closed_path):
     if skip_num > 0 or timeout_num > 0:
         t_perc = 100*timeout_num/len(f_lon)
         s_perc = 100*skip_num/len(f_lon)
-        print(f"\n\nSome iterations failed. Timed-out: {timeout_num} ({t_perc:0.2f}%), ValueError: {skip_num} ({s_perc:0.2f}%)\n")
+        print(f"\n\n\t\tSome iterations failed. Timed-out: {timeout_num} ({t_perc:0.2f}%), ValueError: {skip_num} ({s_perc:0.2f}%)\n")
 
 
     print(f"\n\tOpen Lines: {flnum_open+1}, Closed Lines: {flnum_closed}, Failures: {skip_num+timeout_num}, Total Good: {flnum_open+flnum_closed}")
@@ -310,7 +334,7 @@ def trace_lines(output, f_lon, f_lat, f_sgn, open_path, closed_path):
 
     # Output is flnum, polarity, latitude, longitude, radius
     # Save these coordinates to file
-    print("\n -->Saving Fluxons...", end="")
+    print("\n Saving Fluxons...", end="")
     np.savetxt(open_path, fl_open)
     np.savetxt(closed_path, fl_closed)
     print("Success!")
