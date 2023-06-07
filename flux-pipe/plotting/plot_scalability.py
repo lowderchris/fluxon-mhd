@@ -5,7 +5,7 @@ from matplotlib.ticker import ScalarFormatter, StrMethodFormatter
 import pandas as pd
 # import statsmodels.api as sm
 
-datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/"
+datdir = "/Users/cgilbert/vscode/fluxon-data/"
 file_path = os.path.join(datdir, "fluxon/pfss_time.txt")
 
 ## Helper functions to parse the output file
@@ -277,7 +277,7 @@ plt.close(fig)
 # # # create the argument parser
 # # parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
 # # parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
-# # parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/Fluxon-Scripts-Gilly', help='data directory')
+# # parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
 # # parser.add_argument('--show', type=int, default=0)
 # # args = parser.parse_args()
 # # from magnetoget import load_magnetogram_params
