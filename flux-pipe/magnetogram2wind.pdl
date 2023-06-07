@@ -23,9 +23,10 @@ use PDL::Options;
 use Flux;
 use PDL::IO::Misc;
 use File::Path;
-use Time::HiRes qw(clock_gettime);
 use PDL::IO::Misc;
+use Time::HiRes qw(clock_gettime sleep);
 use File::Basename qw(fileparse);
+
 # use PDL::Graphics::TriD;
 $do_download =          0;
 $force_process_magnetogram =  0;
@@ -36,7 +37,7 @@ $do_png =               0;
 $do_interactive =       0; 
 $do_wind_calc =         0;
 
-$PDL::BIGPDL = 1;
+# $PDL::BIGPDL = 1;
 $do_steps = 1000; # relaxation steps between checking stiffness target
 $relax_threshold = 0.49; # stiffness target to stop relaxation
 $max_cycles = 10; 
@@ -46,8 +47,8 @@ $CR = $ARGV[0] || 2193;
 $reduction = $ARGV[1] || 5;
 $recompute = $ARGV[3] || 0;
 $n_fluxons_wanted = $ARGV[4] || 1000;
-$top_time = clock_gettime();
-$stepnum=0;
+# $top_time = clock_gettime();
+# $stepnum=0;
 $do_wind_calc = 1; ## Calculate the Solar Wind
 $batch = $ARGV[5];
 $batch_name = "default_batch";
@@ -55,12 +56,8 @@ if ($batch) {
     $batch_name = $batch;
 }
 
-# Set Ranges of Plots
 $lim = 2.5;
 $lim2 = 7.5;
-$range_i = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
-$range_f = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
-$range_f2 = [-$lim2, $lim2, -$lim2, $lim2, -$lim2, $lim2];
 
 
 ## TODO make the wind calculation less verbose
@@ -84,7 +81,12 @@ if ($recompute){
 ## Initialize Environment #############################################################################
 #######################################################################################################
 
-print "\n\n\n\nFLUXPipe: Indicate a Carrington Rotation and this script will run the entire Flux Pipeline for it.\n\n";
+print "|\n|\n|\n|\n|\n|\n|\n|\n|\n|";
+print "\n\n";
+print "--------------------------------------------------------------------------------------------------\n";
+print "FLUXPipe: Indicate a Carrington Rotation and this script will run the entire Flux Pipeline for it.\n";
+print "--------------------------------------------------------------------------------------------------\n";
+print "\n\n";
 
 ## Set paths
 $basedir =  "/Users/cgilbert/vscode";
@@ -98,17 +100,19 @@ $timefile = "$batchdir/pfss_time.txt";
 push(@PDLLIB,"+$datdir");
 push(@PDLLIB,"+$codedir");
 push(@PDLLIB,"+$pdldir");
-push(@INC, "+/Users/cgilbert/opt");
+push(@INC, "/Users/cgilbert/opt");
 push(@INC, "/Users/cgilbert/.cpan/build");
+push(@INC,"$codedir");
 
 system("cd $codedir");
 
 $ENV{'PYTHONPATH'} = '/opt/homebrew/anaconda3/envs/fluxArm/bin/python3';
+$ENV{'FLUXPATH'} = $codedir;
 $ENV{'DATAPATH'} = $datdir;
 
 my $pythonpath = $ENV{'PYTHONPATH'};
 if (defined $pythonpath) {
-    print "PYTHONPATH: $pythonpath\n";
+    print "\$PYTHONPATH: \t$pythonpath\n";
 } else {
     print "PYTHONPATH is not set\n";
     exit();
@@ -116,7 +120,7 @@ if (defined $pythonpath) {
 
 my $datpath = $ENV{'DATAPATH'};
 if (defined $datpath) {
-    print "DATAPATH: $datpath\n";
+    print "\$DATAPATH: \t$datpath\n";
 } else {
     print "DATAPATH is not set\n";
     exit();
@@ -125,22 +129,26 @@ if (defined $datpath) {
 print"\n\n";
 
 if ($recompute) {
-    print ">>>>>>>>>>>>>>>>>> Recompute = TRUE <<<<<<<<<<<<<<<<<<<<";
+    print "\t>>>>>>>>>>>>>>>>>>>>> Recompute = TRUE <<<<<<<<<<<<<<<<<<<<<<<";
 } else {
-    print ">>>>>>>>>>>>>>>>>> Recompute = FALSE <<<<<<<<<<<<<<<<<<<";
+    print "\t>>>>>>>>>>>>>>>>>>>>> Recompute = FALSE <<<<<<<<<<<<<<<<<<<<<<";
 }
-
 use Time::Piece;
-
 my $time = localtime;
 my $ftime = $time->strftime('%Y-%m-%d %H:%M:%S');
+# use PipeHelpers;
 
 
-print "\nStarting FLUXPipe at $ftime \n\tBatch: $batch_name, CR: $CR, Reduction: $reduction, Fluxons: $n_fluxons_wanted\n\n";
+print "\n\tStarting FLUXPipe at $ftime \n\tBatch: $batch_name, CR: $CR, Reduction: $reduction, Fluxons: $n_fluxons_wanted";
+print "\n\t>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n";
+print "\n|\n|\n|\n|\n|\n|\n|\n|\n|\n|\n";
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sleep(1);
+$very_beginning = clock_gettime();
+
 
 
 #######################################################################################################
@@ -152,18 +160,16 @@ system($command) == 0 or (die "Python script returned error $?", exit);
 
 
 
-
 #######################################################################################################
 ## Process the Magnetogram ## Find the Root Points ####################################################
 #######################################################################################################
 # The hilbert curve code defines where fluxons should be rooted based on the distribution of flux at 1R_sun. 
 # Since each contains a discretized amount of magnetic flux, we need to subdivide the domain to reflect how to represent that with fluxons.
+
 $flocdir = "$batchdir/cr$CR/floc";
 $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
 $magfile = $magdir."/CR$CR\_r$reduction\_hmi.fits";
-
 $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $force_process_magnetogram);
-
 
 
 
@@ -174,15 +180,14 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wan
 # into the corona to define an initial placeholder geometry. 
 # This lets us extend this into 3d space with real linking topology.
 
-# print "\n\n**Running PFSS Code to Trace Footpoints into Corona...";
-# system("python3 get_pfss.py $do_pfss $batch_name") == 0 or (die "Python script returned error $?", exit);
 $command = "$pythonpath get_pfss.py --force $do_pfss --batch $batch_name --reduce $reduction --datdir $datdir --cr $CR --magfile $magfile --nwant $n_fluxons_wanted";
 system($command) == 0 or (die "Python script returned error $?", exit);
 
 
 
+#######################################################################################################
 ## Generate World from PFSS ###########################################################################
-# print "\n \n**Making the world from the pfss output...";
+#######################################################################################################
 
 # Define the output directory
 $world_out_dir = "$datdir/batches/$batch_name/cr$CR/world";
@@ -190,414 +195,57 @@ $floc_path   = "$datdir/batches/$batch_name/cr$CR/floc";
 $open_file   ="$floc_path/floc_open_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
 $closed_file ="$floc_path/floc_closed_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
 
-
+# Plot the field map
 system("$pythonpath plotting/plot_fieldmap.py --cr $CR --open $open_file --closed $closed_file --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
 
-exit();
-
-print "\n\n**Making the Flux World...";
-
 # Make the world
-$need_world=0;
-if (! -d $world_out_dir ) {
-    $need_world=1;
-    }
+make_world_from_pfss($world_out_dir, $floc_path, $open_file, $closed_file, $makeworld, $CR, $datdir, $batch, $N_actual, $n_fluxons_wanted, $lim, $lim2);
 
-if ($makeworld || $need_world){
-    ## Read python-processed data ###############################
-    print "\n \n  >>Loading Open and Closed line files...";
-
-    ($oflnum, $oflx, $olat, $olon, $orad) = rcols $open_file;
-    ($cflnum, $cflx, $clat, $clon, $crad) = rcols $closed_file;
-
-    ## Define a blank world ###############################
-    @flines = ();
-    $world = ();
-    $xform = !t_spherical() x t_scale([3.14159/180,3.14159/180,1]);
-
-
-    ## Generate open fieldlines ####################################
-    print "\n \n  >>Generating open fieldlines...";
-    ($ofln, $ofl) = rle($oflnum);
-    $ofln = $ofln->cumusumover;
-    $ofln = append(0, $ofln);
-    $open_count = 1;
-    for my $i(0..nelem($ofl)-1){
-        # print "$i" . "\n";
-        my $flxlat = $olat($ofln($i):$ofln($i+1)-1);
-        my $flxlon = $olon($ofln($i):$ofln($i+1)-1);
-        my $flxrad = $orad($ofln($i):$ofln($i+1)-1);
-        my $open = pdl($flxlon, $flxlat, $flxrad)->transpose;
-        ## CL - DOUBLE CHECK THE FLUX DIRECTION HERE
-        ## if ($oflx->($ofln($i))<0){
-        ##    $open = $open->(:,-1:0:-1);
-        ## }
-        ## CL - ADD RADIAL EXTENSION HERE
-        ## $open = $open->glue(1,$open->(:,-1)->(*11)->transpose)->squeeze;
-        ## $open(2,-11:-1) .= pdl(xvals(11)*2+2.5)->transpose;
-        if ($oflx->($ofln($i))<0){
-            $open = $open->(:,-1:0:-1);
-        }
-        my $line = ($open)->apply($xform);
-        push(@flines,$line->copy);
-        $open_count++;
-    }
-    print("Done! $open_count open fluxons generated.\n");
-
-
-    ## Generate closed fieldlines  ###################################
-    print "\n  >>Generating closed fieldlines...";
-    ($cfln, $cfl) = rle($cflnum);
-    $cfln = $cfln->cumusumover;
-    $cfln = append(0, $cfln);
-    $closed_count = 1;
-    for my $j(0..nelem($cfl)-1){
-        my $flxlat = $clat($cfln($j):$cfln($j+1)-1);
-        my $flxlon = $clon($cfln($j):$cfln($j+1)-1);
-        my $flxrad = $crad($cfln($j):$cfln($j+1)-1);
-        my $closed = pdl($flxlon, $flxlat, $flxrad)->transpose;
-        ## CL - DOUBLE CHECK THE FLUX DIRECTION HERE
-        if ($cflx->($cfln($j))<0){
-            $closed = $closed->(:,-1:0:-1);
-        }
-        my $line = ($closed)->apply($xform);
-        push(@flines,$line->copy);
-        $closed_count++;
-    }
-    $closed_nflux = $closed_count * 2 ;
-    print("Done! $closed_count closed fieldlines generated (from $closed_nflux footpoints).\n");
-
-    $total_fluxons = $open_count + $closed_count;
-    print "\n\tTotal fluxons created: $total_fluxons\n";
-
-## Generate the world  ############################################
-print "\n  >>Generating the World...\n \n";
-
-    $fbg = make_world_sphere(@flines, {rmax=>21.5});
-    $world = str2world($fbg);
-
-    ## Save the initial world state  ###############################
-    print "\n  >>Saving the World...";
-
-    $flen = $oflnum->max(); #@flines+0;
-    $world_out_path = $world_out_dir .'cr'.$CR.'_'.$flen.'.flux';
-    $world_out_path = $world_out_dir .'cr'.$CR.'.flux';
-    if (! -d $world_out_dir ) {mkpath($world_out_dir) or die "Failed to create directory: $world_out_dir $!\n";}
-    $world->write_world($world_out_path);
-
-    ## Display ####################################################
-    print "\n \n  >>Plotting the World...";
-
-    # number of open fluxons, number of fluxons, number of fluxons requested
-    $top_dir = $datdir."$batch_name/imgs/initial/";
-    if (! -d $top_dir ) {mkpath($top_dir) or die "Failed to create directory: $top_dir $!\n";}
-
-    $ext = 'png';
-    $renderer = $ext.'cairo';
-    $world_png_path = $world_out_dir .'cr'.$CR.'_tracePFSS_op'.$flen.'_f'.$N_actual.'_w'.$n_fluxons_wanted.'.'.$ext;
-    $world_png_path_top = $top_dir.'cr'.$CR.'_tracePFSS_op'.$flen.'_f'.$N_actual.'_w'.$n_fluxons_wanted.'.'.$ext;
-    $world_png_path2 = $world_out_dir .'cr'.$CR.'_tracePFSS_wide_op'.$flen.'_f'.$N_actual.'_w'.$n_fluxons_wanted.'.'.$ext;
-
-    # print $world_png_path_top;
-    $window00 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path);
-    $world->render( {'window'=>$window00, range=>$range_i});
-    $window000 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path_top);
-    $world->render( {'window'=>$window000, range=>$range_i});
-    $window01 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path2);
-    $world->render( {'window'=>$window01, range=>$range_f2});
-    print "\n";
-    # $world -> render({'dev'=>'qt'});
-
-} else {
-    print "Skipped! Loading .flux from file.\n"
-}
-
-
-# Then we take that initial guess from pfss.py and relax down using the fluxon code, which gets us realistic topology, and a near force-free state, 
-# but allowing for currents (not a potential field any longer).
 
 #######################################################################################################
 ## Relax the initial world state ##Use the FLUX Code ##################################################
 #######################################################################################################
-print "\n \n**Running Fluxon Code to Relax the Initial World State...";
-
-# print "\n>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<";
-# print "\n>>>>>>>Relaxing the World<<<<<<<";
-# print "\n>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<";
+# Then we take that initial guess from pfss.py and relax down using the fluxon code, which gets us realistic topology, and a near force-free state, 
+# but allowing for currents (not a potential field any longer).
 
 # Select the World
+$n_outliers = 0; # THIS IS FUDGE CODE!
+$n_remaining = $N_actual - $n_outliers;
 $world_out_dir = $datdir."/batches/$batch_name/cr".$CR.'/world/';
-$full_world_path = $world_out_dir .'cr'.$CR."_$N_actual.flux";
+$full_world_path = $world_out_dir .'cr'.$CR."_f$n_remaining.flux";
+our ($this_world_orig, $this_world_relaxed) = relax_pfss_world($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold, $max_cycles, $timefile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR, $n_outliers);
 
-# print "\n \n";
-print $full_world_path . "\n";
-$directory = $world_out_dir;
-print $directory . "\n";
-
-sub find_file_with_string {
-    my ($directory) = @_;
-    opendir(my $dir_handle, $directory) or die "Cannot open directory: $!";
-    my @files = grep { !/^\.{1,2}$/ } readdir($dir_handle);
-    closedir $dir_handle;
-
-    my $highest_numbered_file;
-    my $highest_number = -1;
-    my $found = 0;
-    for my $file_name (@files) {
-        # Match file names containing "_relaxed", a number, and ".flux"
-        if ($file_name =~ /_relaxed_s(\d+)\.flux/) {
-            my $number = $1;
-            if ($number > $highest_number) {
-                $highest_number = $number;
-                $highest_numbered_file = $file_name;
-            }
-            $found = 1;
-        }
-    }
-    return $highest_numbered_file ? "$directory$highest_numbered_file" : 0;
-}
-$found_file_path = find_file_with_string($directory);
-
-$do_the_relax = ($do_relax || not $found_file_path);
-print "\n" . $found_file_path . "\n";
-print $directory;
-
-if ($do_the_relax){
-    # print "Press Enter to Confirm...";
-    $this_world_orig = read_world($full_world_path);
-    $this_world_relaxed = read_world($full_world_path);
-    $this_world_relaxed->forces('f_pressure_equi2b', 'f_curvature', 'f_vertex4', 'b_eqa'); # NEW
-    $this_world_relaxed->{concurrency} = 12;
-
-    $cycle = 0;
-    $stiff = 100;
-    $broken = 0;
-
-    # # # Begin the Computation!! # # #
-    print("\n \nfor " . $do_steps . " steps\n  \n");
-
-    while ($stiff > $relax_threshold and $cycle < $max_cycles and $broken < 3) {
-        $cycle = $cycle + 1;
-
-        simple_relaxer($this_world_relaxed,0,$do_steps,{disp_n=>0, movie_n=>50, print_n=>500});
-
-        # #Trying this new thing
-        # $this_world_relaxed->fix_proximity(0.5);
-        # $this_world_relaxed->fix_curvature(0.25);
-
-        $h = $this_world_relaxed->fw_stats;
-        $stiff = $h->{f_av}/$h->{fs_av}*100;
-
-        $round_stiff = sprintf("%.2f", $stiff);
-
-        if ($stiff > 99){
-            $broken = $broken + 1;
-        } else {
-            $broken = 0;
-        }
-        # print "\n \nSTIFFNESS IS $stiff, cycle = $cycle\n";
-    
-        if ($broken >= 2){
-            open $fhh, ">>", $timefile or die "Cannot open file: $!";
-            # printf $fhh, "Success: 0, fluxons: %d, steps: %d, stiff: %f, n_out: %d", $N_actual, $stepnum, $stiff, $flen;
-            print $fhh "n_want: $n_fluxons_wanted, n_actual: $N_actual, n_out: $flen, Success: 0, steps: $stepnum, stiff: $round_stiff";
-            close $fhh;
-            die "\n \n TOO MANY FLUXONS! Reduce N_flux.\n \n \n";
-
-        }
-    }
-    $stepnum = $cycle * $do_steps;
-    print "\nRelaxation Complete in $stepnum Steps \n";
-
-    open $fhh, ">>", $timefile or die "Cannot open file: $!";
-    # printf $fhh, "Success: 1, fluxons: %d, steps: %d, stiff %.2f, n_out: %d", $N_actual, $stepnum, $stiff, $flen;
-    print $fhh "n_want: $n_fluxons_wanted, n_actual: $N_actual, n_out: $flen, Success: 1, steps: $stepnum, stiff: $round_stiff, ";
-    close $fhh;
-
-
-
-    # Save the World
-    $world_out_dir = $datdir."$batch_name/cr".$CR.'/rlx/';
-    print "\n\n**Saving the World... $world_out_dir";
-    if (! -d $world_out_dir ) {mkpath($world_out_dir) or die "Failed to create directory: $world_out_dir $!\n";}
-
-
-    ## print $out_world;
-    $out_world=$full_world_path;
-    substr($out_world, -5)="_relaxed_s$stepnum.flux";
-    $this_world_relaxed->write_world($out_world);
-
-    print "\nWorld saved to $out_world";
-
-
-} else {
-    print "\n\tSkipped! Already have relaxed file.\n \n";
-    # print $found_file_path;
-
-    print"**Loading Worlds...\n \n";
-    $this_world_relaxed = read_world($full_world_path);
-    $this_world_orig = read_world($found_file_path);
-    # print($found_file_path)
-    # $this_world_orig = read_world($found_file_path);
-
-}
 
 
 #######################################################################################################
 ## Plot the world states  #############################################################################
 #######################################################################################################
 
-print "\n \n**Plotting the Worlds...";
-
-if ($do_interactive){
-    # Plot to interactive window
-
-    $window1=gpwin('qt',size=>[9,9],dashed=>0, title=>'Initial Conditions');
-    $window2=gpwin('qt',size=>[9,9],dashed=>0, title=>'After Relaxation');
-    ## Create a sphere with radius 1
-    ## $sphere = sphere(50) * 1;
-    ## $window2->splot($sphere);
-    ## $window2->gnuplot("set style data lines");
-    ## $window2->gnuplot("set hidden3d");
-
-    $this_world_orig->render( {'window'=>$window1, range=>$range_i});
-    $this_world_relaxed->render({'window'=>$window2, range=>$range_f}); #, hull=>'1'});
-    ## use PDL;
-
-    ## my $plot = gpwin();
-    ## $plot->gnuplot("set view equal xyz");
-    ## $plot->gnuplot("set xrange [-1:1]");
-    ## $plot->gnuplot("set yrange [-1:1]");
-    ## $plot->gnuplot("set zrange [-1:1]");
-}
+plot_worlds($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $lim, $lim2);
 
 
-    ## Plot to Png
-$stepnum = $stepnum or "unkn";
 
-my $path = $full_world_path;
-my ($filename, $directories, $suffix) = fileparse($path, qr/\.[^.]*/);
-my $new_filename_initial = $directories . $filename . "_initial_f$N_actual.png";
-$do_png = $do_png || (! -e $new_filename_initial);
+#######################################################################################################
+## Begin solar wind computation  ######################################################################
+#######################################################################################################
 
-if($do_png){
-
-    my $new_filename_initial2 = $directories . $filename . "_initial_f$N_actual-wide.png";
-    my $new_filename_relaxed = $directories . $filename . "_relaxed_f$N_actual\_s$stepnum.png";
-    my $new_filename_relaxed2 = $directories . $filename . "_relaxed_f$N_actual\_s$stepnum-wide.png";
-
-    $top_path = $datdir . "$batch_name/imgs/relaxed/";
-    if (! -d $top_path ) {mkpath($top_path) or die "Failed to create directory: $top_path $!\n";}
-    my $top_filename_relaxed = $top_path ."cr". $CR."_relaxed_f$N_actual\_s$stepnum.png";
+get_wind($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute);
 
 
-    $window25=gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_initial);
-    $window3=gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_initial2);
-    $window4=gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_relaxed );
-    $window5=gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_relaxed2 );
-    $windowTop=gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $top_filename_relaxed );
 
-    $this_world_orig->render( {'window'=>$window25, range=>$range_i});
-    $this_world_orig->render( {'window'=>$window3, range=>$range_f2});
-    $this_world_relaxed->render({'window'=>$window4, range=>$range_f});
-    $this_world_relaxed->render({'window'=>$windowTop, range=>$range_f});
-    $this_world_relaxed->render({'window'=>$window5, range=>$range_f2});
-
-    $window25 = null;
-    $window3 = null;
-    $window4 = null;
-    $window5 = null;
-    $windowTop = null;
-
-    # $this_world_orig    = null;
-    # $this_world_relaxed = null;
-
-    ## Create a sphere with radius 1
-    # $sphere = sphere(50) * 1;
-
-    # $window25->splot($sphere);
-    # $window3->splot($sphere);
-    # $window4->splot($sphere);
-    # $window5->splot($sphere);
-}
-
-if (not $do_png and not $do_interactive) {
-    print "Skipped!\n";
-} else {
-    print "Done!\n"
-}
-
-## Begin solar wind computation ######################################################################
-
-print "\n \n <<<<<< Calculating Solar Wind Plasma Parameters for CR$CR >>>>>>\n\n";
-
-$do_wind_calc = 0;
-
-$wind_out_dir = $datdir."$batch_name/cr".$CR.'/wind';
-$out_b = "$wind_out_dir/radial_bmag.dat";
-$out_fr = "$wind_out_dir/radial_fr.dat";
-$out_wind = "$wind_out_dir/radial_wind_f$N_actual.dat";
-
-if (! -d $wind_out_dir ) {
-    $do_wind_calc = 1;
-    mkpath($wind_out_dir) or die "Failed to create directory: $wind_out_dir $!\n";
-    }
-
-if (! -f $out_b or ! -f $out_fr or ! -f $out_wind) {
-    $do_wind_calc = 1;
-    }
-
-if ($do_wind_calc){
-    print "\tUpdating neighbors...\n";
-    $this_world_relaxed->update_force(0);
-    @fluxons = $this_world_relaxed->fluxons;
-    print "\t\tDone!\n";
-
-    print "\nRadial B Calculation...";
-    map_fluxon_b($out_b, \@fluxons);
-    system("python3 plot_bmag.py --cr $CR --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
-    print "...done with radial B!";
-
-    print "\n\n\nRadial fr Calculation...";
-    map_fluxon_fr($out_fr, \@fluxons);
-    system("python3 plot_fr.py --cr $CR --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
-    print "...done with radial fr!";
-
-    no warnings 'misc';
-
-    print "\n\n\nRadial wind Calculation...\n";
-    $do_wind_map=0 || $recompute;
-    # $do_wind_map=1; #OVERRIDE WIND MAP
-
-    if (! -e $out_wind ) {$do_wind_map=1;}
-    if ($do_wind_map){
-        map_fluxon_flow_parallel_master($out_wind, \@fluxons);
-    } else {
-        print "Wind Calculation Skipped!\n \n"
-    }
-    use warnings 'misc'
-} else {
-    print "\t\tWind Calculation Skipped!\n \n"
-}
-
-print "Plotting Solar Wind Charts for CR$CR...\n";
-# system("python3 plot_wind.py --cr $CR --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
-# system("python3 plot_wind_map.py --cr $CR --interp 1 --nact $N_actual --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
-system("python3 plot_wind_map_paper_brief.py --cr $CR --nact $N_actual --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
-system("python3 plot_wind_map_paper_single.py --cr $CR --nact $N_actual --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
-print "...done with wind plotting!";
-
-
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Count the total time and write to file
 $after   = clock_gettime();
-$elapsed = $after - $very_beginning + $top_duration;
+$elapsed = $after - $very_beginning;
 $round_elapsed = rint($elapsed*10) / 10;
 open($fhh, ">>", $timefile) or die "Cannot open file: $!";
-printf $fhh "ttime: $round_elapsed";
+    printf $fhh "ttime: $round_elapsed";
 close $fhh;
+print "\n \n**Program Complete for CR$CR in $round_elapsed Seconds, press ENTER to exit...\n\n\n";
+
 
 
 # system("python3 plot_scalability.py") == 0 or (die "Python script returned error $?", exit);
-print "\n \n**Program Complete for CR$CR in $round_elapsed Seconds, press ENTER to exit...\n\n\n";
 # <STDIN>;  # Wait for user input
 
 1;

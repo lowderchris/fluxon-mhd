@@ -1,0 +1,153 @@
+use warnings;
+use PDL::AutoLoader;
+use PDL;
+use PDL::Transform;
+use PDL::NiceSlice;
+use PDL::Options;
+# use PDL::ImageND;
+use Flux;
+use PDL::IO::Misc;
+use File::Path;
+use PDL::IO::Misc;
+use Time::HiRes qw(clock_gettime);
+use File::Basename qw(fileparse);
+use File::Basename;
+use PipeHelpers;
+
+
+sub make_world_from_pfss{
+    my ($world_out_dir, $floc_path, $open_file, $closed_file, $force_make_world, $CR, $datdir, $batch, $N_actual, $n_fluxons_wanted, $lim, $lim2, $n_outliers) = @_;
+    $world_out_dir = $world_out_dir . "/";
+
+    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+    print "(pdl) Converting PFSS Fieldlines into FLUX Fluxons\n";
+    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+
+    # Make the world
+    my $need_world=0;
+    if (! -d $world_out_dir ) {
+        $need_world=1;
+        }
+
+    if ($force_make_world || $need_world){
+        ## Read python-processed data ###############################
+        # print "\n \n\tLoading Open and Closed line files...";
+
+        my ($oflnum, $oflx, $olat, $olon, $orad) = rcols $open_file;
+        my ($cflnum, $cflx, $clat, $clon, $crad) = rcols $closed_file;
+
+
+        my $open_name_short = shorten_path($open_file, 5);
+        my $closed_name_short = shorten_path($closed_file, 5);
+
+
+        ## Define a blank world ###############################
+        my @flines = ();
+        my $world = ();
+        my $xform = !t_spherical() x t_scale([3.14159/180,3.14159/180,1]);
+        print("Done!\n");
+
+        ## Generate open fieldlines ####################################
+        print "\n \n\tGenerating open fluxons from \n\t\t$open_name_short\n\t ";
+        my ($ofln, $ofl) = rle($oflnum);
+        $ofln = $ofln->cumusumover;
+        $ofln = append(0, $ofln);
+        my $open_count = 1;
+        for my $i(0..nelem($ofl)-1){
+            # print "$i" . "\n";
+            my $flxlat = $olat($ofln($i):$ofln($i+1)-1);
+            my $flxlon = $olon($ofln($i):$ofln($i+1)-1);
+            my $flxrad = $orad($ofln($i):$ofln($i+1)-1);
+            my $open = pdl($flxlon, $flxlat, $flxrad)->transpose;
+            ## CL - DOUBLE CHECK THE FLUX DIRECTION HERE
+            ## if ($oflx->($ofln($i))<0){
+            ##    $open = $open->(:,-1:0:-1);
+            ## }
+            ## CL - ADD RADIAL EXTENSION HERE
+            ## $open = $open->glue(1,$open->(:,-1)->(*11)->transpose)->squeeze;
+            ## $open(2,-11:-1) .= pdl(xvals(11)*2+2.5)->transpose;
+            if ($oflx->($ofln($i))<0){
+                $open = $open->(:,-1:0:-1);
+            }
+            my $line = ($open)->apply($xform);
+            push(@flines,$line->copy);
+            $open_count++;
+        }
+        print("\tDone! $open_count open fluxons generated.\n");
+
+
+        ## Generate closed fieldlines  ###################################
+        print "\n \n\tGenerating closed fluxons from \n\t\t$closed_name_short\n\t ";
+        my ($cfln, $cfl) = rle($cflnum);
+        $cfln = $cfln->cumusumover;
+        $cfln = append(0, $cfln);
+        my $closed_count = 1;
+        for my $j(0..nelem($cfl)-1){
+            my $flxlat = $clat($cfln($j):$cfln($j+1)-1);
+            my $flxlon = $clon($cfln($j):$cfln($j+1)-1);
+            my $flxrad = $crad($cfln($j):$cfln($j+1)-1);
+            my $closed = pdl($flxlon, $flxlat, $flxrad)->transpose;
+            ## CL - DOUBLE CHECK THE FLUX DIRECTION HERE
+            if ($cflx->($cfln($j))<0){
+                $closed = $closed->(:,-1:0:-1);
+            }
+            my $line = ($closed)->apply($xform);
+            push(@flines,$line->copy);
+            $closed_count++;
+        }
+        my $closed_nflux = $closed_count * 2 ;
+        print("\tDone! $closed_count closed fluxons generated (from $closed_nflux footpoints)\n");
+
+        my $total_fluxons = $open_count + $closed_count;
+        print "\n\tTotal fluxons created: $total_fluxons\n";
+
+    ## Generate the world  ############################################
+    print "\n  >>Generating the World...\n \n";
+
+        my $fbg = make_world_sphere(@flines, {rmax=>21.5});
+        $world = str2world($fbg);
+
+        ## Save the initial world state  ###############################
+        print "\n  >>Saving the World...";
+
+        my $flen = $oflnum->max() + $cflnum->max() + 4; #@flines+0; 
+        my $world_out_path = $world_out_dir .'cr'.$CR.'_f'.$flen.'.flux';
+        # my $world_out_path = $world_out_dir .'cr'.$CR.'.flux';
+        if (! -d $world_out_dir ) {mkpath($world_out_dir) or die "Failed to create directory: $world_out_dir $!\n";}
+        $world->write_world($world_out_path);
+
+        ## Display ####################################################
+        print "\n \n  >>Plotting the World...";
+
+        # Set Ranges of Plots
+
+        my $range_i = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
+        my $range_f = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
+        my $range_f2 = [-$lim2, $lim2, -$lim2, $lim2, -$lim2, $lim2];
+
+
+        # number of open fluxons, number of fluxons, number of fluxons requested
+        my $top_dir = $datdir."batches/$batch/imgs/initial/";
+        if (! -d $top_dir ) {mkpath($top_dir) or die "Failed to create directory: $top_dir $!\n";}
+
+        my $ext = 'png';
+        my $renderer = $ext.'cairo';
+        my $world_png_path = $world_out_dir .'cr'.$CR.'_tracePFSS_op'.$flen.'_f'.$N_actual.'_w'.$n_fluxons_wanted.'.'.$ext;
+        my $world_png_path_top = $top_dir.'cr'.$CR.'_tracePFSS_op'.$flen.'_f'.$N_actual.'_w'.$n_fluxons_wanted.'.'.$ext;
+        my $world_png_path2 = $world_out_dir .'cr'.$CR.'_tracePFSS_wide_op'.$flen.'_f'.$N_actual.'_w'.$n_fluxons_wanted.'.'.$ext;
+
+        # print $world_png_path_top;
+        my $window00 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path);
+        $world->render( {'window'=>$window00, range=>$range_i});
+        my $window000 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path_top);
+        $world->render( {'window'=>$window000, range=>$range_i});
+        my $window01 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path2);
+        $world->render( {'window'=>$window01, range=>$range_f2});
+        print "\n";
+        # $world -> render({'dev'=>'qt'});
+
+    } else {
+        print "\n \tSkipped! Loading .flux from file.\n";
+        print "\n\t\t\t```````````````````````````````\n \n\n\n";
+    }
+}

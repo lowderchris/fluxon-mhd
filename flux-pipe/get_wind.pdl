@@ -1,0 +1,66 @@
+
+sub get_wind{
+
+    my ($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute) = @_;
+
+    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+    print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
+    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+
+    my $do_wind_calc = 0;
+
+    my $wind_out_dir = $datdir."/batches/$batch_name/cr".$CR.'/wind';
+    my $out_b = "$wind_out_dir/radial_bmag.dat";
+    my $out_fr = "$wind_out_dir/radial_fr.dat";
+    my $out_wind = "$wind_out_dir/radial_wind_f$N_actual.dat";
+
+    if (! -d $wind_out_dir ) {
+        $do_wind_calc = 1;
+        mkpath($wind_out_dir) or die "Failed to create directory: $wind_out_dir $!\n";
+        }
+
+    if (! -f $out_b or ! -f $out_fr or ! -f $out_wind) {
+        $do_wind_calc = 1;
+        }
+
+    if ($do_wind_calc){
+        print "\tUpdating neighbors...\n";
+        $this_world_relaxed->update_force(0);
+        my @fluxons = $this_world_relaxed->fluxons;
+        print "\t\tDone!\n";
+
+        print "\nRadial B Calculation...";
+        map_fluxon_b($out_b, \@fluxons);
+        print "Done!\n";
+        system("python3 plotting/plot_bmag.py --cr $CR --batch $batch_name --dat_dir $datdir") == 0 or (die "Python script returned error $?", exit);
+        print "...done with radial B!";
+
+        print "\n\n\nRadial fr Calculation...";
+        map_fluxon_fr($out_fr, \@fluxons);
+        system("python3 plotting/plot_fr.py --cr $CR --batch $batch_name --dat_dir $datdir") == 0 or (die "Python script returned error $?", exit);
+        print "...done with radial fr!";
+
+        no warnings 'misc';
+
+        print "\n\n\nRadial wind Calculation...\n";
+        my $do_wind_map = 0 || $recompute;
+        # $do_wind_map=1; #OVERRIDE WIND MAP
+
+        if (! -e $out_wind ) {$do_wind_map=1;}
+        if ($do_wind_map){
+            map_fluxon_flow_parallel_master($out_wind, \@fluxons);
+        } else {
+            print "Wind Calculation Skipped!\n \n"
+        }
+        use warnings 'misc'
+    } else {
+        print "\t\tWind Calculation Skipped!\n \n"
+    }
+
+    print "Plotting Solar Wind Charts for CR$CR...\n";
+    # system("python3 plot_wind.py --cr $CR --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
+    # system("python3 plot_wind_map.py --cr $CR --interp 1 --nact $N_actual --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
+    system("python3 plotting/plot_wind_map_paper_brief.py --cr $CR --nact $N_actual --batch $batch_name --dat_dir $datdir") == 0 or (die "Python script returned error $?", exit);
+    system("python3 plotting/plot_wind_map_paper_single.py --cr $CR --nact $N_actual --batch $batch_name --dat_dir $datdir") == 0 or (die "Python script returned error $?", exit);
+    print "...done with wind plotting!";
+}
