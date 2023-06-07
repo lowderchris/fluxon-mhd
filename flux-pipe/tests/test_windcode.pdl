@@ -12,9 +12,9 @@ use Time::HiRes qw(clock_gettime);
 use PDL::IO::Misc;
 use File::Basename qw(fileparse);
 
-$datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/";
+$datdir = "/Users/cgilbert/vscode/fluxon-data/";
 push(@PDLLIB,"+".$datdir);
-push(@PDLLIB,"+/Users/cgilbert/vscode/Fluxon-Scripts-Gilly");
+push(@PDLLIB,"+/Users/cgilbert/vscode/fluxon-data");
 push(@PDLLIB,"+/Users/cgilbert/vscode/fluxon-mhd/pdl/PDL");
 push(@PDLLIB,"+/Users/cgilbert/vscode/fluxon-mhd/pdl/flux-pipe");
 push(@INC, "+/Users/cgilbert/opt");
@@ -25,7 +25,7 @@ system("cd /Users/cgilbert/vscode/fluxon-mhd/pdl/flux-pipe");
 
 $cr = 2160;
 $batch_name = "fluxon_paperfigs";
-$datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/";
+$datdir = "/Users/cgilbert/vscode/fluxon-data/";
 
 # Pathing
 $world_out_dir = $datdir."$batch_name/cr".$cr.'/rlx/';

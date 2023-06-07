@@ -2,7 +2,7 @@ from magnetoget import download_magnetogram, reduce_fits_image
 
 cr = 2219
 
-data_dir = f"/Users/cgilbert/vscode/Fluxon-Scripts-Gilly"
+data_dir = f"/Users/cgilbert/vscode/fluxon-data"
 
 params_path = data_dir + "magnetic_target.params"
 
