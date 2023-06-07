@@ -1,9 +1,11 @@
+use PipeHelpers;
+
 
 sub get_hilbert_footpoints{
     my ($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $process_magnetogram) = @_;
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-    print "Tracing Magnetogram to get $n_fluxons_wanted Footpoints\n";
+    print "(pdl) Tracing Magnetogram to get $n_fluxons_wanted Footpoints\n";
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 
     my $no_floc = 0;
@@ -85,10 +87,12 @@ sub get_hilbert_footpoints{
         $floc = $floc->transpose;
         $N_actual = int(($floc->nelem));
         print "\n\tSkipped! Found a $N_actual footpoint file on Disk:";
-        print "\n\t\t$flocfile\n";
+        my $flocfile_short = shorten_path($flocfile, 5);
+
+        print "\n\t\t$flocfile_short\n";
     }
     print "\n";
-    print "\n````````````````````````````````\n \n";
+    print "\n\t\t\t```````````````````````````````\n \n\n \n";
     return $floc, $N_actual;
 }
 1;

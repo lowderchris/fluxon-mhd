@@ -17,7 +17,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
 import sunpy.map
-from magnetoget import load_fits_magnetogram, load_magnetogram_params
+from magnetoget import load_fits_magnetogram, load_magnetogram_params, shorten_path
 
 
 
@@ -44,7 +44,7 @@ def load_and_condition_fits_file(fname, datdir):
     except FileNotFoundError as e:
         fits_path = os.path.join(datdir, fname)
         hdulist = read_fits_data(fits_path)
-    print("\t\t", fits_path)
+    print("\t\t", shorten_path(fits_path, 2))
 
 
     brdat = hdulist[0].data
@@ -79,7 +79,7 @@ def load_pfss(pickle_path):
     try:
         with open(pickle_path, 'rb') as inp:
             output = pickle.load(inp)
-            print(f"Success! Loaded: \n\t\t {pickle_path}")
+            print(f"Success! Loaded: \n\t\t {shorten_path(pickle_path, 2)}")
         return output
     except FileNotFoundError as e:
         print("File not found.")
@@ -270,7 +270,7 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce, force_plot=Fal
     else:
         print("Skipped! Files already exist:", end="\n\t\t")
     for testpath in plot_paths:
-        print(testpath, end="\n\t\t")
+        print(shorten_path(testpath, 5), end="\n\t\t")
     return f_lat, f_lon, f_sgn
 
 from tqdm import tqdm

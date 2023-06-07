@@ -15,7 +15,7 @@ Generates a fluxon mapping from input GONG-sourced pfss coronal field solution
 import os
 import sys
 import numpy as np
-# from magnetoget import load_magnetogram_params
+from magnetoget import load_magnetogram_params, shorten_path
 
 
 import argparse
@@ -40,7 +40,7 @@ nwant = args.nwant
 
 
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-print("Running PFSS Code to Trace Footpoints into the Corona")
+print("(py) Running PFSS Code to Trace Footpoints into the Corona")
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", flush=True)
 
 
@@ -101,8 +101,8 @@ else:
     flnum_open = len(np.unique(fl_open[:, 0]))+1
     flnum_closed = 2*len(np.unique(fl_closed[:, 0]))
     print("Skipped! Floc dat files already exist:")
-    print(f"\t\t{open_path}")
-    print(f"\t\t{closed_path}")
+    print(f"\t\t{shorten_path(open_path, 5)}")
+    print(f"\t\t{shorten_path(closed_path, 5)}")
     print(f"\t\tFootpoints:\t Open: {flnum_open}, Closed: {flnum_closed}, Total: {flnum_open+flnum_closed}")
     # print(f"\tFluxons:\t Open: {flnum_open}, Closed: {flnum_closed//2}, Total: {flnum_open+flnum_closed//2}")
 
@@ -124,7 +124,7 @@ with open(timefile, 'a+') as f:
     # f.write(")
 
 
-print("\n````````````````````````````````")
+print("\n\t\t\t```````````````````````````````\n \n")
 
 
 

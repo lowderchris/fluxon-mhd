@@ -18,6 +18,20 @@ def make_mag_dir(datdir):
         os.makedirs(mag_dir)    
     return mag_dir
 
+
+def shorten_path_old(start_path, levels=1):
+    start_parts = start_path.split('/')
+    out_parts = start_parts[-levels:] if levels > 0 else start_parts
+    out_string = '/'.join(out_parts) if out_parts else start_path
+    return "DATAPATH/" + out_string
+
+def shorten_path(string, __=None):
+    datapath = os.getenv("DATAPATH")
+    if datapath:
+        return string.replace(datapath, "$DATAPATH")
+    else:
+        return string
+
 def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_download=False, reduce = False):
     """
     Function to grab HMI data.
@@ -53,7 +67,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
     mag_dir = make_mag_dir(datdir)
 
     print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(f"Getting Magnetogram for CR{CR}, from {date}...")
+    print(f"(py) Getting Magnetogram for CR{CR}, from {date}...")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     import pathlib
@@ -63,7 +77,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
     found_file = False
     for file in file_list:
         if str(CR)+"_r1_" in str(file):
-            print(f"\tFound '{os.path.basename(file)}' in '{mag_dir}'")
+            print(f"\tFound '{os.path.basename(file)}' in '{shorten_path(mag_dir)}'")
             found_file = True
             break
 
@@ -227,7 +241,7 @@ def read_fits_data(fname):
     hdulist.verify('silentfix+warn')
     return hdulist
 
-def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/", batch="fluxon", bo=2, bn=2, ret_all=False):
+def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/fluxon-data/", batch="fluxon", bo=2, bn=2, ret_all=False):
 
     def read_fits_data(fname):
         """Reads FITS data and fixes/ignores any non-standard FITS keywords."""
@@ -265,8 +279,10 @@ def reduce_mag_file(mag_file, reduction=3, force=False):
         # print("Success!\n")
     else:
         print("Skipped! Reduced file already exists:")
-        print("\t\t", small_file)
-        print("\n````````````````````````````````\n")
+        # print("\t\t", shorten_path(str(small_file), 2))
+        ### WORKING HERE 
+        print(f"\tFound '{os.path.basename(small_file)}' in '{shorten_path(os.path.dirname(small_file))}'")
+        print("\n\t\t\t```````````````````````````````\n \n\n")
 
     return small_file
 
@@ -387,7 +403,7 @@ def write_params_file(datdir, cr, file_path, reduction):
 
 
 # if __name__ == "__main__":
-#     get_magnetogram_file(force_download=False, datdir="/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/")
+#     get_magnetogram_file(force_download=False, datdir="/Users/cgilbert/vscode/fluxon-data/")
 
 
 
