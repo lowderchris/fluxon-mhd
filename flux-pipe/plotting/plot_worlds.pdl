@@ -1,7 +1,7 @@
 use warnings;
 use PDL::AutoLoader;
 use PDL;
-use PipeHelpers;
+use pipe_helper;
 
 
 sub plot_worlds{
@@ -105,7 +105,7 @@ sub plot_worlds{
     my $short_name = shorten_path($new_filename_initial);
 
     if (not $do_png and not $do_interactive) {
-        print "\tSkipped! Found $short_name\n";
+        print "\tSkipped Plotting! Found $short_name\n";
         print "\n\t\t\t```````````````````````````````\n \n\n\n";
 
     } else {

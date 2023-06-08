@@ -1,4 +1,4 @@
-use PipeHelpers;
+use pipe_helper;
 
 
 sub get_hilbert_footpoints{
@@ -16,7 +16,7 @@ sub get_hilbert_footpoints{
         $no_floc = 1;
         if (! -d $flocdir){ mkpath($flocdir) or die "Failed to create directory: $flocdir !\n"; }
         }
-
+    print "\n\tSearching for file...";
     if ($process_magnetogram || $no_floc){
             ## Read in the Magnetogram #################################
             # print "\n";
@@ -86,10 +86,10 @@ sub get_hilbert_footpoints{
         $floc = rcols $flocfile;
         $floc = $floc->transpose;
         $N_actual = int(($floc->nelem));
-        print "\n\tSkipped! Found a $N_actual footpoint file on Disk:";
+        print "\n\t\tFound a $N_actual footpoint file on Disk:";
         my $flocfile_short = shorten_path($flocfile, 5);
 
-        print "\n\t\t$flocfile_short\n";
+        print "\n\t\t\t$flocfile_short\n";
     }
     print "\n";
     print "\n\t\t\t```````````````````````````````\n \n\n \n";

@@ -54,7 +54,7 @@ sub get_wind{
         }
         use warnings 'misc'
     } else {
-        print "\t\tWind Calculation Skipped!\n \n"
+        print "\n\tWind Calculation Skipped!\n \n"
     }
 
     print "Plotting Solar Wind Charts for CR$CR...\n";

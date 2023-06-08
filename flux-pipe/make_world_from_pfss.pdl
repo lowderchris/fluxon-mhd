@@ -12,7 +12,7 @@ use PDL::IO::Misc;
 use Time::HiRes qw(clock_gettime);
 use File::Basename qw(fileparse);
 use File::Basename;
-use PipeHelpers;
+use pipe_helper;
 
 
 sub make_world_from_pfss{

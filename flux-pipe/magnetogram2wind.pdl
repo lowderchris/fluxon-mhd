@@ -26,6 +26,15 @@ use File::Path;
 use PDL::IO::Misc;
 use Time::HiRes qw(clock_gettime sleep);
 use File::Basename qw(fileparse);
+# Makes sure the current directory is always in the path
+use FindBin qw($RealBin);
+use lib $RealBin;
+use pipe_helper;
+
+
+#######################################################################################################
+## Job Settings #######################################################################################
+#######################################################################################################
 
 # use PDL::Graphics::TriD;
 $do_download =          0;
@@ -59,13 +68,6 @@ if ($batch) {
 $lim = 2.5;
 $lim2 = 7.5;
 
-
-## TODO make the wind calculation less verbose
-
-#######################################################################################################
-## Job Settings #######################################################################################
-#######################################################################################################
-
 if ($recompute){
 # ## Download the magnetogram from JSOC
     # $do_download = 1; #1; # $ARGV[2] || 1;
@@ -75,6 +77,11 @@ if ($recompute){
     $do_relax = 1; ## Top Level Relaxation 
     $do_png = 1; ## Plotting the worlds
 }
+
+## TODO make the wind calculation less verbose
+
+
+
 
 
 #######################################################################################################
@@ -90,41 +97,26 @@ print "\n\n";
 
 ## Set paths
 $basedir =  "/Users/cgilbert/vscode";
-$codedir =  "$basedir/fluxon-mhd/flux-pipe";
-$pdldir =   "$basedir/fluxon-mhd/pdl/PDL";
-$datdir =   "$basedir/fluxon-data";
-$magdir =   "$datdir/magnetograms";
-$batchdir = "$datdir/batches/$batch_name";
-$timefile = "$batchdir/pfss_time.txt";
+$pythondir = "/opt/homebrew/anaconda3/envs/fluxArm/bin/python3";
+$print_dirs = 1;
 
-push(@PDLLIB,"+$datdir");
-push(@PDLLIB,"+$codedir");
-push(@PDLLIB,"+$pdldir");
-push(@INC, "/Users/cgilbert/opt");
-push(@INC, "/Users/cgilbert/.cpan/build");
-push(@INC,"$codedir");
+($pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile) = calculate_directories($basedir, $batch_name, $pythondir, $print_dirs);
 
-system("cd $codedir");
+# push(@PDLLIB,"+$datdir");
+push(@PDLLIB,"$pdldir");
+push(@PDLLIB,"$pipedir");
+push(@PDLLIB,"$pipedir/plotting");
+push(@INC,   "$pipedir");
+# push(@INC,   "/Users/cgilbert/opt");
+# push(@INC,   "/Users/cgilbert/.cpan/build");
 
-$ENV{'PYTHONPATH'} = '/opt/homebrew/anaconda3/envs/fluxArm/bin/python3';
-$ENV{'FLUXPATH'} = $codedir;
-$ENV{'DATAPATH'} = $datdir;
 
-my $pythonpath = $ENV{'PYTHONPATH'};
-if (defined $pythonpath) {
-    print "\$PYTHONPATH: \t$pythonpath\n";
-} else {
-    print "PYTHONPATH is not set\n";
-    exit();
-}
+# system("cd $pipedir");
 
-my $datpath = $ENV{'DATAPATH'};
-if (defined $datpath) {
-    print "\$DATAPATH: \t$datpath\n";
-} else {
-    print "DATAPATH is not set\n";
-    exit();
-}
+
+
+
+
 
 print"\n\n";
 
@@ -133,15 +125,15 @@ if ($recompute) {
 } else {
     print "\t>>>>>>>>>>>>>>>>>>>>> Recompute = FALSE <<<<<<<<<<<<<<<<<<<<<<";
 }
+
 use Time::Piece;
 my $time = localtime;
 my $ftime = $time->strftime('%Y-%m-%d %H:%M:%S');
-# use PipeHelpers;
 
 
 print "\n\tStarting FLUXPipe at $ftime \n\tBatch: $batch_name, CR: $CR, Reduction: $reduction, Fluxons: $n_fluxons_wanted";
 print "\n\t>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n";
-print "\n|\n|\n|\n|\n|\n|\n|\n|\n|\n|\n";
+print "\n|\n|\n|\n";
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -150,12 +142,11 @@ sleep(1);
 $very_beginning = clock_gettime();
 
 
-
 #######################################################################################################
 ## Download the Magnetogram ###########################################################################
 #######################################################################################################
 
-$command = "$pythonpath get_magnetograms.py --cr $CR --reduce $reduction --datdir $datdir --do_download $do_download";
+$command = "$pythondir get_magnetograms.py --cr $CR --reduce $reduction --datdir $datdir --do_download $do_download";
 system($command) == 0 or (die "Python script returned error $?", exit);
 
 
@@ -180,7 +171,7 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wan
 # into the corona to define an initial placeholder geometry. 
 # This lets us extend this into 3d space with real linking topology.
 
-$command = "$pythonpath get_pfss.py --force $do_pfss --batch $batch_name --reduce $reduction --datdir $datdir --cr $CR --magfile $magfile --nwant $n_fluxons_wanted";
+$command = "$pythondir get_pfss.py --force $do_pfss --batch $batch_name --reduce $reduction --datdir $datdir --cr $CR --magfile $magfile --nwant $n_fluxons_wanted";
 system($command) == 0 or (die "Python script returned error $?", exit);
 
 
@@ -196,7 +187,7 @@ $open_file   ="$floc_path/floc_open_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
 $closed_file ="$floc_path/floc_closed_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
 
 # Plot the field map
-system("$pythonpath plotting/plot_fieldmap.py --cr $CR --open $open_file --closed $closed_file --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
+system("$pythondir plotting/plot_fieldmap.py --cr $CR --open $open_file --closed $closed_file --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
 
 # Make the world
 make_world_from_pfss($world_out_dir, $floc_path, $open_file, $closed_file, $makeworld, $CR, $datdir, $batch, $N_actual, $n_fluxons_wanted, $lim, $lim2);
@@ -213,14 +204,13 @@ $n_outliers = 0; # THIS IS FUDGE CODE!
 $n_remaining = $N_actual - $n_outliers;
 $world_out_dir = $datdir."/batches/$batch_name/cr".$CR.'/world/';
 $full_world_path = $world_out_dir .'cr'.$CR."_f$n_remaining.flux";
-our ($this_world_orig, $this_world_relaxed) = relax_pfss_world($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold, $max_cycles, $timefile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR, $n_outliers);
+our ($this_world_orig, $this_world_relaxed) = relax_pfss_world($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold, $max_cycles, $logfile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR, $n_outliers);
 
 
 
 #######################################################################################################
 ## Plot the world states  #############################################################################
 #######################################################################################################
-
 plot_worlds($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $lim, $lim2);
 
 
@@ -238,7 +228,7 @@ get_wind($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute);
 $after   = clock_gettime();
 $elapsed = $after - $very_beginning;
 $round_elapsed = rint($elapsed*10) / 10;
-open($fhh, ">>", $timefile) or die "Cannot open file: $!";
+open($fhh, ">>", $logfile) or die "Cannot open file: $!";
     printf $fhh "ttime: $round_elapsed";
 close $fhh;
 print "\n \n**Program Complete for CR$CR in $round_elapsed Seconds, press ENTER to exit...\n\n\n";
