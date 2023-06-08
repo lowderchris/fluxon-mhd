@@ -14,12 +14,13 @@ default_cr = 2163
 # create the argument parser
 parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
 parser.add_argument('--cr', type=int, default=default_cr, help='Carrington Rotation')
-parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/Fluxon-Scripts-Gilly', help='data directory')
+parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
 parser.add_argument('--batch', type=str, default="fluxon", help='select the batch name')
 parser.add_argument('--show', type=int, default=0)
 args = parser.parse_args()
 batch = args.batch
-filename = f'{args.dat_dir}/{batch}/cr{args.cr}/wind/radial_fr.dat'
+filename = f'{args.dat_dir}/batches/{batch}/cr{args.cr}/wind/radial_fr.dat'
+# print(filename)
 
 # Load the dat file
 arr = np.loadtxt(filename).T

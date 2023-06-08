@@ -89,7 +89,7 @@ sub map_fluxon_flow_parallel_master {
                 my $time_each = $elapsed / $highest_fid_done;
                 my $time_remaining = $remaining * $time_each;
                 my $round_remain = rint($time_remaining*10) / 10;
-                print "\r", '  Calculated fluxons: ', $highest_fid_done, ' of ', $n_open, ", ", $round_elapsed, "(s) elapsed, ", $round_remain, "(s) remaining.";
+                print "\r", "\t\t\tCalculated fluxons: ", $highest_fid_done, ' of ', $n_open, ", ", $round_elapsed, "(s) elapsed, ", $round_remain, "(s) remaining.";
             }
         }
     });
@@ -107,7 +107,7 @@ sub map_fluxon_flow_parallel_master {
 
     my $n_tot = scalar(@fluxons);
     my $n_act = 2*($n_tot - $n_open) + $n_open;
-    print "\nRunning with $max_processes Cores on $n_open open Fluxons out of $n_tot total Fluxons from $n_act footpoints!\n \nBeginning Calculation...\n";
+    print "\n\t\tRunning with $max_processes Cores on $n_open open Fluxons out of $n_tot total Fluxons from $n_act footpoints!\n\n\t\tBeginning Calculation...\n";
 
 
 

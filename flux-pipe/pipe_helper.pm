@@ -3,6 +3,9 @@
 use strict;
 use warnings;
 use PDL::AutoLoader;
+use PDL;
+use Time::Piece;
+
 
 sub shorten_path_old{
     my ($start_path, $levels) = @_;
@@ -77,7 +80,7 @@ sub set_and_check_env_variable {
 }
 
 sub calculate_directories {
-(my $basedir, my $batch_name, my $pythondir, my $print) = @_;
+(my $basedir, my $batch_name, my $print) = @_;
 
     # Calculate Directory Structure
     my $fluxdir =  "$basedir/fluxon-mhd";
@@ -89,14 +92,45 @@ sub calculate_directories {
         my $batchdir = "$datdir/batches/$batch_name";
             my $logfile = "$batchdir/pipe_log.txt";
     
-    set_and_check_env_variable('PYTHONPATH', $pythondir, $print);
     set_and_check_env_variable('FLUXPATH', $fluxdir, 0);
     set_and_check_env_variable('PIPEPATH', $pipedir, $print);
     set_and_check_env_variable('BATCHPATH', $batchdir, $print);
-    print "\n";
+    # print "\n";
     set_and_check_env_variable('DATAPATH', $datdir, $print);
-    
-    return ($fluxdir, $pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile);
+    return ($pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile);
 }
+sub set_python_path {
+    my ($pythonpath, $print) = @_;
+    set_and_check_env_variable('PYTHONPATH', $pythonpath, $print);
+    return $pythonpath;
+}
+
+sub print_banner {
+    my ($batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string) = @_;
+    print "|\n|\n|\n|\n|\n|\n|\n|\n|\n|";
+    print "\n\n";
+    print "--------------------------------------------------------------------------------------------------\n";
+    print "FLUXPipe: Indicate a Carrington Rotation and this script will run the entire Flux Pipeline for it.\n";
+    print "--------------------------------------------------------------------------------------------------\n";
+    print "\n\n";
+
+    # check_env_variable('PYTHONPATH', 1);
+    check_env_variable('DATAPATH', 1);
+    print "\nBatch: $batch_name, CR: $CR, Reduction: $reduction, Fluxons: $n_fluxons_wanted";
+
+    my $time = localtime;
+    my $ftime = $time->strftime('%m-%d-%Y %H:%M:%S');
+
+    print"\n\n";
+    print "\t>>>>>>>>>>>>>>>>>>>>> Recompute = $recompute_string <<<<<<<<<<<<<<<<<<<<<<";
+    print "\n\tStarting FLUXPipe at $ftime ";
+    print "\n\t>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n";
+    print "\n\n";
+    print "--------------------------------------------------------------------------------------------------\n";
+
+}
+
+
+# system("cd $pipedir");
 
 1;

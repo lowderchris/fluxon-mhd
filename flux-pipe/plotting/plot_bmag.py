@@ -11,22 +11,38 @@ mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
 from astropy.io import fits
-from magnetoget import load_fits_magnetogram
 
-print("Plotting Bmag...", end="")
+from plot_helper import add_pipedir
+add_pipedir()
+
+# from magnetoget import load_fits_magnetogram
+# import os, sys
+# # Get the parent directory path
+# if "plotting" in os.getcwd():
+#     pipdir = os.path.abspath(os.path.join(os.getcwd(), ".."))
+# elif "pipe" in os.getcwd():
+#     pipdir = os.getcwd()
+# else:
+#     pipdir = os.path.abspath(os.path.join(os.getcwd(), "flux-pipe"))
+
+# # Add the parent directory to the module search path
+# sys.path.append(pipdir)
+# # print(pipdir)
+
+print("\t\tPlotting Bmag...", end="")
 # create the argument parser
 parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
 parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
-parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/Fluxon-Scripts-Gilly', help='data directory')
+parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
 parser.add_argument('--show', type=int, default=0)
 parser.add_argument('--batch', type=str, default='fluxon')
 args = parser.parse_args()
 batch = args.batch
-from magnetoget import load_magnetogram_params
+from magnetoget import load_magnetogram_params, load_fits_magnetogram
 (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
 CR = args.cr or cr or 2183
 
-filename = f'{args.dat_dir}/{batch}/cr{CR}/wind/radial_bmag.dat'
+filename = f'{args.dat_dir}/batches/{batch}/cr{CR}/wind/radial_bmag.dat'
 
 # Load the dat file
 arr = np.loadtxt(filename).T

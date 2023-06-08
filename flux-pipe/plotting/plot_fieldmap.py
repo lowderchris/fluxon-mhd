@@ -1,6 +1,6 @@
 
 
-# datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/"
+# datdir = "/Users/cgilbert/vscode/fluxon-data/"
 
 
 
@@ -23,6 +23,7 @@ from astropy.io import fits
 import os.path as path
 import os
 import sys
+# from .. import magnetoget
 
 # Get the parent directory path
 if "plotting" in os.getcwd():
@@ -38,6 +39,7 @@ sys.path.append(pipdir)
 
 from pfss_funcs import pixel_to_latlon
 from magnetoget import load_fits_magnetogram, load_magnetogram_params
+from magnetoget import shorten_path
 
 # print("\n \n \n Plotting FIELD MAP...", end="")
 # create the argument parser
@@ -54,7 +56,7 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
     fig, ax0 = get_ax(ax)
     if do_print:
         print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print("Plotting Magnetic Field Maps")
+        print("(py) Plotting Magnetic Field Maps")
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
 
@@ -171,9 +173,11 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
     else:
         if do_print: 
             print(f"Skipped! Files already exist:")
-            print(f"\t{fluxon_map_output_path}")
-            print(f"\t{fluxon_map_output_path_top}")
+            print(f"\t    {shorten_path(fluxon_map_output_path)}")
+            print(f"\t    {shorten_path(fluxon_map_output_path_top)}")
     if do_print: print(f"\n\tn_open: {n_open}, n_closed: {n_closed}, n_total: {n_flux}, n_all: {fnum}, n_outliers: {n_outliers}\n")
+    
+    print("\t\t\t```````````````````````````````\n \n\n")
     return n_open, n_closed, n_flux, fnum, n_outliers
 
 if __name__ == "__main__":
@@ -188,7 +192,8 @@ if __name__ == "__main__":
 
     (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
     CR = args.cr or cr
-    magnet_plot(CR, args.dat_dir, batch, args.open, args.closed, do_print=True, reduce=reduce)
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, args.dat_dir, batch, args.open, args.closed, do_print=True, reduce=reduce)
+    
     # exit()
 
 # print("DONE!")
