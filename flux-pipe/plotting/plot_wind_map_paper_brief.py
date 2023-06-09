@@ -208,6 +208,7 @@ if __name__ == "__main__":
     parser.add_argument('--interp', type=str, default="linear")
     parser.add_argument('--nact', type=int, default=0)
     parser.add_argument('--nwant', type=int, default=0)
+    parser.add_argument('--file', type=str, default=None, help='select the file name')
     parser.add_argument('--batch', type=str, default="fluxon_paperfigs_5", help='select the batch name')
     args = parser.parse_args()
     batch = args.batch
@@ -215,9 +216,9 @@ if __name__ == "__main__":
     dat_dir = args.dat_dir
     # batch = "fluxon_HQ_2000_2"
 
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-    print(f"(py) Plotting Solar Wind Maps for CR{args.cr}\n")
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    # print(f"(py) Plotting Solar Wind Maps for CR{args.cr}\n")
+    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     # print(f"INTERP: {interp}")
     # Load the magnetogram parameters
@@ -226,7 +227,7 @@ if __name__ == "__main__":
         
 
     # Load the wind file
-    dat_file = f'{dat_dir}/batches/{batch}/cr{CR}/wind/radial_wind_f{args.nwant}.dat'
+    dat_file = args.file or f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{args.nwant}_radial_wind.dat'
     # print("loading file: ", dat_file)
     arr = np.loadtxt(dat_file).T
     try:
@@ -247,7 +248,7 @@ if __name__ == "__main__":
 
 
 
-    print(f"\n\tPlotting CR{CR} Briefplot...", end="\n" if __name__=="__main__" else "")
+    print(f"\n\tPlotting Windmap...", end="\n" if __name__=="__main__" else "")
 
     # Get the Data
     vel0_clean, ph0_clean, th0_clean, v0b, ph0b, th0b = remove_outliers(vel0, ph0, th0, 3, 2, 1)
@@ -274,7 +275,7 @@ if __name__ == "__main__":
 
     ## SAVING
     # Set the output file names
-    filename = f"cr{CR}_f{args.nwant}_ou{n_open}_radial_wind_map_brief.png"
+    filename = f"cr{CR}_f{args.nwant}_ou{n_open}_radial_wind.png"
     main_file =  f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 

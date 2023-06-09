@@ -1,6 +1,6 @@
 import argparse
 import os
-from py_pipe_helper import get_magnetogram_file, reduce_fits_image, find_highest_numbered_file, write_magnetogram_params, reduce_mag_file, make_mag_dir
+from py_pipe_helper import get_magnetogram_file, reduce_fits_image, find_file_with_string, write_magnetogram_params, reduce_mag_file, make_mag_dir
 magneto_file = None
 
 # create the argument parser

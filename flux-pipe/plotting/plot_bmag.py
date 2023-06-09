@@ -28,20 +28,21 @@ import py_plot_helper
 # sys.path.append(pipdir)
 # # print(pipdir)
 
-print("\t\tPlotting Bmag...", end="")
+print("\n\tPlotting Bmag...", end="")
 # create the argument parser
 parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
 parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
 parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
 parser.add_argument('--show', type=int, default=0)
 parser.add_argument('--batch', type=str, default='fluxon')
+parser.add_argument('--file', type=str, default=None)
 args = parser.parse_args()
 batch = args.batch
 from py_pipe_helper import load_magnetogram_params, load_fits_magnetogram
 (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
 CR = args.cr or cr or 2183
 
-filename = f'{args.dat_dir}/batches/{batch}/cr{CR}/wind/radial_bmag.dat'
+filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{CR}/wind/radial_bmag.dat'
 
 # Load the dat file
 arr = np.loadtxt(filename).T
@@ -105,13 +106,13 @@ for ax in (ax0, ax1):
 
 fig.set_size_inches((8,8))
 plt.tight_layout()
-pngname = filename.replace(".dat", f"_{len(ph0)}_{len(ph1)}.png")
+pngname = filename.replace(".dat", f"_ou{len(ph1)}.png")
 # pngname = filename.replace(".dat", ".png")
 plt.savefig(pngname)
 if args.show:
     plt.show()
 plt.close(fig)
-print("Done!")
+print("Done!\n")
 
 
 

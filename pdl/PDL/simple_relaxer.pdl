@@ -167,7 +167,7 @@ sub simple_relaxer {
 		# $step % $disp_n 
 	if($w->{concurrency}) {
 	    if ($w->{rel_step} == 0){
-		printf("computing inital fast neighbor search...\n");
+		printf("\tComputing initial fast neighbor search...\n");
 		$w->update_neighbors(-1);
 	    }
 
@@ -217,9 +217,11 @@ sub simple_relaxer {
 	}
 
 if($auto) {
-	   my $dt0 = $dt unless(defined my $dt0);
+	# if (not defined my $dt0){
+	#    my $dt0 = $dt;}
+	#    my $dt0 = $dt unless(defined $dt0);
 	   my $ratio = $h->{f_av}/$h->{fs_av};
-	   my $dt = $dt0 * $ratio;
+	   my $dt = $dt * $ratio;
 	   print "\t\tratio=$ratio; new dt=$dt\n";
 	}
 

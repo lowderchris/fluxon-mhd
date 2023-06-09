@@ -136,9 +136,10 @@ sub make_world_from_pfss{
 
         my $ext = 'png';
         my $renderer = $ext.'cairo';
-        my $world_png_path = $world_out_dir .'cr'.$CR.'_tracePFSS_op'.$flen.'_a'.$N_actual.'_f'.$n_fluxons_wanted.'.'.$ext;
-        my $world_png_path_top = $top_dir.'cr'.$CR.'_tracePFSS_op'.$flen.'_a'.$N_actual.'_f'.$n_fluxons_wanted.'.'.$ext;
-        my $world_png_path2 = $world_out_dir .'cr'.$CR.'_tracePFSS_wide_op'.$flen.'_a'.$N_actual.'_f'.$n_fluxons_wanted.'.'.$ext;
+        # my $filename
+        my $world_png_path = $world_out_dir ."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss.$ext";
+        my $world_png_path2= $world_out_dir ."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss_wide.$ext";
+        my $world_png_path_top = $top_dir   ."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss.$ext";
 
         # print $world_png_path_top;
         my $window00 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path);

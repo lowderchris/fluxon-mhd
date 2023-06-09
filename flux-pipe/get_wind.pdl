@@ -2,7 +2,7 @@ use pdl_pipe_helper;
 
 sub get_wind{
 
-    my ($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_want) = @_;
+    my ($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_want, $pythondir) = @_;
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
@@ -11,10 +11,14 @@ sub get_wind{
     my $do_wind_calc = 0;
 
     my $wind_out_dir = $datdir."/batches/$batch_name/cr".$CR.'/wind';
-    my $out_b = "$wind_out_dir/radial_bmag.dat";
-    my $out_fr = "$wind_out_dir/radial_fr.dat";
-    my $out_wind = "$wind_out_dir/radial_wind_f$n_want.dat";
+    my $prefix = "$wind_out_dir/cr$CR\_f$n_want";
+    my $out_b = "$prefix\_radial_bmag.dat";
+    my $out_fr = "$prefix\_radial_fr.dat";
+    my $out_wind = "$prefix\_radial_wind.dat";
     my $short_out_wind = shorten_path($out_wind);
+
+        # filename = f"cr{CR}_f{args.nwant}_ou{n_open}_radial_wind.png"
+
 
     # Make the directory if necessary
     if (! -d $wind_out_dir ) {
@@ -39,13 +43,11 @@ sub get_wind{
         print "\n\tRadial Magnetic Field (B) Calculation...";
         map_fluxon_b($out_b, \@fluxons);
         print "Done!\n";
-        system("python3 plotting/plot_bmag.py --cr $CR --batch $batch_name --dat_dir $datdir") == 0 or (die "Python script returned error $?", exit);
         # print "\t\t...done with radial B!";
 
         # Calculate the radial expansion factor
         print "\n\tRadial Expansion Factor (Fr) Calculation...";
         map_fluxon_fr($out_fr, \@fluxons);
-        system("python3 plotting/plot_fr.py --cr $CR --batch $batch_name --dat_dir $datdir") == 0 or (die "Python script returned error $?", exit);
         print "Done!";
 
         # Calculate the radial wind speed
@@ -68,9 +70,7 @@ sub get_wind{
 
         print "\t\t\t```````````````````````````````\n\n\n\n";
 
-
-
-
+    return $out_b, $out_fr, $out_wind;
 }
 
 

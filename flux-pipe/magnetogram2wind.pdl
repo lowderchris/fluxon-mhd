@@ -66,7 +66,7 @@ if ($batch) {
 }
 
 $lim = 2.5;
-$lim2 = 7.5;
+$lim2 = 6.0;
 $recompute_string = 'FALSE';
 
 if ($recompute){
@@ -181,14 +181,21 @@ plot_worlds($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $fu
 #######################################################################################################
 ## Begin solar wind computation  ######################################################################
 #######################################################################################################
-get_wind($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_fluxons_wanted);
+($out_b, $out_fr, $out_wind) = get_wind($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_fluxons_wanted, $pythondir);
 
 
 
 #######################################################################################################
 ## Plot the Solar wind Solutions  #####################################################################
 #######################################################################################################
-system("python3 plotting/plot_wind_map_paper_brief.py --cr $CR --nact $N_actual --batch $batch_name --dat_dir $datdir --nwant $n_fluxons_wanted") == 0 or (die "Python script returned error $?", exit);
+
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+print("(py) Plotting Solar Wind Maps for CR$CR\n");
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+
+system("$pythondir plotting/plot_bmag.py --cr $CR --batch $batch_name --dat_dir $datdir --file $out_b") == 0 or (die "Python script returned error $?", exit);
+system("$pythondir plotting/plot_fr.py --cr $CR --batch $batch_name --dat_dir $datdir --file $out_fr") == 0 or (die "Python script returned error $?", exit);
+system("$pythondir plotting/plot_wind_map_paper_brief.py --cr $CR --nact $N_actual --batch $batch_name --dat_dir $datdir --nwant $n_fluxons_wanted --file $out_wind") == 0 or (die "Python script returned error $?", exit);
 
 
 
