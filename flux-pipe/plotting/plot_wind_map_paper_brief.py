@@ -13,12 +13,11 @@ import argparse
 import os.path as path
 from scipy.interpolate import griddata
 
-import plot_helper
-# from plot_helper import add_pipedir
+import py_plot_helper
+# from py_plot_helper import add_pipedir
 # add_pipedir()
 
-from magnetoget import load_fits_magnetogram
-from magnetoget import load_magnetogram_params
+from py_pipe_helper import load_fits_magnetogram, load_magnetogram_params, shorten_path
 from plot_fieldmap import magnet_plot
 
 
@@ -329,8 +328,8 @@ if __name__ == "__main__":
     outer_pdf = outer_file.replace(".png", ".pdf")
     # plt.show()
     # plt.savefig(main_file, dpi=200)
-    import plot_helper
-    from magnetoget import shorten_path
+    # import py_plot_helper
+    # from py_pipe_helper import shorten_path
     print("\t\t\tSaving ", shorten_path(main_pdf))
     plt.savefig(main_pdf, dpi=200)
 

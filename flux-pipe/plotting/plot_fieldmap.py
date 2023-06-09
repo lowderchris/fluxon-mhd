@@ -23,11 +23,10 @@ from astropy.io import fits
 import os.path as path
 import os
 import sys
-import plot_helper
+import py_plot_helper
 
 from pfss_funcs import pixel_to_latlon
-from magnetoget import load_fits_magnetogram, load_magnetogram_params
-from magnetoget import shorten_path
+from py_pipe_helper import load_fits_magnetogram, load_magnetogram_params, shorten_path
 
 # print("\n \n \n Plotting FIELD MAP...", end="")
 # create the argument parser
@@ -72,7 +71,7 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
     cflnum, cflx, clat, clon, crad = np.loadtxt(closed_file, unpack=True)
 
 
-    from magnetoget import load_fits_magnetogram, load_magnetogram_params
+    # from py_pipe_helper import load_fits_magnetogram, load_magnetogram_params
 
     magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
     f_lat, f_lon, f_sgn, fnum = pixel_to_latlon(magnet, header, fluxon_location)

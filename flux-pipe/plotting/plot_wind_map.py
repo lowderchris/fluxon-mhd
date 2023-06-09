@@ -10,9 +10,7 @@ import matplotlib as mpl
 mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
-from magnetoget import load_fits_magnetogram
-
-from magnetoget import load_magnetogram_params
+from py_pipe_helper import load_fits_magnetogram, load_magnetogram_params
 
 
 # create the argument parser

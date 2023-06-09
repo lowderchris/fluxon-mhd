@@ -10,10 +10,9 @@ import matplotlib as mpl
 mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
-import plot_helper
-from magnetoget import load_fits_magnetogram
+import py_plot_helper
+from py_pipe_helper import load_fits_magnetogram, load_magnetogram_params
 import os.path as path
-from magnetoget import load_magnetogram_params
 from plot_wind_map_paper_brief import remove_outliers
 
 

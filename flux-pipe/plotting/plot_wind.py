@@ -10,7 +10,7 @@ import matplotlib as mpl
 mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
-from magnetoget import load_fits_magnetogram
+from py_pipe_helper import load_fits_magnetogram
 
 default_cr = 2163
 

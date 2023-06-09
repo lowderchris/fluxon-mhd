@@ -46,7 +46,6 @@ sub find_file_with_string {
     return $highest_numbered_file ? "$directory$highest_numbered_file" : 0;
 }
 
-
 sub set_env_variable {
     my ($variable, $value) = @_;
     $ENV{$variable} = $value;
@@ -99,6 +98,7 @@ sub calculate_directories {
     set_and_check_env_variable('DATAPATH', $datdir, $print);
     return ($pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile);
 }
+
 sub set_python_path {
     my ($pythonpath, $print) = @_;
     set_and_check_env_variable('PYTHONPATH', $pythonpath, $print);
@@ -129,8 +129,5 @@ sub print_banner {
     print "--------------------------------------------------------------------------------------------------\n";
 
 }
-
-
-# system("cd $pipedir");
 
 1;

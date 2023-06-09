@@ -294,7 +294,7 @@ plt.close(fig)
 # # import matplotlib.pyplot as plt
 # # import argparse
 # # from astropy.io import fits
-# # from magnetoget import load_fits_magnetogram
+# # from py_pipe_helper import load_fits_magnetogram
 
 # # print("Plotting Bmag...", end="")
 # # # create the argument parser
@@ -303,7 +303,7 @@ plt.close(fig)
 # # parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
 # # parser.add_argument('--show', type=int, default=0)
 # # args = parser.parse_args()
-# # from magnetoget import load_magnetogram_params
+# # from py_pipe_helper import load_magnetogram_params
 # # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
 # # CR = args.cr or cr or 2183
 

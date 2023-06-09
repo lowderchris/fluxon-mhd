@@ -29,7 +29,7 @@ use File::Basename qw(fileparse);
 # Makes sure the current directory is always in the path
 use FindBin qw($RealBin);
 use lib $RealBin;
-use pipe_helper;
+use pdl_pipe_helper;
 
 
 #######################################################################################################

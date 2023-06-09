@@ -1,4 +1,4 @@
-from magnetoget import download_magnetogram, reduce_fits_image
+from py_pipe_helper import download_magnetogram, reduce_fits_image
 
 cr = 2219
 

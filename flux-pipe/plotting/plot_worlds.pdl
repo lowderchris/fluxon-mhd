@@ -1,7 +1,7 @@
 use warnings;
 use PDL::AutoLoader;
 use PDL;
-use pipe_helper;
+use pdl_pipe_helper;
 
 
 sub plot_worlds{

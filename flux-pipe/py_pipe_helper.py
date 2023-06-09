@@ -11,25 +11,18 @@ import astropy.units as u
 default_email = "chris.gilly@colorado.edu"
 from pathlib import PosixPath
 import subprocess
+from astropy.nddata import block_reduce
+from astropy.io import fits
+import numpy as np
+
+
+# Magnetogram things
 
 def make_mag_dir(datdir):
     mag_dir = os.path.join(datdir, "magnetograms")
     if not os.path.exists(mag_dir):
         os.makedirs(mag_dir)    
     return mag_dir
-
-def shorten_path_old(start_path, levels=1):
-    start_parts = start_path.split('/')
-    out_parts = start_parts[-levels:] if levels > 0 else start_parts
-    out_string = '/'.join(out_parts) if out_parts else start_path
-    return "DATAPATH/" + out_string
-
-def shorten_path(string, __=None):
-    datapath = os.getenv("DATAPATH")
-    if datapath:
-        return string.replace(datapath, "$DATAPATH")
-    else:
-        return string
 
 def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_download=False, reduce = False):
     """
@@ -108,11 +101,22 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
     small_path = reduce_mag_file(big_path, reduce, force=force_download)
     return big_path, small_path
 
+def reduce_mag_file(mag_file, reduction=3, force=False):
+    """Reduces the size of a magnetogram FITS file by a given factor."""
+    small_file = PosixPath(str(mag_file).replace("_r1_", f"_r{reduction}_"))
+    # reduce the FITS image
+    print(f"\tReducing image size by a factor of {reduction}...", end="")
+    if not os.path.exists(small_file) or force:
+        small_file = reduce_fits_image(mag_file, small_file, target_resolution=None, reduction_amount=reduction)
+        # print("Success!\n")
+    else:
+        print("Skipped! Reduced file already exists:")
+        # print("\t\t", shorten_path(str(small_file), 2))
+        ### WORKING HERE 
+        print(f"\t\tFound '{os.path.basename(small_file)}' in '{shorten_path(os.path.dirname(small_file))}'")
+        print("\n\t\t\t```````````````````````````````\n \n\n")
 
-from astropy.nddata import block_reduce
-from astropy.io import fits
-import numpy as np
-
+    return small_file
 
 def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_amount=None, func=np.nansum):
     """
@@ -175,14 +179,14 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_a
         print("\tSaving  ", small_file)
         fits.writeto(small_file, small_image, useheader, overwrite=True)
 
-        # plot_images(fits_path, data, small_image)
+        # plot_raw_magnetogram(fits_path, data, small_image)
 
         print("    Reduction Complete!\n")
     print("```````````````````````````\n")
 
     return small_file
 
-def plot_images(fits_path, data, small_image):
+def plot_raw_magnetogram(fits_path, data, small_image):
     import matplotlib.pyplot as plt
     # Save the high resolution image as a grayscale PNG
     plt.axis('off')
@@ -220,26 +224,6 @@ def plot_images(fits_path, data, small_image):
     plt.savefig(low_res_output_path, bbox_inches='tight', dpi=4*DPI)
     plt.close()
 
-
-def load_magnetogram_params(datdir):
-    """Reads the magnetic_target.params file and returns the parameters."""
-    params_path = os.path.join(datdir,"magnetic_target.params")
-    with open(params_path, 'r') as fp:
-        hdr = fp.readline().rstrip()
-        cr = fp.readline().rstrip()
-        fname = fp.readline().rstrip()
-        adapt = int(fp.readline().rstrip())
-        doplot = int(fp.readline().rstrip())
-        reduce = int(fp.readline().rstrip())
-    return (hdr, cr, fname, adapt, doplot, reduce)
-
-
-def read_fits_data(fname):
-    """Reads FITS data and fixes/ignores any non-standard FITS keywords."""
-    hdulist = fits.open(fname, ignore_missing_simple=True)
-    hdulist.verify('silentfix+warn')
-    return hdulist
-
 def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/fluxon-data/", batch="fluxon", bo=2, bn=2, ret_all=False):
     """Loads a magnetogram from a FITS file."""
     fname = load_magnetogram_params(datdir)[2].replace("/fluxon/", f"/{batch}/").replace(f"_{bo}_", f"_{bn}_")
@@ -256,31 +240,9 @@ def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/fluxon-data/", batch=
     else:
         return brdat
 
-def find_file_with_string(directory, search_string):
-    """Searches a directory for a file containing a given string."""
-    for file_name in os.listdir(directory):
-        if search_string in file_name:
-            return os.path.join(directory, file_name)
-    return None
 
-def reduce_mag_file(mag_file, reduction=3, force=False):
-    """Reduces the size of a magnetogram FITS file by a given factor."""
-    small_file = PosixPath(str(mag_file).replace("_r1_", f"_r{reduction}_"))
-    # reduce the FITS image
-    print(f"\tReducing image size by a factor of {reduction}...", end="")
-    if not os.path.exists(small_file) or force:
-        small_file = reduce_fits_image(mag_file, small_file, target_resolution=None, reduction_amount=reduction)
-        # print("Success!\n")
-    else:
-        print("Skipped! Reduced file already exists:")
-        # print("\t\t", shorten_path(str(small_file), 2))
-        ### WORKING HERE 
-        print(f"\t\tFound '{os.path.basename(small_file)}' in '{shorten_path(os.path.dirname(small_file))}'")
-        print("\n\t\t\t```````````````````````````````\n \n\n")
-
-    return small_file
-
-def write_params_file(datdir, cr, file_path, reduction):
+# File I/O and pathing
+def write_magnetogram_params(datdir, cr, file_path, reduction):
     """Writes the magnetic_target.params file for a given CR and reduction amount."""
     # write the parameter file
     params_path = os.path.join(datdir,"magnetic_target.params")
@@ -292,6 +254,43 @@ def write_params_file(datdir, cr, file_path, reduction):
         fp.write(str(0)+"\n")
         fp.write(str(reduction))
 
+def load_magnetogram_params(datdir):
+    """Reads the magnetic_target.params file and returns the parameters."""
+    params_path = os.path.join(datdir,"magnetic_target.params")
+    with open(params_path, 'r') as fp:
+        hdr = fp.readline().rstrip()
+        cr = fp.readline().rstrip()
+        fname = fp.readline().rstrip()
+        adapt = int(fp.readline().rstrip())
+        doplot = int(fp.readline().rstrip())
+        reduce = int(fp.readline().rstrip())
+    return (hdr, cr, fname, adapt, doplot, reduce)
+
+def find_file_with_string(directory, search_string):
+    """Searches a directory for a file containing a given string."""
+    for file_name in os.listdir(directory):
+        if search_string in file_name:
+            return os.path.join(directory, file_name)
+    return None
+
+def shorten_path_old(start_path, levels=1):
+    start_parts = start_path.split('/')
+    out_parts = start_parts[-levels:] if levels > 0 else start_parts
+    out_string = '/'.join(out_parts) if out_parts else start_path
+    return "DATAPATH/" + out_string
+
+def shorten_path(string, __=None):
+    datapath = os.getenv("DATAPATH")
+    if datapath:
+        return string.replace(datapath, "$DATAPATH")
+    else:
+        return string
+
+def read_fits_data(fname):
+    """Reads FITS data and fixes/ignores any non-standard FITS keywords."""
+    hdulist = fits.open(fname, ignore_missing_simple=True)
+    hdulist.verify('silentfix+warn')
+    return hdulist
 
 
 # def find_hilbert_footpoints(batchdir, cr, want_points=1000, reduction=3, force=False):
@@ -381,7 +380,7 @@ def write_params_file(datdir, cr, file_path, reduction):
 #     # # reduce the FITS image
 #     # small_file = reduce_mag_file(mag_file, reduction=reduction, force=force)
 #     # # write the parameter file
-#     # write_params_file(datdir, cr, small_file, reduction)
+#     # write_magnetogram_params(datdir, cr, small_file, reduction)
 #     # # run the hilbert footpoint finder
 #     # run_hilbert_footpoint_finder(datdir, cr, reduction=reduction, force=force)
 #     # # return the hilbert footpoint file

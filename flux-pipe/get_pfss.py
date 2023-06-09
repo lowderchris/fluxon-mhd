@@ -15,7 +15,7 @@ Generates a fluxon mapping from input GONG-sourced pfss coronal field solution
 import os
 import sys
 import numpy as np
-from magnetoget import load_magnetogram_params, shorten_path
+from py_pipe_helper import load_magnetogram_params, shorten_path
 
 
 import argparse

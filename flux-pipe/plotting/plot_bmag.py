@@ -12,10 +12,9 @@ import matplotlib.pyplot as plt
 import argparse
 from astropy.io import fits
 
-from plot_helper import add_pipedir
-add_pipedir()
+import py_plot_helper
 
-# from magnetoget import load_fits_magnetogram
+# from py_pipe_helper import load_fits_magnetogram
 # import os, sys
 # # Get the parent directory path
 # if "plotting" in os.getcwd():
@@ -38,7 +37,7 @@ parser.add_argument('--show', type=int, default=0)
 parser.add_argument('--batch', type=str, default='fluxon')
 args = parser.parse_args()
 batch = args.batch
-from magnetoget import load_magnetogram_params, load_fits_magnetogram
+from py_pipe_helper import load_magnetogram_params, load_fits_magnetogram
 (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
 CR = args.cr or cr or 2183
 

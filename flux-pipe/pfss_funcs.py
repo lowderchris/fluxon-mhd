@@ -1,7 +1,6 @@
 
 
 
-from magnetoget import read_fits_data
 import matplotlib as mpl
 mpl.use("qt5agg")
 import matplotlib.pyplot as plt
@@ -17,7 +16,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
 import sunpy.map
-from magnetoget import load_fits_magnetogram, load_magnetogram_params, shorten_path
+from py_pipe_helper import load_fits_magnetogram, read_fits_data, shorten_path
 
 
 
