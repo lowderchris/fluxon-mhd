@@ -23,19 +23,7 @@ from astropy.io import fits
 import os.path as path
 import os
 import sys
-# from .. import magnetoget
-
-# Get the parent directory path
-if "plotting" in os.getcwd():
-    pipdir = os.path.abspath(os.path.join(os.getcwd(), ".."))
-elif "pipe" in os.getcwd():
-    pipdir = os.getcwd()
-else:
-    pipdir = os.path.abspath(os.path.join(os.getcwd(), "flux-pipe"))
-
-# Add the parent directory to the module search path
-sys.path.append(pipdir)
-# print(pipdir)
+import plot_helper
 
 from pfss_funcs import pixel_to_latlon
 from magnetoget import load_fits_magnetogram, load_magnetogram_params
@@ -50,17 +38,17 @@ def get_ax(ax=None):
         fig, ax0 = plt.subplots(1)
     return fig, ax0
 
-def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, reduce=0, nact=0,
+def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, reduce=0, nact=0, nwant=None, do_print_top=False,
                 ax=None, verb=True, ext = "pdf", plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500):
     
     fig, ax0 = get_ax(ax)
-    if do_print:
-        print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print("(py) Plotting Magnetic Field Maps")
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    # if do_print:
+    #     print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    #     print("(py) Plotting Magnetic Field Maps")
+    #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
 
-    if do_print: print("\n\tPlotting...", end="")
+    if do_print_top: print("\n\t\tMaking Magnetogram with Footpoints...")
     # Define the directory paths for the files
     floc_path = f"{datdir}/batches/{batch}/cr{get_cr}/floc/"
     top_dir   = f"{datdir}/batches/{batch}/imgs/footpoints/"
@@ -68,20 +56,22 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
         os.makedirs(top_dir)
 
     # Define the file names with their complete paths
-    open_file   = open_f     or   f"{floc_path}floc_open_cr{get_cr}_r{reduce}_f{nact}.dat"
-    closed_file = closed_f or     f"{floc_path}floc_closed_cr{get_cr}_r{reduce}_f{nact}.dat"
+    open_file   = open_f     or   f"{floc_path}floc_open_cr{get_cr}_r{reduce}_f{nwant}.dat"
+    closed_file = closed_f or     f"{floc_path}floc_closed_cr{get_cr}_r{reduce}_f{nwant}.dat"
     all_file    = closed_file.replace("closed_", "")
     # print(open_f)
     # print(closed_f)
     # Load the data
-    # print(f"\tOpening {open_file}...")
+    if do_print_top: print(f"\t\t\tOpening {shorten_path(all_file)}...")
+    fluxon_location = np.genfromtxt(all_file)
+    
+    if do_print_top: print(f"\t\t\tOpening {shorten_path(open_file)}...")
     oflnum, oflx, olat, olon, orad = np.loadtxt(open_file, unpack=True)
 
-    # print(f"\tOpening {closed_file}...")
+    if do_print_top: print(f"\t\t\tOpening {shorten_path(closed_file)}...")
     cflnum, cflx, clat, clon, crad = np.loadtxt(closed_file, unpack=True)
 
-    # print(f"\tOpening {all_file}...")
-    fluxon_location = np.genfromtxt(all_file)
+
     from magnetoget import load_fits_magnetogram, load_magnetogram_params
 
     magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
@@ -177,12 +167,14 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
             print(f"\t    {shorten_path(fluxon_map_output_path_top)}")
     if do_print: print(f"\n\tn_open: {n_open}, n_closed: {n_closed}, n_total: {n_flux}, n_all: {fnum}, n_outliers: {n_outliers}\n")
     
-    print("\t\t\t```````````````````````````````\n \n\n")
+    if do_print_top: print("\t\t    Success!")
+
     return n_open, n_closed, n_flux, fnum, n_outliers
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
     parser.add_argument('--cr', type=int, default=None)
+    parser.add_argument('--nwant', type=int, default=None)
     parser.add_argument('--open', type=str, default=None)
     parser.add_argument('--closed', type=str, default=None)
     parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
@@ -192,7 +184,7 @@ if __name__ == "__main__":
 
     (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
     CR = args.cr or cr
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, args.dat_dir, batch, args.open, args.closed, do_print=True, reduce=reduce)
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, args.dat_dir, batch, args.open, args.closed, do_print=True, reduce=reduce, nwant=args.nwant)
     
     # exit()
 

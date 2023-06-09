@@ -10,58 +10,19 @@ import matplotlib as mpl
 mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
-from magnetoget import load_fits_magnetogram
 import os.path as path
-from magnetoget import load_magnetogram_params
-from plot_fieldmap import magnet_plot
 from scipy.interpolate import griddata
 
+import plot_helper
+# from plot_helper import add_pipedir
+# add_pipedir()
 
-if __name__ == "__main__":
-    pass
-
-
-# create the argument parser
-parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
-parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
-parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
-parser.add_argument('--show', type=int, default=1)
-parser.add_argument('--interp', type=str, default="linear")
-parser.add_argument('--nact', type=int, default=0)
-parser.add_argument('--batch', type=str, default="fluxon_paperfigs_5", help='select the batch name')
-args = parser.parse_args()
-batch = args.batch
-interp = args.interp
-dat_dir = args.dat_dir
-# batch = "fluxon_HQ_2000_2"
+from magnetoget import load_fits_magnetogram
+from magnetoget import load_magnetogram_params
+from plot_fieldmap import magnet_plot
 
 
-# print(f"INTERP: {interp}")
-# Load the magnetogram parameters
-(hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
-CR = args.cr or cr
-    
-print(f"\tPlotting CR{CR}...", end="\n" if __name__=="__main__" else "")
 
-# Load the wind file
-dat_file = f'{dat_dir}/{batch}/cr{CR}/wind/radial_wind_f{args.nact}.dat'
-# print("loading file: ", dat_file)
-arr = np.loadtxt(dat_file).T
-try:
-    fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1, fr1b = arr
-except ValueError:
-    fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1 = arr
-try:
-    nfluxon = arr.shape[1]
-except IndexError as e:
-    print("IndexError: ", e)
-    print("Wind Calculation Failed, Rerun.")
-    exit()
-
-
-# Convert coords to correct coords
-ph0, th0 = phi0+np.pi, -theta0+(np.pi/2)
-ph1, th1 = phi1+np.pi, -theta1+(np.pi/2)
 
 
 # Remove outliers from the dataset recursively
@@ -111,7 +72,10 @@ def get_ax(ax=None):
         fig, ax0 = plt.subplots(1)
     return fig, ax0
 
-def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20):
+def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=True):
+    if do_print_top:
+        print("\n\t\tMaking Histogram Plot...", end='')
+
     ## The Histogram Plot
     fig, hist_ax = get_ax(ax)
     mean1 = np.mean(vel1_clean)
@@ -128,6 +92,8 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20):
     hist_ax.set_title(f'CR{CR}, {len(vel1_clean)} Open Fields')
 
     hist_ax.set_xlim((vmin, vmax))
+    if do_print_top:
+        print("Success!")
     return mean1, std1
     # ax[3].set_title(f"Solar Wind Velocity Distribution: CR{CR}, Open Fluxons: {len(vel1)}", fontsize=16)
 
@@ -167,8 +133,9 @@ def magnet_plot_orig(batch, ax=None, doplot=False, vmin=-500, vmax=500):
         # ax[1].scatter(ph111b, th1b, c= v1bs, alpha=0.95, label='V(1.5R$_\odot$)', cmap="autumn", marker='X', s=50, edgecolors='k')
     return ph000, ph000b, ph111, ph111b, sc00, sc01, magimg
 
-def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=800,):
+def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=800, do_print_top=True):
 
+    if do_print_top: print("\n\t\tMaking Hexbin Plot...", end="")
     fig, hex_ax = get_ax(ax)
     ## Plot the Interp. data
     # Define the x-boundaries of the domain
@@ -220,96 +187,166 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
     cbar.set_label("Interp. Wind Speed [km/s]")
     # cbar.set_clim(vmin, vmax)
 
+    if do_print_top: print("Success!")
+
 
 
     # fig.colorbar(hex1, ax=hex_ax, shrink=0.75).set_label("Interp. Wind Speed [km/s]")
 
 
-# Get the Data
-vel0_clean, ph0_clean, th0_clean, v0b, ph0b, th0b = remove_outliers(vel0, ph0, th0, 3, 2, 1)
-vel1_clean, ph1_clean, th1_clean, v1b, ph1b, th1b = remove_outliers(vel1, ph1, th1, 3, 2, 3)
-v0, v1, v0bs, v1bs = scale_data(vel0_clean, vel1_clean, v0b, v1b, scale=15**2, power=1)
 
-## PLOTTING
-fig, ax = plt.subplots(3)
+## CODE STARTS HERE
 
-mag_ax = ax[0]
-hex_ax = ax[1]
-hist_ax = ax[2]
-
-all_vmin, all_vmax = 450, 850
-drk=0.25
-
-n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce=reduce, nact=args.nact)
-hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=20, vmin=all_vmin, vmax=all_vmax)
-mean1, std1 = hist_plot(vel1_clean, ax=hist_ax, vmin=all_vmin, vmax=all_vmax, n_bins=16)
-
-sc01 = mag_ax.scatter(ph1_clean, th1_clean, c='k', s=2**2, alpha=0.6, marker='+')
-sc01 = mag_ax.scatter(ph1b, th1b,           color=(drk, drk, drk), s=2**2, alpha=0.6, marker='+')
+if __name__ == "__main__":
 
 
-## SAVING
-# Set the output file names
-filename = f"cr{CR}_f{n_flux}_ou{n_open}_radial_wind_map_brief.png"
-main_file =  f'{dat_dir}/{batch}/cr{CR}/wind/{filename}'
-outer_file = f"{dat_dir}/{batch}/imgs/windmap/{filename}"
 
-import os
-if not path.exists(os.path.dirname(main_file)):
-    os.makedirs(os.path.dirname(main_file))
+    # create the argument parser
+    parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
+    parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
+    parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
+    parser.add_argument('--show', type=int, default=1)
+    parser.add_argument('--interp', type=str, default="linear")
+    parser.add_argument('--nact', type=int, default=0)
+    parser.add_argument('--nwant', type=int, default=0)
+    parser.add_argument('--batch', type=str, default="fluxon_paperfigs_5", help='select the batch name')
+    args = parser.parse_args()
+    batch = args.batch
+    interp = args.interp
+    dat_dir = args.dat_dir
+    # batch = "fluxon_HQ_2000_2"
 
-if not os.path.exists(os.path.dirname(outer_file)):
-    os.makedirs(os.path.dirname(outer_file))
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print(f"(py) Plotting Solar Wind Maps for CR{args.cr}\n")
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+
+    # print(f"INTERP: {interp}")
+    # Load the magnetogram parameters
+    (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
+    CR = args.cr or cr
+        
+
+    # Load the wind file
+    dat_file = f'{dat_dir}/batches/{batch}/cr{CR}/wind/radial_wind_f{args.nact}.dat'
+    # print("loading file: ", dat_file)
+    arr = np.loadtxt(dat_file).T
+    try:
+        fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1, fr1b = arr
+    except ValueError:
+        fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1 = arr
+    try:
+        nfluxon = arr.shape[1]
+    except IndexError as e:
+        print("IndexError: ", e)
+        print("Wind Calculation Failed, Rerun.")
+        exit()
 
 
-# fig.suptitle(F"Fluxon Wind Strength for CR {CR}: Open Fluxons={len(v1)}")
-# ax[1].set_title(F"Fluxon Expansion for CR {args.cr}")
-for this_ax in [mag_ax, hex_ax]:
-    this_ax.set_ylabel('sin(latitude)')
-    this_ax.set_ylim((-1.0,1.0))
-    this_ax.set_aspect('equal')
-    this_ax.axhline(-1, c='lightgrey', zorder=-10)
-    this_ax.axhline( 1, c='lightgrey', zorder=-10)
-    this_ax.axvline(0, c='lightgrey', zorder=-10)
-    this_ax.axvline(2*np.pi, c='lightgrey', zorder=-10)
-    this_ax.set_xlim((0, 2*np.pi))
-
-ax[0].set_xlabel('Longitude (Radians)')
-ax[1].set_xticklabels([])
-
-# ax[0].legend(loc="lower right")
-# ax[0].set_ylim((-1, 1))
-# ax[1].set_ylim((-1, 1))
-# ax[3].set_ylim((-1, 1))
+    # Convert coords to correct coords
+    ph0, th0 = phi0+np.pi, -theta0+(np.pi/2)
+    ph1, th1 = phi1+np.pi, -theta1+(np.pi/2)
 
 
-fig.set_size_inches((6,6))
-# plt.tight_layout()
 
-plt.subplots_adjust(
-top=0.981,
-bottom=0.097,
-left=0.113,
-right=0.869,
-hspace=0.312,
-wspace=0.18
-)
+    print(f"\n\tPlotting CR{CR} Briefplot...", end="\n" if __name__=="__main__" else "")
 
-# plt.show()
+    # Get the Data
+    vel0_clean, ph0_clean, th0_clean, v0b, ph0b, th0b = remove_outliers(vel0, ph0, th0, 3, 2, 1)
+    vel1_clean, ph1_clean, th1_clean, v1b, ph1b, th1b = remove_outliers(vel1, ph1, th1, 3, 2, 3)
+    v0, v1, v0bs, v1bs = scale_data(vel0_clean, vel1_clean, v0b, v1b, scale=15**2, power=1)
 
-# Save the Figures
-print("Saving figures...")
-print(main_file)
-# plt.show()
-# plt.savefig(main_file, dpi=200)
-plt.savefig(main_file.replace(".png", ".pdf"), dpi=200)
+    ## PLOTTING
+    fig, ax = plt.subplots(3)
 
-# print(outer_file)
-plt.savefig(outer_file, dpi=200)
-plt.savefig(outer_file.replace(".png", ".pdf"), dpi=200)
+    mag_ax = ax[0]
+    hex_ax = ax[1]
+    hist_ax = ax[2]
 
-plt.close(fig)
+    all_vmin, all_vmax = 450, 850
+    drk=0.25
 
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce=reduce, nwant=args.nwant, do_print_top=True)
+    hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=20, vmin=all_vmin, vmax=all_vmax)
+    mean1, std1 = hist_plot(vel1_clean, ax=hist_ax, vmin=all_vmin, vmax=all_vmax, n_bins=16)
+
+    sc01 = mag_ax.scatter(ph1_clean, th1_clean, c='k', s=2**2, alpha=0.6, marker='+')
+    sc01 = mag_ax.scatter(ph1b, th1b,           color=(drk, drk, drk), s=2**2, alpha=0.6, marker='+')
+
+
+    ## SAVING
+    # Set the output file names
+    filename = f"cr{CR}_f{n_flux}_ou{n_open}_radial_wind_map_brief.png"
+    main_file =  f'{dat_dir}/{batch}/cr{CR}/wind/{filename}'
+    outer_file = f"{dat_dir}/{batch}/imgs/windmap/{filename}"
+
+    import os
+    if not path.exists(os.path.dirname(main_file)):
+        os.makedirs(os.path.dirname(main_file))
+
+    if not os.path.exists(os.path.dirname(outer_file)):
+        os.makedirs(os.path.dirname(outer_file))
+
+
+    # fig.suptitle(F"Fluxon Wind Strength for CR {CR}: Open Fluxons={len(v1)}")
+    # ax[1].set_title(F"Fluxon Expansion for CR {args.cr}")
+    for this_ax in [mag_ax, hex_ax]:
+        this_ax.set_ylabel('sin(latitude)')
+        this_ax.set_ylim((-1.0,1.0))
+        this_ax.set_aspect('equal')
+        this_ax.axhline(-1, c='lightgrey', zorder=-10)
+        this_ax.axhline( 1, c='lightgrey', zorder=-10)
+        this_ax.axvline(0, c='lightgrey', zorder=-10)
+        this_ax.axvline(2*np.pi, c='lightgrey', zorder=-10)
+        this_ax.set_xlim((0, 2*np.pi))
+
+    ax[0].set_xlabel('Longitude (Radians)')
+    ax[1].set_xticklabels([])
+
+    # ax[0].legend(loc="lower right")
+    # ax[0].set_ylim((-1, 1))
+    # ax[1].set_ylim((-1, 1))
+    # ax[3].set_ylim((-1, 1))
+
+
+    fig.set_size_inches((6,6))
+    # plt.tight_layout()
+
+    plt.subplots_adjust(
+    top=0.981,
+    bottom=0.097,
+    left=0.113,
+    right=0.869,
+    hspace=0.312,
+    wspace=0.18
+    )
+
+    # plt.show()
+
+    # Save the Figures
+    print("\n\t\tSaving figures to disk...")
+    # print(main_file)
+    main_pdf = main_file.replace(".png", ".pdf")
+    outer_pdf = outer_file.replace(".png", ".pdf")
+    # plt.show()
+    # plt.savefig(main_file, dpi=200)
+    import plot_helper
+    from magnetoget import shorten_path
+    print("\t\t\tSaving ", shorten_path(main_pdf))
+    plt.savefig(main_pdf, dpi=200)
+
+    # print(outer_file)
+    # plt.savefig(outer_file, dpi=200)
+    print("\t\t\tSaving ", shorten_path(outer_pdf))
+    plt.savefig(outer_pdf, dpi=200)
+
+    plt.close(fig)
+    print("\t\t    Success!")
+
+    print("\n\t    Done with wind plotting!\n")
+    print("\n\t\t\t```````````````````````````````\n\n")
+
+
+    # print("\n\t\t\t```````````````````````````````\n\n")
 
 
 #  Create a scatter plot

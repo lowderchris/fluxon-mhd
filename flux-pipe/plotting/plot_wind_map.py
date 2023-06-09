@@ -31,7 +31,7 @@ batch = args.batch
 CR = args.cr or cr or 2183
 
 print(f"plotting CR{CR}...", end="\n" if __name__=="__main__" else "")
-filename = f'{args.dat_dir}/{batch}/cr{CR}/wind/radial_wind.dat'
+filename = f'{args.dat_dir}/batches/{batch}/cr{CR}/wind/radial_wind.dat'
 
 # Load the dat file
 arr = np.loadtxt(filename).T

@@ -18,7 +18,6 @@ def make_mag_dir(datdir):
         os.makedirs(mag_dir)    
     return mag_dir
 
-
 def shorten_path_old(start_path, levels=1):
     start_parts = start_path.split('/')
     out_parts = start_parts[-levels:] if levels > 0 else start_parts
@@ -73,11 +72,11 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
     import pathlib
     hmi_object = pathlib.Path(mag_dir)
     file_list = list(hmi_object.iterdir())
-
+    print("\tSearching for file...")
     found_file = False
     for file in file_list:
         if str(CR)+"_r1_" in str(file):
-            print(f"\tFound '{os.path.basename(file)}' in '{shorten_path(mag_dir)}'")
+            print(f"\t\tFound '{os.path.basename(file)}' in '{shorten_path(mag_dir)}'")
             found_file = True
             break
 
@@ -242,13 +241,7 @@ def read_fits_data(fname):
     return hdulist
 
 def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/fluxon-data/", batch="fluxon", bo=2, bn=2, ret_all=False):
-
-    def read_fits_data(fname):
-        """Reads FITS data and fixes/ignores any non-standard FITS keywords."""
-        hdulist = fits.open(fname)
-        hdulist.verify('silentfix+warn')
-        return hdulist
-
+    """Loads a magnetogram from a FITS file."""
     fname = load_magnetogram_params(datdir)[2].replace("/fluxon/", f"/{batch}/").replace(f"_{bo}_", f"_{bn}_")
     fits_path = datdir + fname
     try:
@@ -264,13 +257,14 @@ def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/fluxon-data/", batch=
         return brdat
 
 def find_file_with_string(directory, search_string):
+    """Searches a directory for a file containing a given string."""
     for file_name in os.listdir(directory):
         if search_string in file_name:
             return os.path.join(directory, file_name)
     return None
 
 def reduce_mag_file(mag_file, reduction=3, force=False):
-
+    """Reduces the size of a magnetogram FITS file by a given factor."""
     small_file = PosixPath(str(mag_file).replace("_r1_", f"_r{reduction}_"))
     # reduce the FITS image
     print(f"\tReducing image size by a factor of {reduction}...", end="")
@@ -281,12 +275,13 @@ def reduce_mag_file(mag_file, reduction=3, force=False):
         print("Skipped! Reduced file already exists:")
         # print("\t\t", shorten_path(str(small_file), 2))
         ### WORKING HERE 
-        print(f"\tFound '{os.path.basename(small_file)}' in '{shorten_path(os.path.dirname(small_file))}'")
+        print(f"\t\tFound '{os.path.basename(small_file)}' in '{shorten_path(os.path.dirname(small_file))}'")
         print("\n\t\t\t```````````````````````````````\n \n\n")
 
     return small_file
 
 def write_params_file(datdir, cr, file_path, reduction):
+    """Writes the magnetic_target.params file for a given CR and reduction amount."""
     # write the parameter file
     params_path = os.path.join(datdir,"magnetic_target.params")
     with open(params_path, 'w') as fp:

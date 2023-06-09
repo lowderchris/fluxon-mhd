@@ -10,6 +10,7 @@ import matplotlib as mpl
 mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
+import plot_helper
 from magnetoget import load_fits_magnetogram
 import os.path as path
 from magnetoget import load_magnetogram_params

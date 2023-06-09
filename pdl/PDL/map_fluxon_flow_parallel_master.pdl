@@ -199,8 +199,8 @@ sub map_fluxon_flow_parallel_master {
     my $after   = clock_gettime();
     my $elapsed = $after - $before;
     my $round_elapsed = rint($elapsed*10) / 10;
-    print "\nWind calculation took: $round_elapsed(s) with $max_processes cores\n \n";
-
+    # print "\n\n\t\tWind calculation took: $round_elapsed(s) with $max_processes cores\n \n";
+    print "\n\n\t\tWind Calculation Complete";
     ## Output the Results ##
     # Sort the results by fps
     @results = sort { $a->{fps} <=> $b->{fps} } @results;

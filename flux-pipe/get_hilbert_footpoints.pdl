@@ -91,7 +91,7 @@ sub get_hilbert_footpoints{
 
         print "\n\t\t\t$flocfile_short\n";
     }
-    print "\n";
+    # print "\n";
     print "\n\t\t\t```````````````````````````````\n \n\n \n";
     return $floc, $N_actual;
 }
