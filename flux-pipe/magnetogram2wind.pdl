@@ -166,15 +166,15 @@ make_world_from_pfss($world_out_dir, $floc_path, $open_file, $closed_file, $make
 $n_outliers = 0; # THIS IS FUDGE CODE!
 $n_remaining = $N_actual - $n_outliers;
 $world_out_dir = $datdir."/batches/$batch_name/cr".$CR.'/world/';
-$full_world_path = $world_out_dir .'cr'.$CR."_f$n_remaining.flux";
-our ($this_world_orig, $this_world_relaxed) = relax_pfss_world($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold, $max_cycles, $logfile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR, $n_outliers);
+$full_world_path = $world_out_dir .'cr'.$CR."_f$n_fluxons_wanted.flux";
+our ($this_world_orig, $this_world_relaxed, $stepnum) = relax_pfss_world($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold, $max_cycles, $logfile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR, $n_outliers);
 
 
 
 #######################################################################################################
 ## Plot the world states  #############################################################################
 #######################################################################################################
-plot_worlds($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $lim, $lim2);
+plot_worlds($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $n_fluxons_wanted, $lim, $lim2, $stepnum);
 
 
 

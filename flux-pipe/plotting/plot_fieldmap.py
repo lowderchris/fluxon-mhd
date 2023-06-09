@@ -41,13 +41,13 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
                 ax=None, verb=True, ext = "pdf", plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500):
     
     fig, ax0 = get_ax(ax)
-    # if do_print:
-    #     print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    #     print("(py) Plotting Magnetic Field Maps")
-    #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    if do_print:
+        print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print("(py) Plotting Magnetic Field Maps")
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
 
-    if do_print_top: print("\n\t\tMaking Magnetogram with Footpoints...")
+    if do_print_top: print("\n\tMaking Magnetogram with Footpoints...")
     # Define the directory paths for the files
     floc_path = f"{datdir}/batches/{batch}/cr{get_cr}/floc/"
     top_dir   = f"{datdir}/batches/{batch}/imgs/footpoints/"
@@ -61,13 +61,13 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
     # print(open_f)
     # print(closed_f)
     # Load the data
-    if do_print_top: print(f"\t\t\tOpening {shorten_path(all_file)}...")
+    if do_print_top: print(f"\t\tOpening {shorten_path(all_file)}...")
     fluxon_location = np.genfromtxt(all_file)
     
-    if do_print_top: print(f"\t\t\tOpening {shorten_path(open_file)}...")
+    if do_print_top: print(f"\t\tOpening {shorten_path(open_file)}...")
     oflnum, oflx, olat, olon, orad = np.loadtxt(open_file, unpack=True)
 
-    if do_print_top: print(f"\t\t\tOpening {shorten_path(closed_file)}...")
+    if do_print_top: print(f"\t\tOpening {shorten_path(closed_file)}...\n")
     cflnum, cflx, clat, clon, crad = np.loadtxt(closed_file, unpack=True)
 
 
@@ -107,7 +107,7 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
 
     
     # Define the file name for the plot
-    pic_name = f'cr{get_cr}_f{fnum}_ou{n_open}_footpoints_topology.{ext}'
+    pic_name = f'cr{get_cr}_f{nwant}_ou{n_open}_footpoints_topology.{ext}'
     fluxon_map_output_path =   path.join(floc_path, pic_name)
     fluxon_map_output_path_top = path.join(top_dir, pic_name)
 
@@ -119,8 +119,8 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
             do_plot = True
             break
 
+    if do_print: print(f"\tPlotting...", end="")
     if do_plot or force or (ax is not None):
-        if do_print: print(f"\tPlotting...", end="")
         # Plot ###################
         # Plot the magnetogram
         sigma = 2
@@ -153,21 +153,22 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
             DPI = shp[1] / sz1 #pixels/inch
             fig.set_size_inches((sz1, sz0))
             plt.tight_layout()
-            print(f"\tSaving {fluxon_map_output_path}...")
+            print(f"\n\t\tSaving {shorten_path(fluxon_map_output_path)}...")
             plt.savefig(fluxon_map_output_path, bbox_inches='tight', dpi=4*DPI)
-            print(f"\tSaving {fluxon_map_output_path_top}...")
+            print(f"\t\tSaving {shorten_path(fluxon_map_output_path_top)}...")
             plt.savefig(fluxon_map_output_path_top, bbox_inches='tight', dpi=4*DPI)
             # plt.show()
             plt.close(fig)
     else:
         if do_print: 
-            print(f"Skipped! Files already exist:")
-            print(f"\t    {shorten_path(fluxon_map_output_path)}")
-            print(f"\t    {shorten_path(fluxon_map_output_path_top)}")
-    if do_print: print(f"\n\tn_open: {n_open}, n_closed: {n_closed}, n_total: {n_flux}, n_all: {fnum}, n_outliers: {n_outliers}\n")
+            print(f"\tSkipped! Files already exist:")
+            print(f"\t\t{shorten_path(fluxon_map_output_path)}")
+            print(f"\t\t{shorten_path(fluxon_map_output_path_top)}")
+    if do_print: print(f"\n\t    n_open: {n_open}, n_closed: {n_closed}, n_total: {n_flux}, n_all: {fnum}, n_outliers: {n_outliers}")
     
-    if do_print_top: print("\t\t    Success!")
-
+    if do_print_top: 
+        print("\t\t    Success!")
+        print("\t\t\t```````````````````````````````\n\n")
     return n_open, n_closed, n_flux, fnum, n_outliers
 
 if __name__ == "__main__":
@@ -183,7 +184,7 @@ if __name__ == "__main__":
 
     (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
     CR = args.cr or cr
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, args.dat_dir, batch, args.open, args.closed, do_print=True, reduce=reduce, nwant=args.nwant)
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, args.dat_dir, batch, args.open, args.closed, do_print=True, reduce=reduce, nwant=args.nwant, do_print_top=True)
     
     # exit()
 

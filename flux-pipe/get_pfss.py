@@ -115,7 +115,7 @@ else:
 # Record stats in the output file
 shp = br_safe.data.shape
 pix = shp[0]*shp[1]
-timefile = f'{datdir}/batches/{batch}/pfss_time.txt'
+timefile = f'{datdir}/batches/{batch}/pipe_log.txt'
 with open(timefile, 'a+') as f:
     # a good name for the variable
     elap =f"\ncr: {cr}, r: {reduce}, rx: {shp[0]}, ry: {shp[1]}, pf_elp: {elapsed:0>3.3f}, t_kpix: {1000*elapsed/pix:0.3f}"
@@ -163,7 +163,7 @@ print("\n\t\t\t```````````````````````````````\n \n")
 # df = pd.DataFrame(data)
 
 # # define the file path to append the data
-# timefile = datdir + 'fluxon/pfss_time.txt'
+# timefile = datdir + 'fluxon/pipe_log.txt'
 
 # # append the data to the file
 # df.to_csv(timefile, mode='a', header=False, index=False, sep='\t')

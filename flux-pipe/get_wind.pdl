@@ -1,3 +1,4 @@
+use pdl_pipe_helper;
 
 sub get_wind{
 
@@ -12,7 +13,8 @@ sub get_wind{
     my $wind_out_dir = $datdir."/batches/$batch_name/cr".$CR.'/wind';
     my $out_b = "$wind_out_dir/radial_bmag.dat";
     my $out_fr = "$wind_out_dir/radial_fr.dat";
-    my $out_wind = "$wind_out_dir/radial_wind_f$N_actual.dat";
+    my $out_wind = "$wind_out_dir/radial_wind_f$n_want.dat";
+    my $short_out_wind = shorten_path($out_wind);
 
     # Make the directory if necessary
     if (! -d $wind_out_dir ) {
@@ -56,14 +58,15 @@ sub get_wind{
         if ($do_wind_map){
             map_fluxon_flow_parallel_master($out_wind, \@fluxons);
         } else {
-            print "\n\tWind Calculation Skipped!\n\n"
+        
+            print "\n\tWind Calculation Skipped! Found $short_out_wind\n\n"
         }
         use warnings 'misc'
     } else {
-        print "\n\tWind Calculation Skipped!\n\n"
+        print "\n\tWind Calculation Skipped! Found $short_out_wind\n\n"
     }
 
-        print "\t\t\t```````````````````````````````\n\n\n";
+        print "\t\t\t```````````````````````````````\n\n\n\n";
 
 
 

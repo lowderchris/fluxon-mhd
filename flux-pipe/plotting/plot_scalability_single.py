@@ -7,7 +7,7 @@ import pandas as pd
 
 run_name = "fluxon r3"
 datdir = "/Users/cgilbert/vscode/fluxon-data/"
-file_path = os.path.join(datdir, f"{run_name}/pfss_time.txt")
+file_path = os.path.join(datdir, f"{run_name}/pipe_log.txt")
 
 
 ## Helper functions to parse the output file

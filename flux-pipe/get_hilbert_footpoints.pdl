@@ -18,21 +18,22 @@ sub get_hilbert_footpoints{
         }
     print "\n\tSearching for file...";
     if ($process_magnetogram || $no_floc){
-            ## Read in the Magnetogram #################################
-            # print "\n";
-            print "\n\t**Reading Magnetogram...";
+        ## Read in the Magnetogram #################################
+        print "Not found.\n\n";
+        print "\tRunning Hilbert Tracer...";
+        # print "\n\t**Reading Magnetogram...";
 
-            my $smag = rfits($magfile);
-            # eval {$smag = rfits($magfile)};
-            # if ($@) {$smag = rfits($datdir.$magfile)};
-            
-            # Extra step for adapt br maps
-            # if ($adapt) {$smag = $smag(:,:,2)->squeeze};
+        my $smag = rfits($magfile);
+        # eval {$smag = rfits($magfile)};
+        # if ($@) {$smag = rfits($datdir.$magfile)};
+        
+        # Extra step for adapt br maps
+        # if ($adapt) {$smag = $smag(:,:,2)->squeeze};
 
 
-            ## Run the fluxon hilbert code ##############################
+        ## Run the fluxon hilbert code ##############################
         print "\n";
-        print "\n\t**Placing $n_fluxons_wanted footpoints using Hilbert Curves...\n";
+        print "\n\t\tPlacing $n_fluxons_wanted footpoints using Hilbert Curves...\n";
 
         # Define tolerance and initial step size
         my $tolerance = $n_fluxons_wanted * 0.05;  # 5% tolerance
@@ -53,7 +54,7 @@ sub get_hilbert_footpoints{
             $N_actual = $floc->nelem / 3;  # The number of fluxons placed is 1/3 the number of elements in the floc array
             $count++;
 
-            print("\t  Placing footpoints:: iter: $count/$maxreps. Wanted: $n_fluxons_wanted, Tried: $try_fluxons, Placed: $N_actual...");
+            print("\t\t    Placing footpoints:: iter: $count/$maxreps. Wanted: $n_fluxons_wanted, Tried: $try_fluxons, Placed: $N_actual...");
 
             my $distance = $N_actual - $n_fluxons_wanted;
             if (abs($distance) > $tolerance) {
@@ -78,10 +79,11 @@ sub get_hilbert_footpoints{
 
             ## Write to disk ############################################
             print "\n";
-            print "\t**Writing Result...";
+            print "\t\tWriting Result...";
             wcols $floc->transpose, $flocfile;
             print "Success! File saved to:";
             print "\n\t $flocfile";
+            print "\n";
     } else {
         $floc = rcols $flocfile;
         $floc = $floc->transpose;
@@ -92,7 +94,7 @@ sub get_hilbert_footpoints{
         print "\n\t\t\t$flocfile_short\n";
     }
     # print "\n";
-    print "\n\t\t\t```````````````````````````````\n \n\n \n";
+    print "\n\t\t\t```````````````````````````````\n\n\n";
     return $floc, $N_actual;
 }
 1;

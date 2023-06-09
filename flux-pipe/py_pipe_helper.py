@@ -376,7 +376,7 @@ def read_fits_data(fname):
 
 
 #     # # get the magnetogram file name
-#     # mag_file = find_file_with_string(datdir, "br_r1")
+#     # mag_file = find_highest_numbered_file(datdir, "br_r1")
 #     # # reduce the FITS image
 #     # small_file = reduce_mag_file(mag_file, reduction=reduction, force=force)
 #     # # write the parameter file
@@ -384,7 +384,7 @@ def read_fits_data(fname):
 #     # # run the hilbert footpoint finder
 #     # run_hilbert_footpoint_finder(datdir, cr, reduction=reduction, force=force)
 #     # # return the hilbert footpoint file
-#     # return find_file_with_string(datdir, "floc_cr"+str(cr))
+#     # return find_highest_numbered_file(datdir, "floc_cr"+str(cr))
 
 #     # import os
 #     # import numpy as np

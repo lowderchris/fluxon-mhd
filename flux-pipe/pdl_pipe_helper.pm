@@ -23,7 +23,7 @@ sub shorten_path {
     return $string;
 }
 
-sub find_file_with_string {
+sub find_highest_numbered_file {
     my ($directory) = @_;
     opendir(my $dir_handle, $directory) or die "Cannot open directory: $!";
     my @files = grep { !/^\.{1,2}$/ } readdir($dir_handle);
@@ -43,7 +43,7 @@ sub find_file_with_string {
             $found = 1;
         }
     }
-    return $highest_numbered_file ? "$directory$highest_numbered_file" : 0;
+    return $highest_numbered_file ? "$directory$highest_numbered_file" : 0, $highest_number;
 }
 
 sub set_env_variable {

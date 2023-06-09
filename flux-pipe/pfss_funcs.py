@@ -175,7 +175,7 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce, force_plot=Fal
                 fluxon_map_output_path_blank, 
                 ]
 
-    print("\n\tPlotting Fluxon Footpoint Locations...", end="")
+    print("\n\tPlotting Fluxon Footpoint Locations...")
 
     need_plot = False
     for testpath in plot_paths:
@@ -321,10 +321,10 @@ def trace_lines(output, f_lon, f_lat, f_sgn, open_path, closed_path):
     if skip_num > 0 or timeout_num > 0:
         t_perc = 100*timeout_num/len(f_lon)
         s_perc = 100*skip_num/len(f_lon)
-        print(f"\n\n\t\tSome iterations failed. Timed-out: {timeout_num} ({t_perc:0.2f}%), ValueError: {skip_num} ({s_perc:0.2f}%)\n")
+        print(f"\n\t\tSome iterations failed. Timed-out: {timeout_num} ({t_perc:0.2f}%), ValueError: {skip_num} ({s_perc:0.2f}%)\n")
 
 
-    print(f"\n\tOpen Lines: {flnum_open+1}, Closed Lines: {flnum_closed}, Failures: {skip_num+timeout_num}, Total Good: {flnum_open+flnum_closed}")
+    print(f"\nOpen Lines: {flnum_open+1}, Closed Lines: {flnum_closed}, Failures: {skip_num+timeout_num}, Total Good: {flnum_open+flnum_closed}")
     # print(f"\n\tOpen Lines: {len(fl_open)}, Closed Lines: {len(fl_closed)}, Failures: {skip_num+timeout_num}")
         
     fl_open = fl_open[1:]
@@ -333,7 +333,7 @@ def trace_lines(output, f_lon, f_lat, f_sgn, open_path, closed_path):
 
     # Output is flnum, polarity, latitude, longitude, radius
     # Save these coordinates to file
-    print("\n Saving Fluxons...", end="")
+    print("\n\tSaving Fluxons...", end="")
     np.savetxt(open_path, fl_open)
     np.savetxt(closed_path, fl_closed)
     print("Success!")

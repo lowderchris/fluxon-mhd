@@ -5,7 +5,7 @@ use pdl_pipe_helper;
 
 
 sub plot_worlds{
-    our ($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $lim, $lim2) = @_;
+    our ($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $nwant, $lim, $lim2, $stepnum) = @_;
 
     my $range_i = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
     my $range_f = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
@@ -41,7 +41,7 @@ sub plot_worlds{
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n \n";
 
         ## Plot to Png
-    my $stepnum = 0;
+    $stepnum = $stepnum || 0;
 
     my $path = $full_world_path;
     my ($filename, $directories, $suffix) = fileparse($path, qr/\.[^.]*/);
@@ -55,35 +55,40 @@ sub plot_worlds{
         my $new_filename_relaxed = $directories . $filename .  "_relaxed\_s$stepnum.png";
         my $new_filename_relaxed2 = $directories . $filename . "_relaxed\_s$stepnum-wide.png";
 
-        my $top_path = $datdir . "$batch_name/imgs/relaxed/";
+        my $top_path = $datdir . "/batches/$batch_name/imgs/relaxed/";
         if (! -d $top_path ) {mkpath($top_path) or die "Failed to create directory: $top_path $!\n";}
-        my $top_filename_relaxed = $top_path ."cr". $CR."_relaxed_f$N_actual\_s$stepnum.png";
-
-        print "\t\tRendering $new_filename_initial\n";
+        my $top_filename_relaxed = $top_path ."cr". $CR."_relaxed_f$nwant\_s$stepnum.png";
+        
+        my $short_new_filename_initial = shorten_path($new_filename_initial);
+        print "\t\tRendering $short_new_filename_initial\n";
         my $window25=   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_initial);
         $this_world_orig->render( {'window'=>$window25, range=>$range_i});
         $window25 = null;
 
+        my $short_new_filename_initial2 = shorten_path($new_filename_initial2);
 
-        print "\t\tRendering $new_filename_initial2\n";
+        print "\t\tRendering $short_new_filename_initial2\n";
         my $window3 =   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_initial2);
         $this_world_orig->render( {'window'=>$window3, range=>$range_f2});
         $window3 = null;
 
+        my $short_new_filename_relaxed = shorten_path($new_filename_relaxed);
 
-        print "\t\tRendering $new_filename_relaxed\n";
+        print "\t\tRendering $short_new_filename_relaxed\n";
         my $window4 =   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_relaxed );
         $this_world_relaxed->render({'window'=>$window4, range=>$range_f});
         $window4 = null;
         
+        my $short_new_filename_relaxed2 = shorten_path($new_filename_relaxed);
 
-        print "\t\tRendering $new_filename_relaxed2\n";
+        print "\t\tRendering $short_new_filename_relaxed2\n";
         my $window5 =   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_relaxed2 );
         $this_world_relaxed->render({'window'=>$window5, range=>$range_f2});
         $window5 = null;
 
-        
-        print "\t\tRendering $top_filename_relaxed\n";
+        my $short_top_filename_relaxed = shorten_path($top_filename_relaxed);
+
+        print "\t\tRendering $short_top_filename_relaxed\n";
         my $windowTop=  gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $top_filename_relaxed );
         $this_world_relaxed->render({'window'=>$windowTop, range=>$range_f});
         $windowTop = null;
@@ -106,12 +111,12 @@ sub plot_worlds{
 
     if (not $do_png and not $do_interactive) {
         print "\tSkipped Plotting! Found $short_name\n";
-        print "\n\t\t\t```````````````````````````````\n \n\n\n";
 
     } else {
-        print "Done!\n"
+        print "\tDone with Plotting!\n"
     }
 
+        print "\n\t\t\t```````````````````````````````\n \n\n\n";
 
 }
 
