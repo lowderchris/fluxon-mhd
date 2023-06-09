@@ -1,6 +1,6 @@
 import argparse
 import os
-from py_pipe_helper import get_magnetogram_file, reduce_fits_image, find_file_with_string, write_params_file, reduce_mag_file, make_mag_dir
+from py_pipe_helper import get_magnetogram_file, reduce_fits_image, find_file_with_string, write_magnetogram_params, reduce_mag_file, make_mag_dir
 magneto_file = None
 
 # create the argument parser
@@ -15,5 +15,5 @@ args = parser.parse_args()
 
 big_path, small_path = get_magnetogram_file(cr=args.cr, datdir=args.datdir, force_download=args.do_download, reduce=args.reduce)
 
-write_params_file(args.datdir, args.cr, small_path, args.reduce)
+write_magnetogram_params(args.datdir, args.cr, small_path, args.reduce)
 

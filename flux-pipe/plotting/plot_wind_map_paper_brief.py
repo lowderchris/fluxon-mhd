@@ -342,7 +342,7 @@ if __name__ == "__main__":
     print("\t\t    Success!")
 
     print("\n\t    Done with wind plotting!\n")
-    print("\n\t\t\t```````````````````````````````\n\n")
+    print("\t\t\t```````````````````````````````\n\n")
 
 
     # print("\n\t\t\t```````````````````````````````\n\n")
