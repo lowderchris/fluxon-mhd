@@ -107,7 +107,7 @@ sub map_fluxon_flow_parallel_master {
 
     my $n_tot = scalar(@fluxons);
     my $n_act = 2*($n_tot - $n_open) + $n_open;
-    print "\n\t\tRunning with $max_processes Cores on $n_open open Fluxons out of $n_tot total Fluxons from $n_act footpoints!\n\n\t\tBeginning Calculation...\n";
+    print "\n\t\tRunning with $max_processes Cores on $n_open open Fluxons out of $n_tot total Fluxons from $n_act footpoints!\n\n\t\tBeginning Calculation...\n\n";
 
 
 
@@ -200,7 +200,7 @@ sub map_fluxon_flow_parallel_master {
     my $elapsed = $after - $before;
     my $round_elapsed = rint($elapsed*10) / 10;
     # print "\n\n\t\tWind calculation took: $round_elapsed(s) with $max_processes cores\n \n";
-    print "\n\n\t\tWind Calculation Complete";
+    print "\n\n\t\tWind Calculation Complete\n\n";
     ## Output the Results ##
     # Sort the results by fps
     @results = sort { $a->{fps} <=> $b->{fps} } @results;

@@ -6,7 +6,7 @@ import pandas as pd
 # import statsmodels.api as sm
 
 datdir = "/Users/cgilbert/vscode/fluxon-data/"
-file_path = os.path.join(datdir, "fluxon/pfss_time.txt")
+file_path = os.path.join(datdir, "fluxon/pipe_log.txt")
 
 ## Helper functions to parse the output file
 def convert_value(value):

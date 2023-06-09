@@ -226,7 +226,7 @@ if __name__ == "__main__":
         
 
     # Load the wind file
-    dat_file = f'{dat_dir}/batches/{batch}/cr{CR}/wind/radial_wind_f{args.nact}.dat'
+    dat_file = f'{dat_dir}/batches/{batch}/cr{CR}/wind/radial_wind_f{args.nwant}.dat'
     # print("loading file: ", dat_file)
     arr = np.loadtxt(dat_file).T
     try:
@@ -264,7 +264,7 @@ if __name__ == "__main__":
     all_vmin, all_vmax = 450, 850
     drk=0.25
 
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce=reduce, nwant=args.nwant, do_print_top=True)
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce=reduce, nwant=args.nwant, do_print_top=False)
     hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=20, vmin=all_vmin, vmax=all_vmax)
     mean1, std1 = hist_plot(vel1_clean, ax=hist_ax, vmin=all_vmin, vmax=all_vmax, n_bins=16)
 
@@ -274,9 +274,9 @@ if __name__ == "__main__":
 
     ## SAVING
     # Set the output file names
-    filename = f"cr{CR}_f{n_flux}_ou{n_open}_radial_wind_map_brief.png"
-    main_file =  f'{dat_dir}/{batch}/cr{CR}/wind/{filename}'
-    outer_file = f"{dat_dir}/{batch}/imgs/windmap/{filename}"
+    filename = f"cr{CR}_f{args.nwant}_ou{n_open}_radial_wind_map_brief.png"
+    main_file =  f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
+    outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
     import os
     if not path.exists(os.path.dirname(main_file)):
@@ -342,7 +342,7 @@ if __name__ == "__main__":
     print("\t\t    Success!")
 
     print("\n\t    Done with wind plotting!\n")
-    print("\t\t\t```````````````````````````````\n\n")
+    print("\t\t\t```````````````````````````````\n\n\n")
 
 
     # print("\n\t\t\t```````````````````````````````\n\n")
