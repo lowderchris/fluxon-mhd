@@ -41,58 +41,68 @@ if capture:
     if verbose:
         print("\n    >>verbose = True. All stdout from the processes will be printed following each iteration.<<\n")
 else:
-    print("\n\nProcessing the following CR: ", rotations, "\n\n")
-    print(f"\n\n Batch Name {batch_name} \n\n")
+    pass
+    # print("\n\nProcessing the following CR: ", rotations, "\n\n")
+    # print(f"\n\n Batch Name {batch_name} \n\n")
     
 
 to_break = 0
-# Run the PDL script using subprocess
-for rot in tqdm(rotations, desc="    Processing Rotations. Overall progress", unit="rotation"):
-    try:
-        if do_survey:
-            recompute = 0
-            
-            for reduction in [2]:
-                to_break = 0
-                if reduction == 2:
-                    do_flux = [
-                    # 250, 250, 500, 1000, 1500, 2000, 2500, 
-                    # 3000, 4000, 5000, 6000, 8000, 10000,
-                    # 500, 1000, 2000,
+print("")
+with tqdm(total=len(rotations), unit="rotation") as pbar:
+    for rot in rotations:
+        try:
+                    # Update the description with the current iteration
+            pbar.set_description(f"Processing Rotation {rot}")
+            print("\n")
 
-                    1500, 2000, 2500,
-                    # 6000, 8000, 10000
-                    ]
-                else:
-                    do_flux = [
-                    # 250, 500, 1000, 1500, 2000, 2500, 
-                    # 500, 1000, 2000,
-                    # 3000, 
-                    5000, 
-                    6000, 8000, 10000,
-                    12000, 14000, 16000
-                    ]
-
-                for nflux in do_flux:
-                    result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux), str(batch_name)], capture_output=capture)
-                    if capture and verbose:
-                        print(result.stdout.decode())
-                    if result.returncode != 0:
-                        to_break += 1
-                        if to_break > 2:
-                            break
-        else:
-            result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux), str(batch_name)], capture_output=capture)
-            if capture and verbose:
+            if do_survey:
+                recompute = 0
                 
-                print(result.stdout.decode())
-            if result.returncode != 0:
-                to_break += 1
-                if to_break > 2:
-                    break
-    except Exception as e:
-        print(e)
-    
+                for reduction in [2]:
+                    to_break = 0
+                    if reduction == 2:
+                        do_flux = [
+                        # 250, 250, 500, 1000, 1500, 2000, 2500, 
+                        # 3000, 4000, 5000, 6000, 8000, 10000,
+                        # 500, 1000, 2000,
+
+                        1500, 2000, 2500,
+                        # 6000, 8000, 10000
+                        ]
+                    else:
+                        do_flux = [
+                        # 250, 500, 1000, 1500, 2000, 2500, 
+                        # 500, 1000, 2000,
+                        # 3000, 
+                        5000, 
+                        6000, 8000, 10000,
+                        12000, 14000, 16000
+                        ]
+
+                    for nflux in do_flux:
+                        result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux), str(batch_name)], capture_output=capture)
+                        if capture and verbose:
+                            print(result.stdout.decode())
+                        if result.returncode != 0:
+                            to_break += 1
+                            if to_break > 2:
+                                break
+            else:
+                result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux), str(batch_name)], capture_output=capture)
+                if capture and verbose:
+                    
+                    print(result.stdout.decode())
+                if result.returncode != 0:
+                    to_break += 1
+                    if to_break > 2:
+                        break
+
+            # Increment the progress bar
+            pbar.update(1)
+
+        except Exception as e:
+            print(e)
+        
 
 
 
