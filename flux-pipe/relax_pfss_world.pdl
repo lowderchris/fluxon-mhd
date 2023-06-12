@@ -10,7 +10,18 @@ print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 print "\n";
 my ($found_file_path, $stepnum) = find_highest_numbered_file($world_out_dir);
 
-my $do_the_relax = ($do_relax || not $found_file_path);
+# $found_file_path = search_files_in_directory($world_out_dir, , ".flux");
+my ($second_file_present, $file_path_relaxed) = check_second_file_presence($full_world_path);
+if ($second_file_present) {print "\tFound a relaxed file: $file_path_relaxed";} 
+else {
+    print "\tNo relaxed file found, so we will relax the world.\n\n";
+}
+my $directory = dirname($full_world_path);
+my $file_name_relaxed = $directory."/".$file_path_relaxed;
+my $stepnum = 0;
+
+# exit();
+my $do_the_relax = ($do_relax || not $second_file_present);
 # print "\n" . $found_file_path . "\n";
 # print $directory;
 
@@ -106,7 +117,16 @@ if ($do_the_relax){
     # # print $found_file_path;
 
     print"\t\tLoading relaxed world...\n";
-    my $this_world_relaxed = read_world($found_file_path);
+    my $this_world_relaxed = read_world($file_name_relaxed);
+
+    if ($file_name_relaxed =~ /_s(\d+)\.flux$/) {
+        $stepnum = $1;
+        # print "A STEPS ARE $stepnum";
+
+    } else {
+        print "Couldn't load relaxed world file!";
+        die;
+    }
 
     # print "\n";
     print"\n\t\tLoading pfss world...\n";
