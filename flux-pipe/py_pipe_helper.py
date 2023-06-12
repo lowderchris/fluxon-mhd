@@ -292,6 +292,11 @@ def read_fits_data(fname):
     hdulist.verify('silentfix+warn')
     return hdulist
 
+def get_fixed_coords(phi0, theta0):
+    ph0, th0 = phi0+np.pi, np.sin(-(theta0-(np.pi/2)))
+    return ph0, th0
+
+
 
 # def find_hilbert_footpoints(batchdir, cr, want_points=1000, reduction=3, force=False):
 #     """Finds the hilbert footpoints for a given CR and reduction amount."""

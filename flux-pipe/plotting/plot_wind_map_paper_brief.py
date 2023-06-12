@@ -243,9 +243,11 @@ if __name__ == "__main__":
 
 
     # Convert coords to correct coords
-    ph0, th0 = phi0+np.pi, -theta0+(np.pi/2)
-    ph1, th1 = phi1+np.pi, -theta1+(np.pi/2)
-
+    # ph0, th0 = phi0+np.pi, -theta0+(np.pi/2)
+    # ph1, th1 = phi1+np.pi, -theta1+(np.pi/2)
+    from py_pipe_helper import get_fixed_coords
+    ph0, th0 = get_fixed_coords(phi0, theta0)
+    ph1, th1 = get_fixed_coords(phi1, theta1)
 
 
     print(f"\n\tPlotting Windmap...", end="\n" if __name__=="__main__" else "")
@@ -331,16 +333,16 @@ if __name__ == "__main__":
     # plt.savefig(main_file, dpi=200)
     # import py_plot_helper
     # from py_pipe_helper import shorten_path
-    print("\t\t\tSaving ", shorten_path(main_pdf))
-    plt.savefig(main_pdf, dpi=200)
+    # print("\t\t\tSaving ", shorten_path(main_pdf))
+    # plt.savefig(main_pdf, dpi=200)
 
     # print(outer_file)
     # plt.savefig(outer_file, dpi=200)
-    print("\t\t\tSaving ", shorten_path(outer_pdf))
+    # print("\t\t\tSaving ", shorten_path(outer_pdf))
     plt.savefig(outer_pdf, dpi=200)
 
     plt.close(fig)
-    print("\t\t    Success!")
+    print("Success!")
 
     print("\n\t    Done with wind plotting!\n")
     print("\t\t\t```````````````````````````````\n\n\n")

@@ -40,8 +40,11 @@ except ValueError:
 nfluxon = arr.shape[1]
 
 # Convert coords to correct coords
-ph0, th0 = phi0+np.pi, -theta0+(np.pi/2)
-ph1, th1 = phi1+np.pi, -theta1+(np.pi/2)
+from py_pipe_helper import get_fixed_coords
+ph0, th0 = get_fixed_coords(phi0, theta0)
+ph1, th1 = get_fixed_coords(phi1, theta1)
+# ph0, th0 = phi0+np.pi, -theta0+(np.pi/2)
+# ph1, th1 = phi1+np.pi, -theta1+(np.pi/2)
 
 # Remove outliers from the dataset
 def remove_outliers(data, ph0, th0, threshold=3):

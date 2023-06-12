@@ -11,22 +11,9 @@ mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
 from astropy.io import fits
-
 import py_plot_helper
+from py_pipe_helper import load_magnetogram_params, load_fits_magnetogram
 
-# from py_pipe_helper import load_fits_magnetogram
-# import os, sys
-# # Get the parent directory path
-# if "plotting" in os.getcwd():
-#     pipdir = os.path.abspath(os.path.join(os.getcwd(), ".."))
-# elif "pipe" in os.getcwd():
-#     pipdir = os.getcwd()
-# else:
-#     pipdir = os.path.abspath(os.path.join(os.getcwd(), "flux-pipe"))
-
-# # Add the parent directory to the module search path
-# sys.path.append(pipdir)
-# # print(pipdir)
 
 print("\n\tPlotting Bmag...", end="")
 # create the argument parser
@@ -36,13 +23,15 @@ parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxo
 parser.add_argument('--show', type=int, default=0)
 parser.add_argument('--batch', type=str, default='fluxon')
 parser.add_argument('--file', type=str, default=None)
+parser.add_argument('--nwant', type=int, default=None, help='magnetogram file')
+
 args = parser.parse_args()
 batch = args.batch
-from py_pipe_helper import load_magnetogram_params, load_fits_magnetogram
 (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
 CR = args.cr or cr or 2183
 
-filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{CR}/wind/radial_bmag.dat'
+filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{CR}/wind/cr{args.cr}_f{args.nwant}_radial_bmag.dat'
+
 
 # Load the dat file
 arr = np.loadtxt(filename).T
@@ -51,9 +40,13 @@ nfluxon = arr.shape[1]
 
 
 # Convert coords to correct coords
-ph0, th0 = phi0+np.pi, -(theta0-(np.pi/2))
-ph1, th1 = phi1+np.pi, -(theta1-(np.pi/2))
+from py_pipe_helper import get_fixed_coords
+ph0, th0 = get_fixed_coords(phi0, theta0)
+ph1, th1 = get_fixed_coords(phi1, theta1)
+# ph0, th0 = phi0+np.pi, np.sin(-(theta0-(np.pi/2)))
+ph1, th1 = phi1+np.pi, np.sin(-(theta1-(np.pi/2)))
 
+# import pdb; pdb.set_trace()
 
 # Do some data manipulation
 br0_max = np.nanmax(br0) or 0.25
@@ -106,7 +99,16 @@ for ax in (ax0, ax1):
 
 fig.set_size_inches((8,8))
 plt.tight_layout()
-pngname = filename.replace(".dat", f"_ou{len(ph1)}.png")
+# pngname = filename.replace(".dat", f"_ou{len(ph1)}.png")
+import os.path
+imagename = os.path.basename(filename.replace(".dat", ".png"))
+imagedir = os.path.dirname(os.path.dirname(os.path.dirname(filename)))
+bdir = os.path.join(imagedir, "imgs", "bmag")
+if not os.path.exists(bdir):
+    os.makedirs(bdir)
+pngname = os.path.join(bdir, imagename)
+
+# print(f"Saving to {pngname}")
 # pngname = filename.replace(".dat", ".png")
 plt.savefig(pngname)
 if args.show:
