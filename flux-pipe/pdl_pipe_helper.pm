@@ -130,4 +130,64 @@ sub print_banner {
 
 }
 
+
+use strict;
+use warnings;
+
+sub search_files_in_directory {
+    my ($directory, $known_string, $extension) = @_;
+
+    # Escape the known string to avoid regex special characters
+    my $escaped_string = quotemeta $known_string;
+
+    # Generate the regular expression pattern
+    my $pattern = $escaped_string . '.*' . $extension;
+
+    opendir(my $dh, $directory) or die "Failed to open directory: $!";
+    while (my $file = readdir($dh)) {
+        next if ($file =~ /^\./);  # Skip hidden files/directories
+        next unless ($file =~ /$pattern/);
+        print "$file\n";  # Process the matching file
+    }
+    closedir($dh);
+}
+
+sub check_second_file_presence {
+    my ($file_path) = @_;
+
+    # Get the directory and base name of the first file
+    my $directory = dirname($file_path);
+    my $file_name = basename($file_path);
+
+    # Generate the pattern for the second file
+    my $second_file_pattern = $file_name;
+    print "file name: $file_name\n";
+    $second_file_pattern =~ s/(\.[^.]+)$/_relaxed_.*${1}/;
+    # print "Relaxed file pattern: $second_file_pattern\n";
+    # $second_file_pattern =~ s/\\_relaxed_s*${1}/;
+
+    opendir(my $dh, $directory) or die "Failed to open directory: $!";
+    while (my $file = readdir($dh)) {
+        next if ($file =~ /^\./);  # Skip hidden files/directories
+        next if ($file =~ /\.png$/); #skip png files
+        # return 1 if the file has "_relaxed_" in it
+        # if ($file =~ /_relaxed_/) {
+        #     closedir($dh);
+        #     print("Second file found: $file\n");
+        #     return 1;  # Second file found
+        # }
+        # print($file, "\n");
+        if ($file =~ /^$second_file_pattern$/) {
+            # print("Relaxed file found: $file\n");
+            closedir($dh);
+            return 1, $file;  # Second file found
+        }
+        # print("$file is wrong\n");
+    }
+    closedir($dh);
+
+    return 0, 0;  # Second file not found
+}
+
+
 1;
