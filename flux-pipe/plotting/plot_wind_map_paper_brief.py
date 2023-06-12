@@ -265,7 +265,7 @@ if __name__ == "__main__":
     all_vmin, all_vmax = 450, 850
     drk=0.25
 
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce=reduce, nwant=args.nwant, do_print_top=False)
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce=reduce, nwant=args.nwant, do_print_top=False)    
     hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=20, vmin=all_vmin, vmax=all_vmax)
     mean1, std1 = hist_plot(vel1_clean, ax=hist_ax, vmin=all_vmin, vmax=all_vmax, n_bins=16)
 

@@ -163,11 +163,9 @@ make_world_from_pfss($world_out_dir, $floc_path, $open_file, $closed_file, $make
 # but allowing for currents (not a potential field any longer).
 
 # Select the World
-$n_outliers = 0; # THIS IS FUDGE CODE!
-$n_remaining = $N_actual - $n_outliers;
 $world_out_dir = $datdir."/batches/$batch_name/cr".$CR.'/world/';
 $full_world_path = $world_out_dir .'cr'.$CR."_f$n_fluxons_wanted.flux";
-our ($this_world_orig, $this_world_relaxed, $stepnum) = relax_pfss_world($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold, $max_cycles, $logfile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR, $n_outliers);
+our ($this_world_orig, $this_world_relaxed, $stepnum) = relax_pfss_world($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold, $max_cycles, $logfile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR);
 
 
 
