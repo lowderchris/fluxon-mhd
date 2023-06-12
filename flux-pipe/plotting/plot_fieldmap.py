@@ -114,6 +114,7 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
     # Check if the plot already exists
     do_plot = False
     pic_paths = [fluxon_map_output_path, fluxon_map_output_path_top]
+    # pic_paths = [fluxon_map_output_path_top]
     for testpath in pic_paths:
         if not path.exists(testpath):
             do_plot = True
@@ -153,8 +154,8 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
             DPI = shp[1] / sz1 #pixels/inch
             fig.set_size_inches((sz1, sz0))
             plt.tight_layout()
-            print(f"\n\t\tSaving {shorten_path(fluxon_map_output_path)}...")
-            plt.savefig(fluxon_map_output_path, bbox_inches='tight', dpi=4*DPI)
+            # print(f"\n\t\tSaving {shorten_path(fluxon_map_output_path)}...")
+            # plt.savefig(fluxon_map_output_path, bbox_inches='tight', dpi=4*DPI)
             print(f"\t\tSaving {shorten_path(fluxon_map_output_path_top)}...")
             plt.savefig(fluxon_map_output_path_top, bbox_inches='tight', dpi=4*DPI)
             # plt.show()
