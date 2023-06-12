@@ -6,7 +6,8 @@ import pandas as pd
 # import statsmodels.api as sm
 
 datdir = "/Users/cgilbert/vscode/fluxon-data/"
-file_path = os.path.join(datdir, "fluxon/pipe_log.txt")
+batch = "scalability_test"
+file_path = os.path.join(datdir, "batches", batch, "pipe_log.txt")
 
 ## Helper functions to parse the output file
 def convert_value(value):
@@ -97,15 +98,15 @@ for (ax, reduction, rx, ry) in zip(flaxarray, df["r"].unique(), df['rx'].unique(
                 this_line_valid[this_line_valid <= 0.1] = 0.1
                 # ax.plot(abscissa_valid, this_line_valid, color=color, label=this_label)
                 # the same plot but stair-stepped
-                ax.step(abscissa_valid, this_line_valid, color=color, where='mid')
+                ax.step(abscissa_valid, this_line_valid, color=color, marker="o", where='mid')
             elif line_name in ["ttime"]: 
-                ax.plot(abscissa_valid, this_line_valid, color=color, label=this_label)
+                ax.plot(abscissa_valid, this_line_valid, color=color, marker="o", label=this_label)
             else:
-                ax.plot(abscissa_valid, this_line_valid, color=color, label=this_label)
+                ax.plot(abscissa_valid, this_line_valid, color=color, marker="o", label=this_label)
                 this_line_valid[this_line_valid <= 0.1] = 0.1
                 fit_line[fit_line <= 0.1] = 0.1
                 # fit_line[fit_line == 0] = 0.1
-                ax.plot(abscissa_valid, fit_line,  color=color, ls=":")
+                ax.plot(abscissa_valid, fit_line,  color=color, ls=":", marker="o")
 
     ax.legend() 
     # ax.set_ylim(bottom=0.1, top=10**4)
@@ -116,7 +117,7 @@ for (ax, reduction, rx, ry) in zip(flaxarray, df["r"].unique(), df['rx'].unique(
 fig.suptitle("Scalability of Fluxon Algorithm")
 # Fit line
 plt.tight_layout()
-img_path = os.path.join(datdir, "fluxon/imgs/scalability.png")
+img_path = os.path.join(datdir, f"batches/{batch}/imgs/scalability.png")
 plt.savefig(img_path)
 # plt.show()
 plt.close(fig)

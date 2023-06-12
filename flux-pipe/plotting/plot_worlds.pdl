@@ -109,9 +109,10 @@ sub plot_worlds{
     }
 
     my $short_name = shorten_path($new_filename_initial);
+    my $short_name_r = shorten_path($new_filename_relaxed);
 
     if (not $do_png and not $do_interactive) {
-        print "\tSkipped Plotting! Found $short_name\n";
+        print "\tSkipped Plotting! Found: \n\t\t$short_name and \n\t\t$short_name_r\n";
 
     } else {
         print "\tDone with Plotting!\n"

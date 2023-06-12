@@ -16,6 +16,7 @@ sub get_wind{
     my $out_fr = "$prefix\_radial_fr.dat";
     my $out_wind = "$prefix\_radial_wind.dat";
     my $short_out_wind = shorten_path($out_wind);
+    my $skipstring = "\n\tWind Calculation Skipped! \n\t\tFound $short_out_wind\n\n";
 
         # filename = f"cr{CR}_f{args.nwant}_ou{n_open}_radial_wind.png"
 
@@ -61,11 +62,11 @@ sub get_wind{
             map_fluxon_flow_parallel_master($out_wind, \@fluxons);
         } else {
         
-            print "\n\tWind Calculation Skipped! Found $short_out_wind\n\n"
+            print $skipstring;
         }
         use warnings 'misc'
     } else {
-        print "\n\tWind Calculation Skipped! Found $short_out_wind\n\n"
+        print $skipstring;
     }
 
         print "\t\t\t```````````````````````````````\n\n\n\n";
