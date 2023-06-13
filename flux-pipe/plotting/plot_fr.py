@@ -81,6 +81,7 @@ ax1.axvline(r2, ls=":", c='lightgrey')
 ax1.set_xlabel('Heliocentric Radius [R$_\odot$]')
 ax1.set_ylabel('Cross Sectional Area [m$^2$]')
 ax1.set_yscale('log')
+ax1.set_ylim((10.0**10, 10.0**20))
 
 
 ax2.set_title("Fluxon Area at Low (1R$_\odot$) and High (21.5R$_\odot$) Radii")

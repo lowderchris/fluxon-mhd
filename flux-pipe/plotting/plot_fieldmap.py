@@ -156,7 +156,7 @@ def magnet_plot(get_cr, datdir, batch, open_f=None, closed_f=None, force=False, 
             plt.tight_layout()
             # print(f"\n\t\tSaving {shorten_path(fluxon_map_output_path)}...")
             # plt.savefig(fluxon_map_output_path, bbox_inches='tight', dpi=4*DPI)
-            print(f"\t\tSaving {shorten_path(fluxon_map_output_path_top)}...")
+            # print(f"\t\tSaving {shorten_path(fluxon_map_output_path_top)}...")
             plt.savefig(fluxon_map_output_path_top, bbox_inches='tight', dpi=4*DPI)
             # plt.show()
             plt.close(fig)

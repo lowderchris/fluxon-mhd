@@ -101,11 +101,14 @@ push(@INC,   "$pipedir");
 # push(@INC,   "/Users/cgilbert/opt");
 # push(@INC,   "/Users/cgilbert/.cpan/build");
 
+my $plot_only = 0;
+
 print_banner($batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string);
 # sleep(1);
 $very_beginning = clock_gettime();
 
 
+if (not $plot_only){
 
 #######################################################################################################
 ## Download the Magnetogram ###########################################################################
@@ -174,13 +177,13 @@ our ($this_world_orig, $this_world_relaxed, $stepnum) = relax_pfss_world($world_
 #######################################################################################################
 plot_worlds($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $n_fluxons_wanted, $lim, $lim2, $stepnum);
 
+}
 
 
 #######################################################################################################
 ## Begin solar wind computation  ######################################################################
 #######################################################################################################
 ($out_b, $out_fr, $out_wind) = get_wind($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_fluxons_wanted, $pythondir);
-
 
 
 #######################################################################################################
@@ -193,7 +196,7 @@ print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
 system("$pythondir plotting/plot_bmag.py --cr $CR --batch $batch_name --dat_dir $datdir --file $out_b --nwant $n_fluxons_wanted") == 0 or (die "Python script returned error $?", exit);
 system("$pythondir plotting/plot_fr.py --cr $CR --batch $batch_name --dat_dir $datdir --file $out_fr --nwant $n_fluxons_wanted") == 0 or (die "Python script returned error $?", exit);
-system("$pythondir plotting/plot_wind_map_paper_brief.py --cr $CR --nact $N_actual --batch $batch_name --dat_dir $datdir --nwant $n_fluxons_wanted --file $out_wind") == 0 or (die "Python script returned error $?", exit);
+system("$pythondir plotting/plot_wind_map_detailed.py --cr $CR --batch $batch_name --dat_dir $datdir --nwant $n_fluxons_wanted --file $out_wind") == 0 or (die "Python script returned error $?", exit);
 
 
 

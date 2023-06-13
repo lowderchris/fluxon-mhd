@@ -89,7 +89,9 @@ sub map_fluxon_flow_parallel_master {
                 my $time_each = $elapsed / $highest_fid_done;
                 my $time_remaining = $remaining * $time_each;
                 my $round_remain = rint($time_remaining*10) / 10;
-                print "\r", "\t\t\tCalculated fluxons: ", $highest_fid_done, ' of ', $n_open, ", ", $round_elapsed, "(s) elapsed, ", $round_remain, "(s) remaining......";
+                my $round_minutes = rint($round_remain / 6)/10;
+
+                print "\r", "\t\t\tCalculated fluxons: ", $highest_fid_done, ' of ', $n_open, ", ", $round_elapsed, "(s) elapsed, ", $round_remain, "(s) [$round_minutes mins] remaining......";
             }
         }
     });
