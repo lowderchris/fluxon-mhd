@@ -14,7 +14,18 @@ import subprocess
 from astropy.nddata import block_reduce
 from astropy.io import fits
 import numpy as np
+import os
+import os.path
+import sys
 
+def add_paths(flux_pipe_dir):
+    # Path to the PDL script
+    pdl_script_path = flux_pipe_dir + "magnetogram2wind.pdl"
+    os.chdir(flux_pipe_dir)
+    # Get the plotscript directory path
+    plot_dir = os.path.abspath(os.path.join(flux_pipe_dir, "plotting"))
+    sys.path.append(plot_dir)
+    return pdl_script_path
 
 # Magnetogram things
 

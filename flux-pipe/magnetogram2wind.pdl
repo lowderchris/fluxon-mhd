@@ -48,7 +48,7 @@ $do_png =               0;
 $do_interactive =       0; 
 $do_wind_calc =         0;
 
-# $PDL::BIGPDL = 1;
+$PDL::BIGPDL = 1;
 $do_steps = 1000; # relaxation steps between checking stiffness target
 $relax_threshold = 0.49; # stiffness target to stop relaxation
 $max_cycles = 10; 
@@ -60,6 +60,7 @@ $recompute = $ARGV[3] || 0;
 $n_fluxons_wanted = $ARGV[4] || 1000;
 $do_wind_calc = 1; ## Calculate the Solar Wind
 $batch = $ARGV[5];
+$plot_only = $ARGV[6] || 0;
 $batch_name = "default_batch";
 if ($batch) {
     $batch_name = $batch;
@@ -101,7 +102,7 @@ push(@INC,   "$pipedir");
 # push(@INC,   "/Users/cgilbert/opt");
 # push(@INC,   "/Users/cgilbert/.cpan/build");
 
-my $plot_only = 0;
+# my $plot_only = 0;
 
 print_banner($batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string);
 # sleep(1);

@@ -276,7 +276,7 @@ if __name__ == "__main__":
     hex_ax = ax[3]
     hist_ax = ax[4]
 
-    all_vmin, all_vmax = 475, 625
+    all_vmin, all_vmax = 475, 700
     drk=0.25
     n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce=reduce, nwant=args.nwant, do_print_top=False)    
     hex_n = n_open//10
@@ -287,8 +287,8 @@ if __name__ == "__main__":
     scatter_ax.set_facecolor('grey')
     contour_ax.set_facecolor('grey')
 
-    scatter_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=6**2, alpha=0.75, marker='s', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
-    contour_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=4**2, alpha=1.0, marker='o', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
+    scat1 = scatter_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=6**2, alpha=0.75, marker='s', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
+    cont1 = contour_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=4**2, alpha=1.0, marker='o', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
     
     scatter_ax.scatter(ph1b, th1b,           color='g', s=3**2, alpha=1, marker='+')
     # hex_ax.scatter(ph1b, th1b,               color='g', s=3**2, alpha=1, marker='+')
@@ -308,7 +308,7 @@ if __name__ == "__main__":
 
     ## SAVING
     # Set the output file names
-    filename = f"cr{CR}_f{args.nwant}_ou{n_open}_radial_wind.png"
+    filename = f"png_cr{CR}_f{args.nwant}_ou{n_open}_radial_wind.png"
     main_file =  f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
@@ -341,14 +341,24 @@ if __name__ == "__main__":
     # ax[1].set_ylim((-1, 1))
     # ax[3].set_ylim((-1, 1))
 
+
     # Add an axes for the colorbar
-    cbar_ax = fig.add_axes([0.88, 0.38, 0.01, 0.3])
+    cbar_ax = fig.add_axes([0.88, 0.2, 0.03, 0.75])
 
-    # Add a colorbar to the figure
-    cbar = fig.colorbar(hex1, cax=cbar_ax, extend="max", cmap='autumn')
-    cbar.cmap.set_over('lightgreen')
-    # cbar.set_label("Interp. Wind Speed [km/s]")
+    # Create a colorbar with a custom colormap including the green overlay
+    import matplotlib as mpl
+    cmap = mpl.colormaps['autumn']
 
+    plotobjs = [scat1, cont1, hex1]
+    for obj in plotobjs:
+        cbar = plt.colorbar(obj, cax=cbar_ax, extend="both", cmap=cmap, extendfrac=0.1,
+                            aspect=15)
+        cbar.cmap.set_over('lime')
+        cbar.cmap.set_under('darkviolet')
+        # cbar.cmap.set_over('lightgreen')
+        # cbar.cmap.set_under('lightblue')
+
+    cbar.set_label("Interp. Wind Speed [km/s]", labelpad=-50)
 
 
     fig.set_size_inches((6,8))
@@ -370,7 +380,7 @@ if __name__ == "__main__":
     print("\n\t\tSaving figures to disk...", end="")
     # print(main_file)
     main_pdf = main_file.replace(".png", ".pdf")
-    outer_pdf = outer_file.replace(".png", ".pdf")
+    outer_pdf = outer_file.replace("png", "pdf")
     # plt.show()
     # plt.savefig(main_file, dpi=200)
     # import py_plot_helper
@@ -379,7 +389,7 @@ if __name__ == "__main__":
     # plt.savefig(main_pdf, dpi=200)
 
     # print(outer_file)
-    # plt.savefig(outer_file, dpi=200)
+    plt.savefig(outer_file, dpi=200)
     # print("\t\t\tSaving ", shorten_path(outer_pdf))
     plt.savefig(outer_pdf, dpi=200)
 
