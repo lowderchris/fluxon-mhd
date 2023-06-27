@@ -161,7 +161,7 @@ sub check_second_file_presence {
 
     # Generate the pattern for the second file
     my $second_file_pattern = $file_name;
-    print "file name: $file_name\n";
+    print "    File name: $file_name\n";
     $second_file_pattern =~ s/(\.[^.]+)$/_relaxed_.*${1}/;
     # print "Relaxed file pattern: $second_file_pattern\n";
     # $second_file_pattern =~ s/\\_relaxed_s*${1}/;

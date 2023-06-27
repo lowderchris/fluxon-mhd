@@ -60,6 +60,11 @@ def load_and_condition_fits_file(fname, datdir):
     br.meta['crln_obs'] = 0.0
     br.meta['dsun_obs'] = 1.0
 
+    # TODO This needs to be in arcsecs, apparently, or maybe something else is wrong, but we definitely need to add the solar radius here somehow
+    # br.meta['rsun_ref'] = sunpy.sun.constants.average_angular_size
+    # br.meta['rsun_obs'] = sunpy.sun.constants.radius
+    # import pdb; pdb.set_trace()
+
     br_safe = copy.copy(br)
     br_safe.data[np.isnan(br_safe.data)]=0
 
@@ -344,7 +349,9 @@ def trace_lines(output, f_lon, f_lat, f_sgn, open_path, closed_path):
 
 @timeout_decorator.timeout(5)
 def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn):
+
     (this_flon, this_flat) = coords
+    # import pdb; pdb.set_trace()
     coord_frame = output.coordinate_frame
     # THE ARCSIN IS A TEST
     x0 = SkyCoord(this_flon * u.rad, np.arcsin(this_flat) * u.rad, r0, frame=coord_frame)

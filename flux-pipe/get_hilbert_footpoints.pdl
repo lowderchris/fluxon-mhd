@@ -44,7 +44,7 @@ sub get_hilbert_footpoints{
         my $most = $n_fluxons_wanted + $width;
         my $least = $n_fluxons_wanted - $width;
         my $iterate = 1;
-        my $try_fluxons = int($n_fluxons_wanted * 1.25);
+        my $try_fluxons = int($n_fluxons_wanted * 2.0);
         my $count = 0;
         my $maxreps = 30;
 
