@@ -17,6 +17,8 @@ import numpy as np
 import os
 import os.path
 import sys
+from sunpy.net.dataretriever import GenericClient
+
 
 def add_paths(flux_pipe_dir):
     # Path to the PDL script
@@ -112,6 +114,158 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
     small_path = reduce_mag_file(big_path, reduce, force=force_download)
     return big_path, small_path
 
+# from sunpy.net.dataretriever.client import GenericClient
+# class ADAPTClient(GenericClient):
+
+#     baseurl = ("https://gong.nso.edu/adapt/maps/gong/"
+#                )
+
+#     baseurl = (r'http://lasp.colorado.edu/eve/data_access/evewebdata/quicklook/'
+#                 r'L0CS/SpWx/%Y/%Y%m%d_EVE_L0CS_DIODES_1m.txt')
+#     pattern = '{}/SpWx/{:4d}/{year:4d}{month:2d}{day:2d}_EVE_L{Level:1d}{}'
+
+#     @classmethod
+#     def register_values(cls):
+#         from sunpy.net import attrs
+#         adict = {attrs.Instrument: [('EVE', 'Extreme ultraviolet Variability Experiment, which is part of the NASA Solar Dynamics Observatory mission.')],
+#                 attrs.Physobs: [('irradiance', 'the flux of radiant energy per unit area.')],
+#                 attrs.Source: [('SDO', 'The Solar Dynamics Observatory.')],
+#                 attrs.Provider: [('LASP', 'The Laboratory for Atmospheric and Space Physics.')],
+#                 attrs.Level: [('0', 'EVE: The specific EVE client can only return Level 0C data. Any other number will use the VSO Client.')]}
+#         return adict
+
+
+# import re
+
+from sunpy.net import attr
+from sunpy.net.dataretriever import GenericClient
+
+class ADAPTFileType(attr.SimpleAttr):
+    """
+    ADAPT file type: Public.
+    """
+    pass
+
+class ADAPTLngType(attr.SimpleAttr):
+    """
+    ADAPT longitude type: Carrington Fixed, Central Meridian, East Limb.
+    """
+    pass
+
+class ADAPTInputSource(attr.SimpleAttr):
+    """
+    ADAPT input source: All, KPVT, VSM, GONG, HMI, MDI, MWO.
+    """
+    pass
+
+class ADAPTDataAssimilation(attr.SimpleAttr):
+    """
+    ADAPT data assimilation: WH, enLS, enkf, enLAKF.
+    """
+    pass
+
+class ADAPTResolution(attr.SimpleAttr):
+    """
+    ADAPT model spatial resolution: 1.0 deg, 0.2 deg.
+    """
+    pass
+
+class ADAPTVersionYear(attr.SimpleAttr):
+    """
+    ADAPT code version year.
+    """
+    pass
+
+class ADAPTVersionMonth(attr.SimpleAttr):
+    """
+    ADAPT code version month.
+    """
+    pass
+
+class ADAPTEvolutionMode(attr.SimpleAttr):
+    """
+    ADAPT evolution mode: Data assimilation step, Intermediate step, Forecast step.
+    """
+    pass
+
+class ADAPTHelioData(attr.SimpleAttr):
+    """
+    ADAPT helioseismic data: Not added or no data, Far-side, Emergence, Both emergence & far-side.
+    """
+    pass
+
+class ADAPTRealizations(attr.SimpleAttr):
+    """
+    ADAPT realizations: number of model/file realizations, e.g., 16 -> "016"
+    """
+    pass
+
+
+class ADAPTMagData(attr.SimpleAttr):
+    """
+    ADAPT magnetic data: Not added or no data, Mag-los, Mag-vector, Mag- both los & vector, Mag- polar avg obs, Mag- los & polar, Mag- vector & polar, Mag- both los and vector & polar.
+    """
+    pass
+    # baseurl = (r'https://gong.nso.edu/adapt/maps/gong/'
+    #            r'adapt[ZXABR_CCEFFF]_{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d}_[TIIJJKKLLGQ].fts')
+    # pattern = r'adapt(?P<modeltag>[ZXABR_CCEFFF])_(?P<datetime>{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d})_(?P<lastobstag>[TIIJJKKLLGQ]).fts'
+    
+    # baseurl = r'https://gong.nso.edu/adapt/maps/gong/' '\d{4}/adapt\d{5}_\d{2}[a-z]\d{3}_\d{12}_[a-z]\d{8}[a-z]\d{1}.fts.gz'
+    # pattern = r'{}/{:d}/adapt{:d}_{:d}{:l}{:d}_{:d}{:d}{:d}{:d}_{:l}{:d}{:d}{:d}{:d}{:l}{:d}.fts.gz'
+    # https://gong.nso.edu/adapt/maps/gong/2010/adapt40311_03k012_201005010200_i00100900n1.fts.gz
+
+    # baseurl = r'https://gong.nso.edu/adapt/maps/gong/\d{4}/adapt4(\d{1})(\d{1})(\d{1})1_(\w{2})(\w{1})(\d{3})_\d{4}\d{2}\d{2}\d{2}\d{2}_i(\d{2})(\d{2})(\d{2})(\d{2})(\w{1})(\d{1}).fts.gz'
+    # pattern = (r'https://gong.nso.edu/adapt/maps/gong/%Y/adapt4{LNGTYPE:1d}{InputSource:1d}{DataAssimilation:1d}1_{CodeVersionYear:2s}{CodeVersionMonth:1s}{Realization:3s}_%Y%m%d%H%M_i{DaysSinceLastObs:2d}{HoursSinceLastObs:2d}{MinutesSinceLastObs:2d}{SecondsSinceLastObs:2d}{HelioseismicData:1s}{MagData:1d}.fts.gz')
+
+    # pattern = r'{year:4d}/adapt{file_type:d}{lng_type:d}{input_source:d}{data_assimilation:d}{resolution:d}_{version_yr:d}{version_month:l}{realizations:d}_{map_time_yr:d}{map_time_month:d}{map_time_day:d}{map_time_hour:d}{map_time_min:d}_{evolution_mode:l}{days_since_last_obs:d}{hours_since_last_obs:d}{minutes_since_last_obs:d}{seconds_since_last_obs:d}{helio_data:l}{mag_data:d}.fts.gz'
+    # print(baseurl)
+    # print(pattern)
+
+
+
+
+class ADAPTClient(GenericClient):
+
+    baseurl = r'https://gong.nso.edu/adapt/maps/gong/%Y/adapt(\d){5}_(\d){2}(\w){1}(\d){3}_(\d){12}_(\w){1}(\d){8}(\w){1}(\d){1}\.fts\.gz'
+    pattern = '{}adapt{ADAPTFileType:1d}{ADAPTLngType:1d}{ADAPTInputSource:1d}{ADAPTDataAssimilation:1d}{ADAPTResolution:1d}_{ADAPTVersionYear:2d}{ADAPTVersionMonth:1l}{ADAPTRealizations:3d}_{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d}_{ADAPTEvolutionMode:1l}{days_since_last_obs:2d}{hours_since_last_obs:2d}{minutes_since_last_obs:2d}{seconds_since_last_obs:2d}{ADAPTHelioData:1l}{ADAPTMagData:1d}.fts.gz'
+    
+
+
+    @classmethod
+    def register_values(cls):
+        from sunpy.net import attrs as a
+
+        adict = {a.Instrument: [('ADAPT', 'ADvanced Adaptive Prediction Technique.')],
+                a.Source: [('NSO', 'National Solar Observatory.')],
+                a.Provider: [('GONG', 'Global Oscillation Network Group.')],
+                ADAPTFileType: [('4', 'Public')],
+                ADAPTLngType: [('0', 'Carrington Fixed'), ('1', 'Central Meridian'), ('2', 'East Limb')],
+                ADAPTInputSource: [('0', 'All'), ('1', 'KPVT'), ('2', 'VSM'), ('3', 'GONG'), ('4', 'HMI'), ('5', 'MDI'), ('6', 'MWO')],
+                ADAPTDataAssimilation: [('0', 'WH'), ('1', 'enLS'), ('2', 'enkf'), ('3', 'enLAKF')],
+                ADAPTResolution: [('1', '1.0 deg'), ('2', '0.2 deg')],
+                ADAPTVersionYear: [(str(i), f"Code version year -> {2000 + i}") for i in range(1, 100)],
+                ADAPTRealizations: [(str(i), f"Number of Realizations -> {i}") for i in range(1, 100)],
+                ADAPTVersionMonth: [(chr(i+96), f"Code version month -> {i}") for i in range(1, 13)],
+                ADAPTEvolutionMode: [('a', 'Data assimilation step'), ('i', 'Intermediate step'), ('f', 'Forecast step')],
+                ADAPTHelioData: [('n', 'Not added or no data'), ('f', 'Far-side'), ('e', 'Emergence'), ('b', 'Both emergence & far-side')],
+                ADAPTMagData: [('0', 'Not added or no data'), ('1', 'Mag-los'), ('2', 'Mag-vector'), ('3', 'Mag- both los & vector'), ('4', 'Mag- polar avg obs'), ('5', 'Mag- los & polar'), ('6', 'Mag- vector & polar'), ('7', 'Mag- both los and vector & polar')]
+                }
+        return adict
+    
+    @classmethod
+    def _can_handle_query(cls, *query):
+        required = {a.Instrument, a.Time}
+
+        optional = {ADAPTFileType, ADAPTLngType, ADAPTInputSource, ADAPTDataAssimilation, 
+                    ADAPTResolution, ADAPTVersionYear, ADAPTVersionMonth, ADAPTEvolutionMode, 
+                    ADAPTHelioData, ADAPTMagData}
+
+        all_attrs = {type(x) for x in query}
+        # print(all_attrs)
+        return required.issubset(all_attrs) and all_attrs.issubset(required.union(optional))
+
+
+
 def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=False, reduce = False):
     """
     Function to grab ADAPT data.
@@ -126,7 +280,7 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
         None
     """
 
-    # Set the download account
+   
     try:
         jsoc_email = email or os.environ["JSOC_EMAIL"]
     except KeyError:
@@ -137,29 +291,32 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
     if cr is not None:
         CR = cr
         date = sunpy.coordinates.sun.carrington_rotation_time(CR)
+        date_end = sunpy.coordinates.sun.carrington_rotation_time(CR+1)
     elif date is not None:
         CR = int(sunpy.coordinates.sun.carrington_rotation_number(date))
+        date_end = sunpy.coordinates.sun.carrington_rotation_time(CR+1)
     else:
         raise ValueError("Must specify either cr or date!")
-    
 
+    date=date.strftime(r"%Y-%m-%d")
+    date_end=date_end.strftime(r"%Y-%m-%d")
 
     mag_dir = make_mag_dir(datdir)
 
     print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(f"(py) Getting Magnetogram for CR{CR}, from {date}...")
+    print(f"(py) Getting Magnetogram for CR{CR}, from {date} to {date_end}...")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     import pathlib
-    hmi_object = pathlib.Path(mag_dir)
-    file_list = list(hmi_object.iterdir())
-    print("\tSearching for file...")
+    # hmi_object = pathlib.Path(mag_dir)
+    # file_list = list(hmi_object.iterdir())
+    # print("\tSearching for file...")
     found_file = False
-    for file in file_list:
-        if str(CR)+"_r1_" in str(file):
-            print(f"\t\tFound '{os.path.basename(file)}' in '{shorten_path(mag_dir)}'")
-            found_file = True
-            break
+    # for file in file_list:
+    #     if str(CR)+"_r1_" in str(file):
+    #         print(f"\t\tFound '{os.path.basename(file)}' in '{shorten_path(mag_dir)}'")
+    #         found_file = True
+    #         break
 
     if found_file:
         if force_download:
@@ -168,12 +325,22 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
             small_path = reduce_mag_file(file, reduce, force=force_download)
             return file, small_path
 
+    # print(Fido.clients)
+    # Fido.add_clients(ADAPTClient)
+    # results = Fido.search(a.Instrument('ADAPT'))
+    results = Fido.search(a.Instrument('adapt'), a.Time(date, date_end) )
+    print(results)
+    # import pdb; pdb.set_trace()
+    1/0
 
-    c = drms.Client()
-    # Generate a search
-    crot = a.jsoc.PrimeKey('CAR_ROT', str(CR))
+    # c = drms.Client()
+    # # Generate a search
+    # crot = a.jsoc.PrimeKey('CAR_ROT', str(CR))
+    # res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crot, 
+    #                 a.jsoc.Notify(jsoc_email))
+    
     res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crot, 
-                    a.jsoc.Notify(jsoc_email))
+                a.jsoc.Notify(jsoc_email))
 
     # Once the query is made and trimmed down...
     big_path = os.path.join(mag_dir, f"CR{CR}_r1_hmi.fits")
@@ -562,3 +729,99 @@ def get_fixed_coords(phi0, theta0):
     #     print("\n !! No MDI data available for this time period !!\n")
 
     # print("\tDownload Complete!\n")
+
+
+
+    # ADAPTFileType
+    # ADAPTLngType
+    # ADAPTInputSource
+    # ADAPTDataAssimilation
+    # ADAPTResolution
+    # ADAPTVersionYear
+    # ADAPTVersionMonth
+    # ADAPTEvolutionMode
+    # ADAPTHelioData
+    # ADAPTMagData
+
+
+    
+    # print(baseurl)
+    # from sunpy.net import Scraper
+    # scraper = Scraper(baseurl, regex=True)
+    # import pdb; pdb.set_trace()
+
+    # scraper = Scraper(baseurl, pattern, regex=True)
+    
+    # @classmethod
+    # def register_time(cls):
+    #     map_time = a.TimeParameter('map_time', a.Time)
+    #     # print(map_time)
+    #     return map_time
+        # def _get_url_for_timerange(self, timerange, **kwargs):
+    #     """
+    #     Returns list of URLs corresponding to value of input timerange.
+    #     """
+    #     from sunpy.net import scraper
+    #     # import pdb; pdb.set_trace()
+    #     time_scraper = scraper.Scraper(self.baseurl + self.pattern)
+    #     thing = time_scraper.filelist(timerange)
+    #     # print(thing)
+    #     1/0
+    #     return thing
+
+
+
+    # @classmethod
+    # def register_values(cls):
+    #     adict = {attrs.Instrument: [('ADAPT', 'ADvanced Adaptive Prediction Technique.')],
+    #              attrs.Source: [('NSO', 'National Solar Observatory.')],
+    #              attrs.Provider: [('GONG', 'Global Oscillation Network Group.')],
+    #              attrs.Time: []
+    #              }
+    #     return adict
+
+# Fido.register_client(ADAPTClient)
+ # import matplotlib.pyplot as plt
+    # import sunpy.io
+    # import sunpy.map
+    # from matplotlib import gridspec
+
+    # from pfsspy.sample_data import get_adapt_map
+
+
+    # adapt_fname = get_adapt_map()
+    # adapt_fits = sunpy.io.read_file(adapt_fname)
+    # data_header_pairs = [(map_slice, adapt_fits[0].header) for map_slice in adapt_fits[0].data]
+    # adapt_maps = sunpy.map.Map(data_header_pairs, sequence=True)
+
+    # fig = plt.figure(figsize=(7, 8))
+    # gs = gridspec.GridSpec(4, 3, figure=fig)
+    # for i, a_map in enumerate(adapt_maps):
+    #     ax = fig.add_subplot(gs[i], projection=a_map)
+    #     a_map.plot(axes=ax, cmap='bwr', vmin=-2, vmax=2,
+    #             title=f"Realization {1+i:02d}")
+
+    # adapt_maps.plot()
+
+    # plt.tight_layout(pad=5, h_pad=2)
+    # plt.show(block=True)
+
+
+
+
+    # print("ASDF")
+    # 1/0
+
+    # Set the download account
+
+
+        # baseurl = url + r'%Y'
+  # pattern = r'{year:4d}/adapt{file_type:d}{lng_type:d}{input_source:d}{data_assimilation:d}{resolution:d}_{version_yr:d}{version_month:l}{realizations:d}_{map_time}_{evolution_mode:l}{days_since_last_obs:d}{hours_since_last_obs:d}{minutes_since_last_obs:d}{seconds_since_last_obs:d}{helio_data:l}{mag_data:d}.fts.gz'
+    # pattern = r'{file_type:s}{lng_type:s}{input_source:s}{data_assimilation:s}{resolution:s}_{version_yr:s}{version_month:s}{realizations:d}_{map_time}_{evolution_mode:s}{days_since_last_obs:d}{hours_since_last_obs:d}{minutes_since_last_obs:d}{seconds_since_last_obs:d}{helio_data:s}{mag_data:s}.fts.gz'
+    # pattern = "{}"
+    # (\d){5}_(\d){12}_(\w){1}(\d){8}(\w){1}(\d){1}\.fts\.gz
+    # pattern = r'{}adapt{ADAPTFileType:1d}{ADAPTLngType:1d}{ADAPTInputSource:1d}{ADAPTDataAssimilation:1d}{ADAPTResolution:1d}_{ADAPTVersionYear:2d}{ADAPTVersionMonth:1s}{realizations:03d}_{map_time:12d}_{ADAPTEvolutionMode:1s}{days_since_last_obs:2d}{hours_since_last_obs:2d}{minutes_since_last_obs:2d}{ADAPTHelioData:1s}{ADAPTMagData:1d}.fts.gz'
+    # pattern = '{}adapt{ADAPTFileType:1d}{ADAPTLngType:1d}{ADAPTInputSource:1d}{ADAPTDataAssimilation:1d}{ADAPTResolution:1d}_{ADAPTVersionYear:2d}{ADAPTVersionMonth:1l}{realizations:3d}_{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d}_{ADAPTEvolutionMode:1l}{days_since_last_obs:2d}{hours_since_last_obs:2d}{minutes_since_last_obs:2d}{ADAPTHelioData:1l}{ADAPTMagData:1d}.fts.gz'
+    # pattern = '{}adapt{ADAPTFileType:1d}{ADAPTLngType:1d}{ADAPTInputSource:1d}{ADAPTDataAssimilation:1d}{ADAPTResolution:1d}_{ADAPTVersionYear:2d}{ADAPTVersionMonth:1l}{realizations:3d}_{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d}_{ADAPTEvolutionMode:1l}{days_since_last_obs:2d}{hours_since_last_obs:2d}{minutes_since_last_obs:2d}{ADAPTHelioData:1l}{ADAPTMagData:1d}.fts.gz'
+    # pattern = 'adapt{:5d}_{:2d}{:1s}{:3d}_{:12d}_{:1s}{:8d}{:1s}{:1d}.fts.gz'
+    # pattern = '{}adapt{:5d}_{:2d}{:1l}{:3d}_{:12d}_{:1l}{:8d}{:1l}{:1d}.fts.gz'
