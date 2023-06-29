@@ -68,9 +68,10 @@ $PDL::BIGPDL = 1;
 
 # Read configurations from disk
 my %configs = configurations();
-
+$adapt = 1;
 my $CR = $ARGV[0] // ($configs{rotations}->at(0));
 my $n_fluxons_wanted = $ARGV[1] // ($configs{fluxon_count}->at(0));
+$adapt = 1;
 
 if (!defined $ARGV[0] and $configs{verbose}) {
     print "Using first value ($CR) from config for Carrington Rotation.\n";
@@ -159,9 +160,8 @@ if ( not $plot_only ) {
     my $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
     my $magfile  = $magdir . "/CR$CR\_r$reduction\_hmi.fits";
 
-    # Get the Footpoints
-    my $N_actual =
-      get_hilbert_footpoints( $flocdir, $flocfile, $magfile, $n_fluxons_wanted, $force_process_magnetogram );
+# Get the Footpoints
+$N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $force_process_magnetogram, $adapt);
 
 
 
