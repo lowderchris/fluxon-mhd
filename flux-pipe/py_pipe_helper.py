@@ -163,9 +163,9 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
     # Make the directory
     mag_dir = make_mag_dir(datdir, ADAPT=True)
 
-    print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(f"(py) Getting Magnetogram(s) for CR{CR}, from {display_date} to {display_date_end}...")
-    print(  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(f"(py) Getting ADAPT Magnetogram(s) for CR{CR}, from {display_date} to {display_date_end}...")
+    print(  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     print("\tChecking for file...")
     found_file = False
@@ -255,7 +255,10 @@ def format_ADAPT_file(filename, reduce=False, force=False):
     import sunpy.map
     out_file_name = str(filename).replace("_r1_", "_rmean_")
     if os.path.exists(out_file_name) and not force:
-        print("\tFile already formatted! Skipping.\n")
+        print("\tFile already formatted!")
+        print("\t\t", shorten_path(out_file_name), "\n")
+        print("\t\t\t```````````````````````````````\n\n")
+
         return out_file_name
 
     print("\n\tFormatting ADAPT file...", end='')
