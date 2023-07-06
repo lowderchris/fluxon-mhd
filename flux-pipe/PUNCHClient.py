@@ -1,8 +1,10 @@
 
-import sunpy.net
-from sunpy.net import attr, attrs
+from sunpy.net import attr, attrs, Fido
 from sunpy.net.dataretriever import GenericClient
-
+from sunpy.net.dataretriever.client import QueryResponse
+from sunpy.net.scraper import Scraper
+from sunpy.time import TimeRange
+import os
 
 class PUNCHType(attr.SimpleAttr):
     """
@@ -12,49 +14,23 @@ class PUNCHType(attr.SimpleAttr):
 
 class PUNCHLevel(attr.SimpleAttr):
     """
-    
+    Preliminary synthetic PUNCH data generated from GAMERA model data.
+
+    level3 - Level 3 total brightness and polarized brightness at 24-minute cadence
+    level3_trefoil - Quasi level 3 total brightness and polarized brightness, with the trefoil FOV at 8-minute cadence
+    quickPUNCH - Lower resolution quick products with total brightness only
+
+    Note that the level3_trefoil and quickPUNCH products are at an 8-minute cadence for purposes of illustration, and contain a CME of unusual speed. 
+    The level3 products are synthetic assmblies of three sets of spacecraft rotation trefoil patterns, and are a more accurate representation.
     """
     pass
 
-
 class PUNCHClient(GenericClient):
 
-
-    folder = "/{PUNCHLevel}/" #"/level3/"  #"level3"  # "level3" #
-    # print(PUNCHLevel)
-    #Model url:   https://data.boulder.swri.edu/lowder/PUNCH/synthetic_data/level3/PUNCH_L3_MPM_20230704151200.fits
-    #Model url:   https://data.boulder.swri.edu/lowder/PUNCH/synthetic_data/level3_trefoil/PUNCH_L3_MPM_20230704151200.fits
-    top_lvl = 'https://data.boulder.swri.edu/lowder/PUNCH/synthetic_data'
-    baseurl = top_lvl + folder + "PUNCH_L3_MPM_(\d){14}.fits"
-    # print(baseurl)
-    # import pdb; pdb.set_trace()
-    # baseurl = baseurl.replace("{PUNCHLevel}", "level3")
-    # print(baseurl)
-    pattern = top_lvl + "/{PUNCHLevel}/PUNCH_L{Level:1d}_{PUNCHType:3l}_{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d}{second:2d}.fits"
-
-    info_url = baseurl
-    __name__ = 'PUNCHClient'
-
-    # # @classmethod
-    # def name_it(cls, name = 'PUNCHClient'):
-    #     cls.__name__ = name
-
-    # name_it(self)
-
-    # @classmethod
-    # def pre_search_hook(cls, *args, **kwargs):
-    #     d = cls._get_match_dict(*args, **kwargs)
-    #     # waverange = a.Wavelength(34*u.GHz, 17*u.GHz)
-    #     # req_wave = d.get('Wavelength', waverange)
-    #     # wmin = req_wave.min.to(u.GHz, equivalencies=u.spectral())
-    #     # wmax = req_wave.max.to(u.GHz, equivalencies=u.spectral())
-    #     # req_wave = a.Wavelength(wmin, wmax)
-    #     # d['Wavelength'] = []
-    #     # if 17*u.GHz in req_wave:
-    #     #     d['Wavelength'].append('tca')
-    #     # if 34*u.GHz in req_wave:
-    #     #     d['Wavelength'].append('tcz')
-    #     return cls.baseurl, cls.pattern, d
+    top_lvl = 'https://data.boulder.swri.edu/lowder/PUNCH/synthetic_data/{PUNCHLevel}/'
+    baseurl = top_lvl + "PUNCH_L(\d){1}_(\w){3}_(\d){14}.fits"
+    pattern = top_lvl + "PUNCH_L{Level:1d}_{PUNCHType:3l}_{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d}{second:2d}.fits"
+    info_url = top_lvl
 
 
     @classmethod
@@ -64,9 +40,9 @@ class PUNCHClient(GenericClient):
         adict = {attrs.Instrument: [('PUNCH', 'Polarimeter to UNify the Corona and Heliosphere')],
                 attrs.Source: [('SwRI', 'Southwest Research Institute')],
                 attrs.Provider: [('SwRI', 'Southwest Research Institute')],
-                attrs.Level: [('3', 'level3')],
-                PUNCHType: [('MPM', 'Magnetic Pseudo-Moments')],
-                PUNCHLevel: [('level3', "Regular Level 3"),('level3_trefoil','The Trefoil Image')]
+                attrs.Level: [('2', "level2"), ('3', 'level3')],
+                PUNCHType: [('MPM', 'Magnetic Pseudo-Moments'), ('NQM', 'Non-Quadrupolar Moments'), ('WQM', 'Wavelet Moments')], #This is almost certainly complete nonsense
+                PUNCHLevel: [('level3', "Regular Level 3"),('level3_trefoil','The Trefoil Image'), ("quickPUNCH", "A smaller quicklook image")]
                 }
         return adict
     
@@ -77,10 +53,8 @@ class PUNCHClient(GenericClient):
         optional = {attrs.Level, attrs.Source, attrs.Provider, PUNCHType, PUNCHLevel}
 
         all_attrs = {type(x) for x in query}
-        # [print(x, "\n\n") for x in all_attrs]
         return required.issubset(all_attrs) and all_attrs.issubset(required.union(optional))
 
-    @classmethod
     def search(self, *args, **kwargs):
         """
         Query this client for a list of results.
@@ -96,70 +70,41 @@ class PUNCHClient(GenericClient):
         -------
         A `QueryResponse` instance containing the query result.
         """
-        from sunpy.net.scraper import Scraper
-        from sunpy.time import TimeRange
-        from sunpy.net.dataretriever.client import QueryResponse
 
-        print("_______________________________________________________________")
-        verb=True
         baseurl, pattern, matchdict = self.pre_search_hook(*args, **kwargs)
-        # if verb: print("Args: ", args)
-        # if verb: print("Baseurl: ", baseurl)
-        # for ii, key in enumerate(matchdict.keys()):
-        #     print(key," - ", matchdict[key])
-        #     print(args[ii]," - ", args[ii].value)
-        # if verb: print("Matchdict: ", matchdict)
-        # if verb: print("Matchdict: ", matchdict["Instrument"][0])
-        # if verb: print("SearchArg: ", args[0].value)
         tr = TimeRange(matchdict['Start Time'], matchdict['End Time'])
-
         filesmeta_list = []
         for key in matchdict:
-            try:
-                # if len(matchdict[key])>1:
+            try: # if the value is a list, we need to iterate over it
                 for value in matchdict[key]:
                     kwargs_dict = {key: value}
-                    # print(kwargs_dict)
-                    # print(key, value)
-                    # print(baseurl)
                     this_baseurl = baseurl.replace("{{{}}}".format(key), value)
-                    # print(this_baseurl)
-                    # print("\n")
-                    # import pdb; pdb.set_trace()
                     scraper = Scraper(this_baseurl, regex=True, **kwargs_dict)
-
-                    filesmeta_list.extend(scraper._extract_files_meta(tr, extractor=pattern,
-                                                matcher=matchdict))
-                    # print(filesmeta_list)
-                
-
+                    filesmeta_list.extend(scraper._extract_files_meta(tr, extractor=pattern, matcher=matchdict))
             except TypeError:
                 pass
 
         filesmeta = sorted(filesmeta_list, key=lambda k: k['url'])
-        # print(filesmeta)
-        # metalist = []
-        # import pdb; pdb.set_trace()
-        # for i in filesmeta:
-        #     rowdict = self.post_search_hook(i, matchdict)
-        #     metalist.append(rowdict)
-        # print(metalist)
-
         return QueryResponse(filesmeta, client=self)
 
 
+def create_punchdir():
+    """
+    Create a directory to store PUNCH data
+    """
+    save_dir = os.getcwd().replace('mhd', 'data') + "/PUNCH_DL"
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
 #run code if this is the main file
 if __name__ == '__main__':
-    from sunpy.net import Fido, attrs as a
-    import os
-    save_dir = os.getcwd()
-    # print(save_dir)
-    # r"%Y-%m-%dT%H:%M:%S"
-    date_start = '2023-01-01T00:00:00'
-    date_end = '2023-12-31T23:59:59'
 
-    # print(a.Time(date_start, date_end))
+    create_punchdir()
 
-    res = Fido.search(a.Instrument('punch'), a.Time(date_start, date_end)) #, PUNCHLevel('level3_trefoil'))
+    date_start = '2023-07-04T00:00:00'
+    date_end = '2023-7-04T01:00:00'
+
+    res = Fido.search(attrs.Instrument('punch'), attrs.Time(date_start, date_end), attrs.Level('3')) #, PUNCHLevel('level3_trefoil'))
     print(res)
+    # print(save_dir)
     # out = Fido.fetch(res, path=save_dir)
