@@ -85,6 +85,7 @@ sub get_hilbert_footpoints{
     print "(pdl) Tracing Magnetogram to get $n_fluxons_wanted Footpoints\n";
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 
+
     my $no_floc = 0;
     my $floc = 0;
     my $N_actual = 0;
@@ -99,10 +100,12 @@ sub get_hilbert_footpoints{
         ## Read in the Magnetogram #################################
         print "Not found.\n\n";
         print "\tRunning Hilbert Tracer...\n";
-        print "\t\tFile: $magfile\n\n";
+        print "\t\tFile: ". shorten_path($magfile) . "\n\n";
         # print "\n\t**Reading Magnetogram...";
-
+        # die;
         my $smag = rfits($magfile);
+        # eval {my $smag = rfits($magfile)};
+        # if ($@) {$smag = rfits($datdir.$magfile)};
 
         # Extra step for adapt br maps
         if ($adapt) {$smag = $smag(:,:,2)->squeeze};
@@ -158,7 +161,7 @@ sub get_hilbert_footpoints{
             print "\t\tWriting Result...";
             wcols $floc->transpose, $flocfile;
             print "Success! File saved to:";
-            print "\n\t $flocfile";
+            print "\n\t\t\t " . shorten_path($flocfile);
             print "\n";
     } else {
         $floc = rcols $flocfile;

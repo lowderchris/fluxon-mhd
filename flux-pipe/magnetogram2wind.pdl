@@ -145,9 +145,11 @@ if ( not $plot_only ) {
 #######################################################################################################
 ## Download the Magnetogram ###########################################################################
 #######################################################################################################
-    my $mag_command = "$pythondir $pipedir/get_magnetograms.py --cr $CR --reduce $reduction";
+$command = "$pythondir get_magnetograms.py --cr $CR --reduce $reduction --datdir $datdir --do_download $do_download --ADAPT $adapt";
+system($command) == 0 or (die "Python script returned error $?", exit);
 
-    system($mag_command) == 0 or ( die "Python script returned error $?", exit );
+
+
 
 
 
@@ -158,10 +160,20 @@ if ( not $plot_only ) {
 # Since each contains a discretized amount of magnetic flux, we need to subdivide the domain to reflect how to represent that with fluxons.
     my $flocdir  = "$batchdir/cr$CR/floc";
     my $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
-    my $magfile  = $magdir . "/CR$CR\_r$reduction\_hmi.fits";
+if (!$adapt){
+        my $magfile  = $magdir . "/CR$CR\_r$reduction\_hmi.fits";
+} else {
+    my $magdir = $magdir . "/ADAPT/";
+    my $magfile = search_files_in_directory($magdir, "CR$CR\_rf", "fits");
+}
 
+# print $magdir . $magfile . "\n";
+$full_magfile = $magdir . $magfile;
 # Get the Footpoints
-$N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $force_process_magnetogram, $adapt);
+$N_actual = get_hilbert_footpoints($flocdir, $flocfile, $full_magfile, $n_fluxons_wanted, $force_process_magnetogram, $adapt);
+
+
+
 
 
 
@@ -172,9 +184,12 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wan
 # into the corona to define an initial placeholder geometry.
 # This lets us extend this into 3d space with real linking topology.
     my $pfss_command =
-    "$pythondir $pipedir/get_pfss.py --cr $CR --magfile $magfile --nwant $n_fluxons_wanted";
+    "$pythondir get_pfss.py --cr $CR --magfile $magfile --nwant $n_fluxons_wanted";
 
     system($pfss_command) == 0 or ( die "Python script returned error $?", exit );
+
+
+
 
 
 
@@ -200,6 +215,9 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wan
         $N_actual,      $n_fluxons_wanted, $lim,       $lim2
     );
 
+
+
+
 #######################################################################################################
 ## Relax the initial world state ##Use the FLUX Code ##################################################
 #######################################################################################################
@@ -216,6 +234,9 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wan
         $datdir,        $batch_name,       $CR
     );
 
+
+
+
 #######################################################################################################
 ## Plot the world states  #############################################################################
 #######################################################################################################
@@ -229,11 +250,17 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wan
 
 }
 
+
+
+
 #######################################################################################################
 ## Begin solar wind computation  ######################################################################
 #######################################################################################################
 my ( $out_b, $out_fr, $out_wind ) = get_wind( $this_world_relaxed, $datdir,
             $batch_name, $CR, $N_actual, $recompute, $n_fluxons_wanted, $pythondir );
+
+
+
 
 #######################################################################################################
 ## Plot the Solar wind Solutions  #####################################################################

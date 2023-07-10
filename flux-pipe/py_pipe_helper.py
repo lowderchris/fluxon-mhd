@@ -1,7 +1,9 @@
 import sunpy
 import sunpy.io
 import sunpy.coordinates
-from sunpy.net import Fido, attrs as a
+# import sunpy.net
+# from sunpy.net import Fido
+# Fido = sunpy.net.Fido
 import drms
 import os
 import glob
@@ -16,7 +18,7 @@ import numpy as np
 import os
 import os.path
 import sys
-import ADAPTClient
+# import ADAPTClient
 import matplotlib as mpl
 mpl.use('qt5agg')
 import matplotlib.pyplot as plt # Import libraries
@@ -122,7 +124,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
     return big_path, small_path
 
 
-def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=False, reduce = False):
+def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=False, reduce = False, method=2):
     """
     Function to grab ADAPT data.
 
@@ -195,9 +197,10 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
         else: 
             print("\tSkipping Download!\n")
             # small_path = None # reduce_mag_file(file, reduce, force=force_download)
-            mean_path = format_ADAPT_file(file, reduce, force=force_download)
+            # mean_path = format_ADAPT_file(file, reduce, force=force_download)
+            the_path = format_ADAPT_file(file, method=method, force=force_download)
 
-            return file, mean_path
+            return file, the_path
     else:
         print("\t\tNo file found!")
 
@@ -221,8 +224,10 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
     os.rename(file_all, big_path)
     print(f"\n\t\tSaved to {big_path}")
 
-    mean_path = format_ADAPT_file(big_path, reduce, force=force_download)
-    return big_path, mean_path
+    # mean_path = format_ADAPT_file(big_path, reduce, force=force_download)
+    the_path = format_ADAPT_file(big_path, method=method, force=force_download)
+
+    return big_path, the_path
 
 def expose_adapt_fits(adapt_fits):
     return  [print(x, " : ", adapt_fits[0].header[x]) for x in adapt_fits[0].header if not 'KEYCOMMENTS' in x]
@@ -250,10 +255,18 @@ def plot_mean_adapt(mean_adapt):
     plt.imshow(mean_adapt, vmin = map_mean - 2*map_std, vmax=map_mean + 2*map_std)   
     plt.show(block=True)
 
-def format_ADAPT_file(filename, reduce=False, force=False):
+def format_ADAPT_file(filename, method='mean', force=False):
     import sunpy.io
     import sunpy.map
-    out_file_name = str(filename).replace("_r1_", "_rmean_")
+
+    if method == 'mean':
+        out_file_name = str(filename).replace("_r1_", "_rmean_")
+    else:
+        out_file_name = str(filename).replace("_r1_", f"_rf{method}_")
+
+    out_file_name = out_file_name.replace(".fts.gz", ".fits")
+    # print(out_file_name)
+
     if os.path.exists(out_file_name) and not force:
         print("\tFile already formatted!")
         print("\t\t", shorten_path(out_file_name), "\n")
@@ -265,26 +278,37 @@ def format_ADAPT_file(filename, reduce=False, force=False):
     adapt_fits = sunpy.io.read_file(filename)
     main_header = adapt_fits[0].header
     main_data = adapt_fits[0].data
-
     main_header['DATE-AVG'] = main_header['MAPTIME']
-
-    data_header_pairs = [(map_slice, main_header) for map_slice in main_data]
-    adapt_maps = sunpy.map.Map(data_header_pairs, sequence=True)
-    adapt_cube = np.asarray([the_map.data for the_map in adapt_maps])
-    mean_adapt = np.nanmean(adapt_cube, axis=0)
 
     with fits.open(filename, ignore_missing_simple=True) as hdul:
         hdul.verify('silentfix')
         header2 = hdul[0].header
 
-    fits.writeto(out_file_name, mean_adapt, header2, overwrite=True)
+    if method == 'mean':
+        data_header_pairs = [(map_slice, main_header) for map_slice in main_data]
+        adapt_maps = sunpy.map.Map(data_header_pairs, sequence=True)
+        adapt_cube = np.asarray([the_map.data for the_map in adapt_maps])
+        mean_adapt = np.nanmean(adapt_cube, axis=0)
+        fits.writeto(out_file_name, mean_adapt, header2, overwrite=True)
+
+        if False:
+            # Lots of Plots
+            plot_all_adapt(adapt_maps)
+            expose_adapt_fits(adapt_fits)
+            print_adapt_maps(adapt_maps)
+            plot_mean_adapt(mean_adapt)
+        
+    elif type(method) == int:
+        adapt_map = sunpy.map.Map((main_data[method], main_header))
+        indexed_map = np.asarray(adapt_map.data)
+        fits.writeto(out_file_name, indexed_map, header2, overwrite=True)
+    else: 
+        assert False, "Method not recognized!"
+
+
     print("Success!")
     print("\t\tSaved to", out_file_name, "\n")
-    # Lots of Plots
-    # plot_all_adapt(adapt_maps)
-    # expose_adapt_fits(adapt_fits)
-    # print_adapt_maps(adapt_maps)
-    # plot_mean_adapt(mean_adapt)
+
 
     return out_file_name
 
