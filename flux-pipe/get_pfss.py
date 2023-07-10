@@ -75,10 +75,23 @@ def get_pfss(configs=None):
     # Load the fits file and format the data and header
     br_safe, fits_path = load_and_condition_fits_file(magfile, datdir)
 
+
+
+    ###############################################################################
     # Do the PFSS mapping
-    pickle_dir = os.path.join(datdir, "pfss")
-    if not os.path.exists(pickle_dir):
-        os.makedirs(pickle_dir)
+    from pfss_funcs import load_pfss, compute_pfss
+
+
+    adapt = False
+    if 'ADAPT' in magfile:
+        adapt = True
+        pickle_dir = os.path.join(datdir, "pfss/ADAPT")
+        reduce = 'A'
+    else:
+        pickle_dir = os.path.join(datdir, "pfss")
+
+    if not os.path.exists(pickle_dir): os.makedirs(pickle_dir)
+
     pickle_path = os.path.join(pickle_dir, f"pfss_cr{cr}_r{reduce}.pkl")
 
     output = load_pfss(pickle_path)
@@ -98,7 +111,7 @@ def get_pfss(configs=None):
     print("\n\tTracing Open and Closed Fluxons...", end="")
     if not os.path.exists(open_path) or force_trace:
         trace_out = trace_lines(output, (f_lon, f_lat, f_sgn),
-                                open_path, closed_path)
+                                open_path, closed_path, adapt)
         fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed = trace_out
     else:
         fl_open = np.loadtxt(open_path)

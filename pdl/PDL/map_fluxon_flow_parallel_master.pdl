@@ -16,8 +16,10 @@ use PDL::IO::Storable;
 use File::Path qw(make_path);
 use Time::HiRes qw(clock_gettime);
 use Data::Dumper;
-# use Chart::Gnuplot;
-# use PDL::Graphics::Gnuplot qw(gnuplot_closeall);
+use Chart::Gnuplot;
+use PDL::Graphics::Gnuplot; # qw(gnuplot_closeall);
+gnuplot_closeall();
+
 
 # Control Flags
 $PDL::verbose = 0;
@@ -119,7 +121,6 @@ sub map_fluxon_flow_parallel_master {
 
     my $itercount = -1;
     my $fork_manager = Parallel::ForkManager->new( $max_processes, $temp_dir );
-    # PDL::Graphics::Gnuplot::gnuplot_closeall();
 
     # Generate a blank storage array
     my @results = ();

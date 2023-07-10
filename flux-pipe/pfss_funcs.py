@@ -420,7 +420,7 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
     return f_lat, f_lon, f_sgn, n_flux
 
 
-def trace_lines(output, f_vars, open_path, closed_path):
+def trace_lines(output, f_vars, open_path, closed_path, adapt):
     """ This function traces field lines using the PFSS solution.
 
     Parameters
@@ -474,7 +474,7 @@ def trace_lines(output, f_vars, open_path, closed_path):
                             desc="Tracing Field Lines", total=len(f_lat))):
         try:
             output, fl_open, fl_closed, flnum_open, flnum_closed, tracer = trace_each(
-                coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn)
+                coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn, adapt)
         except timeout_decorator.TimeoutError:
             timeout_num += 1
         except ValueError:
@@ -501,8 +501,9 @@ def trace_lines(output, f_vars, open_path, closed_path):
     return fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed
 
 
-@timeout_decorator.timeout(5)
-def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn):
+# @timeout_decorator.timeout(5)
+def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn, adapt):
+    # import pdb; pdb.set_trace()
     """Fieldline tracer for each fieldline
 
     Parameters
@@ -545,6 +546,9 @@ def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, 
     """
 
     (this_flon, this_flat) = coords
+    if adapt:
+        # this_flon = np.deg2rad(this_flon)
+        this_flat = np.deg2rad(this_flat)
     # import pdb; pdb.set_trace()
     coord_frame = output.coordinate_frame
     # THE ARCSIN IS A TEST

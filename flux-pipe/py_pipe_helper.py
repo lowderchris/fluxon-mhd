@@ -2,7 +2,7 @@ import sunpy
 import sunpy.io
 import sunpy.coordinates
 # import sunpy.net
-# from sunpy.net import Fido
+from sunpy.net import Fido, attrs as a
 # Fido = sunpy.net.Fido
 import drms
 import os
@@ -119,6 +119,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
     hmi_path_out = out[0]
     os.rename(hmi_path_out, big_path)
     print(f"\n\tSaved to {big_path}\n")
+
 
     small_path = reduce_mag_file(big_path, reduce, force=force_download)
     return big_path, small_path
@@ -284,12 +285,13 @@ def format_ADAPT_file(filename, method='mean', force=False):
         hdul.verify('silentfix')
         header2 = hdul[0].header
 
+
+
     if method == 'mean':
         data_header_pairs = [(map_slice, main_header) for map_slice in main_data]
         adapt_maps = sunpy.map.Map(data_header_pairs, sequence=True)
         adapt_cube = np.asarray([the_map.data for the_map in adapt_maps])
-        mean_adapt = np.nanmean(adapt_cube, axis=0)
-        fits.writeto(out_file_name, mean_adapt, header2, overwrite=True)
+        output_map = np.nanmean(adapt_cube, axis=0)
 
         if False:
             # Lots of Plots
@@ -300,11 +302,12 @@ def format_ADAPT_file(filename, method='mean', force=False):
         
     elif type(method) == int:
         adapt_map = sunpy.map.Map((main_data[method], main_header))
-        indexed_map = np.asarray(adapt_map.data)
-        fits.writeto(out_file_name, indexed_map, header2, overwrite=True)
+        output_map = np.asarray(adapt_map.data)
     else: 
         assert False, "Method not recognized!"
 
+    useheader = fix_header_ADAPT(header2, output_map)
+    fits.writeto(out_file_name, output_map, useheader, overwrite=True)
 
     print("Success!")
     print("\t\tSaved to", out_file_name, "\n")
@@ -376,7 +379,6 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_a
         if not np.isclose(before_sum, after_sum):
             print("\tREDUCTION WARNING: \n\tSum before:    ", before_sum, "\n\tSum after:     ", after_sum)
         
-        # small_file = fits_path.replace('_r1_', f'_r{reduction_amount}_')
         try:
             hdul[0].header["DATE"]
             useheader = hdul[0].header
@@ -384,13 +386,17 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_a
             useheader = hdul[1].header
 
         del useheader['BLANK']
-        useheader['DATAMIN'] = np.min(small_image)
-        useheader['DATAMAX'] = np.max(small_image)
-        useheader['BZERO'] = 0
-        useheader['BSCALE'] = 1
+        useheader = fix_header(useheader, small_image)
+        # small_file = fits_path.replace('_r1_', f'_r{reduction_amount}_')
 
-        useheader['CDELT1'] = 360 / small_image.shape[1]  ## DEGREES
-        useheader['CDELT2'] = np.deg2rad(360 / (small_image.shape[0] * np.pi)) #RADIANS
+        # del useheader['BLANK']
+        # useheader['DATAMIN'] = np.min(small_image)
+        # useheader['DATAMAX'] = np.max(small_image)
+        # useheader['BZERO'] = 0
+        # useheader['BSCALE'] = 1
+
+        # useheader['CDELT1'] = 360 / small_image.shape[1]  ## DEGREES
+        # useheader['CDELT2'] = np.deg2rad(360 / (small_image.shape[0] * np.pi)) #RADIANS
 
         print("\tFinal Shape:    ", small_image.shape)
 
@@ -403,6 +409,29 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_a
     print("```````````````````````````\n")
 
     return small_file
+
+def fix_header(useheader, image):
+
+    useheader['DATAMIN'] = np.min(image)
+    useheader['DATAMAX'] = np.max(image)
+    useheader['BZERO'] = 0
+    useheader['BSCALE'] = 1
+
+    useheader['CDELT1'] = 360 / image.shape[1]  ## DEGREES
+    useheader['CDELT2'] = np.deg2rad(360 / (image.shape[0] * np.pi)) #RADIANS
+    return useheader
+
+
+def fix_header_ADAPT(useheader, image):
+    useheader['DATAMIN'] = np.min(image)
+    useheader['DATAMAX'] = np.max(image)
+    useheader['BZERO'] = 0
+    useheader['BSCALE'] = 1
+
+    # import pdb; pdb.set_trace()
+    useheader['CDELT1'] = 360 / image.shape[1]  ## DEGREES
+    useheader['CDELT2'] = 360 / (image.shape[0] * np.pi) ## DEGREES
+    return useheader
 
 def plot_raw_magnetogram(fits_path, data, small_image):
     # Save the high resolution image as a grayscale PNG
@@ -463,6 +492,7 @@ def write_magnetogram_params(datdir, cr, file_path, reduction, adapt=False):
     """Writes the magnetic_target.params file for a given CR and reduction amount."""
     # write the parameter file
     adapt_str = 1 if adapt else 0
+    reduce = 'A' if adapt else reduction
     params_path = os.path.join(datdir,"magnetic_target.params")
     with open(params_path, 'w') as fp:
         fp.write("## CR_int, Filename_str, Adapt_bool, Doplot_bool, reduction ##\n")
@@ -470,7 +500,7 @@ def write_magnetogram_params(datdir, cr, file_path, reduction, adapt=False):
         fp.write(str(file_path)+"\n")
         fp.write(str(adapt_str)+"\n")
         fp.write(str(0)+"\n")
-        fp.write(str(reduction))
+        fp.write(str(reduce))
 
 def load_magnetogram_params(datdir):
     """Reads the magnetic_target.params file and returns the parameters."""
@@ -481,7 +511,7 @@ def load_magnetogram_params(datdir):
         fname = fp.readline().rstrip()
         adapt = int(fp.readline().rstrip())
         doplot = int(fp.readline().rstrip())
-        reduce = int(fp.readline().rstrip())
+        reduce = fp.readline().rstrip()
     return (hdr, cr, fname, adapt, doplot, reduce)
 
 def find_file_with_string(directory, search_string):

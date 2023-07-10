@@ -9,7 +9,7 @@ flux_pipe_dir = "/Users/cgilbert/vscode/fluxon-mhd/flux-pipe/"
 batch_name = "adapt_test"
 # rotations = [2160, 2193, 2219, 2231]
 rotations = [2193]
-do_flux = [50] #, 2000, 3000, 4000, 5000, 6000, 8000, 10000]
+do_flux = [2000] #, 2000, 3000, 4000, 5000, 6000, 8000, 10000]
 do_survey = True # run the fluxon analysis on a set of fluxon numbers and/or rotations
 
 plot_only = 0 # skip everything except the wind plotting at the end
@@ -77,6 +77,7 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
         except Exception as e:
             print(e)
         
+
 
 
 

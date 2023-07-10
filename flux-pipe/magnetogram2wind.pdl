@@ -158,17 +158,19 @@ system($command) == 0 or (die "Python script returned error $?", exit);
 #######################################################################################################
 # The hilbert curve code defines where fluxons should be rooted based on the distribution of flux at 1R_sun.
 # Since each contains a discretized amount of magnetic flux, we need to subdivide the domain to reflect how to represent that with fluxons.
-    my $flocdir  = "$batchdir/cr$CR/floc";
-    my $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
+my $flocdir  = "$batchdir/cr$CR/floc";
+my $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
 if (!$adapt){
-        my $magfile  = $magdir . "/CR$CR\_r$reduction\_hmi.fits";
+        my $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
+    $full_magfile  = $magdir . "/CR$CR\_r$reduction\_hmi.fits";
 } else {
-    my $magdir = $magdir . "/ADAPT/";
-    my $magfile = search_files_in_directory($magdir, "CR$CR\_rf", "fits");
+    $flocfile = "$flocdir/floc_cr$CR\_rA\_f$n_fluxons_wanted.dat";
+    $magdir = $magdir . "/ADAPT/";
+    $magfile = search_files_in_directory($magdir, "CR$CR\_rf", "fits");
+    $full_magfile = $magdir . $magfile;
 }
 
 # print $magdir . $magfile . "\n";
-$full_magfile = $magdir . $magfile;
 # Get the Footpoints
 $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $full_magfile, $n_fluxons_wanted, $force_process_magnetogram, $adapt);
 
@@ -199,6 +201,10 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $full_magfile, $n_fluxon
     # Define the output directory
     my $world_out_dir   = "$datdir/batches/$batch_name/cr$CR/world";
     my $floc_path       = "$datdir/batches/$batch_name/cr$CR/floc";
+
+if ($adapt){
+    $reduction= "A";
+}
     my $open_file       = "$floc_path/floc_open_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
     my $closed_file     = "$floc_path/floc_closed_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
 
