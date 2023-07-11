@@ -88,7 +88,6 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
     hist_ax.legend()
     hist_ax.set_xlabel("Velocity (km/s)")
     hist_ax.set_ylabel(F"Fluxon Relative Frequency")
-    fig.suptitle(f'CR{CR}, {len(vel1_clean)} Open Fields')
 
     hist_ax.set_xlim((vmin, vmax))
     hist_ax.set_ylim((0, 0.02))
@@ -313,6 +312,8 @@ if __name__ == "__main__":
 
     n_bins = np.linspace(all_vmin, all_vmax, 32)
     mean1, std1 = hist_plot(vel1_clean, ax=hist_ax, vmin=all_vmin, vmax=all_vmax, n_bins=n_bins)
+    source = "ADAPT" if adapt else "HMI"
+    fig.suptitle(f'CR{CR}, {len(vel1_clean)} Open Fields\nSource = {source}')
 
 
     ## SAVING
