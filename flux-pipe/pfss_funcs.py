@@ -501,7 +501,8 @@ def trace_lines(output, f_vars, open_path, closed_path, adapt):
     return fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed
 
 
-# @timeout_decorator.timeout(5)
+
+@timeout_decorator.timeout(5)
 def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn, adapt):
     # import pdb; pdb.set_trace()
     """Fieldline tracer for each fieldline

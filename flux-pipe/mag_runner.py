@@ -6,23 +6,25 @@ import py_pipe_helper as ph
 
 
 flux_pipe_dir = "/Users/cgilbert/vscode/fluxon-mhd/flux-pipe/"
-batch_name = "adapt_test"
+batch_name = "adapt_test2"
 # rotations = [2160, 2193, 2219, 2231]
 rotations = [2193]
-do_flux = [2000] #, 2000, 3000, 4000, 5000, 6000, 8000, 10000]
+do_flux = [749] #, 2000, 3000, 4000, 5000, 6000, 8000, 10000]
 do_survey = True # run the fluxon analysis on a set of fluxon numbers and/or rotations
+
+ADAPT = 0
 
 plot_only = 0 # skip everything except the wind plotting at the end
 recompute = 0 # reperform the fluxon analysis from scratch
 # nflux = 500
-reduction = 2
+reduction = 2 # if not ADAPT else 'A'
 pdl_script_path = ph.add_paths(flux_pipe_dir)
 
 # Options
 capture = False
 verbose = True
 do_download = 0
-
+plot_only = 0
 
 if capture:
     print("\n\n\n")
@@ -53,7 +55,8 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
                 # do_flux = [8000]
 
                 for nflux in do_flux:
-                    result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux), str(batch_name), str(plot_only)], capture_output=capture)
+                    result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), 
+                                             str(recompute), str(nflux), str(batch_name), str(plot_only), str(ADAPT)], capture_output=capture)
                     # exit()
                     if capture and verbose:
                         print(result.stdout.decode())
@@ -62,7 +65,8 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
                         if to_break > 2:
                             break
             else:
-                result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux), str(batch_name)], capture_output=capture)
+                result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), 
+                                         str(recompute), str(nflux), str(batch_name), str(plot_only), str(ADAPT)], capture_output=capture)
                 if capture and verbose:
                     
                     print(result.stdout.decode())

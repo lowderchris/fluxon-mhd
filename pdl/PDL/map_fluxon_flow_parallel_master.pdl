@@ -17,8 +17,8 @@ use File::Path qw(make_path);
 use Time::HiRes qw(clock_gettime);
 use Data::Dumper;
 use Chart::Gnuplot;
-use PDL::Graphics::Gnuplot; # qw(gnuplot_closeall);
-gnuplot_closeall();
+# use PDL::Graphics::Gnuplot qw(gnuplot_closeall);
+# gnuplot_closeall();
 
 
 # Control Flags
