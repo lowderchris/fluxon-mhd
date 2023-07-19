@@ -9,10 +9,10 @@ flux_pipe_dir = "/Users/cgilbert/vscode/fluxon-mhd/flux-pipe/"
 batch_name = "adapt_test2"
 # rotations = [2160, 2193, 2219, 2231]
 rotations = [2193]
-do_flux = [749] #, 2000, 3000, 4000, 5000, 6000, 8000, 10000]
+do_flux = [750] #, 2000, 3000, 4000, 5000, 6000, 8000, 10000]
 do_survey = True # run the fluxon analysis on a set of fluxon numbers and/or rotations
 
-ADAPT = 0
+ADAPT = 1
 
 plot_only = 0 # skip everything except the wind plotting at the end
 recompute = 0 # reperform the fluxon analysis from scratch
