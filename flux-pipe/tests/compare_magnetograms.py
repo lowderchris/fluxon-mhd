@@ -6,6 +6,7 @@ mpl.use('qt5Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from skimage.measure import block_reduce
+import sunpy.sun.constants as const
 
 import cv2
 ## Change the labels to show that the plots are inunits of std
@@ -33,7 +34,7 @@ def plot_scatter(image1, image2):
     # plt.show()
 
 def downsample_image(image, block_size):
-    return block_reduce(image, block_size=block_size, func=np.mean)
+    return block_reduce(image, block_size=block_size, func=np.sum)
 
 
 
@@ -44,28 +45,97 @@ def downsample_image(image, block_size):
 from scipy.ndimage import map_coordinates, geometric_transform
 
 
-def inverse_sine_warp(coords):
-    # The incoming coordinates are in the form (y, x). 
-    # We apply the arcsin transformation only to the y-coordinate.
-    out_coords = np.asarray([np.arcsin(coords[1]), coords[0]])
-    # print(out_coords, " : ", type(out_coords))
-    # return out_coords
-    return np.asarray([float(np.arcsin(coords[1])), float(coords[0])])
+# def inverse_sine_warp(coords):
+#     # The incoming coordinates are in the form (y, x). 
+#     # We apply the arcsin transformation only to the y-coordinate.
+#     out_coords = np.asarray([np.arcsin(coords[1]), coords[0]])
+#     # print(out_coords, " : ", type(out_coords))
+#     # return out_coords
+#     return np.asarray([float(np.arcsin(coords[1])), float(coords[0])])
 
 
-def warp_image2(image):
-    # print(type(inverse_sine_warp))
-    return geometric_transform(image, np.sin)
+# def warp_image2(image):
+#     # print(type(inverse_sine_warp))
+#     return geometric_transform(image, np.sin)
 
 # Call this function to warp your image.
 # warped_image2 = warp_image(image2)
+
+from astropy.io import fits
+from astropy.wcs import WCS
+from reproject import reproject_interp
+
+def reproject_fits(input_fits, hduID=0):
+    # Load the FITS hdulist using astropy.fits
+    hdu = fits.open(input_fits)[hduID]
+
+    # Get the WCS info from the FITS file
+    wcs_in = WCS(hdu.header)
+
+    # Define new WCS with SIN projection for latitude
+    wcs_out = wcs_in.deepcopy()
+    wcs_out.wcs.ctype[1] = 'DEC--SIN'
+
+    # Shape for the output array
+    shape_out = hdu.data.shape
+
+    # Reproject the image data to the new WCS
+    array_out, footprint = reproject_interp(hdu, wcs_out, shape_out=shape_out)
+
+
+
+    # # Reproject the image data to the new WCS
+    # array_out, footprint = reproject_interp(hdu, wcs_out)
+
+    # Return the reprojected data
+    return array_out, footprint
+
+
+import numpy as np
+from astropy.io import fits
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+
+def reproject_fits(input_fits):
+    # Load the FITS hdulist using astropy.fits
+    hdu = fits.open(input_fits)[0]
+
+    # Get the WCS info from the FITS file
+    wcs_in = WCS(hdu.header, naxis=2)
+
+    # Create a grid of coordinates from the WCS
+    y, x = np.indices(hdu.data.shape)
+    ra, dec = wcs_in.all_pix2world(x, y, 0)
+
+    # Convert to astropy SkyCoord object
+    coords = SkyCoord(ra * u.deg, dec * u.deg, frame='icrs')
+
+    # Create new WCS with SIN projection for latitude
+    wcs_out = wcs_in.deepcopy()
+    wcs_out.wcs.ctype[1] = 'DEC--SIN'
+
+    # Convert coordinates to new system
+    new_ra, new_dec = wcs_out.all_world2pix(coords.ra.deg, coords.dec.deg, 0)
+
+    # Interpolate data to new coordinates
+    from scipy.interpolate import griddata
+    array_out = griddata((new_ra.flatten(), new_dec.flatten()), hdu.data.flatten(), (x.flatten(), y.flatten()), method='cubic')
+
+    return array_out.reshape(hdu.data.shape)
+
+
+
+
+
+# # Use the function
+# reprojected_data = reproject_fits(input_fits)
 
 
 
 def warp_image(image):
     # Create a grid of the same shape as the image
     x, y = np.mgrid[0:image.shape[0], 0:image.shape[1]]
-    orig_coords = np.array([x, y])
+    # orig_coords = np.array([x, y])
 
     xx = (x - 90) / 90
 
@@ -84,18 +154,7 @@ def warp_image(image):
 
 def blur_image(img, sigma):
     from scipy.ndimage import gaussian_filter
-
-    # Convert image to float32
-    # img_float = img.astype(np.float32) / 255.0
-
-    # Apply Gaussian blur to the image
-    img_float = img
-    blurred_img = gaussian_filter(img_float, sigma=sigma)
-
-    # Convert the blurred image back to uint8
-    # blurred_img = (blurred_img * 255.0).astype(np.uint8)
-    
-    return blurred_img
+    return gaussian_filter(img, sigma=sigma)
 
 
 def do_all(kernel_width = 5, warp=True, title=None):
@@ -103,32 +162,26 @@ def do_all(kernel_width = 5, warp=True, title=None):
     # warped_image2 = warp_image(image2)
 
     # Load the images
-    image1, header1 = fits.getdata(image1_path, header=True)
-    image2, header2 = fits.getdata(image2_path,  header=True)
+    img1_hdu = fits.getdata(image1_path, header=True)
+    img2_hdu = fits.getdata(image2_path, header=True)
+    # image2 = warp_image(image2)
+    # image2 = reproject_fits(image2_path)
 
-    if warp:
-        image2 = warp_image(image2)
+    # std2 = np.std(image2)
+    # mean2 = np.mean(image2)
+    # vmin = -10 #mean2 - 0.1*std2
+    # vmax = 10 #mean2 + 0.1*std2
 
-    # kernel_width = 10
-    # blurred_img1 = cv2.GaussianBlur(image1, (kernel_width, kernel_width), 0)
-    blurred_img1 = blur_image(image1, sigma=kernel_width)
-
-
-
-    # Get the ratio of sizes
-    ratio = np.array(image1.shape) / np.array(image2.shape)
-
-    # Downsample the larger image to the size of the smaller one
-    downsampled_image1 = zoom(blurred_img1, 1 / ratio)
-
-    # compareplot(downsampled_image1, image2)
+    # plt.imshow(image2, cmap='hot', interpolation='nearest', origin='lower',
+    #            vmin = vmin, vmax = vmax)
+    # plt.show()
 
 
-    # Normalize both images
-    normalized_image1 = downsampled_image1  / np.nanmean(np.abs(downsampled_image1))
-    normalized_image2 = image2              / np.nanmean(np.abs(image2))
+    # image2, header2 = fits.getdata(image2_path,  header=True)
 
-    compareplot(normalized_image1, normalized_image2, kernel_width, title=title)
+
+
+    compareplot(img1_hdu, img2_hdu, kernel_width, title=title)
 
 
     # # Perform difference analysis
@@ -150,12 +203,98 @@ def do_all(kernel_width = 5, warp=True, title=None):
     # # plt.colorbar()
     # # plt.show()
 
-def compareplot(image1, image2, width, title=None):
+# import numpy as np
+# import sunpy.constants as const
 
+def calculate_pixel_areas(image_shape, long_range=(-180, 180), lat_range=(-90, 90)):
+    # Calculate the differential in longitude and latitude (in radians)
+    d_long = np.deg2rad(np.abs(long_range[1] - long_range[0]) / image_shape[1])
+    d_lat = np.deg2rad(np.abs(lat_range[1] - lat_range[0]) / image_shape[0])
+    
+    # Calculate the latitude at the top and bottom of each pixel (in radians)
+    latitudes_rad = np.linspace(np.deg2rad(lat_range[0]) + d_lat / 2, np.deg2rad(lat_range[1]) - d_lat / 2, image_shape[0])
+    
+    # Area of each pixel (differential area element on a sphere)
+    pixel_areas = (const.radius**2 * d_long * np.abs(np.sin(latitudes_rad[:, None] + d_lat / 2) - np.sin(latitudes_rad[:, None] - d_lat / 2))).to('m^2')
+
+    return pixel_areas
+
+# # Example usage:
+# image_shape = (1024, 1024)  # Replace with your actual image shape
+# pixel_areas = calculate_pixel_areas(image_shape)
+
+# print(pixel_areas)
+
+
+def compareplot(img1_hdu, img2_hdu, width, warp=True, title=None):
+    image1, header1 = img1_hdu
+    image2, header2 = img2_hdu
+
+
+    # Make image1 be in units of Maxwells
+    surface_area_sun = const.surface_area.to(u.cm*u.cm)
+    n_pix = image1.shape[0] * image1.shape[1] 
+    area_per_pix = surface_area_sun / n_pix
+    image1 = image1 * u.Maxwell / u.cm**2
+    image1 *= area_per_pix
+
+
+
+    #### Make image2 be in units of Maxwells
+    n_pix2 = image2.shape[0] * image2.shape[1] 
+
+    # find the area per pixel for an image that is sin(latitude) in y and (longitude) in x
+    # This is the same as the area per pixel for the warped image
+    # The result should be an array with each element equal to the area for that pixel
+
+    pixel_areas = calculate_pixel_areas(image2.shape, long_range=(0, 360), lat_range=(0, 180)) #m**2
+    pixel_trans_areas = np.zeros((180, 360))    # convert the 1d array to a 2d array with every column the same
+    for i in np.arange(360):
+        pixel_trans_areas[:, i] = pixel_areas[:, 0] # m**2
+
+    # surfaceArea_pixels = np.sum(pixel_trans_areas) * u.m**2
+
+    united_im2 = (image2 * u.Maxwell/u.cm**2) * (pixel_trans_areas * u.m**2).to(u.cm**2) # Maxwells
+
+    # pixel_areas_transposed = np.tile(pixel_areas, (image2.shape)).T
+
+
+
+    # Multiply the image by the area per pixel to get the total flux in each pixel  
+    if warp:
+        warped_united_im2 = warp_image(united_im2)
+
+    # thing = np.sum(np.abs(warped_united_im2), axis=1)
+    # unwarped_thing = np.sum(np.abs(united_im2), axis=1)
+    # plt.plot(thing)
+    # plt.plot(unwarped_thing)
+    # plt.show()
+    # plt.imshow(warped_united_im2, origin='lower')
+    # plt.show()
+
+    # kernel_width = 10
+    # blurred_img1 = cv2.GaussianBlur(image1, (kernel_width, kernel_width), 0)
+    blurred_img1 = blur_image(image1, sigma=width)
+
+    # Get the ratio of sizes
+    ratio = np.array(image1.shape) / np.array(image2.shape)
+
+    # Downsample the larger image to the size of the smaller one
+    downsampled_image1 = zoom(blurred_img1, 1 / ratio)
+
+    asdf = 1
+    # print(downsample_image.shape)
+    # compareplot(downsampled_image1, image2)
+
+
+    # Normalize both images
+    normalized_image1 = downsampled_image1  / np.nanmean(np.abs(downsampled_image1))
+    normalized_image2 = image2              / np.nanmean(np.abs(image2))
+    from copy import copy
 
     # from scipy.ndimage import gaussian_filter
     # image1 = gaussian_filter(image1, sigma=2)
-
+    img_1_orig = copy(image1)
 
     std1 = np.std(image1)
     mean1 = np.mean(image1)
@@ -252,8 +391,8 @@ def compareplot(image1, image2, width, title=None):
 
     # Format the image plots
     fig.suptitle("Magnetogram Comparison")
-    ax[0].set_title("HMI: CR2193_r2_hmi.fits : sigma={:0.4}".format(float(width)))
-    ax[1].set_title("ADAPT: CR2193_rf2_a....fits")
+    ax[0].set_title("HMI: CR2193_r2_hmi.fits : sigma={:0.4}, normsum={:0.4}, sum={:0.4}".format(float(width), np.sum(image1), np.sum(img_1_orig)))
+    ax[1].set_title("ADAPT: CR2193_rf2_a....fits : sum={:0.4}".format(np.sum(image2)))
     ax[2].set_title(f"Difference: {signed_diff:0.03} signed, {unsigned_diff:0.03} unsigned")
 
 
