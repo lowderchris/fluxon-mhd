@@ -6,7 +6,7 @@ import pandas as pd
 # import statsmodels.api as sm
 
 run_name = "fluxon r3"
-datdir = "/Users/cgilbert/vscode/fluxon-data/"
+datdir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
 file_path = os.path.join(datdir, f"{run_name}/pipe_log.txt")
 
 

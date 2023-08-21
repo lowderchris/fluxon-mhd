@@ -1,22 +1,30 @@
 # Import libraries
-import sunpy
-import sunpy.io
-import sunpy.coordinates
-from sunpy.net import Fido, attrs as a
-import drms
-import os
 import glob
-import sunpy.coordinates.frames as frames
+import os
+
 import astropy.units as u
+import drms
+import sunpy
+import sunpy.coordinates
+import sunpy.coordinates.frames as frames
+import sunpy.io
+from sunpy.net import Fido
+from sunpy.net import attrs as a
+
 default_email = "chris.gilly@colorado.edu"
-from pathlib import PosixPath
-import subprocess
-from astropy.nddata import block_reduce
-from astropy.io import fits
-import numpy as np
 import os
 import os.path
+import subprocess
 import sys
+from pathlib import PosixPath
+
+import numpy as np
+from astropy.io import fits
+from astropy.nddata import block_reduce
+
+
+dat_dir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
+
 
 def add_paths(flux_pipe_dir):
     # Path to the PDL script
@@ -199,6 +207,7 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_a
 
 def plot_raw_magnetogram(fits_path, data, small_image):
     import matplotlib.pyplot as plt
+
     # Save the high resolution image as a grayscale PNG
     plt.axis('off')
     high_res_output_path = fits_path.replace('.fits', '.png')
@@ -235,8 +244,11 @@ def plot_raw_magnetogram(fits_path, data, small_image):
     plt.savefig(low_res_output_path, bbox_inches='tight', dpi=4*DPI)
     plt.close()
 
-def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/fluxon-data/", batch="fluxon", bo=2, bn=2, ret_all=False):
+
+def load_fits_magnetogram(datdir =None, batch="fluxon", bo=2, bn=2, ret_all=False):
     """Loads a magnetogram from a FITS file."""
+    if not datdir:
+        datdir = dat_dir
     fname = load_magnetogram_params(datdir)[2].replace("/fluxon/", f"/{batch}/").replace(f"_{bo}_", f"_{bn}_")
     fits_path = datdir + fname
     try:

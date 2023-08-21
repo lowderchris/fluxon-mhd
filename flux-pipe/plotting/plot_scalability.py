@@ -5,7 +5,7 @@ from matplotlib.ticker import ScalarFormatter, StrMethodFormatter
 import pandas as pd
 # import statsmodels.api as sm
 
-datdir = "/Users/cgilbert/vscode/fluxon-data/"
+datdir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
 batch = "scalability_test"
 file_path = os.path.join(datdir, "batches", batch, "pipe_log.txt")
 

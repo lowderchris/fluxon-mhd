@@ -16,7 +16,7 @@ from py_pipe_helper import load_fits_magnetogram, load_magnetogram_params
 # create the argument parser
 parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
 parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
-parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
+parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
 parser.add_argument('--show', type=int, default=1)
 parser.add_argument('--interp', type=str, default="cubic")
 parser.add_argument('--nact', type=int, default=0)

@@ -15,7 +15,7 @@ print("\tPlotting Fr...", end="")
 # create the argument parser
 parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
 parser.add_argument('--cr', type=int, default=default_cr, help='Carrington Rotation')
-parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
+parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
 parser.add_argument('--batch', type=str, default="scalability_test", help='select the batch name')
 parser.add_argument('--show', type=int, default=0)
 parser.add_argument('--nwant', type=int, default=None, help='magnetogram file')

@@ -41,7 +41,7 @@ sub map_fluxon_flow_parallel_master {
     my $n_choke = 12;
     my $choke = 0;
     my $do_plot_charts = 0;
-    my $chartpath = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/fluxons/profiles/";
+    my $chartpath = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/fluxons/profiles/";
 
     # Count the number of open and closed fluxons
     my $n_closed = 0;
@@ -236,20 +236,19 @@ if ($0 eq __FILE__) {
     use Time::HiRes qw(clock_gettime);
     use File::Basename qw(fileparse);
 
-    my $datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/";
+    my $datdir = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/";
     push(@PDLLIB,"+".$datdir);
-    push(@PDLLIB,"+/Users/cgilbert/vscode/Fluxon-Scripts-Gilly");
-    push(@PDLLIB,"+/Users/cgilbert/vscode/fluxon-mhd/pdl/PDL");
-    push(@PDLLIB,"+/Users/cgilbert/vscode/fluxon-mhd/pdl/flux-pipe");
+    push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly");
+    push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/PDL");
+    push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/flux-pipe");
     push(@INC, "+/Users/cgilbert/opt");
     push(@INC, "/Users/cgilbert/.cpan/build");
 
-    system("cd /Users/cgilbert/vscode/fluxon-mhd/pdl/flux-pipe");
+    system("cd /Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/flux-pipe");
 
 
     my $cr = 2160;
     my $batch_name = "fluxon_paperfigs";
-    # $datdir = "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/";
 
     # Pathing
     my $world_out_dir = $datdir."$batch_name/cr".$cr.'/rlx/';

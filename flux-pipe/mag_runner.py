@@ -1,12 +1,15 @@
+""" This is the runner file which sets the whole FLUXpipe in motion.
+"""
+
+flux_pipe_dir = "/Users/cgilbert/vscode/fluxons/fluxon-mhd/flux-pipe/"
+
 import subprocess
 from tqdm import tqdm
-import os
-import sys
 import py_pipe_helper as ph
+pdl_script_path = ph.add_paths(flux_pipe_dir)
 
 
-flux_pipe_dir = "/Users/cgilbert/vscode/fluxon-mhd/flux-pipe/"
-batch_name = "fix_prox_curve3"
+batch_name = "back_test"
 # rotations = [2160, 2193, 2219, 2231]
 rotations = [2193]
 do_flux = [1000] #, 2000, 3000, 4000, 5000, 6000, 8000, 10000]
@@ -16,7 +19,6 @@ plot_only = 0 # skip everything except the wind plotting at the end
 recompute = 0 # reperform the fluxon analysis from scratch
 # nflux = 500
 reduction = 2
-pdl_script_path = ph.add_paths(flux_pipe_dir)
 
 # Options
 capture = False
@@ -64,7 +66,7 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
             else:
                 result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux), str(batch_name)], capture_output=capture)
                 if capture and verbose:
-                    
+
                     print(result.stdout.decode())
                 if result.returncode != 0:
                     to_break += 1

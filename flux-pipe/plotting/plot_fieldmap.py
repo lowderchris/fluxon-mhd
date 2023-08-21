@@ -178,7 +178,7 @@ if __name__ == "__main__":
     parser.add_argument('--nwant', type=int, default=None)
     parser.add_argument('--open', type=str, default=None)
     parser.add_argument('--closed', type=str, default=None)
-    parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxon-data', help='data directory')
+    parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
     parser.add_argument('--batch', type=str, default="default_batch", help='select the batch name')
     args = parser.parse_args()
     batch = args.batch
