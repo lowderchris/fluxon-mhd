@@ -75,10 +75,3 @@ sub get_wind{
 
     return $out_b, $out_fr, $out_wind;
 }
-
-
-    # print "\t...\n";
-    # system("python3 plot_wind.py --cr $CR --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
-    # system("python3 plot_wind_map.py --cr $CR --interp 1 --nact $N_actual --batch $batch_name") == 0 or (die "Python script returned error $?", exit);
-    # system("python3 plotting/plot_wind_map_paper_single.py --cr $CR --nact $N_actual --batch $batch_name --dat_dir $datdir") == 0 or (die "Python script returned error $?", exit);
-    

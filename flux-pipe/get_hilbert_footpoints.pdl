@@ -75,7 +75,6 @@ sub get_hilbert_footpoints{
             }
         }
 
-
             ## Write to disk ############################################
             print "\n";
             print "\t\tWriting Result...";

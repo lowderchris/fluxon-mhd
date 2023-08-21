@@ -1,22 +1,20 @@
 """ This is the runner file which sets the whole FLUXpipe in motion.
 """
-
-flux_pipe_dir = "/Users/cgilbert/vscode/fluxons/fluxon-mhd/flux-pipe/"
-
 import subprocess
 from tqdm import tqdm
 import py_pipe_helper as ph
+flux_pipe_dir = "/Users/cgilbert/vscode/fluxons/fluxon-mhd/flux-pipe/"
 pdl_script_path = ph.add_paths(flux_pipe_dir)
 
 
 batch_name = "back_test"
 # rotations = [2160, 2193, 2219, 2231]
 rotations = [2193]
-do_flux = [1000] #, 2000, 3000, 4000, 5000, 6000, 8000, 10000]
-do_survey = True # run the fluxon analysis on a set of fluxon numbers and/or rotations
+do_flux = [1000]  # , 2000, 3000, 4000, 5000, 6000, 8000, 10000]
+do_survey = True  # run the fluxon analysis on a set of fluxon numbers and/or rotations
 
-plot_only = 0 # skip everything except the wind plotting at the end
-recompute = 0 # reperform the fluxon analysis from scratch
+plot_only = 0  # skip everything except the wind plotting at the end
+recompute = 0  # reperform the fluxon analysis from scratch
 # nflux = 500
 reduction = 2
 
@@ -34,19 +32,19 @@ if capture:
     print(f"    Target Rotations: {rotations}")
     print("    Each iteration takes around a minute. Please be patient.")
     if verbose:
-        print("\n    >>verbose = True. All stdout from the processes will be printed following each iteration.<<\n")
+        print("\n    >>verbose = True. All stdout from the processes \
+              will be printed following each iteration.<<\n")
 else:
     pass
     # print("\n\nProcessing the following CR: ", rotations, "\n\n")
     # print(f"\n\n Batch Name {batch_name} \n\n")
-    
 
 to_break = 0
 print("")
 with tqdm(total=len(rotations), unit="rotation") as pbar:
     for rot in rotations:
         try:
-                    # Update the description with the current iteration
+            # Update the description with the current iteration
             pbar.set_description(f"Processing Rotation {rot}")
             print("\n")
 
@@ -55,7 +53,10 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
                 # do_flux = [8000]
 
                 for nflux in do_flux:
-                    result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux), str(batch_name), str(plot_only)], capture_output=capture)
+                    result = subprocess.run(["perl", pdl_script_path, str(rot),
+                            str(reduction), str(do_download), str(recompute),
+                            str(nflux), str(batch_name), str(plot_only)],
+                            capture_output=capture, check=False)
                     # exit()
                     if capture and verbose:
                         print(result.stdout.decode())
@@ -64,7 +65,9 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
                         if to_break > 2:
                             break
             else:
-                result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), str(recompute), str(nflux), str(batch_name)], capture_output=capture)
+                result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction),
+                            str(do_download), str(recompute), str(nflux), str(batch_name)],
+                            capture_output=capture, check=False)
                 if capture and verbose:
 
                     print(result.stdout.decode())
@@ -78,7 +81,4 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
 
         except Exception as e:
             print(e)
-        
-
-
-
+            assert False, "Error in the main loop"
