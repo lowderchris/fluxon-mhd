@@ -31,11 +31,11 @@ use FindBin qw($RealBin);
 use lib $RealBin;
 use pdl_pipe_helper;
 
-
 #######################################################################################################
 ## Job Settings #######################################################################################
 #######################################################################################################
-
+$pythondir = "/opt/homebrew/anaconda3/envs/fluxArm/bin/python3";
+$basedir =  "/Users/cgilbert/vscode/fluxons";
 
 
 # use PDL::Graphics::TriD;
@@ -87,8 +87,7 @@ if ($recompute){
 ## Set paths
 $print_dirs = 0;
 
-$pythondir = "/opt/homebrew/anaconda3/envs/fluxArm/bin/python3";
-$basedir =  "/Users/cgilbert/vscode";
+
 
 set_python_path($pythondir, $print_dirs);
 

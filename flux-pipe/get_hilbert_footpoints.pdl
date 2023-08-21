@@ -11,6 +11,7 @@ sub get_hilbert_footpoints{
     my $no_floc = 0;
     my $floc = 0;
     my $N_actual = 0;
+    my $adapt = 0;
 
     if (! -e $flocfile ) {
         $no_floc = 1;
@@ -24,11 +25,9 @@ sub get_hilbert_footpoints{
         # print "\n\t**Reading Magnetogram...";
 
         my $smag = rfits($magfile);
-        # eval {$smag = rfits($magfile)};
-        # if ($@) {$smag = rfits($datdir.$magfile)};
         
         # Extra step for adapt br maps
-        # if ($adapt) {$smag = $smag(:,:,2)->squeeze};
+        if ($adapt) {$smag = $smag(:,:,2)->squeeze};
 
 
         ## Run the fluxon hilbert code ##############################
