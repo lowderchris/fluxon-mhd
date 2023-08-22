@@ -1,0 +1,18 @@
+*~
+\#*
+.DS_Store
+
+#test-coverage-related files & dirs
+*.gcov
+*.gcda
+*.gcno
+*.png
+*.pyc
+*.json
+cover_db/
+
+#the local sandbox build
+sandbox/
+
+#any Inline stuff
+_Inline/
