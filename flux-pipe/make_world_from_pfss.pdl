@@ -1,3 +1,4 @@
+use strict;
 use warnings;
 use PDL::AutoLoader;
 use PDL;
@@ -56,21 +57,15 @@ sub make_world_from_pfss{
             my $flxlon = $olon($ofln($i):$ofln($i+1)-1);
             my $flxrad = $orad($ofln($i):$ofln($i+1)-1);
             my $open = pdl($flxlon, $flxlat, $flxrad)->transpose;
-            ## CL - DOUBLE CHECK THE FLUX DIRECTION HERE
-            ## if ($oflx->($ofln($i))<0){
-            ##    $open = $open->(:,-1:0:-1);
-            ## }
-            ## CL - ADD RADIAL EXTENSION HERE
-            ## $open = $open->glue(1,$open->(:,-1)->(*11)->transpose)->squeeze;
-            ## $open(2,-11:-1) .= pdl(xvals(11)*2+2.5)->transpose;
+
             if ($oflx->($ofln($i))<0){
                 $open = $open->(:,-1:0:-1);
             }
             my $line = ($open)->apply($xform);
-            push(@flines,$line->copy);
+            push @flines,$line->copy;
             $open_count++;
         }
-        print("\tDone! $open_count open fluxons generated.\n");
+        print "\tDone! $open_count open fluxons generated.\n";
 
 
         ## Generate closed fieldlines  ###################################
@@ -146,3 +141,4 @@ sub make_world_from_pfss{
     }
         print "\n\t\t\t```````````````````````````````\n \n\n\n";
 }
+1;
