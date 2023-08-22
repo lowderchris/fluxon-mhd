@@ -95,20 +95,6 @@ sub calculate_directories {
     set_and_check_env_variable('BATCHPATH', $batchdir, $print);
     set_and_check_env_variable('DATAPATH', $datdir, $print);
 
-    # my @PDLLIB;
-    # my @INC;
-
-    # push @PDLLIB,"$datdir";
-    # push @PDLLIB,"$pdldir";
-    # push @PDLLIB,"$pipedir";
-    # push @PDLLIB,"$pipedir/plotting";
-
-    # push @INC, "$datdir";
-    # push @INC, "$pdldir";
-    # push @INC, "$pipedir";
-    # push @INC, "$pipedir/plotting";
-
-
     return ($pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile);
 }
 

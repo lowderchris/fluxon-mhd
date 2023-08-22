@@ -1,13 +1,15 @@
 """ This is the runner file which sets the whole FLUXpipe in motion.
 """
 import subprocess
+from os import chdir, getcwd
 from tqdm import tqdm
 import py_pipe_helper as ph
-# import os.path
 
 base_dir = "/Users/cgilbert/vscode/fluxons"
 mhd_dir = f"{base_dir}/fluxon-mhd"
 flux_pipe_dir = f"{mhd_dir}/flux-pipe"
+chdir(mhd_dir)
+# print(getcwd())
 new_path = ph.add_top_level_dirs_to_path(mhd_dir)
 
 # thepaths = new_path.split(":")

@@ -34,7 +34,7 @@ def add_dir_to_path(root_dir=None):
 
     Args:
         root_dir (str, optional): _description_. Defaults to None.
-    """    
+    """
     if root_dir is None:
         root_dir = default_root_dir
 
@@ -61,7 +61,7 @@ def add_top_level_dirs_to_path(root_dir):
 
     Args:
         root_dir (_type_): _description_
-    """    
+    """
     # Get the current PATH
     current_path = os.environ.get('PATH', '')
 
@@ -69,7 +69,8 @@ def add_top_level_dirs_to_path(root_dir):
     path_set = set(current_path.split(os.pathsep))
 
     # List the top-level directories under the root directory
-    top_level_dirs = [os.path.join(root_dir, d) for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
+    top_level_dirs = [os.path.join(root_dir, d) for d in os.listdir(root_dir) \
+                      if os.path.isdir(os.path.join(root_dir, d))]
     top_level_dirs.append(f"{root_dir}:")
 
     # Add each top-level directory to the set

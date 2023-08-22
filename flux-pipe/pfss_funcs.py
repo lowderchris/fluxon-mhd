@@ -23,7 +23,7 @@ import timeout_decorator
 from pfsspy import tracing
 from tqdm import tqdm
 
-from py_pipe_helper import load_fits_magnetogram, read_fits_data, shorten_path
+from .py_pipe_helper import load_fits_magnetogram, read_fits_data, shorten_path
 
 mpl.use("qt5agg")
 
@@ -112,7 +112,7 @@ def load_pfss(pickle_path):
     try:
         with open(pickle_path, 'rb') as inp:
             output = pickle.load(inp)
-            print(f"Success! Loaded: \n\t\t {shorten_path(pickle_path, 2)}")
+            print(f"Success! Loaded: \n\t\t {shorten_path(pickle_path)}")
         return output
     except FileNotFoundError:
         print("File not found.")
@@ -316,7 +316,7 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
         print("Skipped! Files already exist:", end="\n\t\t")
 
     for testpath in plot_paths:
-        print(shorten_path(testpath, 5), end="\n\t\t")
+        print(shorten_path(testpath), end="\n\t\t")
 
     return f_lat, f_lon, f_sgn, n_flux
 
