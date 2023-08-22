@@ -2,6 +2,8 @@
 import os, sys
 
 def add_parent_dir(): #depricated and wrong
+    """_summary_
+    """    
     # Get the parent directory path
     this_cwd = os.getcwd()
     if "plotting" in this_cwd:
@@ -15,6 +17,11 @@ def add_parent_dir(): #depricated and wrong
     sys.path.append(pipdir)
 
 def add_pipedir(do_print=False):
+    """_summary_
+
+    Args:
+        do_print (bool, optional): _description_. Defaults to False.
+    """    
     # get the pipedir environment variable
     pipedir = os.environ.get("PIPEPATH")
     #add the directory to the search path
