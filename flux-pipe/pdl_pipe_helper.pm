@@ -1,18 +1,9 @@
-
-
 use strict;
 use warnings;
 use PDL::AutoLoader;
 use PDL;
 use Time::Piece;
 
-
-sub shorten_path_old{
-    my ($start_path, $levels) = @_;
-    $levels = $levels || 5;
-    my $out_string = (split('/', $start_path))[-$levels .. -1] ? join('/', (split('/', $start_path))[-$levels .. -1]) : $start_path;
-    return "DATAPATH/" . $out_string;
-}
 
 sub shorten_path {
     my ($string) = @_;
@@ -22,6 +13,7 @@ sub shorten_path {
     }
     return $string;
 }
+
 
 sub find_highest_numbered_file {
     my ($directory) = @_;
@@ -46,16 +38,19 @@ sub find_highest_numbered_file {
     return $highest_numbered_file ? "$directory$highest_numbered_file" : 0, $highest_number;
 }
 
+
 sub set_env_variable {
     my ($variable, $value) = @_;
     $ENV{$variable} = $value;
     return $ENV{$variable};
 }
 
+
 sub get_env_variable {
     my ($variable) = @_;
     return $ENV{$variable};
 }
+
 
 sub check_env_variable {
     my ($variable, $print) = @_;
@@ -71,12 +66,14 @@ sub check_env_variable {
     }
 }
 
+
 sub set_and_check_env_variable {
     my ($variable, $value, $print) = @_;
     set_env_variable($variable, $value);
     return check_env_variable($variable, $print);
     # return $value;
 }
+
 
 sub calculate_directories {
 (my $basedir, my $batch_name, my $print) = @_;
@@ -90,7 +87,7 @@ sub calculate_directories {
         my $magdir =   "$datdir/magnetograms";
         my $batchdir = "$datdir/batches/$batch_name";
             my $logfile = "$batchdir/pipe_log.txt";
-    
+
     set_and_check_env_variable('FLUXPATH', $fluxdir, 0);
     set_and_check_env_variable('PIPEPATH', $pipedir, $print);
     set_and_check_env_variable('BATCHPATH', $batchdir, $print);
@@ -99,11 +96,13 @@ sub calculate_directories {
     return ($pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile);
 }
 
+
 sub set_python_path {
     my ($pythonpath, $print) = @_;
     set_and_check_env_variable('PYTHONPATH', $pythonpath, $print);
     return $pythonpath;
 }
+
 
 sub print_banner {
     my ($batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string) = @_;
@@ -114,7 +113,6 @@ sub print_banner {
     print "--------------------------------------------------------------------------------------------------\n";
     print "\n\n";
 
-    # check_env_variable('PYTHONPATH', 1);
     check_env_variable('DATAPATH', 1);
     print "\nBatch: $batch_name, CR: $CR, Reduction: $reduction, Fluxons: $n_fluxons_wanted";
 
@@ -127,12 +125,9 @@ sub print_banner {
     print "\n\t>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n";
     print "\n\n";
     print "--------------------------------------------------------------------------------------------------\n";
-
+    return 1;
 }
 
-
-use strict;
-use warnings;
 
 sub search_files_in_directory {
     my ($directory, $known_string, $extension) = @_;
@@ -152,6 +147,7 @@ sub search_files_in_directory {
     closedir($dh);
 }
 
+
 sub check_second_file_presence {
     my ($file_path) = @_;
 
@@ -163,22 +159,13 @@ sub check_second_file_presence {
     my $second_file_pattern = $file_name;
     print "    File name: $file_name\n";
     $second_file_pattern =~ s/(\.[^.]+)$/_relaxed_.*${1}/;
-    # print "Relaxed file pattern: $second_file_pattern\n";
-    # $second_file_pattern =~ s/\\_relaxed_s*${1}/;
 
     opendir(my $dh, $directory) or die "Failed to open directory: $!";
     while (my $file = readdir($dh)) {
         next if ($file =~ /^\./);  # Skip hidden files/directories
         next if ($file =~ /\.png$/); #skip png files
-        # return 1 if the file has "_relaxed_" in it
-        # if ($file =~ /_relaxed_/) {
-        #     closedir($dh);
-        #     print("Second file found: $file\n");
-        #     return 1;  # Second file found
-        # }
-        # print($file, "\n");
+
         if ($file =~ /^$second_file_pattern$/) {
-            # print("Relaxed file found: $file\n");
             closedir($dh);
             return 1, $file;  # Second file found
         }

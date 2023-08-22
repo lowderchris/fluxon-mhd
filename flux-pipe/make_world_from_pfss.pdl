@@ -4,7 +4,6 @@ use PDL;
 use PDL::Transform;
 use PDL::NiceSlice;
 use PDL::Options;
-# use PDL::ImageND;
 use Flux;
 use PDL::IO::Misc;
 use File::Path;
@@ -13,7 +12,6 @@ use Time::HiRes qw(clock_gettime);
 use File::Basename qw(fileparse);
 use File::Basename;
 use pdl_pipe_helper;
-
 
 sub make_world_from_pfss{
     my ($world_out_dir, $floc_path, $open_file, $closed_file, $force_make_world, $CR, $datdir, $batch, $N_actual, $n_fluxons_wanted, $lim, $lim2, $n_outliers) = @_;
@@ -33,11 +31,8 @@ sub make_world_from_pfss{
 
     if ($force_make_world || $need_world){
         ## Read python-processed data ###############################
-        # print "\n \n\tLoading Open and Closed line files...";
-
         my ($oflnum, $oflx, $olat, $olon, $orad) = rcols $open_file;
         my ($cflnum, $cflx, $clat, $clon, $crad) = rcols $closed_file;
-
 
         my $open_name_short = shorten_path($open_file, 5);
         my $closed_name_short = shorten_path($closed_file, 5);
@@ -47,7 +42,7 @@ sub make_world_from_pfss{
         my @flines = ();
         my $world = ();
         my $xform = !t_spherical() x t_scale([3.14159/180,3.14159/180,1]);
-        # print("Done!\n");
+
 
         ## Generate open fieldlines ####################################
         print "\n \n\tGenerating open fluxons from \n\t\t$open_name_short\n\t ";
@@ -89,7 +84,6 @@ sub make_world_from_pfss{
             my $flxlon = $clon($cfln($j):$cfln($j+1)-1);
             my $flxrad = $crad($cfln($j):$cfln($j+1)-1);
             my $closed = pdl($flxlon, $flxlat, $flxrad)->transpose;
-            ## CL - DOUBLE CHECK THE FLUX DIRECTION HERE
             if ($cflx->($cfln($j))<0){
                 $closed = $closed->(:,-1:0:-1);
             }
@@ -103,32 +97,28 @@ sub make_world_from_pfss{
         my $total_fluxons = $open_count + $closed_count;
         print "\n\t    Total fluxons created: $total_fluxons\n";
 
+
     ## Generate the world  ############################################
         print "\n\tGenerating the World...\n \n";
-
         my $fbg = make_world_sphere(@flines, {rmax=>21.5});
         $world = str2world($fbg);
 
+
         ## Save the initial world state  ###############################
         print "\n\tSaving the World...";
-
         my $flen = $oflnum->max() + $cflnum->max() + 4; #@flines+0; 
-        # my $world_out_path = $world_out_dir .'cr'.$CR.'_f'.$n_fluxons_wanted.'.flux';
-        # my $world_out_path = $world_out_dir .'cr'.$CR.'.flux';
         if (! -d $world_out_dir ) {mkpath($world_out_dir) or die "Failed to create directory: $world_out_dir $!\n";}
         $world->write_world($world_out_path);
         my $short_world_out_path = shorten_path($world_out_path);
         print "\n\t    Saved to $short_world_out_path\n";
 
+
         ## Display ####################################################
         print "\n \n\tPlotting the World...";
-
         # Set Ranges of Plots
-
         my $range_i = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
         my $range_f = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
         my $range_f2 = [-$lim2, $lim2, -$lim2, $lim2, -$lim2, $lim2];
-
 
         # number of open fluxons, number of fluxons, number of fluxons requested
         my $top_dir = $datdir."/batches/$batch/imgs/initial/";
@@ -141,7 +131,6 @@ sub make_world_from_pfss{
         my $world_png_path2= $world_out_dir ."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss_wide.$ext";
         my $world_png_path_top = $top_dir   ."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss.$ext";
 
-        # print $world_png_path_top;
         my $window00 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path);
         $world->render( {'window'=>$window00, range=>$range_i});
         my $window000 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path_top);
@@ -149,14 +138,11 @@ sub make_world_from_pfss{
         my $window01 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path2);
         $world->render( {'window'=>$window01, range=>$range_f2});
         print "Done!\n";
-        # $world -> render({'dev'=>'qt'});
 
     } else {
         print "\n\n \tSkipped! World already exists:\n";
-
         my $short_world_out_path = shorten_path($world_out_path);
         print "\t    $short_world_out_path\n";
-
     }
         print "\n\t\t\t```````````````````````````````\n \n\n\n";
 }

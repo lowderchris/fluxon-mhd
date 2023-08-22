@@ -1,5 +1,6 @@
 use pdl_pipe_helper;
-
+use strict;
+use warnings;
 
 sub relax_pfss_world{
     my ($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold, $max_cycles, $timefile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR) = @_;
@@ -9,8 +10,6 @@ print "(pdl) Relax the Initial World State from PFSS\n";
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 print "\n";
 my ($found_file_path, $stepnum) = find_highest_numbered_file($world_out_dir);
-
-# $found_file_path = search_files_in_directory($world_out_dir, , ".flux");
 my ($second_file_present, $file_path_relaxed) = check_second_file_presence($full_world_path);
 if ($second_file_present) {print "\tFound a relaxed file: $file_path_relaxed";} 
 else {

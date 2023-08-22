@@ -20,9 +20,6 @@ sub get_wind{
     my $short_out_wind = shorten_path($out_wind);
     my $skipstring = "\n\tWind Calculation Skipped! \n\t\tFound $short_out_wind\n\n";
 
-        # filename = f"cr{CR}_f{args.nwant}_ou{n_open}_radial_wind.png"
-
-
     # Make the directory if necessary
     if (! -d $wind_out_dir ) {
         $do_wind_calc = 1;
@@ -63,7 +60,6 @@ sub get_wind{
         if ($do_wind_map){
             map_fluxon_flow_parallel_master($out_wind, \@fluxons);
         } else {
-        
             print $skipstring;
         }
         use warnings 'misc'
