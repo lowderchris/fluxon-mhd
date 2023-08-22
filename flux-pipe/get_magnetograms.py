@@ -8,11 +8,10 @@ Args:
 Returns:
     None
 """
-
-datdir = '/Users/cgilbert/vscode/fluxons/fluxon-data'
-
 import argparse
 from py_pipe_helper import get_magnetogram_file, write_magnetogram_params
+
+datdir = '/Users/cgilbert/vscode/fluxons/fluxon-data'
 
 # create the argument parser
 parser = argparse.ArgumentParser(

@@ -54,7 +54,7 @@ def load_and_condition_fits_file(fname, datdir):
     except FileNotFoundError:
         fits_path = os.path.join(datdir, fname)
         hdulist = read_fits_data(fits_path)
-    print("\t\t", shorten_path(fits_path, 2))
+    print("\t\t", shorten_path(fits_path))
 
     hdu_0 = hdulist[0]
     brdat = hdu_0.data

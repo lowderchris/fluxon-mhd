@@ -3,14 +3,23 @@
 import subprocess
 from tqdm import tqdm
 import py_pipe_helper as ph
-flux_pipe_dir = "/Users/cgilbert/vscode/fluxons/fluxon-mhd/flux-pipe/"
-pdl_script_path = ph.add_paths(flux_pipe_dir)
+# import os.path
 
+base_dir = "/Users/cgilbert/vscode/fluxons"
+mhd_dir = f"{base_dir}/fluxon-mhd"
+flux_pipe_dir = f"{mhd_dir}/flux-pipe"
+new_path = ph.add_top_level_dirs_to_path(mhd_dir)
+
+# thepaths = new_path.split(":")
+# thepaths.sort()
+# [print(x) for x in thepaths]
+
+pdl_script_path = f"{flux_pipe_dir}/magnetogram2wind.pdl"
 
 batch_name = "back_test"
 # rotations = [2160, 2193, 2219, 2231]
-rotations = [2193]
-do_flux = [1000]  # , 2000, 3000, 4000, 5000, 6000, 8000, 10000]
+rotations = [2161]
+do_flux = [200]  # , 2000, 3000, 4000, 5000, 6000, 8000, 10000]
 do_survey = True  # run the fluxon analysis on a set of fluxon numbers and/or rotations
 
 plot_only = 0  # skip everything except the wind plotting at the end

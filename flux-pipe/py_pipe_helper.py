@@ -26,7 +26,66 @@ import sunpy.io
 from sunpy.net import Fido, attrs as a
 
 default_email = "chris.gilly@colorado.edu"
+default_root_dir = "/Users/cgilbert/vscode/fluxons/fluxon-mhd/"
 dat_dir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
+
+def add_dir_to_path(root_dir=None):
+    """Adds a directory and all subdirectories to the PATH environment variable.
+
+    Args:
+        root_dir (str, optional): _description_. Defaults to None.
+    """    
+    if root_dir is None:
+        root_dir = default_root_dir
+
+    # Get the current PATH
+    current_path = os.environ.get('PATH', '')
+
+    # Initialize a set with the current PATH elements to avoid duplicates
+    path_set = set(current_path.split(os.pathsep))
+
+    # Walk through the directory tree
+    for dirpath, _, _ in os.walk(root_dir):
+        # Add each directory to the set
+        path_set.add(dirpath)
+
+    # Convert the set back to a string
+    new_path = os.pathsep.join(path_set)
+
+    # Update the PATH
+    os.environ['PATH'] = new_path
+
+
+def add_top_level_dirs_to_path(root_dir):
+    """Adds the top-level directories under a root directory to the PATH environment variable.
+
+    Args:
+        root_dir (_type_): _description_
+    """    
+    # Get the current PATH
+    current_path = os.environ.get('PATH', '')
+
+    # Initialize a set with the current PATH elements to avoid duplicates
+    path_set = set(current_path.split(os.pathsep))
+
+    # List the top-level directories under the root directory
+    top_level_dirs = [os.path.join(root_dir, d) for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
+    top_level_dirs.append(f"{root_dir}:")
+
+    # Add each top-level directory to the set
+    path_set.update(top_level_dirs)
+
+    # Convert the set back to a string
+    new_path = os.pathsep.join(path_set)
+
+    # Update the PATH
+    os.environ['PATH'] = new_path
+
+    # news = os.environ.get('PATH', '')
+    # news_list = news.split(os.pathsep)
+    # news_list.sort()
+    # a=[print(x) for x in news_list]
+    return new_path
 
 
 def add_paths(flux_pipe_dir):

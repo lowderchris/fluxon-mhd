@@ -1,9 +1,11 @@
-use strict;
+# use strict;
 use warnings;
 use PDL::AutoLoader;
 use PDL;
 use Time::Piece;
 
+# our @PDLLIB;
+# my @INC;
 
 sub shorten_path {
     my ($string) = @_;
@@ -88,11 +90,25 @@ sub calculate_directories {
         my $batchdir = "$datdir/batches/$batch_name";
             my $logfile = "$batchdir/pipe_log.txt";
 
-    set_and_check_env_variable('FLUXPATH', $fluxdir, 0);
+    set_and_check_env_variable('FLUXPATH', $fluxdir, $print);
     set_and_check_env_variable('PIPEPATH', $pipedir, $print);
     set_and_check_env_variable('BATCHPATH', $batchdir, $print);
-    # print "\n";
     set_and_check_env_variable('DATAPATH', $datdir, $print);
+
+    # my @PDLLIB;
+    # my @INC;
+
+    # push @PDLLIB,"$datdir";
+    # push @PDLLIB,"$pdldir";
+    # push @PDLLIB,"$pipedir";
+    # push @PDLLIB,"$pipedir/plotting";
+
+    # push @INC, "$datdir";
+    # push @INC, "$pdldir";
+    # push @INC, "$pipedir";
+    # push @INC, "$pipedir/plotting";
+
+
     return ($pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile);
 }
 
@@ -175,6 +191,5 @@ sub check_second_file_presence {
 
     return 0, 0;  # Second file not found
 }
-
 
 1;
