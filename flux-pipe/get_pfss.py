@@ -87,8 +87,8 @@ else:
     flnum_open = len(np.unique(fl_open[:, 0]))+1
     flnum_closed = 2*len(np.unique(fl_closed[:, 0]))
     print("Skipped! Floc dat files already exist:")
-    print(f"\t\t{shorten_path(open_path, 5)}")
-    print(f"\t\t{shorten_path(closed_path, 5)}")
+    print(f"\t\t{shorten_path(open_path)}")
+    print(f"\t\t{shorten_path(closed_path)}")
     print(
         f"\t\tFootpoints:\t Open: {flnum_open}, Closed: \
             {flnum_closed}, Total: {flnum_open+flnum_closed}")
