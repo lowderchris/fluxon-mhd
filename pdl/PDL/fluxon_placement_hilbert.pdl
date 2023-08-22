@@ -88,12 +88,13 @@ sub fluxon_placement_hilbert {
     print "sm_us_sum is ".$sm_us_sum."\n";
     print "Calling helper...\n";
     }
-    
+
     my $plist = [];
     PDL::fl_hi_helper($bgseries,$plist);
     my $points = pdl($plist);
     my $pl = $plist;
     $points = ($path->(:,$points->abs))->glue(0, (1 - 2*($points->(*1) < 0)));
+    return;
 }
 
 no PDL::NiceSlice;
