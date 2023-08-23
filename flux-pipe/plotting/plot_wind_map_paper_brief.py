@@ -14,14 +14,9 @@ import os.path as path
 from scipy.interpolate import griddata
 
 import py_plot_helper
-# from py_plot_helper import add_pipedir
-# add_pipedir()
 
-from py_pipe_helper import load_fits_magnetogram, load_magnetogram_params, shorten_path
+from py_pipe_helper import load_fits_magnetogram, load_magnetogram_params, get_fixed_coords
 from plot_fieldmap import magnet_plot
-
-
-
 
 
 # Remove outliers from the dataset recursively
@@ -50,7 +45,7 @@ def remove_outliers(data, ph, th, thresh_low=4, thresh_high=2, n_times= 1):
         return data_good_2, ph_good_2, th_good_2, bad_data_all, bad_ph_all, bad_th_all
 
 def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, power=1):
-    """Scale the data between 0 and 1, then raise to a power, then scale by a factor""" 
+    """Scale the data between 0 and 1, then raise to a power, then scale by a factor"""
     vel0_max = np.nanmax(vel0_clean)
     vel1_max = np.nanmax(vel1_clean)
     vel0_min = np.nanmin(vel0_clean)
@@ -61,7 +56,7 @@ def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, powe
 
     outlier_V0_scaled = scale * ((np.abs(outlier_V0) - vel0_min) / (vel0_max-vel0_min))**power
     outlier_V1_scaled = scale * ((np.abs(outlier_V1) - vel1_min) / (vel1_max-vel1_min))**power
-    
+
     return v0, v1, outlier_V0_scaled, outlier_V1_scaled
 
 def get_ax(ax=None):
@@ -76,18 +71,18 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
         print("\n\t\tMaking Histogram Plot...", end='')
 
     ## The Histogram Plot
-    fig, hist_ax = get_ax(ax)
+    _, hist_ax = get_ax(ax)
     mean1 = np.mean(vel1_clean)
     median1 = np.median(vel1_clean)
     std1  =  np.std(vel1_clean)
     hist_ax.hist(vel1_clean[vel1_clean>=0], bins=n_bins, color='sandybrown')
-    hist_ax.axvline(mean1, color='k', linestyle='dashed', linewidth=1, label="Mean: {:.0f} km/s".format(mean1))
-    hist_ax.axvline(median1, color='lightgrey', linestyle='-.', linewidth=1, label="Median: {:.0f} km/s".format(median1))
-    hist_ax.axvline(mean1+std1, color='k', linestyle=':', linewidth=1, label="Std: {:.0f} km/s".format(std1))
+    hist_ax.axvline(mean1, color='k', linestyle='dashed', linewidth=1, label="Mean: {mean1:.0f} km/s")
+    hist_ax.axvline(median1, color='lightgrey', linestyle='-.', linewidth=1, label="Median: {median1:.0f} km/s")
+    hist_ax.axvline(mean1+std1, color='k', linestyle=':', linewidth=1, label="Std: {std1:.0f} km/s")
     hist_ax.axvline(mean1-std1, color='k', linestyle=':', linewidth=1)
     hist_ax.legend()
     hist_ax.set_xlabel("Velocity (km/s)")
-    hist_ax.set_ylabel(F"Number of Fluxons")
+    hist_ax.set_ylabel("Number of Fluxons")
     hist_ax.set_title(f'CR{CR}, {len(vel1_clean)} Open Fields')
 
     hist_ax.set_xlim((vmin, vmax))
@@ -100,13 +95,6 @@ def magnet_plot_orig(batch, ax=None, doplot=False, vmin=-500, vmax=500):
     magnet = load_fits_magnetogram(batch=batch, bo=3, bn=2)
     # magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
 
-    # find the max and min of the magnetogram plot for use in setting the colormap, 
-    sigma = 3
-    mmean = np.nanmean(magnet)
-    msig = np.nanstd(magnet)
-    mvmin = mmean - sigma*msig
-    mvmax = mmean + sigma*msig
-
     # Plot the magnetogram
     # Scatter the fluxon data
     ph000 = (ph0_clean+np.pi)%(2*np.pi)
@@ -115,19 +103,19 @@ def magnet_plot_orig(batch, ax=None, doplot=False, vmin=-500, vmax=500):
     ph111b = (ph1b+np.pi)%(2*np.pi)
     sc00, sc01, magimg = None, None, None
     if doplot:
-        fig, ax = get_ax(ax)    ## The Magnetogram Plot
-        magimg = ax.imshow(magnet, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), aspect='auto', 
+        _, ax = get_ax(ax)    ## The Magnetogram Plot
+        magimg = ax.imshow(magnet, cmap='gray', interpolation=None, origin="lower", extent=(0,2*np.pi,-1,1), aspect='auto',
                         #    vmin=mvmin, vmax=mvmax)
                            vmin=vmin, vmax=vmax)
-        sc00 = ax.scatter(ph000, th0_clean, c= vel0_clean, s=v0, alpha=0.5, label='V(1.0R$_\odot$)'  , cmap="winter",  )
-        sc01 = ax.scatter(ph111, th1_clean, c= vel1_clean, s=v1, alpha=0.5, label='V(21.5R$_\odot$)' , cmap="autumn",  marker='s')
+        sc00 = ax.scatter(ph000, th0_clean, c= vel0_clean, s=v0, alpha=0.5, label=r'V(1.0R$_\odot$)'  , cmap="winter",  )
+        sc01 = ax.scatter(ph111, th1_clean, c= vel1_clean, s=v1, alpha=0.5, label=r'V(21.5R$_\odot$)' , cmap="autumn",  marker='s')
         # sc01 = ax[1].scatter(ph1, th1, c= vel1, s=v1, alpha=0.75, label='V(21.5R$_\odot$)' , cmap="autumn",  marker='s')
         # sc10 = ax[1].scatter(ph0, th0, c= fr0 , s=f0, alpha=0.75, label='Fr(1.0R$_\odot$)' , cmap="winter", )
         # sc11 = ax[1].scatter(ph1, th1, c= fr1 , s=f1, alpha=0.75, label='Fr(21.5R$_\odot$)', cmap="autumn", marker='s')
 
         #Scatter the Outliers
-        ax.scatter(ph000b, th0b, c= v0bs, alpha=0.6, label='V(1.0R$_\odot$)', cmap="winter", marker='X',  s=50, edgecolors='k')
-        ax.scatter(ph111b, th1b, c= v1bs, alpha=0.6, label='V(1.5R$_\odot$)', cmap="autumn", marker='X',  s=50, edgecolors='k')
+        ax.scatter(ph000b, th0b, c= v0bs, alpha=0.6, label=r'V(1.0R$_\odot$)', cmap="winter", marker='X',  s=50, edgecolors='k')
+        ax.scatter(ph111b, th1b, c= v1bs, alpha=0.6, label=r'V(1.5R$_\odot$)', cmap="autumn", marker='X',  s=50, edgecolors='k')
         # ax[1].scatter(ph000b, th0b, c= outlier_V0_scaled, alpha=0.95, label='V(1.0R$_\odot$)', cmap="winter", marker='X', s=50, edgecolors='k')
         # ax[1].scatter(ph111b, th1b, c= v1bs, alpha=0.95, label='V(1.5R$_\odot$)', cmap="autumn", marker='X', s=50, edgecolors='k')
     return ph000, ph000b, ph111, ph111b, sc00, sc01, magimg
@@ -142,8 +130,8 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
     x_max = 2*np.pi
 
     # Wrap the data around the edges of the domain
-    ph1 = ph1_wrap = (ph1_clean+np.pi)%(2*np.pi)
-    th1 = th1_clean 
+    ph1 = (ph1_clean+np.pi)%(2*np.pi)
+    th1 = th1_clean
     vel1 = vel1_clean
 
     ph1_wrapped = np.concatenate((ph1 - x_max, ph1, ph1 + x_max))
@@ -167,8 +155,8 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
     grid_z1_NANed[grid_z1_NANed==0] = np.nan
 
     z1_use = grid_z1_NANed
-    hex1 = hex_ax.hexbin(grid_x.flatten(), grid_y.flatten(), C=z1_use.flatten(), 
-            gridsize=gridsize, cmap='autumn', 
+    hex1 = hex_ax.hexbin(grid_x.flatten(), grid_y.flatten(), C=z1_use.flatten(),
+            gridsize=gridsize, cmap='autumn',
             # vmin=np.nanmin(z1_use), vmax=np.nanmax(z1_use))
             vmin=vmin, vmax=vmax)
 
@@ -224,7 +212,7 @@ if __name__ == "__main__":
     # Load the magnetogram parameters
     (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
     CR = args.cr or cr
-        
+
 
     # Load the wind file
     dat_file = args.file or f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{args.nwant}_radial_wind.dat'
@@ -243,14 +231,11 @@ if __name__ == "__main__":
 
 
     # Convert coords to correct coords
-    # ph0, th0 = phi0+np.pi, -theta0+(np.pi/2)
-    # ph1, th1 = phi1+np.pi, -theta1+(np.pi/2)
-    from py_pipe_helper import get_fixed_coords
     ph0, th0 = get_fixed_coords(phi0, theta0)
     ph1, th1 = get_fixed_coords(phi1, theta1)
 
 
-    print(f"\n\tPlotting Windmap...", end="\n" if __name__=="__main__" else "")
+    print("\n\tPlotting Windmap...", end="\n" if __name__=="__main__" else "")
 
     # Get the Data
     vel0_clean, ph0_clean, th0_clean, v0b, ph0b, th0b = remove_outliers(vel0, ph0, th0, 3, 2, 1)
@@ -267,7 +252,7 @@ if __name__ == "__main__":
     all_vmin, all_vmax = 450, 850
     drk=0.25
 
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce=reduce, nwant=args.nwant, do_print_top=False)    
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce, nwant=args.nwant, do_print_top=False)
     hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=20, vmin=all_vmin, vmax=all_vmax)
     mean1, std1 = hist_plot(vel1_clean, ax=hist_ax, vmin=all_vmin, vmax=all_vmax, n_bins=16)
 
@@ -405,7 +390,7 @@ if __name__ == "__main__":
 #     gridsize = (nx, int(np.round(nx*ratio)))
 
 #     axarr[2].hexbin(grid_x.flatten(), grid_y.flatten(), C=grid_z.flatten(), gridsize=gridsize, cmap='autumn')
-    
+
 
 #     plt.tight_layout()
 #     plt.savefig(save_path)
@@ -421,7 +406,7 @@ if __name__ == "__main__":
 # f0 = scale * ((np.abs(fr0 ) - fr0_min ) / (fr0_max -fr0_min ))**power
 # f1 = scale * ((np.abs(fr1 ) - fr1_min ) / (fr1_max -fr1_min ))**power
 
- 
+
 
 # v0 = (1+5*np.abs(vel0)/vel0_max)**3
 # v1 = (1+5*np.abs(vel1)/vel1_max)**3
@@ -439,10 +424,10 @@ if __name__ == "__main__":
 # # Set the negative values to the mean
 # vel0[vel0<0.]= v0mean
 # vel1[vel1<0.]= v1mean
-# fr0_max  = np.nanmax(np.abs(fr0))  
-# fr1_max  = np.nanmax(np.abs(fr1))  
-# fr0_min  = np.nanmin(np.abs(fr0))  
-# fr1_min  = np.nanmin(np.abs(fr1)) 
+# fr0_max  = np.nanmax(np.abs(fr0))
+# fr1_max  = np.nanmax(np.abs(fr1))
+# fr0_min  = np.nanmin(np.abs(fr0))
+# fr1_min  = np.nanmin(np.abs(fr1))
 
 # # Set the large values to less large
 # sig=2

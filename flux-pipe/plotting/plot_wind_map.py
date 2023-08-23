@@ -1,4 +1,4 @@
-"""_summary_ = Plot the wind map for a given CR. 
+"""_summary_ = Plot the wind map for a given CR.
 
 Returns:
     _type_: _description_
@@ -172,9 +172,6 @@ for interp in which_interp:
     ax2.scatter(ph111b, th1b, c= outlier_V1_scaled, alpha=0.95, label=r'V(1.5R$_\odot$)',
                 cmap="autumn", marker='X', s=50, edgecolors='k')
 
-
-
-
     ## Plot the interpolated data
     # Define the x-boundaries of the domain
     x_min = 0
@@ -187,7 +184,6 @@ for interp in which_interp:
     th1 = th1_clean
     vel0 = vel0_clean
     vel1 = vel1_clean
-
 
     ph0_wrapped = np.concatenate((ph0 - x_max, ph0, ph0 + x_max))
     th0_wrapped = np.concatenate((th0, th0, th0))
@@ -232,15 +228,17 @@ for interp in which_interp:
     cbar01 = fig.colorbar(magimg, ax=ax0, extend='both')
     cbar01.set_label("Mag Field Anomaly [Gauss]")
 
-    # cbar01 = fig.colorbar(sc01, ax=ax0)
-    # cbar00 = fig.colorbar(sc00, ax=ax0)
-    # cbar11 = fig.colorbar(sc11, ax=ax1)
-    # cbar10 = fig.colorbar(sc10, ax=ax1)
+    do_colorbar = False
+    if do_colorbar:
+        cbar01 = fig.colorbar(sc01, ax=ax0)
+        cbar00 = fig.colorbar(sc00, ax=ax0)
+        # cbar11 = fig.colorbar(sc11, ax=ax1)
+        # cbar10 = fig.colorbar(sc10, ax=ax1)
 
-    # cbar00.set_label("V(1.0R$_\odot$)  [km/s]")
-    # cbar01.set_label("V(21.5R$_\odot$) [km/s]")
-    # cbar10.set_label("Fr(1.0R$_\odot$)  ")
-    # cbar11.set_label("Fr(21.5R$_\odot$) ")
+        cbar00.set_label(r"V(1.0R$_{\odot}$)  [km/s]")
+        cbar01.set_label(r"V(21.5R$_{\odot}$) [km/s]")
+        # cbar10.set_label(r"Fr(1.0R$_{\odot}$)  ")
+        # cbar11.set_label(r"Fr(21.5R$_{\odot$}) ")
 
 
     fig.suptitle(F"Fluxon Wind Strength for CR {CR}: N={len(v1)}")
