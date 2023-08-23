@@ -1,5 +1,4 @@
-"""
-plots the magnetic field strength of the fluxons
+"""plots the magnetic field strength of the fluxons
 """
 import os.path
 import argparse

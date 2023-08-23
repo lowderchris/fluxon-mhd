@@ -11,6 +11,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import griddata
+from py_plot_helper import remove_outliers
 
 mpl.use("qt5agg")
 
@@ -46,30 +47,7 @@ nfluxon = arr.shape[1]
 ph0, th0 = get_fixed_coords(phi0, theta0)
 ph1, th1 = get_fixed_coords(phi1, theta1)
 
-# Remove outliers from the dataset
-def remove_outliers(data, ph0_temp, th0_temp, threshold=3):
-    """_summary_
 
-    Args:
-        data (_type_): _description_
-        ph0_temp (_type_): _description_
-        th0_temp (_type_): _description_
-        threshold (int, optional): _description_. Defaults to 3.
-
-    Returns:
-        _type_: _description_
-    """
-    mean = np.mean(data[data>0])
-    std = np.std(data[data>0])
-    filtered_data, good_points = (list(t) for t in zip(*[(x,i) for i,x in enumerate(data)
-                                    if mean - threshold * std < x < mean + threshold * std]))
-    ph0c, th0c = ph0_temp[good_points], th0_temp[good_points]
-    bad_points = [i for i in range(len(data)) if i not in good_points]
-    ph0_b, th0_b = ph0_temp[bad_points], th0_temp[bad_points]
-    outlier_data = data[bad_points]
-    mean = np.mean(filtered_data)
-    std = np.std(filtered_data)
-    return np.asarray(filtered_data), mean, std, ph0c, th0c, outlier_data, ph0_b, th0_b
 
 # Clean the Data
 vel0_clean, mean0, std0, ph0_clean, \
@@ -283,11 +261,16 @@ for interp in which_interp:
     def plot_three(grid_x_temp, grid_y_temp, grid_z_temp, save_path_temp):
         """_summary_
 
-        Args:
-            grid_x_temp (_type_): _description_
-            grid_y_temp (_type_): _description_
-            grid_z_temp (_type_): _description_
-            save_path_temp (_type_): _description_
+        Parameters
+        ----------
+        grid_x_temp : _type_
+            _description_
+        grid_y_temp : _type_
+            _description_
+        grid_z_temp : _type_
+            _description_
+        save_path_temp : _type_
+            _description_
         """
         figg, axarr = plt.subplots(3, sharex="all", sharey="all", figsize=(10,10))
         # the imshow extent will let it plot on the same space as the other two plots,

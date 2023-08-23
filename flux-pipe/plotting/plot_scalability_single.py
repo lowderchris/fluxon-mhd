@@ -1,51 +1,20 @@
-"""_summary_
+""" _summary_
 
-Returns:
-    _type_: _description_
+Returns
+-------
+_type_
+    _description_
 """
+
 import os.path
 import numpy as np
 import matplotlib.pyplot as plt
-# from matplotlib.ticker import ScalarFormatter, StrMethodFormatter
 import pandas as pd
-# import statsmodels.api as sm
+from py_plot_helper import load_data, convert_value, parse_line
 
 run_name = "fluxon r3"
 datdir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
 file_path = os.path.join(datdir, f"{run_name}/pipe_log.txt")
-
-
-## Helper functions to parse the output file
-def convert_value(value):
-    """Convert a string to an int or float if possible, otherwise return the string."""
-    try:
-        return int(value)
-    except ValueError:
-        try:
-            return float(value)
-        except ValueError:
-            return value.strip()
-
-def parse_line(line):
-    """Parse a line of the output file into a dictionary."""
-    key_values = line.strip().split(',')
-    # print(key_values)
-    parsed_dict = {}
-    for key_value in key_values:
-        if ':' in key_value:
-            key, value = key_value.split(':')
-            parsed_dict[key.strip()] = convert_value(value)
-    return parsed_dict
-
-def load_data(_file_path):
-    """Load the data from the file into a pandas DataFrame."""
-    data = []
-    print("\n", _file_path, '\n')
-    with open(_file_path, 'r', encoding="utf-8") as file:
-        for line in file.readlines():
-            data.append(parse_line(line))
-    return pd.DataFrame(data)
-
 
 
 ## Real Code

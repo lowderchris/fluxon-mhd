@@ -1,9 +1,10 @@
 """_summary_
 
-Returns:
-    _type_: _description_
+Returns
+-------
+_type_
+    _description_
 """
-
 import os
 import os.path as path
 import argparse
@@ -17,36 +18,54 @@ from py_pipe_helper import (load_fits_magnetogram, load_magnetogram_params,
                             shorten_path)
 
 
-# create the argument parser
-
-
 def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False, reduce_amt=0,
                 nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="pdf",
                 plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500):
     """_summary_
 
-    Args:
-        get_cr (_type_): _description_
-        datdir (_type_): _description_
-        _batch (_type_): _description_
-        open_f (_type_, optional): _description_. Defaults to None.
-        closed_f (_type_, optional): _description_. Defaults to None.
-        force (bool, optional): _description_. Defaults to False.
-        reduce_amt (int, optional): _description_. Defaults to 0.
-        nact (int, optional): _description_. Defaults to 0.
-        nwant (_type_, optional): _description_. Defaults to None.
-        do_print_top (bool, optional): _description_. Defaults to False.
-        ax (_type_, optional): _description_. Defaults to None.
-        verb (bool, optional): _description_. Defaults to True.
-        ext (str, optional): _description_. Defaults to "pdf".
-        plot_all (bool, optional): _description_. Defaults to True.
-        plot_open (bool, optional): _description_. Defaults to True.
-        do_print (bool, optional): _description_. Defaults to False.
-        vmin (int, optional): _description_. Defaults to -500.
-        vmax (int, optional): _description_. Defaults to 500.
+    Parameters
+    ----------
+    get_cr : _type_
+        _description_
+    datdir : _type_
+        _description_
+    _batch : _type_
+        _description_
+    open_f : _type_, optional
+        _description_, by default None
+    closed_f : _type_, optional
+        _description_, by default None
+    force : bool, optional
+        _description_, by default False
+    reduce_amt : int, optional
+        _description_, by default 0
+    nact : int, optional
+        _description_, by default 0
+    nwant : _type_, optional
+        _description_, by default None
+    do_print_top : bool, optional
+        _description_, by default False
+    ax : _type_, optional
+        _description_, by default None
+    verb : bool, optional
+        _description_, by default True
+    ext : str, optional
+        _description_, by default "pdf"
+    plot_all : bool, optional
+        _description_, by default True
+    plot_open : bool, optional
+        _description_, by default True
+    do_print : bool, optional
+        _description_, by default False
+    vmin : int, optional
+        _description_, by default -500
+    vmax : int, optional
+        _description_, by default 500
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
     fig, ax0 = get_ax(ax)
     if do_print:
@@ -175,8 +194,8 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
     return _n_open, _n_closed, _n_flux, _fnum, _n_outliers
 
 
-
 if __name__ == "__main__":
+    # create the argument parser
     parser = argparse.ArgumentParser(description=
             'This script plots the expansion factor of the given radial_fr.dat')
     parser.add_argument('--cr', type=int, default=None)

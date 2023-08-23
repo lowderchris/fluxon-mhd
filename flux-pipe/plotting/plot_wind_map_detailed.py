@@ -1,10 +1,9 @@
 """_summary_
 
-Raises:
-    to: _description_
-
-Returns:
-    _type_: _description_
+Returns
+-------
+_type_
+    _description_
 """
 
 import numpy as np
@@ -15,7 +14,7 @@ import argparse
 import os.path as path
 from scipy.interpolate import griddata
 
-from py_plot_helper import get_ax
+from py_plot_helper import get_ax, scale_data
 from py_pipe_helper import \
     (load_fits_magnetogram, load_magnetogram_params, get_fixed_coords)
 from plot_fieldmap import magnet_plot
@@ -25,17 +24,27 @@ from plot_fieldmap import magnet_plot
 def remove_outliers(data, ph, th, thresh_low=4, thresh_high=2, n_times= 1):
     """_summary_
 
-    Args:
-        data (_type_): _description_
-        ph (_type_): _description_
-        th (_type_): _description_
-        thresh_low (int, optional): _description_. Defaults to 4.
-        thresh_high (int, optional): _description_. Defaults to 2.
-        n_times (int, optional): _description_. Defaults to 1.
+    Parameters
+    ----------
+    data : _type_
+        _description_
+    ph : _type_
+        _description_
+    th : _type_
+        _description_
+    thresh_low : int, optional
+        _description_, by default 4
+    thresh_high : int, optional
+        _description_, by default 2
+    n_times : int, optional
+        _description_, by default 1
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
+
     # Get the Good Points
     mean = np.mean(data[data>0])
     std = np.std(data[data>0])
@@ -60,53 +69,30 @@ def remove_outliers(data, ph, th, thresh_low=4, thresh_high=2, n_times= 1):
         bad_th_all   = np.concatenate((  th_bad,   th_bad_2))
         return data_good_2, ph_good_2, th_good_2, bad_data_all, bad_ph_all, bad_th_all
 
-def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, power=1):
-    """Scale the data between 0 and 1, then raise to a power, then scale by a factor
-
-    Args:
-        vel0_clean (_type_): _description_
-        vel1_clean (_type_): _description_
-        outlier_V0 (_type_): _description_
-        outlier_V1 (_type_): _description_
-        scale (_type_, optional): _description_. Defaults to 15**2.
-        power (int, optional): _description_. Defaults to 1.
-
-    Raises:
-        to: _description_
-
-    Returns:
-        _type_: _description_
-    """
-
-    vel0_max = np.nanmax(vel0_clean)
-    vel1_max = np.nanmax(vel1_clean)
-    vel0_min = np.nanmin(vel0_clean)
-    vel1_min = np.nanmin(vel1_clean)
-
-    v0 = scale * ((np.abs(vel0_clean) - vel0_min) / (vel0_max-vel0_min))**power
-    v1 = scale * ((np.abs(vel1_clean) - vel1_min) / (vel1_max-vel1_min))**power
-
-    outlier_V0_scaled = scale * ((np.abs(outlier_V0) - vel0_min) / (vel0_max-vel0_min))**power
-    outlier_V1_scaled = scale * ((np.abs(outlier_V1) - vel1_min) / (vel1_max-vel1_min))**power
-
-    return v0, v1, outlier_V0_scaled, outlier_V1_scaled
-
-
-
 def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=True):
     """_summary_
 
-    Args:
-        vel1_clean (_type_): _description_
-        ax (_type_, optional): _description_. Defaults to None.
-        vmin (int, optional): _description_. Defaults to 400.
-        vmax (int, optional): _description_. Defaults to 800.
-        n_bins (int, optional): _description_. Defaults to 20.
-        do_print_top (bool, optional): _description_. Defaults to True.
+    Parameters
+    ----------
+    vel1_clean : _type_
+        _description_
+    ax : _type_, optional
+        _description_, by default None
+    vmin : int, optional
+        _description_, by default 400
+    vmax : int, optional
+        _description_, by default 800
+    n_bins : int, optional
+        _description_, by default 20
+    do_print_top : bool, optional
+        _description_, by default True
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
+
     if do_print_top:
         print("\n\t\tMaking Histogram Plot...", end='')
 
@@ -137,16 +123,25 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
 def magnet_plot_orig(batch, ax=None, doplot=False, vmin=-500, vmax=500):
     """_summary_
 
-    Args:
-        batch (_type_): _description_
-        ax (_type_, optional): _description_. Defaults to None.
-        doplot (bool, optional): _description_. Defaults to False.
-        vmin (int, optional): _description_. Defaults to -500.
-        vmax (int, optional): _description_. Defaults to 500.
+    Parameters
+    ----------
+    batch : _type_
+        _description_
+    ax : _type_, optional
+        _description_, by default None
+    doplot : bool, optional
+        _description_, by default False
+    vmin : int, optional
+        _description_, by default -500
+    vmax : int, optional
+        _description_, by default 500
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
+
     magnet = load_fits_magnetogram(batch=batch, bo=3, bn=2)
     # magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
     # find the max and min of the magnetogram plot for use in setting the colormap,
@@ -179,20 +174,33 @@ def magnet_plot_orig(batch, ax=None, doplot=False, vmin=-500, vmax=500):
 def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=800, do_print_top=True, do_hex=True):
     """_summary_
 
-    Args:
-        ph1_clean (_type_): _description_
-        th1_clean (_type_): _description_
-        vel1_clean (_type_): _description_
-        ax (_type_, optional): _description_. Defaults to None.
-        nx (int, optional): _description_. Defaults to 20.
-        vmin (int, optional): _description_. Defaults to 400.
-        vmax (int, optional): _description_. Defaults to 800.
-        do_print_top (bool, optional): _description_. Defaults to True.
-        do_hex (bool, optional): _description_. Defaults to True.
+    Parameters
+    ----------
+    ph1_clean : _type_
+        _description_
+    th1_clean : _type_
+        _description_
+    vel1_clean : _type_
+        _description_
+    ax : _type_, optional
+        _description_, by default None
+    nx : int, optional
+        _description_, by default 20
+    vmin : int, optional
+        _description_, by default 400
+    vmax : int, optional
+        _description_, by default 800
+    do_print_top : bool, optional
+        _description_, by default True
+    do_hex : bool, optional
+        _description_, by default True
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
+
     if do_print_top:
         if do_hex:
             print("\n\t\tMaking Hexbin Plot...", end="")
@@ -243,11 +251,6 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
         contour1 = hex_ax.contourf(grid_x, grid_y, grid_z1, zorder=0, alpha=1, cmap="autumn", vmin=vmin, vmax=vmax)
         print("Done!")
         return contour1
-
-
-    if do_print_top:
-        print("Success!")
-
 
 
 if __name__ == "__main__":
@@ -309,15 +312,19 @@ if __name__ == "__main__":
 
     all_vmin, all_vmax = 475, 700
     drk=0.25
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch, ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce, nwant=args.nwant, do_print_top=False)
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch,
+        ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce, nwant=args.nwant, do_print_top=False)
     hex_n = n_open//10
-    hex1 = hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=hex_n, vmin=all_vmin, vmax=all_vmax)
+    hex1 = hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=hex_n,
+                    vmin=all_vmin, vmax=all_vmax)
 
     scatter_ax.set_facecolor('grey')
     contour_ax.set_facecolor('grey')
 
-    scat1 = scatter_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=6**2, alpha=0.75, marker='s', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
-    cont1 = contour_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=4**2, alpha=1.0, marker='o', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
+    scat1 = scatter_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=6**2, alpha=0.75,
+                    marker='s', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
+    cont1 = contour_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=4**2, alpha=1.0,
+                    marker='o', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
 
     scatter_ax.scatter(ph1b, th1b,           color='g', s=3**2, alpha=1, marker='+')
     contour_ax.scatter(ph1b, th1b,           color='g', s=3**2, alpha=1, marker='+')

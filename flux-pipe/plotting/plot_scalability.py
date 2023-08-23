@@ -1,6 +1,9 @@
 """This script plots the results of a scalability test.
-Returns:
-    _type_: _description_
+
+Returns
+-------
+_type_
+    _description_
 """
 
 import os.path
@@ -9,52 +12,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.ticker import ScalarFormatter
+from py_plot_helper import load_data, convert_value, parse_line
 
 datdir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
 batch = "scalability_test"
 file_path = os.path.join(datdir, "batches", batch, "pipe_log.txt")
-
-## Helper functions to parse the output file
-def convert_value(value):
-    """Convert a string to an int or float if possible, otherwise return the string."""
-    try:
-        return int(value)
-    except ValueError:
-        try:
-            return float(value)
-        except ValueError:
-            return value.strip()
-
-def parse_line(line):
-    """Parse a line of the output file into a dictionary."""
-    key_values = line.strip().split(',')
-    # print(key_values)
-    parsed_dict = {}
-    for key_value in key_values:
-        if ':' in key_value:
-            try:
-                key, value = key_value.split(':')
-                parsed_dict[key.strip()] = convert_value(value)
-            except ValueError:
-                print(key_value)
-                if "tt" in key_value:
-                    key_value = key_value.replace("tt", ", tt")
-                    key_value = key_value.split(",")
-                    for jj, kv in enumerate(key_value):
-                        if ':' in kv:
-                            key, value = kv.split(':')
-                            key += f"_{str(jj)}"
-                            parsed_dict[key.strip()] = convert_value(value)
-    return parsed_dict
-
-def load_data(thepath)-> pd.DataFrame:
-    """Load the data from the file into a pandas DataFrame."""
-    data = []
-    print("\n", thepath, '\n')
-    with open(thepath, 'r', encoding="utf-8") as file:
-        for line in file.readlines():
-            data.append(parse_line(line))
-    return pd.DataFrame(data)
 
 
 ## Real Code

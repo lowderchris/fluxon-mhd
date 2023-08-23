@@ -1,7 +1,5 @@
 """ This script plots the expansion factor of the given radial_fr.dat
 """
-# import matplotlib as mpl
-# mpl.use("qt5agg")
 import argparse
 import os.path
 import matplotlib.pyplot as plt
