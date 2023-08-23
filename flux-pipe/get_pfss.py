@@ -9,7 +9,6 @@ import numpy as np
 import astropy.constants as const
 from pfss_funcs import (trace_lines, load_pfss, compute_pfss, \
                         load_and_condition_fits_file, get_fluxon_locations)
-from pfss_funcs import
 from py_pipe_helper import shorten_path
 
 ###############################################################################

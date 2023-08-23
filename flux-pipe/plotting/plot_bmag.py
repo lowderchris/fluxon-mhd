@@ -6,7 +6,8 @@ import argparse
 # mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import numpy as np
-import py_plot_helper
+from py_plot_helper import get_ax, add_parent_dir
+add_parent_dir()
 from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram, load_magnetogram_params)
 
 
