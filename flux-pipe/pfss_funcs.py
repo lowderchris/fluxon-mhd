@@ -227,7 +227,7 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
     Returns:
         _type_: _description_
     """
-    # CL - DOUBLE CHECK THE LATITUTE DIRECTION HERE, and plot the polarity inversion line.
+
     floc_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
     f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch)
     fluxon_location = np.genfromtxt(floc_path)
