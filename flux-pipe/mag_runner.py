@@ -1,7 +1,7 @@
 """ This is the runner file which sets the whole FLUXpipe in motion.
 """
 import subprocess
-from os import chdir, getcwd
+from os import chdir
 from tqdm import tqdm
 import py_pipe_helper as ph
 
@@ -9,12 +9,8 @@ base_dir = "/Users/cgilbert/vscode/fluxons"
 mhd_dir = f"{base_dir}/fluxon-mhd"
 flux_pipe_dir = f"{mhd_dir}/flux-pipe"
 chdir(mhd_dir)
-# print(getcwd())
 new_path = ph.add_top_level_dirs_to_path(mhd_dir)
 
-# thepaths = new_path.split(":")
-# thepaths.sort()
-# [print(x) for x in thepaths]
 
 pdl_script_path = f"{flux_pipe_dir}/magnetogram2wind.pdl"
 
@@ -47,8 +43,7 @@ if capture:
               will be printed following each iteration.<<\n")
 else:
     pass
-    # print("\n\nProcessing the following CR: ", rotations, "\n\n")
-    # print(f"\n\n Batch Name {batch_name} \n\n")
+
 
 to_break = 0
 print("")

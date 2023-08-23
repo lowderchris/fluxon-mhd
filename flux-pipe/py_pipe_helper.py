@@ -13,7 +13,7 @@ import os
 import os.path
 import sys
 from pathlib import PosixPath, Path
-import plotting.py_plot_helper
+import py_plot_helper
 
 import numpy as np
 import matplotlib.pyplot as plt
