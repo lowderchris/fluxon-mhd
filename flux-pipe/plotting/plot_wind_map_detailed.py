@@ -14,7 +14,8 @@ import argparse
 import os.path as path
 from scipy.interpolate import griddata
 
-from py_plot_helper import get_ax, scale_data
+from py_plot_helper import get_ax, scale_data, add_parent_dir
+add_parent_dir()
 from py_pipe_helper import \
     (load_fits_magnetogram, load_magnetogram_params, get_fixed_coords)
 from plot_fieldmap import magnet_plot
