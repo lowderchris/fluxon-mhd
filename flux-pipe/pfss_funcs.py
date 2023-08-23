@@ -1,7 +1,9 @@
 """Contains low level helpers for the PFSS code.
 
-Returns:
-    _type_: _description_
+Returns
+-------
+_type_
+    _description_
 """
 
 import copy
@@ -37,12 +39,17 @@ def load_and_condition_fits_file(fname, datdir):
         brmap = (sunpy.io.fits.read(datdir + fname)) # b radial map
         brdat = brmap[0].data[2,:,:] # b data itself
 
-    Args:
-        fname (_type_): _description_
-        datdir (_type_): _description_
+    Parameters
+    ----------
+    fname : _type_
+        _description_
+    datdir : _type_
+        _description_
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
 
     # Load the fits file and format the data and header
@@ -85,12 +92,17 @@ def load_and_condition_fits_file(fname, datdir):
 def fits_path_to_pickle_path(fits_path, reduce):
     """Returns the path to the pickle file, given a fits file path
 
-    Args:
-        fits_path (str): the path to the fits file
-        reduce (int): the level of reduction (just for naming)
+    Parameters
+    ----------
+    fits_path : str
+        the path to the fits file
+    reduce : int
+        the level of reduction (just for naming)
 
-    Returns:
-        str: location of the pickle file
+    Returns
+    -------
+    str
+        location of the pickle file
     """
 
     the_dir = path.dirname(path.dirname(fits_path))
@@ -101,11 +113,15 @@ def fits_path_to_pickle_path(fits_path, reduce):
 def load_pfss(pickle_path):
     """ Loads the pickle file
 
-    Args:
-        pickle_path (str): path to the pfss pickle file
+    Parameters
+    ----------
+    pickle_path : str
+        path to the pfss pickle file
 
-    Returns:
-        _type_: Either the output of pickle.load, or None if not found
+    Returns
+    -------
+    pickle_output or None
+        Either the output of pickle.load, or None if not found
     """
 
     print("\n\tGetting Pfss...", end="")
@@ -124,15 +140,21 @@ def compute_pfss(br_safe, pickle_path, nrho=60, rss=2.5):
         rho = ln(r), and r is the standard spherical radial coordinate. We need to
         define the number of rho grid points, and the source surface radius.
 
-    Args:
-        br_safe (HDU): the magnetogram hdu
-        pickle_path (str): path to the pfss pickle file
-        nrho (int, optional): number of points in the rho direction. Defaults to 60.
-        rss (float, optional): source surface height in r/r_sun. Defaults to 2.5.
+    Parameters
+    ----------
+    br_safe : HDU
+        the magnetogram hdu
+    pickle_path : str
+        path to the pfss pickle file
+    nrho : int, optional
+        number of points in the rho direction. Defaults to 60.
+    rss : float, optional
+        source surface height in r/r_sun. Defaults to 2.5.
 
-    Returns:
-        pfsspy output: the output from the pfss function
-        float: elapsed time
+    Returns
+    -------
+    pfsspy output
+        the output from the pfss function
     """
 
     # Ingest inputs
@@ -165,15 +187,27 @@ def compute_pfss(br_safe, pickle_path, nrho=60, rss=2.5):
 
 
 def pixel_to_latlon(mag_map, header, fluxon_location):
-    """Convers pixel index to lat/lon
+    """Converts pixel index to lat/lon
 
-    Args:
-        mag_map (_type_): the HDU magnetogram
-        header (_type_): the HDU header
-        fluxon_location (_type_): indices of the fluxon locations
+    Parameters
+    ----------
+    mag_map : _type_
+        the HDU magnetogram
+    header : _type_
+        the HDU header
+    fluxon_location : _type_
+        indices of the fluxon locations
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    f_lat : float
+        Fluxon latitudes.
+    f_lon : float
+        Fluxon longitudes.
+    f_sng : float
+        Fluxon sin.
+    n_flux : int
+        Fluxon count.
     """
 
     radial_magnetogram = sunpy.map.Map(mag_map, header)
@@ -192,16 +226,25 @@ def pixel_to_latlon(mag_map, header, fluxon_location):
 def get_fluxon_locations(floc_path, batch):
     """Loads the fluxon location file
 
-    Args:
-        floc_path (str): path to the fluxon location file
-        batch (str): name of the current batch
+    Parameters
+    ----------
+    floc_path : str
+        Path to the fluxon location file.
+    batch : str
+        Name of the current batch.
 
-    Returns:
-        f_lat (float): fluxon latitudes
-        f_lon (float): fluxon longitudes
-        f_sng (float): fluxon sin
-        n_flux(int): fluxon count
+    Returns
+    -------
+    f_lat : float
+        Fluxon latitudes.
+    f_lon : float
+        Fluxon longitudes.
+    f_sng : float
+        Fluxon sin.
+    n_flux : int
+        Fluxon count.
     """
+
     fluxon_location = np.genfromtxt(floc_path)
     magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
     f_lat, f_lon, f_sgn, n_flux = pixel_to_latlon(
@@ -213,20 +256,33 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
                           force_plot=False, batch='fluxon', nwant=0, do_plot=False):
     """_summary_
 
-    Args:
-        br_safe (_type_): _description_
-        cr (_type_): _description_
-        datdir (_type_): _description_
-        fits_path (_type_): _description_
-        reduce (_type_): _description_
-        force_plot (bool, optional): _description_. Defaults to False.
-        batch (str, optional): _description_. Defaults to 'fluxon'.
-        nwant (int, optional): _description_. Defaults to 0.
-        do_plot (bool, optional): _description_. Defaults to False.
+    Parameters
+    ----------
+    br_safe : _type_
+        _description_
+    cr : _type_
+        _description_
+    datdir : _type_
+        _description_
+    fits_path : _type_
+        _description_
+    reduce : _type_
+        _description_
+    force_plot : bool, optional
+        _description_. Defaults to False.
+    batch : str, optional
+        _description_. Defaults to 'fluxon'.
+    nwant : int, optional
+        _description_. Defaults to 0.
+    do_plot : bool, optional
+        _description_. Defaults to False.
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
+
 
     floc_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
     f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch)
@@ -324,17 +380,28 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
 def trace_lines(output, f_vars, open_path, closed_path):
     """_summary_
 
-    Args:
-        output (_type_): _description_
-        f_lon (_type_): _description_
-        f_lat (_type_): _description_
-        f_sgn (_type_): _description_
-        open_path (_type_): _description_
-        closed_path (_type_): _description_
+    Parameters
+    ----------
+    output : _type_
+        _description_
+    f_lon : _type_
+        _description_
+    f_lat : _type_
+        _description_
+    f_sgn : _type_
+        _description_
+    open_path : _type_
+        _description_
+    closed_path : _type_
+        _description_
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
+
+
     # TODO Note that this code was originally developed using an older version of the pfsspy code -
     # improvements look to be able to handle bundles of fieldlines,
     # which would greatly simplify some of the code. Do this.
@@ -390,20 +457,33 @@ def trace_lines(output, f_vars, open_path, closed_path):
 def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn):
     """_summary_
 
-    Args:
-        coords (_type_): _description_
-        i (_type_): _description_
-        output (_type_): _description_
-        fl_open (_type_): _description_
-        fl_closed (_type_): _description_
-        flnum_open (_type_): _description_
-        flnum_closed (_type_): _description_
-        tracer (_type_): _description_
-        r0 (_type_): _description_
-        f_sgn (_type_): _description_
+    Parameters
+    ----------
+    coords : _type_
+        _description_
+    i : _type_
+        _description_
+    output : _type_
+        _description_
+    fl_open : _type_
+        _description_
+    fl_closed : _type_
+        _description_
+    flnum_open : _type_
+        _description_
+    flnum_closed : _type_
+        _description_
+    tracer : _type_
+        _description_
+    r0 : _type_
+        _description_
+    f_sgn : _type_
+        _description_
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
     (this_flon, this_flat) = coords
     # import pdb; pdb.set_trace()

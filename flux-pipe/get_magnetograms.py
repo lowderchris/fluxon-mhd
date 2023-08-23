@@ -1,4 +1,3 @@
-# Module Docstring
 """Download a magnetogram for a particular Carrington Rotation.
 Args:
     cr (int): Carrington Rotation

@@ -1,7 +1,5 @@
-"""
+"""Generates a fluxon mapping from input GONG-sourced pfss coronal field solution
 Fluxon PFSS mapping
-=======================
-Generates a fluxon mapping from input GONG-sourced pfss coronal field solution
 """
 
 # First, import required modules
@@ -9,8 +7,9 @@ import os
 import argparse
 import numpy as np
 import astropy.constants as const
-from pfss_funcs import trace_lines, load_pfss, compute_pfss
-from pfss_funcs import load_and_condition_fits_file, get_fluxon_locations
+from pfss_funcs import (trace_lines, load_pfss, compute_pfss, \
+                        load_and_condition_fits_file, get_fluxon_locations)
+from pfss_funcs import
 from py_pipe_helper import shorten_path
 
 ###############################################################################

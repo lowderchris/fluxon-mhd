@@ -1,11 +1,16 @@
-""" This is a library of helper scripts for the flux-pipe algorithm.
+"""This is a library of helper scripts for the flux-pipe algorithm.
 
-Raises:
-    ValueError: _description_
-    ValueError: _description_
+Returns
+-------
+_type_
+    _description_
 
-Returns:
-    None
+Raises
+------
+ValueError
+    _description_
+ValueError
+    _description_
 """
 
 # Import libraries
@@ -33,9 +38,12 @@ dat_dir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
 def add_dir_to_path(root_dir=None):
     """Adds a directory and all subdirectories to the PATH environment variable.
 
-    Args:
-        root_dir (str, optional): _description_. Defaults to None.
+    Parameters
+    ----------
+    root_dir : str, optional
+        _description_. Defaults to None.
     """
+
     if root_dir is None:
         root_dir = default_root_dir
 
@@ -60,8 +68,10 @@ def add_dir_to_path(root_dir=None):
 def add_top_level_dirs_to_path(root_dir):
     """Adds the top-level directories under a root directory to the PATH environment variable.
 
-    Args:
-        root_dir (_type_): _description_
+    Parameters
+    ----------
+    root_dir : _type_
+        _description_
     """
     # Get the current PATH
     current_path = os.environ.get('PATH', '')
@@ -91,13 +101,17 @@ def add_top_level_dirs_to_path(root_dir):
 
 
 def add_paths(flux_pipe_dir):
-    """ Adds various paths to the system path.
+    """Adds various paths to the system path.
 
-    Args:
-        flux_pipe_dir (str): _description_
+    Parameters
+    ----------
+    flux_pipe_dir : str
+        _description_
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
     # Path to the PDL script
     pdl_script_path = flux_pipe_dir + "magnetogram2wind.pdl"
@@ -109,13 +123,17 @@ def add_paths(flux_pipe_dir):
 
 
 def make_mag_dir(datdir):
-    """ Creates a directory for magnetogram data.
+    """Creates a directory for magnetogram data.
 
-    Args:
-        datdir (str): path to the data directory
+    Parameters
+    ----------
+    datdir : str
+        Path to the data directory.
 
-    Returns:
-        str: path to the mag_dir
+    Returns
+    -------
+    str
+        Path to the mag_dir.
     """
     mag_dir = os.path.join(datdir, "magnetograms")
     if not os.path.exists(mag_dir):
@@ -128,14 +146,21 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None,
     """
     Function to grab HMI data.
 
-    Args:
-        cr (int): Carrington rotation number.
-        date (str): Date in YYYY-MM-DD format.
-        data_dir (str): Optional directory where data will be stored. If not specified,
-            default directories will be used.
+    Parameters
+    ----------
+    cr : int
+        Carrington rotation number.
+    date : str
+        Date in YYYY-MM-DD format.
+    data_dir : str, optional
+        Directory where data will be stored. If not specified, default directories will be used.
 
-    Returns:
-        None
+    Returns
+    -------
+    big_path : str
+        Path to the full resolution magnetogram file.
+    small_path : str
+        Path to the reduced resolution magnetogram file.
     """
     # Set the download account
     try:
@@ -198,13 +223,19 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None,
 def reduce_mag_file(mag_file, reduction=3, force=False):
     """Reduces the size of a magnetogram FITS file by a given factor.
 
-    Args:
-        mag_file (_type_): _description_
-        reduction (int, optional): _description_. Defaults to 3.
-        force (bool, optional): _description_. Defaults to False.
+    Parameters
+    ----------
+    mag_file : _type_
+        _description_
+    reduction : int, optional
+        _description_. Defaults to 3.
+    force : bool, optional
+        _description_. Defaults to False.
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    small_file: str
+        Path to the reduced resolution magnetogram file.
     """
     small_file = PosixPath(str(mag_file).replace("_r1_", f"_r{reduction}_"))
     # reduce the FITS image
@@ -231,14 +262,18 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None,
     function, and save a new copy of the FITS file with the smaller image in the
     same directory as the original.
 
-    :param fits_path: str, path to the FITS file
-    :param target_resolution: int, optional, target resolution in pixels, if
-                              specified reduction_amount is ignored
-    :param reduction_amount: int, optional, amount to reduce the size of the
-                              image, if target_resolution is not specified
-    :param func: numpy function, optional, function to use for the reduction
-                              defaults to np.nanmean
+    Parameters
+    ----------
+    fits_path : str
+        Path to the FITS file.
+    target_resolution : int, optional
+        Target resolution in pixels, if specified reduction_amount is ignored.
+    reduction_amount : int, optional
+        Amount to reduce the size of the image, if target_resolution is not specified.
+    func : numpy function, optional
+        Function to use for the reduction, defaults to np.nanmean.
     """
+
     print(f"\n\tReducing {fits_path}...")
     # Open the FITS file and read the data
     with fits.open(fits_path, ignore_missing_simple=True) as hdul:
@@ -294,13 +329,18 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None,
 
 
 def plot_raw_magnetogram(fits_path, data, small_image):
-    """ Plot the magnetogram
+    """Plot the magnetogram
 
-    Args:
-        fits_path (_type_): _description_
-        data (_type_): _description_
-        small_image (_type_): _description_
+    Parameters
+    ----------
+    fits_path : _type_
+        _description_
+    data : _type_
+        _description_
+    small_image : _type_
+        _description_
     """
+
     # Save the high resolution image as a grayscale PNG
     plt.axis('off')
     high_res_output_path = fits_path.replace('.fits', '.png')
@@ -339,16 +379,25 @@ def plot_raw_magnetogram(fits_path, data, small_image):
 def load_fits_magnetogram(datdir =None, batch="fluxon", bo=2, bn=2, ret_all=False):
     """Loads a magnetogram from a FITS file.
 
-    Args:
-        datdir (_type_, optional): _description_. Defaults to None.
-        batch (str, optional): _description_. Defaults to "fluxon".
-        bo (int, optional): _description_. Defaults to 2.
-        bn (int, optional): _description_. Defaults to 2.
-        ret_all (bool, optional): _description_. Defaults to False.
+    Parameters
+    ----------
+    datdir : _type_, optional
+        _description_. Defaults to None.
+    batch : str, optional
+        _description_. Defaults to "fluxon".
+    bo : int, optional
+        _description_. Defaults to 2.
+    bn : int, optional
+        _description_. Defaults to 2.
+    ret_all : bool, optional
+        _description_. Defaults to False.
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
+
     if not datdir:
         datdir = dat_dir
     fname = load_magnetogram_params(datdir)[2]
@@ -370,12 +419,18 @@ def load_fits_magnetogram(datdir =None, batch="fluxon", bo=2, bn=2, ret_all=Fals
 def write_magnetogram_params(datdir, cr, file_path, reduction):
     """Writes the magnetic_target.params file for a given CR and reduction amount.
 
-    Args:
-        datdir (_type_): _description_
-        cr (_type_): _description_
-        file_path (_type_): _description_
-        reduction (_type_): _description_
+    Parameters
+    ----------
+    datdir : _type_
+        _description_
+    cr : _type_
+        _description_
+    file_path : _type_
+        _description_
+    reduction : _type_
+        _description_
     """
+
     # write the parameter file
     params_path = os.path.join(datdir,"magnetic_target.params")
     with open(params_path, 'w', encoding="utf-8") as fp:
@@ -388,14 +443,19 @@ def write_magnetogram_params(datdir, cr, file_path, reduction):
 
 
 def load_magnetogram_params(datdir):
-    """ Reads the magnetic_target.params file and returns the parameters.
+    """Reads the magnetic_target.params file and returns the parameters.
 
-    Args:
-        datdir (_type_): _description_
+    Parameters
+    ----------
+    datdir : _type_
+        _description_
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
+
     params_path = os.path.join(datdir,"magnetic_target.params")
     with open(params_path, 'r', encoding="utf-8") as fp:
         hdr = fp.readline().rstrip()
@@ -410,12 +470,17 @@ def load_magnetogram_params(datdir):
 def find_file_with_string(directory, search_string):
     """Searches a directory for a file containing a given string.
 
-    Args:
-        directory (_type_): _description_
-        search_string (_type_): _description_
+    Parameters
+    ----------
+    directory : _type_
+        _description_
+    search_string : _type_
+        _description_
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
     for file_name in os.listdir(directory):
         if search_string in file_name:
@@ -424,15 +489,20 @@ def find_file_with_string(directory, search_string):
 
 
 def shorten_path(string):
-    """ Removes the DATAPATH environment variable from a string.
+    """Removes the DATAPATH environment variable from a string.
     This makes it much more readable when printing paths.
 
-    Args:
-        string (_type_): _description_
-        __ (_type_, optional): _description_. Defaults to None.
+    Parameters
+    ----------
+    string : _type_
+        _description_
+    __ : _type_, optional
+        _description_. Defaults to None.
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
     datapath = os.getenv("DATAPATH")
     if datapath:
@@ -442,13 +512,17 @@ def shorten_path(string):
 
 
 def read_fits_data(fname):
-    """ Reads FITS data and fixes/ignores any non-standard FITS keywords.
+    """Reads FITS data and fixes/ignores any non-standard FITS keywords.
 
-    Args:
-        fname (_type_): _description_
+    Parameters
+    ----------
+    fname : _type_
+        _description_
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
     hdulist = fits.open(fname, ignore_missing_simple=True)
     hdulist.verify('silentfix+warn')
@@ -456,15 +530,17 @@ def read_fits_data(fname):
 
 
 def get_fixed_coords(phi0, theta0):
-    """ This function squishes the coords around so they are correct.
+    """Reads FITS data and fixes/ignores any non-standard FITS keywords.
 
-    Args:
-        phi0 (_type_): _description_
-        theta0 (_type_): _description_
+    Parameters
+    ----------
+    fname : _type_
+        _description_
 
-    Returns:
-        _type_: _description_
+    Returns
+    -------
+    _type_
+        _description_
     """
-
     ph0, th0 = phi0+np.pi, np.sin(-(theta0-(np.pi/2)))
     return ph0, th0
