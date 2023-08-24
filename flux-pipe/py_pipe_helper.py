@@ -1,16 +1,4 @@
-"""This is a library of helper scripts for the flux-pipe algorithm.
-
-Returns
--------
-_type_
-    _description_
-
-Raises
-------
-ValueError
-    _description_
-ValueError
-    _description_
+"""Library of helper scripts for the flux-pipe algorithm
 """
 
 # Import libraries
@@ -41,7 +29,7 @@ def add_dir_to_path(root_dir=None):
     Parameters
     ----------
     root_dir : str, optional
-        _description_. Defaults to None.
+        Root directory path
     """
 
     if root_dir is None:
@@ -70,9 +58,10 @@ def add_top_level_dirs_to_path(root_dir):
 
     Parameters
     ----------
-    root_dir : _type_
-        _description_
+    root_dir : str
+        Root directory path
     """
+
     # Get the current PATH
     current_path = os.environ.get('PATH', '')
 
@@ -106,13 +95,14 @@ def add_paths(flux_pipe_dir):
     Parameters
     ----------
     flux_pipe_dir : str
-        _description_
+        FLUXpipe directory path
 
     Returns
     -------
-    _type_
-        _description_
+    str
+        PDL script directory path
     """
+
     # Path to the PDL script
     pdl_script_path = flux_pipe_dir + "magnetogram2wind.pdl"
     os.chdir(flux_pipe_dir)
@@ -128,13 +118,14 @@ def make_mag_dir(datdir):
     Parameters
     ----------
     datdir : str
-        Path to the data directory.
+        Data directory path
 
     Returns
     -------
     str
-        Path to the mag_dir.
+        Magnetogram directory path
     """
+
     mag_dir = os.path.join(datdir, "magnetograms")
     if not os.path.exists(mag_dir):
         os.makedirs(mag_dir)
@@ -144,7 +135,7 @@ def make_mag_dir(datdir):
 def get_magnetogram_file(cr=None, date=None, datdir=None, email=None,
                          force_download=False, reduce = False):
     """
-    Function to grab HMI data.
+    Grabs HMI data.
 
     Parameters
     ----------
@@ -162,6 +153,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None,
     small_path : str
         Path to the reduced resolution magnetogram file.
     """
+
     # Set the download account
     try:
         jsoc_email = email or os.environ["JSOC_EMAIL"]
@@ -225,18 +217,19 @@ def reduce_mag_file(mag_file, reduction=3, force=False):
 
     Parameters
     ----------
-    mag_file : _type_
-        _description_
+    mag_file : str
+        Path to input magnetogram file
     reduction : int, optional
-        _description_. Defaults to 3.
+        Reduction factor. Defaults to 3.
     force : bool, optional
-        _description_. Defaults to False.
+        Overwrite toggle. Defaults to False.
 
     Returns
     -------
     small_file: str
         Path to the reduced resolution magnetogram file.
     """
+
     small_file = PosixPath(str(mag_file).replace("_r1_", f"_r{reduction}_"))
     # reduce the FITS image
     print(f"\tReducing image size by a factor of {reduction}...", end="")
@@ -333,12 +326,12 @@ def plot_raw_magnetogram(fits_path, data, small_image):
 
     Parameters
     ----------
-    fits_path : _type_
-        _description_
-    data : _type_
-        _description_
-    small_image : _type_
-        _description_
+    fits_path : str
+        Magnetogram FITS file path
+    data : np.ndarray
+        Magnetogram data array
+    small_image : np.ndarray
+        Small magnetogram data array
     """
 
     # Save the high resolution image as a grayscale PNG
@@ -376,26 +369,28 @@ def plot_raw_magnetogram(fits_path, data, small_image):
     plt.close()
 
 
-def load_fits_magnetogram(datdir =None, batch="fluxon", bo=2, bn=2, ret_all=False):
+def load_fits_magnetogram(datdir=None, batch="fluxon", bo=2, bn=2, ret_all=False):
     """Loads a magnetogram from a FITS file.
 
     Parameters
     ----------
-    datdir : _type_, optional
-        _description_. Defaults to None.
+    datdir : str, optional
+        Data directory path. Defaults to None.
     batch : str, optional
-        _description_. Defaults to "fluxon".
+        Output file descriptor label. Defaults to "fluxon".
     bo : int, optional
-        _description_. Defaults to 2.
+        Output file descriptor label. Defaults to 2.
     bn : int, optional
-        _description_. Defaults to 2.
+        Output file descriptor label. Defaults to 2.
     ret_all : bool, optional
-        _description_. Defaults to False.
+        Toggle to return both data and header. Defaults to False.
 
     Returns
     -------
-    _type_
-        _description_
+    np.ndarray
+        Output magnetogram data array
+    Header
+        Magnetogram header object
     """
 
     if not datdir:
@@ -421,14 +416,14 @@ def write_magnetogram_params(datdir, cr, file_path, reduction):
 
     Parameters
     ----------
-    datdir : _type_
-        _description_
-    cr : _type_
-        _description_
-    file_path : _type_
-        _description_
-    reduction : _type_
-        _description_
+    datdir : str
+        Data directory path
+    cr : str
+        Carrington rotation number
+    file_path : str
+        File path
+    reduction : int
+        Reduction factor
     """
 
     # write the parameter file
@@ -447,13 +442,23 @@ def load_magnetogram_params(datdir):
 
     Parameters
     ----------
-    datdir : _type_
-        _description_
+    datdir : str
+        Data directory path
 
     Returns
     -------
-    _type_
-        _description_
+    hdr : str
+        Header information
+    cr : str
+        Carrington rotation number
+    fname : str
+        Filename path
+    adapt : int
+        Adapt specification
+    doplot : int
+        Plotting toggle
+    reduce : int
+        Reduction factor
     """
 
     params_path = os.path.join(datdir,"magnetic_target.params")
@@ -472,15 +477,16 @@ def find_file_with_string(directory, search_string):
 
     Parameters
     ----------
-    directory : _type_
-        _description_
-    search_string : _type_
-        _description_
+    directory : str
+        Search directory path
+    search_string : str
+        Search string
 
     Returns
     -------
-    _type_
-        _description_
+    str
+        Search result file path
+
     """
     for file_name in os.listdir(directory):
         if search_string in file_name:
@@ -494,15 +500,13 @@ def shorten_path(string):
 
     Parameters
     ----------
-    string : _type_
-        _description_
-    __ : _type_, optional
-        _description_. Defaults to None.
+    string : str
+        String to shorten
 
     Returns
     -------
-    _type_
-        _description_
+    str
+        Shortened string
     """
     datapath = os.getenv("DATAPATH")
     if datapath:
@@ -516,13 +520,13 @@ def read_fits_data(fname):
 
     Parameters
     ----------
-    fname : _type_
-        _description_
+    fname : str
+        FITS file path
 
     Returns
     -------
-    _type_
-        _description_
+    HDUList
+        HDU list read from FITS file
     """
     hdulist = fits.open(fname, ignore_missing_simple=True)
     hdulist.verify('silentfix+warn')
@@ -530,17 +534,21 @@ def read_fits_data(fname):
 
 
 def get_fixed_coords(phi0, theta0):
-    """Reads FITS data and fixes/ignores any non-standard FITS keywords.
+    """Corrects input coordinates
 
     Parameters
     ----------
-    fname : _type_
-        _description_
+    phi0 : np.ndarray
+        Array of phi coordinates
+    theta0 : np.ndarray
+        Array of theta coordinates
 
     Returns
     -------
-    _type_
-        _description_
+    phi0: np.ndarray
+        Corrected array of phi coordinates
+    theta0: np.ndarray
+        Corrected array of theta coordinates
     """
     ph0, th0 = phi0+np.pi, np.sin(-(theta0-(np.pi/2)))
     return ph0, th0

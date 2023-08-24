@@ -1,11 +1,4 @@
-"""Download a magnetogram for a particular Carrington Rotation.
-Args:
-    cr (int): Carrington Rotation
-    datdir (str): data directory
-    reduce (int): factor by which the magnetogram is reduced
-    do_download (int): download the files
-Returns:
-    None
+"""Download a magnetogram for a particular Carrington Rotation
 """
 import argparse
 from py_pipe_helper import get_magnetogram_file, write_magnetogram_params

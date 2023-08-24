@@ -1,4 +1,4 @@
-"""Generates a fluxon mapping from input GONG-sourced pfss coronal field solution
+"""Generate a fluxon mapping from input GONG-sourced pfss coronal field solution
 Fluxon PFSS mapping
 """
 

@@ -1,9 +1,4 @@
-"""Contains low level helpers for the PFSS code.
-
-Returns
--------
-_type_
-    _description_
+"""Low level helpers for the PFSS code
 """
 
 import copy
@@ -41,15 +36,17 @@ def load_and_condition_fits_file(fname, datdir):
 
     Parameters
     ----------
-    fname : _type_
-        _description_
-    datdir : _type_
-        _description_
+    fname : str
+        Filename path
+    datdir : str
+        Data directory path
 
     Returns
     -------
-    _type_
-        _description_
+    br_safe: GenericMap
+        Processed magnetogram data
+    fits_path: str
+        FITS file path
     """
 
     # Load the fits file and format the data and header
@@ -95,14 +92,14 @@ def fits_path_to_pickle_path(fits_path, reduce):
     Parameters
     ----------
     fits_path : str
-        the path to the fits file
+        FITS file path
     reduce : int
-        the level of reduction (just for naming)
+        Reduction factor
 
     Returns
     -------
     str
-        location of the pickle file
+        Output file path
     """
 
     the_dir = path.dirname(path.dirname(fits_path))
@@ -111,17 +108,17 @@ def fits_path_to_pickle_path(fits_path, reduce):
 
 
 def load_pfss(pickle_path):
-    """ Loads the pickle file
+    """Loads the pickle file
 
     Parameters
     ----------
     pickle_path : str
-        path to the pfss pickle file
+        PFSS solution saved state path
 
     Returns
     -------
-    pickle_output or None
-        Either the output of pickle.load, or None if not found
+    output
+        PFSS solution state function
     """
 
     print("\n\tGetting Pfss...", end="")
@@ -143,18 +140,20 @@ def compute_pfss(br_safe, pickle_path, nrho=60, rss=2.5):
     Parameters
     ----------
     br_safe : HDU
-        the magnetogram hdu
+        Magnetogram hdu
     pickle_path : str
-        path to the pfss pickle file
+        PFSS solution saved state path
     nrho : int, optional
-        number of points in the rho direction. Defaults to 60.
+        Number of points in the rho direction. Defaults to 60.
     rss : float, optional
-        source surface height in r/r_sun. Defaults to 2.5.
+        Source surface height in r/r_sun. Defaults to 2.5.
 
     Returns
     -------
-    pfsspy output
-        the output from the pfss function
+    output
+        PFSS solution state function
+    elapsed : float
+        Elapsed runtime in seconds
     """
 
     # Ingest inputs
@@ -191,23 +190,23 @@ def pixel_to_latlon(mag_map, header, fluxon_location):
 
     Parameters
     ----------
-    mag_map : _type_
-        the HDU magnetogram
-    header : _type_
-        the HDU header
-    fluxon_location : _type_
-        indices of the fluxon locations
+    mag_map : np.ndarray
+        Magnetogram data array
+    header : Header
+        Magnetogram header object
+    fluxon_location : Tuple
+        Indices of the fluxon root locations
 
     Returns
     -------
     f_lat : float
-        Fluxon latitudes.
+        Fluxon root latitudes
     f_lon : float
-        Fluxon longitudes.
-    f_sng : float
-        Fluxon sin.
+        Fluxon root longitudes
+    f_sgn : float
+        Fluxon magnetic sign
     n_flux : int
-        Fluxon count.
+        Fluxon count
     """
 
     radial_magnetogram = sunpy.map.Map(mag_map, header)
@@ -229,20 +228,20 @@ def get_fluxon_locations(floc_path, batch):
     Parameters
     ----------
     floc_path : str
-        Path to the fluxon location file.
+        Path to the fluxon location file
     batch : str
-        Name of the current batch.
+        Name of the current batch
 
     Returns
     -------
     f_lat : float
-        Fluxon latitudes.
+        Fluxon root latitudes
     f_lon : float
-        Fluxon longitudes.
-    f_sng : float
-        Fluxon sin.
+        Fluxon root longitudes
+    f_sgn : float
+        Fluxon magnetic sign
     n_flux : int
-        Fluxon count.
+        Fluxon count
     """
 
     fluxon_location = np.genfromtxt(floc_path)
@@ -254,35 +253,40 @@ def get_fluxon_locations(floc_path, batch):
 
 def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
                           force_plot=False, batch='fluxon', nwant=0, do_plot=False):
-    """_summary_
+    """Plot computeed fluxon root locations
 
     Parameters
     ----------
-    br_safe : _type_
-        _description_
-    cr : _type_
-        _description_
-    datdir : _type_
-        _description_
-    fits_path : _type_
-        _description_
-    reduce : _type_
-        _description_
+    br_safe : GenericMap
+        Magneogram map object
+    cr : str
+        Carrington rotation number
+    datdir : str
+        Data path directory
+    fits_path : str
+        FITS file path directory
+    reduce : int
+        Reduction factor
     force_plot : bool, optional
-        _description_. Defaults to False.
+        Plot overwrite toggle. Defaults to False.
     batch : str, optional
-        _description_. Defaults to 'fluxon'.
+        Output file descriptor label. Defaults to 'fluxon'.
     nwant : int, optional
-        _description_. Defaults to 0.
+        Output file descriptor label. Defaults to 0.
     do_plot : bool, optional
-        _description_. Defaults to False.
+        Plot toggle. Defaults to False.
 
     Returns
     -------
-    _type_
-        _description_
+    f_lat : float
+        Fluxon root latitudes
+    f_lon : float
+        Fluxon root longitudes
+    f_sgn : float
+        Fluxon magnetic sign
+    n_flux : int
+        Fluxon count
     """
-
 
     floc_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
     f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch)
@@ -335,9 +339,6 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
                             origin="lower", aspect='auto', vmin=mvmin, vmax=mvmax)
         shp = magnet.shape
 
-        magimgs = [magimg1, magimg2, magimg3]
-        del magimgs
-
         plt.axis('off')
         sz0 = 6  # inches
         ratio = shp[1]/shp[0]
@@ -382,25 +383,30 @@ def trace_lines(output, f_vars, open_path, closed_path):
 
     Parameters
     ----------
-    output : _type_
-        _description_
-    f_lon : _type_
-        _description_
-    f_lat : _type_
-        _description_
-    f_sgn : _type_
-        _description_
-    open_path : _type_
-        _description_
-    closed_path : _type_
-        _description_
+    output
+        PFSS solution state function
+    f_vars : Tuple
+        Storage of fluxon longitude, latitude, and magnetic sign
+    open_path : str
+        File path for writing open fluxon coordinates
+    closed_path : str
+        File path for writing closed fluxon coordiantes
 
     Returns
     -------
-    _type_
-        _description_
+    fl_open : np.ndarray
+        Open feldline coordinates
+    fl_closed : np.ndarray
+        Closed fieldline coordiantes
+    skip_num : int
+        Counter of skipped tracings
+    timeout_num : int
+        Counter of timedout tracings
+    flnum_open : int
+        Count of open fieldlines
+    flnum_closed : int
+        Count of closed fieldlines
     """
-
 
     # TODO Note that this code was originally developed using an older version of the pfsspy code -
     # improvements look to be able to handle bundles of fieldlines,
@@ -455,36 +461,47 @@ def trace_lines(output, f_vars, open_path, closed_path):
 
 @timeout_decorator.timeout(5)
 def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn):
-    """_summary_
+    """Fieldline tracer for each fieldline
 
     Parameters
     ----------
-    coords : _type_
-        _description_
-    i : _type_
-        _description_
-    output : _type_
-        _description_
-    fl_open : _type_
-        _description_
-    fl_closed : _type_
-        _description_
-    flnum_open : _type_
-        _description_
-    flnum_closed : _type_
-        _description_
-    tracer : _type_
-        _description_
-    r0 : _type_
-        _description_
-    f_sgn : _type_
-        _description_
+    coords : Tuple
+        Set of input fieldline longitude and latitudes
+    i : int
+        Fieldline tracing counter
+    output
+        PFSS solution state function
+    fl_open : np.ndarray
+        Open feldline coordinates
+    fl_closed : np.ndarray
+        Closed fieldline coordiantes
+    flnum_open : int
+        Count of open fieldlines
+    flnum_closed : int
+        Count of closed fieldlines
+    tracer
+        PFSSPy tracing function
+    r0 : float
+        Starting radius
+    f_sgn : float
+        Fluxon magnetic sign
 
     Returns
     -------
-    _type_
-        _description_
+    output
+        PFSS solution state function
+    fl_open : np.ndarray
+        Open feldline coordinates
+    fl_closed : np.ndarray
+        Closed fieldline coordiantes
+    flnum_open : int
+        Count of open fieldlines
+    flnum_closed : int
+        Count of closed fieldlines
+    tracer
+        PFSSPy tracing function
     """
+    
     (this_flon, this_flat) = coords
     # import pdb; pdb.set_trace()
     coord_frame = output.coordinate_frame

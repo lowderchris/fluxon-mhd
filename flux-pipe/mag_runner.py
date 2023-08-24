@@ -1,4 +1,4 @@
-""" This is the runner file which sets the whole FLUXpipe in motion.
+""" Sets the whole FLUXpipe in motion
 """
 import subprocess
 from os import chdir
