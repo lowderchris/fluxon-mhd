@@ -8,6 +8,7 @@ import os
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 
 ## Helper functions to parse the output file
