@@ -4,6 +4,7 @@ import argparse
 import os.path
 import matplotlib.pyplot as plt
 import numpy as np
+import py_plot_helper
 
 default_cr = 2163
 print("\tPlotting Fr...", end="")

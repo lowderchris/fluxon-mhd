@@ -10,7 +10,7 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from py_plot_helper import load_data, convert_value, parse_line
+from py_plot_helper import load_data
 
 run_name = "fluxon r3"
 datdir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"

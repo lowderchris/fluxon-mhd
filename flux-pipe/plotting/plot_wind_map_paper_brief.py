@@ -101,7 +101,6 @@ def remove_outliers(data, ph0_temp, th0_temp, threshold=3):
     return np.asarray(filtered_data), mean, std, ph0c, th0c, outlier_data, ph0_b, th0_b
 
 
-
 def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=True):
     """_summary_
 

@@ -2,13 +2,13 @@
 of the fluxons at the lower and upper boundaries
 
 Parameters
-    ----------
-    --cr: Carrington Rotation
-    --dat_dir: data directory
-    --show: (bool) show the plot
-    --batch: batch name
-    --file: file name
-    --nwant: number of fluxons to plot
+----------
+--cr: Carrington Rotation
+--dat_dir: data directory
+--show: (bool) show the plot
+--batch: batch name
+--file: file name
+--nwant: number of fluxons to plot
 """
 
 import os.path

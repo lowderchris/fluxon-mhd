@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.ticker import ScalarFormatter
-from py_plot_helper import load_data, convert_value, parse_line
+from py_plot_helper import load_data
 
 datdir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
 batch = "scalability_test"

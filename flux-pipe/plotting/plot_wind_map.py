@@ -4,6 +4,7 @@ Returns:
     _type_: _description_
 """
 import argparse
+import py_plot_helper
 from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram,
                             load_magnetogram_params)
 

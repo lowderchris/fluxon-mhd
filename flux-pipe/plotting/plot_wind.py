@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 mpl.use("qt5agg")
+import py_plot_helper
 from py_pipe_helper import get_fixed_coords, load_fits_magnetogram
 
 default_cr = 2163
