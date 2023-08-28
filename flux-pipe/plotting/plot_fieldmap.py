@@ -26,11 +26,11 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
     _batch : str
         the name of the batch
     open_f : int, optional
-        _description_, by default None
+        number of open fluxons, by default None
     closed_f : int, optional
-        _description_, by default None
+        number of closed fluxons, by default None
     force : bool, optional
-        _description_, by default False
+        force the plot to occur, by default False
     reduce_amt : int, optional
         the factor by which to reduce the magnetogram, by default 0
     nact : int, optional

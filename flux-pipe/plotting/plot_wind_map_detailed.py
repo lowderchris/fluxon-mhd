@@ -1,4 +1,15 @@
 """ Plot the solar wind map
+
+This script is used to plot the solar wind map using various types of plots
+including hexagon interpolation, scatter plots, and histograms. It takes in
+data related to solar wind velocity and magnetic fields to generate these plots.
+
+Attributes:
+    parser (argparse.ArgumentParser): Argument parser for command-line options.
+    batch (str): Batch name for data processing.
+    interp (str): Interpolation method to use.
+    dat_dir (str): Directory where data files are stored.
+
 """
 
 import numpy as np
@@ -16,33 +27,30 @@ from py_pipe_helper import \
 from plot_fieldmap import magnet_plot
 
 
+
 def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, power=1):
     """ Scale the data between 0 and 1, then raise to a power, then scale by a factor
 
     Parameters
     ----------
-    vel0_clean : _type_
-        _description_
-    vel1_clean : _type_
-        _description_
-    outlier_V0 : _type_
-        _description_
-    outlier_V1 : _type_
-        _description_
-    scale : _type_, optional
-        _description_, by default 15**2
+    vel0_clean : numpy.ndarray
+        The velocity data for the initial state.
+    vel1_clean : numpy.ndarray
+        The velocity data for the final state.
+    outlier_V0 : numpy.ndarray
+        The outliers in the initial velocity data.
+    outlier_V1 : numpy.ndarray
+        The outliers in the final velocity data.
+    scale : float, optional
+        The scaling factor, by default 15**2.
     power : int, optional
-        _description_, by default 1
+        The power to which the scaled data is raised, by default 1.
 
     Returns
     -------
-    _type_
-        _description_
+    tuple
+        Scaled velocity data and scaled outliers for both initial and final states.
 
-    Raises
-    ------
-    to
-        _description_
     """
 
     vel0_max = np.nanmax(vel0_clean)
@@ -60,27 +68,28 @@ def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, powe
 
 # Remove outliers from the dataset recursively
 def remove_outliers(data, ph, th, thresh_low=4, thresh_high=2, n_times= 1):
-    """_summary_
+    """ Remove outliers from the dataset recursively
 
     Parameters
     ----------
-    data : _type_
-        _description_
-    ph : _type_
-        _description_
-    th : _type_
-        _description_
+    data : numpy.ndarray
+        The data array from which to remove outliers.
+    ph : numpy.ndarray
+        The phi (azimuthal angle) values corresponding to the data.
+    th : numpy.ndarray
+        The theta (polar angle) values corresponding to the data.
     thresh_low : int, optional
-        _description_, by default 4
+        The lower threshold for outlier removal, by default 4.
     thresh_high : int, optional
-        _description_, by default 2
+        The upper threshold for outlier removal, by default 2.
     n_times : int, optional
-        _description_, by default 1
+        The number of times to recursively remove outliers, by default 1.
 
     Returns
     -------
-    _type_
-        _description_
+    tuple
+        Cleaned data, phi, and theta values, along with the outliers.
+
     """
 
     # Get the Good Points
@@ -107,85 +116,36 @@ def remove_outliers(data, ph, th, thresh_low=4, thresh_high=2, n_times= 1):
         bad_th_all   = np.concatenate((  th_bad,   th_bad_2))
         return data_good_2, ph_good_2, th_good_2, bad_data_all, bad_ph_all, bad_th_all
 
-def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=True):
-    """_summary_
-
-    Parameters
-    ----------
-    vel1_clean : _type_
-        _description_
-    ax : _type_, optional
-        _description_, by default None
-    vmin : int, optional
-        _description_, by default 400
-    vmax : int, optional
-        _description_, by default 800
-    n_bins : int, optional
-        _description_, by default 20
-    do_print_top : bool, optional
-        _description_, by default True
-
-    Returns
-    -------
-    _type_
-        _description_
-    """
-
-    if do_print_top:
-        print("\n\t\tMaking Histogram Plot...", end='')
-
-    ## The Histogram Plot
-    fig, hist_ax = get_ax(ax)
-    mean1 = np.mean(vel1_clean)
-    median1 = np.median(vel1_clean)
-    std1  =  np.std(vel1_clean)
-    hist_ax.hist(vel1_clean[vel1_clean>=0], bins=n_bins, color='sandybrown', density=True)
-    hist_ax.axvline(mean1, color='k', linestyle='dashed', linewidth=1,
-                    label=f"Mean: {mean1:.0f} km/s")
-    hist_ax.axvline(median1, color='lightgrey', linestyle='-.', linewidth=1,
-                    label=f"Median: {median1:.0f} km/s")
-    hist_ax.axvline(mean1+std1, color='k', linestyle=':', linewidth=1,
-                    label=f"Std: {std1:.0f} km/s")
-    hist_ax.axvline(mean1-std1, color='k', linestyle=':', linewidth=1)
-    hist_ax.legend()
-    hist_ax.set_xlabel("Velocity (km/s)")
-    hist_ax.set_ylabel("Fluxon Relative Frequency")
-    fig.suptitle(f'CR{CR}, {len(vel1_clean)} Open Fields')
-
-    hist_ax.set_xlim((vmin, vmax))
-    hist_ax.set_ylim((0, 0.02))
-    if do_print_top:
-        print("Success!")
-    return mean1, std1
 
 def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=800, do_print_top=True, do_hex=True):
-    """_summary_
+    """ Create a hexagon interpolation of the data
 
     Parameters
     ----------
-    ph1_clean : _type_
-        _description_
-    th1_clean : _type_
-        _description_
-    vel1_clean : _type_
-        _description_
-    ax : _type_, optional
-        _description_, by default None
+    ph1_clean : numpy.ndarray
+        The phi values of the cleaned data.
+    th1_clean : numpy.ndarray
+        The theta values of the cleaned data.
+    vel1_clean : numpy.ndarray
+        The velocity values of the cleaned data.
+    ax : matplotlib.pyplot.axis, optional
+        An axis to plot on, by default None.
     nx : int, optional
-        _description_, by default 20
+        Number of hexagons in the x direction, by default 20.
     vmin : int, optional
-        _description_, by default 400
+        The minimum value of the colortable, by default 400.
     vmax : int, optional
-        _description_, by default 800
+        The maximum value of the colortable, by default 800.
     do_print_top : bool, optional
-        _description_, by default True
+        Print with more verbosity, by default True.
     do_hex : bool, optional
-        _description_, by default True
+        Do the hex plot, else do a contour plot, by default True.
 
     Returns
     -------
-    _type_
-        _description_
+    matplotlib.pyplot.draw_handle
+        The output of the plot command.
+
     """
 
     if do_print_top:
@@ -240,8 +200,72 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
         return contour1
 
 
-if __name__ == "__main__":
+def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=True):
+    """ Plot a histogram of the velocity data
+
+    Parameters
+    ----------
+    vel1_clean : numpy.ndarray
+        The velocity data.
+    ax : matplotlib.pyplot.axis, optional
+        An axis to plot on, by default None.
+    vmin : int, optional
+        The minimum value of the colortable, by default 400.
+    vmax : int, optional
+        The maximum value of the colortable, by default 800.
+    n_bins : int, optional
+        The resolution of the histogram, by default 20.
+    do_print_top : bool, optional
+        Print more verbosely, by default True.
+
+    Returns
+    -------
+    float, float
+        Mean and standard deviation of the velocity data.
+
+    """
+
+    if do_print_top:
+        print("\n\t\tMaking Histogram Plot...", end='')
+
+    ## The Histogram Plot
+    _, hist_ax = get_ax(ax)
+    mean1 = np.mean(vel1_clean)
+    median1 = np.median(vel1_clean)
+    std1  =  np.std(vel1_clean)
+    hist_ax.hist(vel1_clean[vel1_clean>=0], bins=n_bins, color='sandybrown')
+    hist_ax.axvline(mean1, color='k', linestyle='dashed', linewidth=1, label="Mean: {mean1:.0f} km/s")
+    hist_ax.axvline(median1, color='lightgrey', linestyle='-.', linewidth=1, label="Median: {median1:.0f} km/s")
+    hist_ax.axvline(mean1+std1, color='k', linestyle=':', linewidth=1, label="Std: {std1:.0f} km/s")
+    hist_ax.axvline(mean1-std1, color='k', linestyle=':', linewidth=1)
+    hist_ax.legend()
+    hist_ax.set_xlabel("Velocity (km/s)")
+    hist_ax.set_ylabel("Number of Fluxons")
+    hist_ax.set_title(f'CR{CR}, {len(vel1_clean)} Open Fields')
+
+    hist_ax.set_xlim((vmin, vmax))
+    if do_print_top:
+        print("Success!")
+    return mean1, std1
+    # ax[3].set_title(f"Solar Wind Velocity Distribution: CR{CR}, Open Fluxons: {len(vel1)}", fontsize=16)
+
 ## CODE STARTS HERE
+if __name__ == "__main__":
+    """
+    This script is designed for plotting the wind map and associated data based on various parameters.
+    It accepts command-line arguments for customization and performs several tasks
+    including data loading, data cleaning, and plotting.
+
+    Command-line Arguments:
+        --cr: Carrington Rotation (int, default=None)
+        --dat_dir: Data directory path (str, default='/Users/cgilbert/vscode/fluxons/fluxon-data')
+        --show: (int, default=1)
+        --interp: Interpolation method (str, default='linear')
+        --nwant: (int, default=0)
+        --file: File name to load data from (str, default=None)
+        --batch: Batch name (str, default='fluxon_paperfigs_5')
+    """
+
 
     # create the argument parser
     parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
