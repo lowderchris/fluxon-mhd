@@ -16,7 +16,7 @@ $PDL::verbose = 0;
 # no warnings 'cleanup';
 # my $do_max = 10000;
 my $concurrency = 11;
-my $temp_dir = "fluxon/windtemp";
+my $temp_dir = "flux-pipe/windtemp";
 
 #TODO Make the gen_fluxon_flow and gen_fluxon_tflow functions get loaded only once.
 
@@ -125,7 +125,7 @@ sub map_fluxon_flow_parallel_master {
     for my $fid ( 0 .. $max_fid - 1 ) {
         ## Inside the Loop ##################################################
         # Start a new process and proceed to the next iteration
-        $fork_manager->start and next;    
+        $fork_manager->start and next;
 
         ## Condition the Input ####
         my $me = $fluxons[$fid];
@@ -189,7 +189,7 @@ sub map_fluxon_flow_parallel_master {
         };
 
         # Finish the process and return the result
-        $fork_manager->finish( 0, $result );  
+        $fork_manager->finish( 0, $result );
     }
 
 
@@ -219,6 +219,9 @@ sub map_fluxon_flow_parallel_master {
         squeeze( pdl( map { $_->{fre} } @results ) ),
         squeeze( pdl( map { $_->{fre2} } @results ) ),
         $file_name;
+
+    # delete the temp_dir
+    rmtree($temp_dir);
 }
 
 
@@ -277,10 +280,10 @@ __END__
             #     # Now $gen_fluxon_tflow and $gen_fluxon_flow contain the functions in the child process
             # });
 
-                    # if ( $choke && ($fid > $n_choke) ) { 
+                    # if ( $choke && ($fid > $n_choke) ) {
         #     # For only doing a subset of the inputs
         #     # Finish the process and move to the next iteration
-        #     $fork_manager->finish(1);    
+        #     $fork_manager->finish(1);
         #     next;
         # }
         # # Check for open fieldline, and skip if not
@@ -306,6 +309,6 @@ __END__
         # else {
         #     # Finish the process and move to the next iteration
         #     print "FAILLLL";
-        #     $fork_manager->finish(1);    
+        #     $fork_manager->finish(1);
         #     next;
         # }
