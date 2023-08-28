@@ -19,7 +19,50 @@ from py_pipe_helper import (load_fits_magnetogram, load_magnetogram_params, get_
 import os.path as path
 from plot_wind_map_paper_brief import remove_outliers
 from scipy.interpolate import griddata
-from py_plot_helper import scale_data
+
+
+
+def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, power=1):
+    """ Scale the data between 0 and 1, then raise to a power, then scale by a factor
+
+    Parameters
+    ----------
+    vel0_clean : _type_
+        _description_
+    vel1_clean : _type_
+        _description_
+    outlier_V0 : _type_
+        _description_
+    outlier_V1 : _type_
+        _description_
+    scale : _type_, optional
+        _description_, by default 15**2
+    power : int, optional
+        _description_, by default 1
+
+    Returns
+    -------
+    _type_
+        _description_
+
+    Raises
+    ------
+    to
+        _description_
+    """
+
+    vel0_max = np.nanmax(vel0_clean)
+    vel1_max = np.nanmax(vel1_clean)
+    vel0_min = np.nanmin(vel0_clean)
+    vel1_min = np.nanmin(vel1_clean)
+
+    v0 = scale * ((np.abs(vel0_clean) - vel0_min) / (vel0_max-vel0_min))**power
+    v1 = scale * ((np.abs(vel1_clean) - vel1_min) / (vel1_max-vel1_min))**power
+
+    outlier_V0_scaled = scale * ((np.abs(outlier_V0) - vel0_min) / (vel0_max-vel0_min))**power
+    outlier_V1_scaled = scale * ((np.abs(outlier_V1) - vel1_min) / (vel1_max-vel1_min))**power
+
+    return v0, v1, outlier_V0_scaled, outlier_V1_scaled
 
 
 # create the argument parser

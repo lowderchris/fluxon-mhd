@@ -1,13 +1,22 @@
-"""plots the magnetic field strength of the fluxons
+"""Plots the magnetic field strength and fluxon area
+of the fluxons at the lower and upper boundaries
+
+Parameters
+    ----------
+    --cr: Carrington Rotation
+    --dat_dir: data directory
+    --show: (bool) show the plot
+    --batch: batch name
+    --file: file name
+    --nwant: number of fluxons to plot
 """
+
 import os.path
 import argparse
-# import matplotlib as mpl
-# mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import numpy as np
-from py_plot_helper import get_ax, add_parent_dir
-add_parent_dir()
+
+import py_plot_helper
 from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram, load_magnetogram_params)
 
 
@@ -19,8 +28,8 @@ parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
 parser.add_argument('--dat_dir', type=str, default=
                     '/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
 parser.add_argument('--show', type=int, default=0)
-parser.add_argument('--batch', type=str, default='fluxon')
-parser.add_argument('--file', type=str, default=None)
+parser.add_argument('--batch', type=str, default='default_batch')
+parser.add_argument('--file', type=str, default="/Users/cgilbert/vscode/fluxons/fluxon-data/batches/default_batch/cr2193/wind/cr2193_f500_radial_bmag.dat")
 parser.add_argument('--nwant', type=int, default=None, help='magnetogram file')
 
 args = parser.parse_args()
@@ -109,3 +118,4 @@ if args.show:
     plt.show()
 plt.close(fig)
 print("Done!\n")
+print("Saved to ", pngname, "\n")

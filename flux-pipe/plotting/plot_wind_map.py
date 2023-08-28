@@ -11,7 +11,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import griddata
-from py_plot_helper import remove_outliers
+
 
 mpl.use("qt5agg")
 
@@ -46,6 +46,41 @@ nfluxon = arr.shape[1]
 # Convert coords to correct coords
 ph0, th0 = get_fixed_coords(phi0, theta0)
 ph1, th1 = get_fixed_coords(phi1, theta1)
+
+
+# Remove outliers from the dataset
+def remove_outliers(data, ph0_temp, th0_temp, threshold=3):
+    """_summary_
+
+    Parameters
+    ----------
+    data : _type_
+        _description_
+    ph0_temp : _type_
+        _description_
+    th0_temp : _type_
+        _description_
+    threshold : int, optional
+        _description_, by default 3
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+
+    mean = np.mean(data[data>0])
+    std = np.std(data[data>0])
+    filtered_data, good_points = (list(t) for t in zip(*[(x,i) for i,x in enumerate(data)
+                                    if mean - threshold * std < x < mean + threshold * std]))
+    ph0c, th0c = ph0_temp[good_points], th0_temp[good_points]
+    bad_points = [i for i in range(len(data)) if i not in good_points]
+    ph0_b, th0_b = ph0_temp[bad_points], th0_temp[bad_points]
+    outlier_data = data[bad_points]
+    mean = np.mean(filtered_data)
+    std = np.std(filtered_data)
+    return np.asarray(filtered_data), mean, std, ph0c, th0c, outlier_data, ph0_b, th0_b
+
 
 
 
