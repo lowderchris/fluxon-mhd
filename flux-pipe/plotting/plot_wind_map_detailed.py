@@ -1,9 +1,4 @@
-"""_summary_
-
-Returns
--------
-_type_
-    _description_
+""" Plot the solar wind map
 """
 
 import numpy as np
@@ -162,57 +157,6 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
     if do_print_top:
         print("Success!")
     return mean1, std1
-
-def magnet_plot_orig(batch, ax=None, doplot=False, vmin=-500, vmax=500):
-    """_summary_
-
-    Parameters
-    ----------
-    batch : _type_
-        _description_
-    ax : _type_, optional
-        _description_, by default None
-    doplot : bool, optional
-        _description_, by default False
-    vmin : int, optional
-        _description_, by default -500
-    vmax : int, optional
-        _description_, by default 500
-
-    Returns
-    -------
-    _type_
-        _description_
-    """
-
-    magnet = load_fits_magnetogram(batch=batch, bo=3, bn=2)
-    # magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
-    # find the max and min of the magnetogram plot for use in setting the colormap,
-
-    # Plot the magnetogram
-    # Scatter the fluxon data
-    ph000 = (ph0_clean+np.pi)%(2*np.pi)
-    ph111 = (ph1_clean+np.pi)%(2*np.pi)
-    ph000b = (ph0b+np.pi)%(2*np.pi)
-    ph111b = (ph1b+np.pi)%(2*np.pi)
-    sc00, sc01, magimg = None, None, None
-    if doplot:
-        _, ax = get_ax(ax)    ## The Magnetogram Plot
-        magimg = ax.imshow(magnet, cmap='gray', interpolation=None,
-                           origin="lower", extent=(0,2*np.pi,-1,1), aspect='auto',
-                           vmin=vmin, vmax=vmax)
-        sc00 = ax.scatter(ph000, th0_clean, c= vel0_clean, s=v0, alpha=0.5, label=r'V(1.0R$_\odot$)'  , cmap="winter",  )
-        sc01 = ax.scatter(ph111, th1_clean, c= vel1_clean, s=v1, alpha=0.5, label=r'V(21.5R$_\odot$)' , cmap="autumn",  marker='s')
-        # sc01 = ax[1].scatter(ph1, th1, c= vel1, s=v1, alpha=0.75, label='V(21.5R$_\odot$)' , cmap="autumn",  marker='s')
-        # sc10 = ax[1].scatter(ph0, th0, c= fr0 , s=f0, alpha=0.75, label='Fr(1.0R$_\odot$)' , cmap="winter", )
-        # sc11 = ax[1].scatter(ph1, th1, c= fr1 , s=f1, alpha=0.75, label='Fr(21.5R$_\odot$)', cmap="autumn", marker='s')
-
-        #Scatter the Outliers
-        ax.scatter(ph000b, th0b, c= v0bs, alpha=0.6, label=r'V(1.0R$_\odot$)', cmap="winter", marker='X',  s=50, edgecolors='k')
-        ax.scatter(ph111b, th1b, c= v1bs, alpha=0.6, label=r'V(1.5R$_\odot$)', cmap="autumn", marker='X',  s=50, edgecolors='k')
-        # ax[1].scatter(ph000b, th0b, c= outlier_V0_scaled, alpha=0.95, label='V(1.0R$_\odot$)', cmap="winter", marker='X', s=50, edgecolors='k')
-        # ax[1].scatter(ph111b, th1b, c= v1bs, alpha=0.95, label='V(1.5R$_\odot$)', cmap="autumn", marker='X', s=50, edgecolors='k')
-    return ph000, ph000b, ph111, ph111b, sc00, sc01, magimg
 
 def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=800, do_print_top=True, do_hex=True):
     """_summary_

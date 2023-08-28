@@ -1,4 +1,4 @@
-""" This script plots the result of the solar wind speed calculations
+""" Plot the solar wind map
 """
 
 import argparse

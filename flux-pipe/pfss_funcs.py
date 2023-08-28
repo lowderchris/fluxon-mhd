@@ -501,7 +501,7 @@ def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, 
     tracer
         PFSSPy tracing function
     """
-    
+
     (this_flon, this_flat) = coords
     # import pdb; pdb.set_trace()
     coord_frame = output.coordinate_frame

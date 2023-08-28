@@ -1,9 +1,4 @@
-"""This script plots the results of a scalability test.
-
-Returns
--------
-_type_
-    _description_
+""" This script plots the results of a scalability test.
 """
 
 import os.path

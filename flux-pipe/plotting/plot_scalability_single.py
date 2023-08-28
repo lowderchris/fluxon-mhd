@@ -1,9 +1,4 @@
-""" _summary_
-
-Returns
--------
-_type_
-    _description_
+""" This plot shows how the run time scales with the number of fluxons.
 """
 
 import os.path

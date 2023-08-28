@@ -1,7 +1,4 @@
-"""_summary_ = Plot the wind map for a given CR.
-
-Returns:
-    _type_: _description_
+""" Plot the solar wind map
 """
 import argparse
 import py_plot_helper

@@ -1,9 +1,4 @@
-"""_summary_
-
-Returns
--------
-_type_
-    _description_
+""" A primary script for plotting the magnetogram with footpoints
 """
 import os
 import os.path as path
@@ -17,56 +12,57 @@ from pfss_funcs import pixel_to_latlon
 from py_pipe_helper import (load_fits_magnetogram, load_magnetogram_params,
                             shorten_path)
 
-
 def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False, reduce_amt=0,
                 nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="pdf",
                 plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500):
-    """_summary_
+    """ A primary function for plotting the magnetogram with footpoints
 
     Parameters
     ----------
-    get_cr : _type_
-        _description_
-    datdir : _type_
-        _description_
-    _batch : _type_
-        _description_
-    open_f : _type_, optional
+    get_cr : int
+        the carrington rotation number
+    datdir : str
+        the data directory
+    _batch : str
+        the name of the batch
+    open_f : int, optional
         _description_, by default None
-    closed_f : _type_, optional
+    closed_f : int, optional
         _description_, by default None
     force : bool, optional
         _description_, by default False
     reduce_amt : int, optional
-        _description_, by default 0
+        the factor by which to reduce the magnetogram, by default 0
     nact : int, optional
-        _description_, by default 0
-    nwant : _type_, optional
-        _description_, by default None
+        the actual number of fluxons, by default 0
+    nwant : int, optional
+        the desired number of fluxons, by default None
     do_print_top : bool, optional
-        _description_, by default False
-    ax : _type_, optional
-        _description_, by default None
+        print the top, by default False
+    ax : pyplot axis, optional
+        the axis to plot upon, by default None
     verb : bool, optional
-        _description_, by default True
+        whether to be verbose in output, by default True
     ext : str, optional
-        _description_, by default "pdf"
+        the type of plot to save, by default "pdf"
     plot_all : bool, optional
-        _description_, by default True
+        whether to plot all the fluxons, by default True
     plot_open : bool, optional
-        _description_, by default True
+        whether to plot the open fields, by default True
     do_print : bool, optional
-        _description_, by default False
+        even more verbosity, by default False
     vmin : int, optional
-        _description_, by default -500
+        minimum value of the colortable, by default -500
     vmax : int, optional
-        _description_, by default 500
+        maximum value of the colortable, by default 500
 
     Returns
     -------
-    _type_
-        _description_
+    _n_open, _n_closed, _n_flux, _fnum, _n_outliers
+        integers describing the number of open fluxons, closed fluxons, total fluxons,
+        actual fluxons, and outliers, respectively
     """
+
     fig, ax0 = get_ax(ax)
     if do_print:
         print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
