@@ -11,25 +11,25 @@ $fluxon_locations = fluxon_placement_hilbert($im, -$flux);
 
 Generates a (3xN) set of fluxon placements, in magnetogram pixels, adjusting
 the flux per fluxon either to place approximately $count fluxons or to the
-value set (if the second argument is negative).   It uses a variant of 
+value set (if the second argument is negative).   It uses a variant of
 Riemersma dither, which is a 1-D error-diffusion technique.  Quantization
-error is diffused along an area-filling 1-D fractal (the Hilbert curve). 
+error is diffused along an area-filling 1-D fractal (the Hilbert curve).
 
-fluxon_placement_hilbert differs from Riemersma dither in that there is 
+fluxon_placement_hilbert differs from Riemersma dither in that there is
 no decay term applied to the diffused quantization error.
 
 Because the Hilbert curves are only defined on images with dimension 2**n x 2**n,
-the error diffusion happens on a grid that is interpolated onto the original 
-image.  (n is selected so that 2**n is larger than the greater of the two 
+the error diffusion happens on a grid that is interpolated onto the original
+image.  (n is selected so that 2**n is larger than the greater of the two
 dimensions of the input image).
 
 Because the quantization error follows a prescribed path rather than
 diffusing through the image as in Floyd-Steinberg dither, absolute flux is
-much better conserved than with fluxon_placement_fs. 
+much better conserved than with fluxon_placement_fs.
 
 fluxon_placement_hilbert uses the auxiliary routine hilbert(), in hilbert.pdl,
-and also generates an Inline PP subroutine to do the heavy lifting of the 
-error diffusion. 
+and also generates an Inline PP subroutine to do the heavy lifting of the
+error diffusion.
 
 =cut
 
@@ -45,27 +45,27 @@ sub fluxon_placement_hilbert {
 
     $bgram = $bgram->copy;
     $bgram->where(!isfinite($bgram)) .= 0;
-    
+
     my $smooth = $bgram->convolveND(ones(3,3)/9,{b=>'m'});
     my $sm_max = $smooth->abs->max;
     my $sm_us_sum = $smooth->abs->sum;
-    
+
     unless($fluxon_count) {
 	print "Warning - no fluxon count specified; using 250\n";
 	$fluxon_count = 250;;
     }
-    
+
     my $flux;
-    
+
     if($fluxon_count < 0) {
 	$flux = -$fluxon_count;
 	$fluxon_count = $sm_us_sum / $flux;
     } else{
 	$flux = $sm_us_sum / $fluxon_count;
     }
-    
+
     $fluxon_count= $smooth->abs->sum / $flux;
-    
+
     my $siz = pdl($bgram->dims)->(0:1)->maximum;
 
     my $density_mult = 2 * ($sm_max / ($sm_us_sum/$smooth->nelem)) * ($fluxon_count / $smooth->nelem);
@@ -74,7 +74,7 @@ sub fluxon_placement_hilbert {
 
 
     $siz = 2 ** (( log($siz * $density_mult)/log(2) )->ceil->at(0)) ;
-    
+
     my $path = double(hilbert($siz,$siz));
     $path->((0)) *= $bgram->dim(0)/$siz;
     $path->((1)) *= $bgram->dim(1)/$siz;
@@ -94,7 +94,7 @@ sub fluxon_placement_hilbert {
     my $points = pdl($plist);
     my $pl = $plist;
     $points = ($path->(:,$points->abs))->glue(0, (1 - 2*($points->(*1) < 0)));
-    return;
+    return $points;
 }
 
 no PDL::NiceSlice;
@@ -125,4 +125,4 @@ pp_def('fl_hi_helper',
        );
 EOF
 
-       
+
