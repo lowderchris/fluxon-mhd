@@ -1,5 +1,37 @@
-"""Library of helper scripts for the flux-pipe algorithm
 """
+py_pipe_helper: Library of Helper Scripts for the Flux-Pipe Algorithm
+
+
+This library contains a collection of utility functions designed to assist with
+the flux-pipe algorithm. It includes methods for managing directories, handling
+FITS files, and manipulating magnetogram data.
+
+Usage:
+    import flux_pipe_helper as fph
+
+Arguments:
+    No command-line arguments are required when using this library as a module.
+
+Functions:
+    add_dir_to_path, add_top_level_dirs_to_path, add_paths, make_mag_dir, get_magnetogram_file,
+    reduce_mag_file, reduce_fits_image, plot_raw_magnetogram, load_fits_magnetogram,
+    write_magnetogram_params, load_magnetogram_params, find_file_with_string, shorten_path,
+    read_fits_data, get_fixed_coords:
+        Various utility functions for managing directories, handling FITS files, and manipulating magnetogram data.
+
+Example:
+    import flux_pipe_helper as fph
+    fph.add_dir_to_path("/path/to/directory")
+
+Author:
+    Gilly <gilly@swri.org> (and others!)
+
+Dependencies:
+    os, os.path, sys, pathlib.PosixPath, Path, plotting.py_plot_helper, numpy as np,
+    matplotlib.pyplot as plt, astropy.io.fits, astropy.nddata.block_reduce, sunpy,
+    sunpy.coordinates, sunpy.io, sunpy.net.Fido, attrs as a
+"""
+
 
 # Import libraries
 import os

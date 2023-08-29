@@ -1,3 +1,83 @@
+=head1 NAME
+
+relax_pfss_world - Relaxes the initial world state generated from PFSS (Potential Field Source Surface) models.
+
+=head1 SYNOPSIS
+
+    use relax_pfss_world;
+    relax_pfss_world($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold,
+    $max_cycles, $timefile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR);
+
+=head1 DESCRIPTION
+
+This Perl script relaxes the initial world state generated from PFSS (Potential Field Source Surface) models.
+It reads the world state from a file, applies relaxation algorithms, and then saves the relaxed world state back to a file.
+
+=head1 FUNCTIONS
+
+=head2 relax_pfss_world
+
+    relax_pfss_world($world_out_dir, $full_world_path, $do_relax, $do_steps, $relax_threshold,
+    $max_cycles, $timefile, $n_fluxons_wanted, $N_actual, $datdir, $batch_name, $CR);
+
+This function does the following:
+
+=over
+
+=item * Reads the world state from a file.
+
+=item * Applies relaxation algorithms to the world state.
+
+=item * Saves the relaxed world state back to a file.
+
+=back
+
+=head3 Parameters
+
+=over
+
+=item * C<$world_out_dir>: Directory where the output world file will be saved.
+
+=item * C<$full_world_path>: Full path to the world file.
+
+=item * C<$do_relax>: Flag to indicate whether to perform relaxation.
+
+=item * C<$do_steps>: Number of steps for the relaxation algorithm.
+
+=item * C<$relax_threshold>: Threshold for the relaxation algorithm.
+
+=item * C<$max_cycles>: Maximum number of cycles for the relaxation algorithm.
+
+=item * C<$timefile>: File to log the time taken for relaxation.
+
+=item * C<$n_fluxons_wanted>: Number of fluxons wanted.
+
+=item * C<$N_actual>: The actual number of fluxons.
+
+=item * C<$datdir>: The data directory.
+
+=item * C<$batch_name>: Name of the batch.
+
+=item * C<$CR>: Carrington Rotation.
+
+=back
+
+=head3 Returns
+
+This function returns the original and relaxed world states, along with the number of steps taken for relaxation.
+
+=head1 AUTHOR
+
+Gilly <gilly@swri.org> (and others!)
+
+=head1 SEE ALSO
+
+L<pdl_pipe_helper>, L<Storable>, L<File::Path>, L<Time::HiRes>
+
+=cut
+
+
+
 use pdl_pipe_helper;
 use strict;
 use warnings;
@@ -11,7 +91,7 @@ print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 print "\n";
 my ($found_file_path, $stepnum) = find_highest_numbered_file($world_out_dir);
 my ($second_file_present, $file_path_relaxed) = check_second_file_presence($full_world_path);
-if ($second_file_present) {print "\tFound a relaxed file: $file_path_relaxed";} 
+if ($second_file_present) {print "\tFound a relaxed file: $file_path_relaxed";}
 else {
     print "\tNo relaxed file found, so we will relax the world.\n\n";
 }
@@ -43,7 +123,7 @@ if ($do_the_relax){
     my $round_stiff = 100;
     my $broken = 0;
     my $stepnum = 0;
-    my $flen = 0; 
+    my $flen = 0;
 
     # # # Begin the Computation!! # # #
     my $starttime = clock_gettime();
@@ -74,7 +154,7 @@ if ($do_the_relax){
             $broken = 0;
         }
         # print "\n \nSTIFFNESS IS $stiff, cycle = $cycle\n";
-    
+
         if ($broken >= 2){
             open my $fhh, ">>", $timefile or die "Cannot open file: $!";
             # printf $fhh, "Success: 0, fluxons: %d, steps: %d, stiff: %f, n_out: %d", $N_actual, $stepnum, $stiff, $flen;

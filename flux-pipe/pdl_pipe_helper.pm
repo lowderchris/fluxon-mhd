@@ -1,3 +1,101 @@
+=head1 NAME
+
+YourScriptName - Utility Functions for File and Environment Management
+
+=head1 SYNOPSIS
+
+    use pdl_pipe_helper;
+    shorten_path($string);
+    find_highest_numbered_file($directory);
+    set_env_variable($variable, $value);
+    # ... and so on
+
+=head1 DESCRIPTION
+
+This Perl script provides utility functions for managing files and environment variables.
+It includes functions for shortening file paths, finding the highest-numbered file in a directory,
+setting and checking environment variables, and more.
+
+=head1 FUNCTIONS
+
+=head2 shorten_path
+
+    shorten_path($string);
+
+Shortens the given file path by replacing the DATAPATH environment variable.
+
+=head2 find_highest_numbered_file
+
+    find_highest_numbered_file($directory);
+
+Finds the highest-numbered file in the given directory.
+
+=head2 set_env_variable
+
+    set_env_variable($variable, $value);
+
+Sets an environment variable to a given value.
+
+=head2 get_env_variable
+
+    get_env_variable($variable);
+
+Gets the value of an environment variable.
+
+=head2 check_env_variable
+
+    check_env_variable($variable, $print);
+
+Checks if an environment variable is set and optionally prints its value.
+
+=head2 set_and_check_env_variable
+
+    set_and_check_env_variable($variable, $value, $print);
+
+Sets an environment variable and then checks if it is set.
+
+=head2 calculate_directories
+
+    calculate_directories($basedir, $batch_name, $print);
+
+Calculates various directories based on the base directory and batch name.
+
+=head2 set_python_path
+
+    set_python_path($pythonpath, $print);
+
+Sets the PYTHONPATH environment variable.
+
+=head2 print_banner
+
+    print_banner($batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string);
+
+Prints a banner with various details.
+
+=head2 search_files_in_directory
+
+    search_files_in_directory($directory, $known_string, $extension);
+
+Searches for files in a directory that match a known string and file extension.
+
+=head2 check_second_file_presence
+
+    check_second_file_presence($file_path);
+
+Checks for the presence of a second file related to the given file path.
+
+=head1 AUTHOR
+
+Your Name <your.email@example.com>
+
+=head1 SEE ALSO
+
+L<PDL::AutoLoader>, L<PDL>, L<Time::Piece>
+
+=cut
+
+
+
 # use strict;
 use warnings;
 use PDL::AutoLoader;

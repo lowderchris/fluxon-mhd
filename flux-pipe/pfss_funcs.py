@@ -1,5 +1,43 @@
-"""Low level helpers for the PFSS code
 """
+Low-Level Helpers for PFSS (Potential Field Source Surface) Modeling.
+
+This module provides utility functions for:
+
+- Loading and conditioning FITS files containing magnetogram data.
+- Converting pixel coordinates to latitude and longitude.
+- Computing the PFSS solution based on the conditioned magnetogram.
+- Tracing magnetic field lines.
+- Plotting fluxon locations on the magnetogram.
+- Saving and loading PFSS solutions from pickle files.
+
+Attributes:
+    None
+
+Functions:
+    load_fits(file_path: str) -> object
+    condition_data(data: object) -> object
+    compute_pfss(data: object) -> object
+    trace_field_lines(pfss_solution: object) -> list
+    plot_fluxons(magnetogram: object, field_lines: list) -> None
+    save_pfss_solution(pfss_solution: object, file_path: str) -> None
+    load_pfss_solution(file_path: str) -> object
+
+Dependencies:
+    - astropy
+    - matplotlib
+    - numpy
+    - pfsspy
+    - sunpy
+    - timeout_decorator
+    - tqdm
+
+
+Author:
+
+    Gilly <gilly@swri.org> (and others!)
+
+"""
+
 
 import copy
 import os

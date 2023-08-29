@@ -1,5 +1,47 @@
-""" Sets the whole FLUXpipe in motion
 """
+Mag Runner: Automate the FLUXpipe Workflow for Multiple Carrington Rotations
+
+This script sets the entire FLUXpipe workflow in motion by running the
+`magnetogram2wind.pdl` script for a set of specified Carrington Rotations (CRs).
+It provides options to control the number of fluxons, the reduction factor, and
+other parameters. The script uses the subprocess module to execute the PDL script
+and tqdm for progress tracking.
+
+Usage:
+    python mag_runner.py
+
+Configuration:
+    base_dir:       The base directory where the FLUXpipe workflow is located.
+    mhd_dir:        The directory containing the MHD (Magnetohydrodynamics) code.
+    flux_pipe_dir:  The directory containing the FLUXpipe code.
+    batch_name:     The name of the batch for the operation.
+    rotations:      List of Carrington Rotations to process.
+    do_flux:        List of fluxon numbers to analyze.
+    do_survey:      Flag to run the fluxon analysis on a set of fluxon numbers and/or rotations.
+    plot_only:      Flag to skip everything except the wind plotting at the end.
+    recompute:      Flag to reperform the fluxon analysis from scratch.
+    reduction:      The factor by which the magnetogram is reduced.
+    capture:        Flag to capture the stdout of the subprocess.
+    verbose:        Flag to print detailed output.
+    do_download:    Flag to download the files.
+
+Functions:
+    add_top_level_dirs_to_path:  Utility function imported from 'py_pipe_helper'.
+
+Dependencies:
+    subprocess, os, tqdm, py_pipe_helper
+
+Example:
+    Modify the configuration variables as needed and run `python mag_runner.py`.
+
+Author:
+    Gilly <gilly@swri.org> (and others!)
+
+Note:
+    Each iteration takes around a minute. Please be patient if verbose is set to True.
+"""
+
+
 import subprocess
 from os import chdir
 from tqdm import tqdm

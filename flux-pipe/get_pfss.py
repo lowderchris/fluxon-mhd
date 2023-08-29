@@ -1,7 +1,39 @@
-"""Generate a fluxon mapping from input GONG-sourced pfss coronal field solution
-Fluxon PFSS mapping
 """
+Generate a Fluxon Mapping from Input GONG-Sourced PFSS Coronal Field Solution
 
+This script automates the process of generating a fluxon mapping from a given
+GONG-sourced PFSS (Potential-Field Source-Surface) coronal field solution. It
+provides options to specify the Carrington Rotation (CR), batch name, reduction
+factor, data directory, magnetogram file, and other parameters.
+
+Usage:
+    python get_pfss.py [--cr CARRINGTON_ROTATION] [--batch BATCH_NAME]
+                               [--reduce REDUCTION_FACTOR] [--datdir DATA_DIRECTORY]
+                               [--magfile MAGNETOGRAM_FILE] [--nwant NUMBER_WANTED]
+                               [--force FORCE_FLAG]
+
+Arguments:
+    --cr:           The Carrington Rotation for which the PFSS mapping is to be generated. Default is 2219.
+    --batch:        The batch name for the operation. Default is 'default_batch'.
+    --reduce:       The factor by which the magnetogram is reduced. Default is 5.
+    --datdir:       The directory where the data will be stored. Default is None.
+    --magfile:      The magnetogram file to be used. Default is None.
+    --nwant:        The number of fluxons wanted. Default is None.
+    --force:        Flag to force the computation of the PFSS mapping. Default is 0 (False).
+
+Functions:
+    trace_lines, load_pfss, compute_pfss, load_and_condition_fits_file, get_fluxon_locations:
+                Various utility functions imported from 'pfss_funcs' and 'py_pipe_helper'.
+
+Example:
+    python get_pfss.py --cr 2220 --batch 'my_batch' --reduce 4 --datdir '/path/to/data' --force 1
+
+Author:
+    Gilly <gilly@swri.org> (and others!)
+
+Dependencies:
+    os, argparse, numpy, astropy, pfss_funcs, py_pipe_helper
+"""
 # First, import required modules
 import os
 import argparse

@@ -1,16 +1,89 @@
-# # A script to run the entire FLUX pipeline on a single Carrington Rotation.
 
-# # Note that until the homebrew issues are fixed, plot using the command:
-# # $world -> render({'dev'=>'qt'});
 
-# The hilbert curve code defines where fluxons should be rooted based on the distribution of flux at 1R_sun. 
-    # Since each contains a discretized amount of magnetic flux, we need to subdivide the domain to reflect how to represent that with fluxons.
+=head1 NAME
 
-# Then we take those root points and use the pfss tracer to map upward from those initial points into the corona to define an initial placeholder geometry. 
-    # This lets us extend this into 3d space with real linking topology.
+FLUX Pipeline Script - A script to run the entire FLUX pipeline on a single Carrington Rotation (CR).
 
-# Then we take that initial guess from pfss.py and relax down using the fluxon code, which gets us realistic topology, and a near force-free state, 
-# but allowing for currents (not a potential field any longer).
+=head1 SYNOPSIS
+
+    perl script_name.pl [options]
+
+=head1 DESCRIPTION
+
+This script automates the entire FLUX pipeline for a given Carrington Rotation (CR). The pipeline consists of several stages:
+
+=over 4
+
+=item 1. Downloading the Magnetogram
+
+=item 2. Processing the Magnetogram to find root points
+
+=item 3. Running the Python PFSS Code to trace the footpoints into the corona
+
+=item 4. Generating a world from PFSS
+
+=item 5. Relaxing the initial world state using the FLUX code
+
+=item 6. Plotting the world states
+
+=item 7. Computing and plotting the solar wind
+
+=back
+
+=head1 WORKFLOW
+
+=over 4
+
+=item * B<Download the Magnetogram>: Downloads the magnetogram from JSOC.
+
+=item * B<Process the Magnetogram>: Uses the Hilbert curve code to define where fluxons should be rooted based on the distribution of flux at 1R_sun.
+
+=item * B<Run the Python PFSS Code>: Uses the pfss tracer to map upward from the initial points into the corona, defining an initial placeholder geometry.
+
+=item * B<Generate World from PFSS>: Takes the initial guess from pfss.py and relaxes it down using the fluxon code to get realistic topology and a near force-free state.
+
+=back
+
+=head1 OPTIONS
+
+Various options can be set within the script, such as:
+
+=over 4
+
+=item * C<$do_download> - Flag to download the magnetogram.
+
+=item * C<$force_process_magnetogram> - Flag to force the processing of the magnetogram.
+
+=item * C<$do_pfss> - Flag to run the PFSS code.
+
+=item * C<$makeworld> - Flag to create the world.
+
+=item * C<$do_relax> - Flag to relax the world.
+
+=item * C<$do_png> - Flag to generate PNG plots.
+
+=item * C<$do_interactive> - Flag to open a gnuplot window.
+
+=item * C<$do_wind_calc> - Flag to calculate the solar wind.
+
+=back
+
+=head1 NOTES
+
+Until the homebrew issues are fixed, plot using the command: C<$world -> render({'dev'=>'qt'})>.
+
+=head1 AUTHOR
+
+Gilly <gilly@swri.org> (and others!)
+
+=head1 SEE ALSO
+
+L<PDL>, L<PDL::AutoLoader>, L<PDL::Transform>, L<PDL::NiceSlice>, L<PDL::Options>, L<Flux>, L<PDL::IO::Misc>, L<File::Path>, L<Time::HiRes>, L<File::Basename>, L<pdl_pipe_helper>
+
+=cut
+
+
+
 
 # use strict;
 use warnings;
@@ -75,7 +148,7 @@ if ($recompute){
     $force_process_magnetogram = 1; # ## Ingest the magnetogram and find the footpoints of the magnetic field lines
     $do_pfss = 1;
     $makeworld = 1; ## Create the world from the output of the pfss.py code
-    $do_relax = 1; ## Top Level Relaxation 
+    $do_relax = 1; ## Top Level Relaxation
     $do_png = 1; ## Plotting the worlds
     $recompute_string = 'TRUE '
 }
@@ -120,7 +193,7 @@ system($command) == 0 or (die "Python script returned error $?", exit);
 #######################################################################################################
 ## Process the Magnetogram ## Find the Root Points ####################################################
 #######################################################################################################
-# The hilbert curve code defines where fluxons should be rooted based on the distribution of flux at 1R_sun. 
+# The hilbert curve code defines where fluxons should be rooted based on the distribution of flux at 1R_sun.
 # Since each contains a discretized amount of magnetic flux, we need to subdivide the domain to reflect how to represent that with fluxons.
 $flocdir = "$batchdir/cr$CR/floc";
 $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
@@ -134,8 +207,8 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wan
 #######################################################################################################
 ## Run the Python PFSS Code ## Trace the Footpoints into the Corona ###################################
 #######################################################################################################
-# Then we take those root points and use the pfss tracer to map upward from those initial points 
-# into the corona to define an initial placeholder geometry. 
+# Then we take those root points and use the pfss tracer to map upward from those initial points
+# into the corona to define an initial placeholder geometry.
 # This lets us extend this into 3d space with real linking topology.
 $command = "$pythondir $pipedir/get_pfss.py --force $do_pfss --batch $batch_name --reduce $reduction --datdir $datdir --cr $CR --magfile $magfile --nwant $n_fluxons_wanted";
 system($command) == 0 or (die "Python script returned error $?", exit);
@@ -161,7 +234,7 @@ make_world_from_pfss($world_out_dir, $floc_path, $open_file, $closed_file, $make
 #######################################################################################################
 ## Relax the initial world state ##Use the FLUX Code ##################################################
 #######################################################################################################
-# Then we take that initial guess from pfss.py and relax down using the fluxon code, which gets us realistic topology, and a near force-free state, 
+# Then we take that initial guess from pfss.py and relax down using the fluxon code, which gets us realistic topology, and a near force-free state,
 # but allowing for currents (not a potential field any longer).
 
 # Select the World

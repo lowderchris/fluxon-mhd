@@ -1,3 +1,60 @@
+=head1 NAME
+
+get_hilbert_footpoints - Traces Magnetogram to get Footpoints using Hilbert Curves
+
+=head1 SYNOPSIS
+
+    use pdl_pipe_helper;
+    my ($floc, $N_actual) = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $process_magnetogram);
+
+=head1 DESCRIPTION
+
+This subroutine is designed to trace a magnetogram and place footpoints using Hilbert curves. It accepts several parameters for customization and performs tasks such as data loading, footpoint placement, and data writing.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item * C<$flocdir> - Directory where the footpoint file is located or will be saved.
+
+=item * C<$flocfile> - File name for the footpoints.
+
+=item * C<$magfile> - Magnetogram file to be traced.
+
+=item * C<$n_fluxons_wanted> - Number of footpoints desired.
+
+=item * C<$process_magnetogram> - Flag to indicate whether to process the magnetogram or not.
+
+=back
+
+=head1 WORKFLOW
+
+1. Checks for the existence of the footpoint file and directory.
+2. If the file is not found or C<$process_magnetogram> is true, reads the magnetogram and runs the Hilbert tracer.
+3. Places footpoints based on Hilbert curves.
+4. Writes the footpoints to disk if they were generated anew.
+5. If the file exists and C<$process_magnetogram> is false, reads the footpoints from the existing file.
+
+=head1 OUTPUT
+
+Returns an array C<$floc> containing the footpoints and an integer C<$N_actual> representing the actual number of footpoints placed.
+
+=head1 EXCEPTIONS
+
+Dies if it fails to create the directory for footpoints.
+
+=head1 AUTHOR
+
+Gilly <gilly@swri.org> (and others!)
+
+=head1 SEE ALSO
+
+L<pdl_pipe_helper>, L<fluxon_placement_hilbert>, L<rfits>, L<wcols>, L<rcols>
+
+=cut
+
+
+
 use pdl_pipe_helper;
 
 sub get_hilbert_footpoints{
@@ -65,7 +122,7 @@ sub get_hilbert_footpoints{
                 } else {
                     $try_fluxons += $step;
                 }
-                
+
                 $iterate = 1;
                 print "Retrying!\n";
             } else {
