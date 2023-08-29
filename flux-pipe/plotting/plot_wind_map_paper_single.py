@@ -1,5 +1,48 @@
-""" Plot the solar wind map
 """
+Solar Wind Map Plotting Script
+==============================
+
+This script is designed to plot solar wind maps based on magnetogram data and wind data files.
+The script accepts various command-line arguments to customize the plotting behavior, such as the
+Carrington Rotation number, data directory, interpolation method, and others.
+
+Modules Used:
+    - numpy: For numerical operations
+    - matplotlib: For plotting graphs and images
+    - argparse: For parsing command-line arguments
+    - py_plot_helper: Custom helper for plotting
+    - py_pipe_helper: Custom helper for data loading and manipulation
+    - os.path: For file and directory operations
+    - scipy.interpolate: For data interpolation
+
+Functions from other modules:
+    - hex_plot, hist_plot, scale_data, remove_outliers from plot_wind_map_detailed
+    - load_fits_magnetogram, load_magnetogram_params, get_fixed_coords from py_pipe_helper
+
+Command-line Arguments:
+    --cr: Carrington Rotation number (default is 2160)
+    --dat_dir: Directory where the data files are located
+    --show: Flag to show the plot
+    --interp: Interpolation method to use (default is "linear")
+    --nact: (Not described in the code)
+    --batch: Batch name for selecting specific data (default is "fluxon_paperfigs")
+
+Outputs:
+    - Saves the solar wind map as a PNG and PDF file in the specified directory.
+
+Example:
+    python plot_wind_map_paper_single.py --cr 2183 --dat_dir /path/to/data --interp cubic
+
+Author:
+
+Gilly <gilly@swri.org> (and others!)
+
+Note:
+    This script assumes that the required data files are present in the specified directory.
+"""
+
+# ... (rest of the code)
+
 import numpy as np
 import matplotlib as mpl
 mpl.use("qt5agg")

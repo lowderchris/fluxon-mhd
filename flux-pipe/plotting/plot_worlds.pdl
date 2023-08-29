@@ -1,3 +1,72 @@
+=head1 NAME
+
+plot_worlds - Perl PDL Script for Plotting Initial and Relaxed Worlds
+
+=head1 SYNOPSIS
+
+    use warnings;
+    use PDL::AutoLoader;
+    use PDL;
+    use pdl_pipe_helper;
+    plot_worlds($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $nwant, $lim, $lim2, $stepnum);
+
+=head1 DESCRIPTION
+
+This script is designed to plot the initial and relaxed states of worlds using Perl's PDL (Perl Data Language). It supports both interactive plotting and PNG output.
+
+=head1 FUNCTIONS
+
+=head2 plot_worlds
+
+    plot_worlds($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $nwant, $lim, $lim2, $stepnum);
+
+Plots the initial and relaxed states of worlds.
+
+=over
+
+=item * C<$this_world_orig> - The initial world state.
+
+=item * C<$this_world_relaxed> - The relaxed world state.
+
+=item * C<$do_interactive> - Flag to enable interactive plotting.
+
+=item * C<$do_png> - Flag to enable PNG output.
+
+=item * C<$full_world_path> - Full path to the world data.
+
+=item * C<$datdir> - Data directory.
+
+=item * C<$batch_name> - Batch name.
+
+=item * C<$CR> - Carrington Rotation.
+
+=item * C<$N_actual> - Actual number of steps.
+
+=item * C<$nwant> - Desired number of steps.
+
+=item * C<$lim> - Limit for initial state plot.
+
+=item * C<$lim2> - Limit for relaxed state plot.
+
+=item * C<$stepnum> - Step number for relaxed state.
+
+=back
+
+=head1 EXAMPLES
+
+    # To plot the worlds interactively
+    plot_worlds($world1, $world2, 1, 0, $path, $data_dir, "batch1", 2163, 100, 50, 1, 1, 0);
+
+=head1 AUTHOR
+
+Gilly <gilly@swri.org> (and others!)
+
+=head1 SEE ALSO
+
+L<PDL>, L<PDL::AutoLoader>, L<pdl_pipe_helper>
+
+=cut
+
 use warnings;
 use PDL::AutoLoader;
 use PDL;
@@ -60,7 +129,7 @@ sub plot_worlds{
         my $top_path = $datdir . "/batches/$batch_name/imgs/relaxed/";
         if (! -d $top_path ) {mkpath($top_path) or die "Failed to create directory: $top_path $!\n";}
         my $top_filename_relaxed = $top_path ."cr". $CR."_f$nwant\_relaxed\_s$stepnum.png";
-        
+
         # my $short_new_filename_initial = shorten_path($new_filename_initial);
         # print "\t\tRendering $short_new_filename_initial\n";
         # my $window25=   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_initial);
@@ -79,7 +148,7 @@ sub plot_worlds{
         my $window4 =   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_relaxed );
         $this_world_relaxed->render({'window'=>$window4, range=>$range_f});
         $window4 = null;
-        
+
         my $short_new_filename_relaxed2 = shorten_path($new_filename_relaxed2);
 
         print "\t\tRendering $short_new_filename_relaxed2\n";

@@ -1,5 +1,6 @@
 """
 Mag Runner: Automate the FLUXpipe Workflow for Multiple Carrington Rotations
+============================================================================
 
 This script sets the entire FLUXpipe workflow in motion by running the
 `magnetogram2wind.pdl` script for a set of specified Carrington Rotations (CRs).

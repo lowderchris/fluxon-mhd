@@ -1,6 +1,45 @@
-"""This script plots the solar wind map. It is used to generate plots of the fieldmap and the expansion
 """
+Solar Wind Map Plotting Script
+==============================
 
+This script is designed to plot the solar wind map, specifically generating plots of the fieldmap and the expansion.
+
+
+
+Parameters
+-----------
+    --cr: Carrington Rotation (type: int, default: None)
+    --dat_dir: Data directory (type: str, default: '/Users/cgilbert/fluxons/fluxon-data')
+    --show: Show plot (type: int, default: 1)
+    --interp: Interpolation method (type: str, default: "linear")
+    --nact: Number of active regions (type: int, default: 0)
+    --nwant: Number of wanted regions (type: int, default: 0)
+    --file: File name to load (type: str, default: None)
+    --batch: Batch name (type: str, default: "fluxon_paperfigs_5")
+
+Usage:
+------
+python <script_name> [--cr <Carrington Rotation>] [--dat_dir <data directory>] [--show <show plot>]
+                     [--interp <interpolation method>] [--nact <number of active regions>]
+                     [--nwant <number of wanted regions>] [--file <file name>] [--batch <batch name>]
+
+Modules:
+--------
+- numpy: For numerical operations
+- matplotlib: For plotting
+- argparse: For command-line arguments
+- os.path: For file path manipulations
+- scipy.interpolate: For data interpolation
+- py_plot_helper: Custom module for plotting helpers
+- py_pipe_helper: Custom module for loading FITS magnetograms and parameters
+- plot_fieldmap: Custom module for magnet plot
+- plot_wind_map_detailed: Custom module for detailed wind map plotting
+
+Author:
+-------
+Gilly <gilly@swri.org> (and others!)
+
+"""
 
 import numpy as np
 import matplotlib as mpl

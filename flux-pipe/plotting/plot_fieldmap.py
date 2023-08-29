@@ -1,5 +1,37 @@
-""" A primary script for plotting the magnetogram with footpoints
 """
+Primary Script for Plotting the Magnetogram with Footpoints
+==========================================================
+
+This script is designed to plot the magnetogram along with footpoints. It provides
+options to specify the Carrington Rotation (CR), batch name, reduction factor, data directory,
+and other parameters.
+
+Usage:
+    python plot_fieldmap.py [--cr CARRINGTON_ROTATION] [--nwant NUMBER_WANTED]
+                             [--open OPEN_FLUXONS] [--closed CLOSED_FLUXONS]
+                             [--dat_dir DATA_DIRECTORY] [--batch BATCH_NAME]
+
+Arguments:
+    --cr:           The Carrington Rotation for which the magnetogram is to be plotted. Default is None.
+    --nwant:        The number of fluxons wanted. Default is None.
+    --open:         The number of open fluxons. Default is None.
+    --closed:       The number of closed fluxons. Default is None.
+    --dat_dir:      The directory where the data will be stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
+    --batch:        The batch name for the operation. Default is 'default_batch'.
+
+Functions:
+    magnet_plot:    A primary function for plotting the magnetogram with footpoints.
+
+Example:
+    python plot_fieldmap.py --cr 2220 --nwant 100 --open 50 --closed 50 --dat_dir '/path/to/data' --batch 'my_batch'
+
+Author:
+    Gilly <gilly@swri.org> (and others!)
+
+Dependencies:
+    os, os.path, argparse, matplotlib.pyplot, numpy, py_plot_helper, pfss_funcs, py_pipe_helper
+"""
+
 import os
 import os.path as path
 import argparse

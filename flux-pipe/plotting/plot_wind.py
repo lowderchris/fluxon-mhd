@@ -1,5 +1,56 @@
-""" Plot the solar wind map
 """
+Plot the Solar Wind Map
+========================
+
+This script reads data related to solar wind speed calculations and plots the results.
+It uses matplotlib for plotting and numpy for numerical operations.
+
+Arguments:
+----------
+    --cr : int
+        Carrington Rotation number. Default is 2163.
+
+    --dat_dir : str
+        Directory where the data files are stored.
+        Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
+
+    --batch : str
+        Batch name to select. Default is 'fluxon'.
+
+    --show : int
+        Flag to display the plot. Default is 1.
+
+Output:
+-------
+    A PNG file showing the solar wind map.
+
+Functions:
+----------
+    get_fixed_coords : Convert coordinates to fixed coordinates.
+    load_fits_magnetogram : Load magnetogram data from FITS file.
+
+Modules:
+--------
+    argparse : For command-line argument parsing.
+    matplotlib : For plotting.
+    numpy : For numerical operations.
+    py_plot_helper : Custom plotting helper module.
+    py_pipe_helper : Custom pipeline helper module.
+
+Example:
+--------
+    To run the script, navigate to the script's directory and run:
+    ```bash
+    python plot_wind.py --cr 2163 --dat_dir '/path/to/data' --batch 'batch_name' --show 1
+    ```
+
+Author:
+_______
+Gilly <gilly@swri.org> (and others!)
+"""
+
+# Your code here...
+
 
 import argparse
 

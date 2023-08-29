@@ -1,5 +1,36 @@
-""" Plot the solar wind map
 """
+Solar Wind Map Plotting Script
+==============================
+
+This script is designed to plot the solar wind map based on the expansion factor of radial wind data.
+It uses various libraries like matplotlib, numpy, and scipy for data visualization and manipulation.
+
+The script takes several command-line arguments:
+- `--cr`: Carrington Rotation number (default is 0)
+- `--dat_dir`: The directory where the data files are located
+- `--show`: Whether to show the plot or not (default is 1)
+- `--interp`: Interpolation method to use (default is "cubic")
+- `--nact`: (Not described in the code, default is 0)
+- `--batch`: The batch name to select (default is "fluxon r2")
+
+The script performs the following tasks:
+1. Parses command-line arguments.
+2. Loads magnetogram parameters and radial wind data.
+3. Cleans and scales the data.
+4. Plots histograms of near-surface and outer boundary velocities.
+5. Interpolates the data onto a grid.
+6. Plots the interpolated data along with the original data points.
+7. Saves the plots as PNG files.
+
+The script also contains a function `plot_three` that plots data using imshow, contourf, and hexbin methods.
+
+Note: The script uses Qt5Agg as the backend for matplotlib.
+
+Author: Gilly <gilly@swri.org> (and others!)
+"""
+
+# [Your code here]
+
 import argparse
 import py_plot_helper
 from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram,

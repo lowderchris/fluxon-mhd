@@ -1,6 +1,6 @@
 """
 py_pipe_helper: Library of Helper Scripts for the Flux-Pipe Algorithm
-
+=====================================================================
 
 This library contains a collection of utility functions designed to assist with
 the flux-pipe algorithm. It includes methods for managing directories, handling

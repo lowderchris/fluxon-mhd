@@ -1,16 +1,30 @@
-""" Plot the solar wind map
+"""
+Plot the detailed solar wind map
+================================
 
-This script is used to plot the solar wind map using various types of plots
-including hexagon interpolation, scatter plots, and histograms. It takes in
-data related to solar wind velocity and magnetic fields to generate these plots.
+This script is used to plot a detailed solar wind map using various types of plots
+including hexagon interpolation, scatter plots, contour plots, and histograms. It takes in
+data related to solar wind velocity, magnetic fields, and other parameters to generate these plots.
 
 Attributes:
-    parser (argparse.ArgumentParser): Argument parser for command-line options.
-    batch (str): Batch name for data processing.
-    interp (str): Interpolation method to use.
-    dat_dir (str): Directory where data files are stored.
+    --cr: Carrington Rotation (int, default=None)
+    --dat_dir: Data directory path (str, default='/Users/cgilbert/vscode/fluxons/fluxon-data')
+    --show: (int, default=1)
+    --interp: Interpolation method (str, default='linear')
+    --nwant: (int, default=0)
+    --file: File name to load data from (str, default=None)
+    --batch: Batch name (str, default='fluxon_paperfigs_5')
+
+Functions:
+    scale_data(): Scale the data between 0 and 1.
+    remove_outliers(): Remove outliers from the dataset recursively.
+    hex_plot(): Create a hexagon interpolation of the data.
+    hist_plot(): Plot a histogram of the velocity data.
 
 """
+
+# Your code here...
+
 
 import numpy as np
 import matplotlib as mpl
@@ -251,22 +265,6 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
 
 ## CODE STARTS HERE
 if __name__ == "__main__":
-    """
-    This script is designed for plotting the wind map and associated data based on various parameters.
-    It accepts command-line arguments for customization and performs several tasks
-    including data loading, data cleaning, and plotting.
-
-    Command-line Arguments:
-        --cr: Carrington Rotation (int, default=None)
-        --dat_dir: Data directory path (str, default='/Users/cgilbert/vscode/fluxons/fluxon-data')
-        --show: (int, default=1)
-        --interp: Interpolation method (str, default='linear')
-        --nwant: (int, default=0)
-        --file: File name to load data from (str, default=None)
-        --batch: Batch name (str, default='fluxon_paperfigs_5')
-    """
-
-
     # create the argument parser
     parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
     parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')

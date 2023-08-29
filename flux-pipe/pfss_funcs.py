@@ -1,5 +1,6 @@
 """
 Low-Level Helpers for PFSS (Potential Field Source Surface) Modeling.
+=====================================================================
 
 This module provides utility functions for:
 

@@ -1,5 +1,6 @@
 """
 Generate a Fluxon Mapping from Input GONG-Sourced PFSS Coronal Field Solution
+=============================================================================
 
 This script automates the process of generating a fluxon mapping from a given
 GONG-sourced PFSS (Potential-Field Source-Surface) coronal field solution. It

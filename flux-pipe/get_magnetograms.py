@@ -1,5 +1,6 @@
 """
 Download a Magnetogram for a Particular Carrington Rotation
+===========================================================
 
 This script automates the process of downloading a magnetogram for a specific Carrington Rotation (CR).
 It provides options to specify the CR, data directory, reduction factor, and whether to force download the files.

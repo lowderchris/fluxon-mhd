@@ -1,15 +1,38 @@
-"""Plots the magnetic field strength and fluxon area
-of the fluxons at the lower and upper boundaries
-
-Parameters
-----------
---cr: Carrington Rotation
---dat_dir: data directory
---show: (bool) show the plot
---batch: batch name
---file: file name
---nwant: number of fluxons to plot
 """
+Plotting Magnetic Field Strength and Fluxon Area
+================================================
+
+This script plots the magnetic field strength and fluxon area of the fluxons
+at the lower and upper boundaries. It provides options to specify the Carrington Rotation (CR),
+batch name, data directory, and other parameters.
+
+Usage:
+    python plot_bmag.py [--cr CARRINGTON_ROTATION] [--dat_dir DATA_DIRECTORY]
+                        [--show SHOW_PLOT] [--batch BATCH_NAME]
+                        [--file FILE_NAME] [--nwant NUMBER_OF_FLUXONS]
+
+Parameters:
+    --cr:       Carrington Rotation for which the data is to be plotted. Default is 0.
+    --dat_dir:  Directory where the data files are stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
+    --show:     Boolean flag to indicate whether to show the plot or not. Default is 0.
+    --batch:    Batch name for the operation. Default is 'default_batch'.
+    --file:     File name for the data. Default is a constructed path based on other parameters.
+    --nwant:    Number of fluxons to plot. Default is None.
+
+Functions:
+    None (script-based)
+
+Example:
+    python plot_bmag.py --cr 2183 --dat_dir '/path/to/data' --show 1 --batch 'my_batch' --nwant 100
+
+Dependencies:
+    os.path, argparse, matplotlib.pyplot, numpy, py_plot_helper, py_pipe_helper
+
+Author:
+    Gilly <gilly@swri.org> (and others!)
+
+"""
+
 
 import os.path
 import argparse

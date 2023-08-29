@@ -1,5 +1,34 @@
-""" This plot shows how the run time scales with the number of fluxons.
 """
+Plotting Scalability of Fluxon Run Time
+=======================================
+
+This script generates a plot that shows how the run time scales with the number of fluxons.
+It provides insights into the performance and scalability of the fluxon simulation for different
+configurations and resolutions.
+
+Usage:
+    python plot_scalability_single.py
+
+Parameters:
+    None (script-based, parameters are hardcoded)
+
+Functions:
+    None (script-based)
+
+Example:
+    python plot_scalability_single.py
+
+Dependencies:
+    os.path, numpy, matplotlib.pyplot, pandas, py_plot_helper
+
+Output:
+    A plot saved as both PNG and PDF formats in the specified directory.
+
+Author:
+    Gilly <gilly@swri.org> (and others!)
+
+"""
+
 
 import os.path
 import numpy as np

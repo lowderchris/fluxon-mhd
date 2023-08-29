@@ -1,5 +1,37 @@
-""" This script plots the expansion factor of the given radial_fr.dat
 """
+Plotting Expansion Factor of Radial_fr.dat
+==========================================
+
+This script is designed to plot the expansion factor of the given `radial_fr.dat` file.
+It provides options to specify the Carrington Rotation (CR), batch name, data directory,
+and other parameters.
+
+Usage:
+    python plot_fr.py [--cr CARRINGTON_ROTATION] [--dat_dir DATA_DIRECTORY]
+                             [--batch BATCH_NAME] [--show SHOW_PLOT]
+                             [--nwant NUMBER_WANTED] [--file FILE_NAME]
+
+Arguments:
+    --cr:           The Carrington Rotation for which the expansion factor is to be plotted. Default is 2163.
+    --dat_dir:      The directory where the data will be stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
+    --batch:        The batch name for the operation. Default is 'scalability_test'.
+    --show:         Whether to show the plot or not. Default is 0.
+    --nwant:        The number of fluxons wanted. Default is None.
+    --file:         The file name for the data. Default is None.
+
+Functions:
+    None (script-based)
+
+Example:
+    python plot_fr.py --cr 2220 --dat_dir '/path/to/data' --batch 'my_batch' --show 1 --nwant 100
+
+Author:
+    Gilly <gilly@swri.org>
+
+Dependencies:
+    argparse, os.path, matplotlib.pyplot, numpy, py_plot_helper
+"""
+
 import argparse
 import os.path
 import matplotlib.pyplot as plt

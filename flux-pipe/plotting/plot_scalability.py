@@ -1,5 +1,34 @@
-""" This script plots the results of a scalability test.
 """
+Plotting Scalability of Fluxon Algorithm
+========================================
+
+This script generates a plot that visualizes the results of a scalability test for fluxon simulations.
+It aims to provide insights into the performance and scalability of the fluxon algorithm across different
+configurations and resolutions.
+
+Usage:
+    python plot_scalability.py
+
+Parameters:
+    None (script-based, parameters are hardcoded)
+
+Functions:
+    None (script-based)
+
+Example:
+    python plot_scalability.py
+
+Dependencies:
+    os.path, matplotlib.pyplot, numpy, pandas, py_plot_helper
+
+Output:
+    A plot saved as a PNG format in the specified directory.
+
+Author:
+    Gilly <gilly@swri.org>
+
+"""
+
 
 import os.path
 

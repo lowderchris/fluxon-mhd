@@ -1,4 +1,68 @@
-""" Helper functions for plotting the data from the fluxon simulations.
+"""
+Helper Functions for Plotting Data from Fluxon Simulations
+==========================================================
+
+Description
+-----------
+This module contains a collection of helper functions designed to assist in parsing and
+plotting data generated from fluxon simulations.
+
+Functions
+---------
+    convert_value(value: str) -> Union[int, float, str]:
+        Convert a string to an int or float if possible, otherwise return the string.
+
+    parse_line(line: str) -> Dict[str, Union[int, float, str]]:
+        Parse a line of the output file into a dictionary.
+
+    load_data(the_path: str) -> pd.DataFrame:
+        Load the data from the file into a pandas DataFrame.
+
+    get_ax(ax: Optional[matplotlib.axis]) -> Tuple[matplotlib.figure, matplotlib.axis]:
+        Get or create a pyplot figure and axis pair.
+
+    add_fluxon_dirs_to_path(do_print: bool = False) -> None:
+        Add the fluxon directories to the system path.
+
+    list_directories(path: str) -> List[str]:
+        List the directories in the given path.
+
+Modules
+-------
+    os :
+        For directory and file operations.
+
+    sys :
+        For system-specific parameters and functions.
+
+    matplotlib.pyplot :
+        For plotting.
+
+    numpy :
+        For numerical operations.
+
+    pandas :
+        For data manipulation and analysis.
+
+Example
+-------
+    ```python
+    # Example usage of convert_value function
+    result = convert_value("42")
+    ```
+
+Raises
+------
+    FileNotFoundError:
+        If the specified file in `load_data` cannot be found.
+
+    ValueError:
+        If the data file cannot be loaded or parsed correctly.
+
+See Also
+--------
+    Other related scripts and modules for fluxon simulations.
+
 """
 
 import os
