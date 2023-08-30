@@ -1,6 +1,6 @@
 =head1 NAME
 
-YourScriptName - Utility Functions for File and Environment Management
+pdl_pipe_helper - Utility Functions for File and Environment Management
 
 =head1 SYNOPSIS
 
@@ -86,15 +86,13 @@ Checks for the presence of a second file related to the given file path.
 
 =head1 AUTHOR
 
-Your Name <your.email@example.com>
+Gilly <gilly@swri.org> (and others!)
 
 =head1 SEE ALSO
 
 L<PDL::AutoLoader>, L<PDL>, L<Time::Piece>
 
 =cut
-
-
 
 # use strict;
 use warnings;
@@ -105,6 +103,12 @@ use Time::Piece;
 # our @PDLLIB;
 # my @INC;
 
+=head2 shorten_path
+
+Shortens the given file path by replacing the DATAPATH environment variable.
+
+=cut
+
 sub shorten_path {
     my ($string) = @_;
     my $datapath = $ENV{'DATAPATH'};
@@ -114,6 +118,11 @@ sub shorten_path {
     return $string;
 }
 
+=head2 find_highest_numbered_file
+
+Finds the highest-numbered file in the given directory.
+
+=cut
 
 sub find_highest_numbered_file {
     my ($directory) = @_;
@@ -138,6 +147,11 @@ sub find_highest_numbered_file {
     return $highest_numbered_file ? "$directory$highest_numbered_file" : 0, $highest_number;
 }
 
+=head2 set_env_variable
+
+Sets an environment variable to a given value.
+
+=cut
 
 sub set_env_variable {
     my ($variable, $value) = @_;
@@ -145,12 +159,22 @@ sub set_env_variable {
     return $ENV{$variable};
 }
 
+=head2 get_env_variable
+
+Gets the value of an environment variable.
+
+=cut
 
 sub get_env_variable {
     my ($variable) = @_;
     return $ENV{$variable};
 }
 
+=head2 check_env_variable
+
+Checks if an environment variable is set and optionally prints its value.
+
+=cut
 
 sub check_env_variable {
     my ($variable, $print) = @_;
@@ -166,6 +190,11 @@ sub check_env_variable {
     }
 }
 
+=head2 set_and_check_env_variable
+
+Sets an environment variable and then checks if it is set.
+
+=cut
 
 sub set_and_check_env_variable {
     my ($variable, $value, $print) = @_;
@@ -174,6 +203,11 @@ sub set_and_check_env_variable {
     # return $value;
 }
 
+=head2 calculate_directories
+
+Calculates various directories based on the base directory and batch name.
+
+=cut
 
 sub calculate_directories {
 (my $basedir, my $batch_name, my $print) = @_;
@@ -196,6 +230,11 @@ sub calculate_directories {
     return ($pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile);
 }
 
+=head2 set_python_path
+
+Sets the PYTHONPATH environment variable.
+
+=cut
 
 sub set_python_path {
     my ($pythonpath, $print) = @_;
@@ -203,6 +242,11 @@ sub set_python_path {
     return $pythonpath;
 }
 
+=head2 print_banner
+
+Prints a banner with various details.
+
+=cut
 
 sub print_banner {
     my ($batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string) = @_;
@@ -228,6 +272,11 @@ sub print_banner {
     return 1;
 }
 
+=head2 search_files_in_directory
+
+Searches for files in a directory that match a known string and file extension.
+
+=cut
 
 sub search_files_in_directory {
     my ($directory, $known_string, $extension) = @_;
@@ -247,6 +296,11 @@ sub search_files_in_directory {
     closedir($dh);
 }
 
+=head2 check_second_file_presence
+
+Checks for the presence of a second file related to the given file path.
+
+=cut
 
 sub check_second_file_presence {
     my ($file_path) = @_;
