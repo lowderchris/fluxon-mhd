@@ -34,6 +34,7 @@ from py_pipe_helper import get_magnetogram_file, write_magnetogram_params
 
 datdir = '/Users/cgilbert/vscode/fluxons/fluxon-data'
 
+
 # create the argument parser
 parser = argparse.ArgumentParser(
     description='This script downloads a magnetogram for a particular Carrington Rotation')

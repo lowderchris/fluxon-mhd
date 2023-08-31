@@ -1,6 +1,26 @@
+
 =head1 NAME
 
 make_world_from_pfss - Take the PFSS field lines and make a FLUX world from them.
+=cut
+
+package make_world_from_pfss;
+
+use strict;
+use warnings;
+use PDL::AutoLoader;
+use PDL;
+use PDL::Transform;
+use PDL::NiceSlice;
+use PDL::Options;
+use Flux;
+use PDL::IO::Misc;
+use File::Path;
+use PDL::IO::Misc;
+use Time::HiRes qw(clock_gettime);
+use File::Basename qw(fileparse);
+use File::Basename;
+use pdl_pipe_helper;
 
 =head1 SYNOPSIS
 
@@ -10,7 +30,7 @@ make_world_from_pfss - Take the PFSS field lines and make a FLUX world from them
 
 =head1 DESCRIPTION
 
-This Perl script uses the Perl Data Language (PDL) to manipulate and visualize magnetic field lines in a "world" representation.
+This script uses PDL to manipulate and visualize magnetic field lines in the "world" representation from FLUX.
 It reads field lines from files, transforms them into a specific format, and then saves and visualizes them.
 
 =head1 FUNCTIONS
@@ -24,9 +44,9 @@ This function does the following:
 
 =over
 
-=item * Reads field lines from the given files.
+=item * Reads the PFSS field lines from the given files.
 
-=item * Transforms the field lines into the FLUX format.
+=item * Transforms the field lines into the FLUX world format.
 
 =item * Saves the transformed field lines to a file.
 
@@ -34,7 +54,7 @@ This function does the following:
 
 =back
 
-=head3 Parameters
+=head3 PARAMETERS
 
 =over
 
@@ -58,15 +78,15 @@ This function does the following:
 
 =item * C<$n_fluxons_wanted>: Number of fluxons wanted.
 
-=item * C<$lim>: Limit for the plot range.
+=item * C<$lim>: Limit for the plot range, usually zoomed in.
 
-=item * C<$lim2>: Another limit for the plot range.
+=item * C<$lim2>: Another limit for the plot range, usually wider angle.
 
 =item * C<$n_outliers>: Number of outliers.
 
 =back
 
-=head3 Returns
+=head3 OUTPUT
 
 This function does not return any value.
 
@@ -81,25 +101,9 @@ L<PDL>, L<PDL::Transform>, L<PDL::NiceSlice>, L<PDL::Options>, L<Flux>, L<PDL::I
 =cut
 
 
-use strict;
-use warnings;
-use PDL::AutoLoader;
-use PDL;
-use PDL::Transform;
-use PDL::NiceSlice;
-use PDL::Options;
-use Flux;
-use PDL::IO::Misc;
-use File::Path;
-use PDL::IO::Misc;
-use Time::HiRes qw(clock_gettime);
-use File::Basename qw(fileparse);
-use File::Basename;
-use pdl_pipe_helper;
-
 sub make_world_from_pfss{
     my ($world_out_dir, $floc_path, $open_file, $closed_file, $force_make_world, $CR, $datdir, $batch, $N_actual, $n_fluxons_wanted, $lim, $lim2, $n_outliers) = @_;
-    $world_out_dir = $world_out_dir . "/";
+    $world_out_dir = $world_out_dir . '/';
 
     my $world_out_path = $world_out_dir .'cr'.$CR.'_f'.$n_fluxons_wanted.'.flux';
 

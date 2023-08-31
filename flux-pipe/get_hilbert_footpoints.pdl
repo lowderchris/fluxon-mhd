@@ -1,6 +1,13 @@
+
 =head1 NAME
 
-get_hilbert_footpoints - Traces Magnetogram to get Footpoints using Hilbert Curves
+get_hilbert_footpoints - Traces Magnetogram to get Footpoints using a Hilbert Curve
+
+=cut
+
+package get_hilbert_footpoints;
+
+use warnings;
 
 =head1 SYNOPSIS
 
@@ -9,37 +16,53 @@ get_hilbert_footpoints - Traces Magnetogram to get Footpoints using Hilbert Curv
 
 =head1 DESCRIPTION
 
-This subroutine is designed to trace a magnetogram and place footpoints using Hilbert curves. It accepts several parameters for customization and performs tasks such as data loading, footpoint placement, and data writing.
+This subroutine is designed to trace a magnetogram and place footpoints using a Hilbert curve.
+It accepts several parameters for customization and performs tasks such as data loading,
+footpoint placement, and data writing.
 
-=head1 PARAMETERS
+=head1 FUNCTIONS
 
-=over 4
+=head2 get_hilbert_footpoints
 
-=item * C<$flocdir> - Directory where the footpoint file is located or will be saved.
+    get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $process_magnetogram);
 
-=item * C<$flocfile> - File name for the footpoints.
+This function does the following:
 
-=item * C<$magfile> - Magnetogram file to be traced.
+=over
 
-=item * C<$n_fluxons_wanted> - Number of footpoints desired.
+=item * Checks for the existence of the footpoint file and directory.
 
-=item * C<$process_magnetogram> - Flag to indicate whether to process the magnetogram or not.
+=item * Reads the magnetogram and runs the Hilbert tracer if necessary.
+
+=item * Places footpoints based on Hilbert curves.
+
+=item * Writes the footpoints to disk if they were generated anew.
+
+=item * Reads the footpoints from the existing file if applicable.
 
 =back
 
-=head1 WORKFLOW
+=head3 PARAMETERS
 
-1. Checks for the existence of the footpoint file and directory.
-2. If the file is not found or C<$process_magnetogram> is true, reads the magnetogram and runs the Hilbert tracer.
-3. Places footpoints based on Hilbert curves.
-4. Writes the footpoints to disk if they were generated anew.
-5. If the file exists and C<$process_magnetogram> is false, reads the footpoints from the existing file.
+=over
 
-=head1 OUTPUT
+=item * C<$flocdir>: Directory where the footpoint file is located or will be saved.
 
-Returns an array C<$floc> containing the footpoints and an integer C<$N_actual> representing the actual number of footpoints placed.
+=item * C<$flocfile>: File name for the footpoints.
 
-=head1 EXCEPTIONS
+=item * C<$magfile>: Path to magnetogram file to be traced.
+
+=item * C<$n_fluxons_wanted>: Number of footpoints desired.
+
+=item * C<$process_magnetogram>: Top level flag to short-circuit processing the magnetogram if it already exists.
+
+=back
+
+=head3 OUTPUT
+
+Returns an array C<$floc> containing the footpoint locations and an integer C<$N_actual> representing the actual number of footpoints placed.
+
+=head3 EXCEPTIONS
 
 Dies if it fails to create the directory for footpoints.
 
@@ -54,11 +77,9 @@ L<pdl_pipe_helper>, L<fluxon_placement_hilbert>, L<rfits>, L<wcols>, L<rcols>
 =cut
 
 
-
-use pdl_pipe_helper;
-
 sub get_hilbert_footpoints{
     my ($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $process_magnetogram) = @_;
+    use pdl_pipe_helper;
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Tracing Magnetogram to get $n_fluxons_wanted Footpoints\n";
