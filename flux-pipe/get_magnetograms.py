@@ -26,7 +26,7 @@ Author:
     Gilly <gilly@swri.org> (and others!)
 
 Dependencies:
-    py_pipe_helper
+    argparse, py_pipe_helper
 """
 
 import argparse

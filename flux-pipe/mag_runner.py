@@ -17,7 +17,7 @@ Configuration:
     flux_pipe_dir:  The directory containing the FLUXpipe code.
     batch_name:     The name of the batch for the operation.
     rotations:      List of Carrington Rotations to process.
-    do_flux:        List of fluxon numbers to analyze.
+    do_flux:        List of fluxon count values to analyze.
     do_survey:      Flag to run the fluxon analysis on a set of fluxon numbers and/or rotations.
     plot_only:      Flag to skip everything except the wind plotting at the end.
     recompute:      Flag to reperform the fluxon analysis from scratch.
@@ -57,10 +57,10 @@ new_path = ph.add_top_level_dirs_to_path(mhd_dir)
 
 pdl_script_path = f"{flux_pipe_dir}/magnetogram2wind.pdl"
 
-batch_name = "back_test"
+batch_name = "new_test"
 # rotations = [2160, 2193, 2219, 2231]
-rotations = [2161]
-do_flux = [200]  # , 2000, 3000, 4000, 5000, 6000, 8000, 10000]
+rotations = [2200]
+do_flux = [1000]  # , 2000, 3000, 4000, 5000, 6000, 8000, 10000]
 do_survey = True  # run the fluxon analysis on a set of fluxon numbers and/or rotations
 
 plot_only = 0  # skip everything except the wind plotting at the end

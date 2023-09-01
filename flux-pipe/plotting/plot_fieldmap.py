@@ -47,7 +47,7 @@ from py_pipe_helper import (load_fits_magnetogram, load_magnetogram_params,
 def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False, reduce_amt=0,
                 nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="pdf",
                 plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500):
-    """ A primary function for plotting the magnetogram with footpoints
+    """ The primary function for plotting the magnetogram with footpoints
 
     Parameters
     ----------
@@ -134,23 +134,19 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
     ## Keep only the values where the radius is 1.0
     rtol = 0.01
     get_r = 1.0
+
     #Open fields
     oflnum_low = oflnum[np.isclose(orad, get_r, rtol)]
     oflx_low =     oflx[np.isclose(orad, get_r, rtol)]
     olat_low =     olat[np.isclose(orad, get_r, rtol)]
     olon_low =     olon[np.isclose(orad, get_r, rtol)]
-    # orad_low =     orad[np.isclose(orad, get_r, rtol)]
 
     # Closed fields
     cflnum_low = cflnum[np.isclose(crad, get_r, rtol)]
-    # cflx_low =     cflx[np.isclose(crad, get_r, rtol)]
-    # clat_low =     clat[np.isclose(crad, get_r, rtol)]
-    # clon_low =     clon[np.isclose(crad, get_r, rtol)]
-    # crad_low =     crad[np.isclose(crad, get_r, rtol)]
+
 
     # Convert to radians
     ph_olow, th_olow = np.sin(np.deg2rad(olat_low)), np.deg2rad(olon_low)
-    # ph_clow, th_clow = np.sin(np.deg2rad(clat_low)), np.deg2rad(clon_low)
 
     # Report the number of open and closed fluxons
     _n_open = int(np.max(oflnum_low))
@@ -176,11 +172,7 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
         print("\tPlotting...", end="")
     if do_plot or force or (ax is not None):
         # Plot the magnetogram
-        # sigma = 2
-        # mmean = np.nanmean(magnet)
-        # msig = np.nanstd(magnet)
-        # mvmin = mmean - sigma*msig
-        # mvmax = mmean + sigma*msig
+
         ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
                 extent=(0,2*np.pi,-1,1), aspect='auto', vmin=vmin, vmax=vmax)
 
@@ -222,8 +214,15 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
     return _n_open, _n_closed, _n_flux, _fnum, _n_outliers
 
 
+
+
+
+########################################################################
+# Main Code
+# ----------------------------------------------------------------------
+#
 if __name__ == "__main__":
-    # create the argument parser
+    # Create the argument parser
     parser = argparse.ArgumentParser(description=
             'This script plots the expansion factor of the given radial_fr.dat')
     parser.add_argument('--cr', type=int, default=None)
@@ -236,6 +235,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     batch = args.batch
 
+    # Run the code
     (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
     CR = args.cr or cr
     n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, args.dat_dir, batch, args.open,

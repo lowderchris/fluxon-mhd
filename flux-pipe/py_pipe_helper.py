@@ -16,8 +16,7 @@ Functions:
     add_dir_to_path, add_top_level_dirs_to_path, add_paths, make_mag_dir, get_magnetogram_file,
     reduce_mag_file, reduce_fits_image, plot_raw_magnetogram, load_fits_magnetogram,
     write_magnetogram_params, load_magnetogram_params, find_file_with_string, shorten_path,
-    read_fits_data, get_fixed_coords:
-        Various utility functions for managing directories, handling FITS files, and manipulating magnetogram data.
+    read_fits_data, get_fixed_coords
 
 Example:
     import flux_pipe_helper as fph

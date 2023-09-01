@@ -294,6 +294,8 @@ sub search_files_in_directory {
         print "$file\n";  # Process the matching file
     }
     closedir($dh);
+
+    return 1;
 }
 
 =head2 check_second_file_presence

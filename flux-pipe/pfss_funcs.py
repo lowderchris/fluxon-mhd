@@ -1,5 +1,5 @@
 """
-Low-Level Helpers for PFSS (Potential Field Source Surface) Modeling.
+Primary Library for PFSS (Potential Field Source Surface) Modeling.
 =====================================================================
 
 This module provides utility functions for:
@@ -63,15 +63,22 @@ from py_pipe_helper import load_fits_magnetogram, read_fits_data, shorten_path
 
 mpl.use("qt5agg")
 
+# A note from the original author:
+    # We can now use SunPy to load the HMI fits file, and extract the magnetic field data. Interpolate the data down to a more reasonable resolution.
+    # The mean is subtracted to enforce div(B) = 0 on the solar surface: n.b. it is
+    # not obvious this is the correct way to do this, so use the following lines
+    # at your own risk!
+    # # brmap = (sunpy.io.fits.read(datdir + fname)) # b radial map
+    # # brdat = brmap[0].data[2,:,:] # b data itself
+
+
 
 def load_and_condition_fits_file(fname, datdir):
-    """We can now use SunPy to load the HMI fits file, and extract the magnetic
-        field data. Interpolate the data down to a more reasonable resolution.
-        The mean is subtracted to enforce div(B) = 0 on the solar surface: n.b. it is
-        not obvious this is the correct way to do this, so use the following lines
-        at your own risk!
-        brmap = (sunpy.io.fits.read(datdir + fname)) # b radial map
-        brdat = brmap[0].data[2,:,:] # b data itself
+    """
+    Load and condition the FITS file containing the magnetogram data.
+    This involves subtracting the mean from the data to enforce div(B) = 0 on the solar surface.
+    The metadata is updated to reflect the correct coordinate system, the nans are removed,
+    and the data is returned as a sunpy map object.
 
     Parameters
     ----------
@@ -103,6 +110,7 @@ def load_and_condition_fits_file(fname, datdir):
     brdat = hdu_0.data
     header = hdu_0.header
 
+
     brdat = brdat - np.mean(brdat)
     radial_magnetogram = sunpy.map.Map(brdat, header)
 
@@ -113,11 +121,6 @@ def load_and_condition_fits_file(fname, datdir):
     radial_magnetogram.meta['crlt_obs'] = 0.0
     radial_magnetogram.meta['crln_obs'] = 0.0
     radial_magnetogram.meta['dsun_obs'] = 1.0
-
-    # TODO This needs to be in arcsecs, apparently, or maybe something else is wrong,
-    # but we definitely need to add the solar radius here somehow
-    # radial_magnetogram.meta['rsun_ref'] = sunpy.sun.constants.average_angular_size
-    # radial_magnetogram.meta['rsun_obs'] = sunpy.sun.constants.radius
 
     br_safe = copy.copy(radial_magnetogram)
     br_safe.data[np.isnan(br_safe.data)] = 0
@@ -225,7 +228,7 @@ def compute_pfss(br_safe, pickle_path, nrho=60, rss=2.5):
 
 
 def pixel_to_latlon(mag_map, header, fluxon_location):
-    """Converts pixel index to lat/lon
+    """Converts magnetogram pixel index to lat/lon
 
     Parameters
     ----------
@@ -292,7 +295,7 @@ def get_fluxon_locations(floc_path, batch):
 
 def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
                           force_plot=False, batch='fluxon', nwant=0, do_plot=False):
-    """Plot computeed fluxon root locations
+    """Plot computed fluxon root locations
 
     Parameters
     ----------
@@ -418,7 +421,7 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
 
 
 def trace_lines(output, f_vars, open_path, closed_path):
-    """_summary_
+    """ This function traces field lines using the PFSS solution.
 
     Parameters
     ----------

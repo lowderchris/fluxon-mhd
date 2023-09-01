@@ -23,8 +23,6 @@ Functions:
 
 """
 
-# Your code here...
-
 
 import numpy as np
 import matplotlib as mpl
@@ -38,6 +36,7 @@ from py_plot_helper import get_ax
 
 from py_pipe_helper import \
     (load_fits_magnetogram, load_magnetogram_params, get_fixed_coords)
+
 from plot_fieldmap import magnet_plot
 
 
@@ -260,12 +259,19 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
     hist_ax.set_xlim((vmin, vmax))
     if do_print_top:
         print("Success!")
-    return mean1, std1
-    # ax[3].set_title(f"Solar Wind Velocity Distribution: CR{CR}, Open Fluxons: {len(vel1)}", fontsize=16)
 
-## CODE STARTS HERE
+    return mean1, std1
+
+
+
+
+
+########################################################################
+# Main Code
+# ----------------------------------------------------------------------
+#
 if __name__ == "__main__":
-    # create the argument parser
+    # Create the argument parser
     parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
     parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
     parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
@@ -276,134 +282,152 @@ if __name__ == "__main__":
     parser.add_argument('--file', type=str, default=None, help='select the file name')
     parser.add_argument('--batch', type=str, default="fluxon_paperfigs_5", help='select the batch name')
     args = parser.parse_args()
-    batch = args.batch
-    interp = args.interp
-    dat_dir = args.dat_dir
-
-    # Load the magnetogram parameters
-    (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
-    CR = args.cr or cr
-
-    # Load the wind file
-    dat_file = args.file or f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{args.nwant}_radial_wind.dat'
-    # print("loading file: ", dat_file)
-    arr = np.loadtxt(dat_file).T
-    try:
-        fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1, fr1b = arr
-    except ValueError:
-        fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1 = arr
-    try:
-        nfluxon = arr.shape[1]
-    except IndexError as e:
-        print("IndexError: ", e)
-        print("Wind Calculation Failed, Rerun.")
-        exit()
-
-    # Convert coords to correct coords
-    ph0, th0 = get_fixed_coords(phi0, theta0)
-    ph1, th1 = get_fixed_coords(phi1, theta1)
-
-    print("\n\tPlotting Windmap...", end="\n" if __name__=="__main__" else "")
-
-    # Get the Data
-    vel0_clean, ph0_clean, th0_clean, v0b, ph0b, th0b = remove_outliers(vel0, ph0, th0, 3, 3, 1)
-    vel1_clean, ph1_clean, th1_clean, v1b, ph1b, th1b = remove_outliers(vel1, ph1, th1, 3, 2, 3)
-    v0, v1, v0bs, v1bs = scale_data(vel0_clean, vel1_clean, v0b, v1b, scale=15**2, power=1)
-
-    ## PLOTTING
-    fig, ax = plt.subplots(5)
-
-    mag_ax = ax[0]
-    scatter_ax = ax[1]
-    contour_ax = ax[2]
-    hex_ax = ax[3]
-    hist_ax = ax[4]
-
-    all_vmin, all_vmax = 475, 700
-    drk=0.25
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch,
-        ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce, nwant=args.nwant, do_print_top=False)
-    hex_n = np.max((n_open//10, 3))
-
-    hex1 = hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=hex_n,
-                    vmin=all_vmin, vmax=all_vmax)
-
-    scatter_ax.set_facecolor('grey')
-    contour_ax.set_facecolor('grey')
-
-    scat1 = scatter_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=6**2, alpha=0.75,
-                    marker='s', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
-    cont1 = contour_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=4**2, alpha=1.0,
-                    marker='o', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
-
-    scatter_ax.scatter(ph1b, th1b,           color='g', s=3**2, alpha=1, marker='+')
-    contour_ax.scatter(ph1b, th1b,           color='g', s=3**2, alpha=1, marker='+')
-    scatter_ax.scatter(ph1_clean, th1_clean, c='k', s=2**2, alpha=1., marker='o')
 
 
-    n_bins = np.linspace(all_vmin, all_vmax, 32)
-    mean1, std1 = hist_plot(vel1_clean, ax=hist_ax, vmin=all_vmin, vmax=all_vmax, n_bins=n_bins)
+    def plot_wind_map_detailed(args):
+        """ Plot the detailed solar wind map
+
+        Parameters
+        ----------
+        args : argparse.Namespace
+            The arguments to the script.
+
+        Returns
+        -------
+        bool
+            True if the plot was successful, else False.
+
+        """
+
+        # Set the arguments
+        batch = args.batch
+        interp = args.interp
+        dat_dir = args.dat_dir
+
+        # Load the magnetogram parameters
+        (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
+        CR = args.cr or cr
+
+        # Load the wind file
+        dat_file = args.file or f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{args.nwant}_radial_wind.dat'
+        # print("loading file: ", dat_file)
+        arr = np.loadtxt(dat_file).T
+        try:
+            fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1, fr1b = arr
+        except ValueError:
+            fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1 = arr
+        try:
+            nfluxon = arr.shape[1]
+        except IndexError as e:
+            print("IndexError: ", e)
+            print("Wind Calculation Failed, Rerun.")
+            exit()
+
+        # Convert coords to correct coords
+        ph0, th0 = get_fixed_coords(phi0, theta0)
+        ph1, th1 = get_fixed_coords(phi1, theta1)
+
+        print("\n\tPlotting Windmap...", end="\n" if __name__=="__main__" else "")
+
+        # Get the Data
+        vel0_clean, ph0_clean, th0_clean, v0b, ph0b, th0b = remove_outliers(vel0, ph0, th0, 3, 3, 1)
+        vel1_clean, ph1_clean, th1_clean, v1b, ph1b, th1b = remove_outliers(vel1, ph1, th1, 3, 2, 3)
+        v0, v1, v0bs, v1bs = scale_data(vel0_clean, vel1_clean, v0b, v1b, scale=15**2, power=1)
+
+        ## PLOTTING
+        fig, ax = plt.subplots(5)
+
+        mag_ax = ax[0]
+        scatter_ax = ax[1]
+        contour_ax = ax[2]
+        hex_ax = ax[3]
+        hist_ax = ax[4]
+
+        all_vmin, all_vmax = 475, 700
+        drk=0.25
+        n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch,
+            ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce, nwant=args.nwant, do_print_top=False)
+        hex_n = np.max((n_open//10, 3))
+
+        hex1 = hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=hex_n,
+                        vmin=all_vmin, vmax=all_vmax)
+
+        scatter_ax.set_facecolor('grey')
+        contour_ax.set_facecolor('grey')
+
+        scat1 = scatter_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=6**2, alpha=0.75,
+                        marker='s', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
+        cont1 = contour_ax.scatter(ph1_clean, th1_clean, c=vel1_clean, s=4**2, alpha=1.0,
+                        marker='o', vmin=all_vmin, vmax=all_vmax, cmap='autumn', edgecolors='none')
+
+        scatter_ax.scatter(ph1b, th1b,           color='g', s=3**2, alpha=1, marker='+')
+        contour_ax.scatter(ph1b, th1b,           color='g', s=3**2, alpha=1, marker='+')
+        scatter_ax.scatter(ph1_clean, th1_clean, c='k', s=2**2, alpha=1., marker='o')
 
 
-    ## SAVING
-    # Set the output file names
-    filename = f"png_cr{CR}_f{args.nwant}_ou{n_open}_radial_wind.png"
-    main_file =  f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
-    outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
+        n_bins = np.linspace(all_vmin, all_vmax, 32)
+        mean1, std1 = hist_plot(vel1_clean, ax=hist_ax, vmin=all_vmin, vmax=all_vmax, n_bins=n_bins)
 
-    import os
-    if not path.exists(os.path.dirname(main_file)):
-        os.makedirs(os.path.dirname(main_file))
 
-    if not os.path.exists(os.path.dirname(outer_file)):
-        os.makedirs(os.path.dirname(outer_file))
+        ## SAVING
+        # Set the output file names
+        filename = f"png_cr{CR}_f{args.nwant}_ou{n_open}_radial_wind.png"
+        main_file =  f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
+        outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
-    for this_ax in [mag_ax, hex_ax, scatter_ax, contour_ax]:
-        this_ax.set_ylabel('sin(latitude)')
-        this_ax.set_ylim((-1.0,1.0))
-        this_ax.set_aspect('equal')
-        this_ax.axhline(-1, c='lightgrey', zorder=-10)
-        this_ax.axhline( 1, c='lightgrey', zorder=-10)
-        this_ax.axvline(0, c='lightgrey', zorder=-10)
-        this_ax.axvline(2*np.pi, c='lightgrey', zorder=-10)
-        this_ax.set_xlim((0, 2*np.pi))
+        import os
+        if not path.exists(os.path.dirname(main_file)):
+            os.makedirs(os.path.dirname(main_file))
 
-    for jj in [0,1,2]:
-        ax[jj].set_xticklabels([])
+        if not os.path.exists(os.path.dirname(outer_file)):
+            os.makedirs(os.path.dirname(outer_file))
 
-    # Add an axes for the colorbar
-    cbar_ax = fig.add_axes([0.88, 0.2, 0.03, 0.75])
+        for this_ax in [mag_ax, hex_ax, scatter_ax, contour_ax]:
+            this_ax.set_ylabel('sin(latitude)')
+            this_ax.set_ylim((-1.0,1.0))
+            this_ax.set_aspect('equal')
+            this_ax.axhline(-1, c='lightgrey', zorder=-10)
+            this_ax.axhline( 1, c='lightgrey', zorder=-10)
+            this_ax.axvline(0, c='lightgrey', zorder=-10)
+            this_ax.axvline(2*np.pi, c='lightgrey', zorder=-10)
+            this_ax.set_xlim((0, 2*np.pi))
 
-    # Create a colorbar with a custom colormap including the green overlay
-    cmap = mpl.colormaps['autumn']
+        for jj in [0,1,2]:
+            ax[jj].set_xticklabels([])
 
-    plotobjs = [scat1, cont1, hex1]
-    for obj in plotobjs:
-        cbar = plt.colorbar(obj, cax=cbar_ax, extend="both", cmap=cmap, extendfrac=0.1,
-                            aspect=15)
-        cbar.cmap.set_over('lime')
-        cbar.cmap.set_under('darkviolet')
-        # cbar.cmap.set_over('lightgreen')
-        # cbar.cmap.set_under('lightblue')
+        # Add an axes for the colorbar
+        cbar_ax = fig.add_axes([0.88, 0.2, 0.03, 0.75])
 
-    cbar.set_label("Interp. Wind Speed [km/s]", labelpad=-50)
+        # Create a colorbar with a custom colormap including the green overlay
+        cmap = mpl.colormaps['autumn']
 
-    fig.set_size_inches((6,8))
+        plotobjs = [scat1, cont1, hex1]
+        for obj in plotobjs:
+            cbar = plt.colorbar(obj, cax=cbar_ax, extend="both", cmap=cmap, extendfrac=0.1,
+                                aspect=15)
+            cbar.cmap.set_over('lime')
+            cbar.cmap.set_under('darkviolet')
+            # cbar.cmap.set_over('lightgreen')
+            # cbar.cmap.set_under('lightblue')
 
-    plt.subplots_adjust(hspace=0.0,)
+        cbar.set_label("Interp. Wind Speed [km/s]", labelpad=-50)
 
-    # Save the Figures
-    print("\n\t\tSaving figures to disk...", end="")
-    # print(main_file)
-    main_pdf = main_file.replace(".png", ".pdf")
-    outer_pdf = outer_file.replace("png", "pdf")
+        fig.set_size_inches((6,8))
 
-    plt.savefig(outer_file, dpi=200)
-    # print("\t\t\tSaving ", shorten_path(outer_pdf))
-    plt.savefig(outer_pdf, dpi=200)
+        plt.subplots_adjust(hspace=0.0,)
 
-    plt.close(fig)
-    print("Success!")
+        # Save the Figures
+        print("\n\t\tSaving figures to disk...", end="")
+        # print(main_file)
+        main_pdf = main_file.replace(".png", ".pdf")
+        outer_pdf = outer_file.replace("png", "pdf")
 
-    print("\n\t    Done with wind plotting!\n")
-    print("\t\t\t```````````````````````````````\n\n\n")
+        plt.savefig(outer_file, dpi=200)
+        # print("\t\t\tSaving ", shorten_path(outer_pdf))
+        plt.savefig(outer_pdf, dpi=200)
+
+        plt.close(fig)
+        print("Success!")
+
+        print("\n\t    Done with wind plotting!\n")
+        print("\t\t\t```````````````````````````````\n\n\n")
