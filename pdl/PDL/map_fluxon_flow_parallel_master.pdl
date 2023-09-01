@@ -1,3 +1,11 @@
+=head1 NAME
+
+Fluxon Flow Mapper - Parallelized Solar Wind Flow Mapping Along Fluxon Structures
+
+=cut
+
+package map_fluxon_flow_parallel_master;
+
 # use strict;
 use warnings;
 use PDL;
@@ -15,6 +23,56 @@ use Chart::Gnuplot;
 $PDL::verbose = 0;
 # no warnings 'cleanup';
 # my $do_max = 10000;
+
+=head1 DESCRIPTION
+
+This Perl module provides functionality to map the solar wind flow along fluxon structures in a parallelized manner. It uses the Parallel::ForkManager library to manage concurrent processes and PDL (Perl Data Language) for numerical computations.
+
+=head1 AUTHOR
+
+Your Name <your.email@example.com>
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+=cut
+
+
+
+
+
+=head2 map_fluxon_flow_parallel_master
+
+=over
+
+=item B<Description>
+
+Given a world and list of fluxons, this function generates a mapping of the solar wind flow along these fluxon structures. It uses parallel processing to speed up the calculations.
+
+=item B<Parameters>
+
+=over
+
+=item C<$file_name>: The name of the output file where the results will be saved.
+
+=item C<$fluxons>: A reference to an array containing the fluxons to be mapped.
+
+=item C<$max_processes>: (Optional) The maximum number of parallel processes to use. Defaults to the value of C<$concurrency>.
+
+=back
+
+=item B<Returns>
+
+The function writes the results to disk and returns nothing.
+
+=back
+
+=cut
+
+
+
+
 my $concurrency = 11;
 my $temp_dir = "flux-pipe/windtemp";
 

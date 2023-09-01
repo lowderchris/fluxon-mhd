@@ -1,10 +1,98 @@
+=head1 NAME
+
+gen_fluxon_tflow - Generate Transonic Solar Wind Solution for a Given Fluxon
+
+=cut
+
+package gen_fluxon_flow;
+
+use PDL::Options;
+$PDL::verbose = 0;
 use PDL::NiceSlice;
 use warnings;
 
-# This function generates a transonic solar wind solution for a given fluxon.
-# It iterates through wind solutions in a clever method to find the solution.
-use PDL::Options;
-$PDL::verbose = 0;
+=head1 SYNOPSIS
+
+This function iteratively generates a transonic solar wind solution for a given fluxon using a clever method to find the ideal solution.
+
+=head1 DESCRIPTION
+
+The function takes a fluxon and optional user-defined settings as input. It returns a set of PDL arrays representing the final fluxon array, fluxon radius, and magnetic field components (theta and phi).
+
+If the fluxon is either doubly open, doubly closed, or labeled as a plasmoid, the function returns undef.
+
+=head1 USAGE
+
+    use gen_fluxon_tflow;
+    my ($fluxon_array, $fluxon_radius, $magnetic_field_theta, $magnetic_field_phi) = gen_fluxon_tflow($fluxon, \%options);
+
+=head1 OPTIONS
+
+=over 4
+
+=item * initial_temperature: Initial temperature in Kelvin. Default is 1e6.
+
+=item * sound_speed: Speed of sound based on the initial temperature. Calculated internally.
+
+=item * velocity_increment: Incremental step for velocity search. Default is 25 km/s.
+
+=back
+
+=head1 DEPENDENCIES
+
+This module depends on the following Perl modules:
+
+=over 4
+
+=item * PDL::NiceSlice
+=item * PDL::Options
+
+=back
+
+=head1 DIAGNOSTICS
+
+Set the C<$verbose> flag to 1 for diagnostic output.
+
+=head1 AUTHOR
+
+Your Name <your.email@example.com>
+
+=head1 SEE ALSO
+
+Other relevant modules and documentation.
+
+=cut
+
+
+
+
+=head2 gen_fluxon_tflow
+
+    gen_fluxon_tflow($fluxon, \%options)
+
+Generates a transonic solar wind solution for a given fluxon.
+
+=head3 Parameters
+
+=over 4
+
+=item * C<$fluxon>: A hash reference representing the fluxon.
+
+=item * C<\%options> (optional): A hash reference for user-defined settings.
+
+=back
+
+=head3 Returns
+
+Returns a list containing the final fluxon array, fluxon radius, and magnetic field components (theta and phi). Returns C<undef> if the fluxon is either doubly open, doubly closed, or labeled as a plasmoid.
+
+=head3 Example
+
+    my ($fluxon_array, $fluxon_radius, $magnetic_field_theta, $magnetic_field_phi) = gen_fluxon_tflow($fluxon);
+
+=cut
+
+
 my $verbose = 0;
 sub gen_fluxon_tflow {
     my $fluxon = shift;
@@ -57,7 +145,7 @@ sub gen_fluxon_tflow {
     # Hone in on the ideal transonic solution
     my $iteration_count = 0;
     while ($iteration_count < 10) {
-        # Test the mean velocity between the upper (transonic / misbehaved) and lower (breeze) bounds. 
+        # Test the mean velocity between the upper (transonic / misbehaved) and lower (breeze) bounds.
         # Define it as the new upper or lower bound accordingly.
         my $transonic_velocity_test = ($lower_velocity_bound + $upper_velocity_bound) / 2;
         ($fluxon_array, $fluxon_radius, $magnetic_field_theta, $magnetic_field_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_test, 'cs'=>$sound_speed});

@@ -7,6 +7,13 @@ get_wind - Calculate Solar Wind Plasma Parameters for a Given Carrington Rotatio
     use pdl_pipe_helper;
     my ($out_b, $out_fr, $out_wind) = get_wind($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_want, $pythondir);
 
+=cut
+
+package get_wind;
+
+use pdl_pipe_helper;
+use warnings;
+
 =head1 DESCRIPTION
 
 This subroutine calculates various solar wind plasma parameters such as the radial magnetic field, radial expansion factor, and radial wind speed. It performs these calculations based on the provided Carrington Rotation (CR) and other parameters.
@@ -62,7 +69,6 @@ L<pdl_pipe_helper>, L<map_fluxon_b>, L<map_fluxon_fr>, L<map_fluxon_flow_paralle
 =cut
 
 
-use pdl_pipe_helper;
 
 sub get_wind{
 
