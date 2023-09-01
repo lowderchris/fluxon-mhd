@@ -39,6 +39,7 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 
+import py_plot_helper #required
 from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram, load_magnetogram_params)
 
 

@@ -59,7 +59,7 @@ pdl_script_path = f"{flux_pipe_dir}/magnetogram2wind.pdl"
 
 batch_name = "new_test"
 # rotations = [2160, 2193, 2219, 2231]
-rotations = [2200]
+rotations = [2100]
 do_flux = [1000]  # , 2000, 3000, 4000, 5000, 6000, 8000, 10000]
 do_survey = True  # run the fluxon analysis on a set of fluxon numbers and/or rotations
 

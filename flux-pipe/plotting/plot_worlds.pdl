@@ -5,7 +5,7 @@ plot_worlds - Perl PDL Script for Plotting Initial and Relaxed Worlds
 
 =cut
 
-package plot_worlds;
+# package plot_worlds;
 
 use warnings;
 use PDL::AutoLoader;

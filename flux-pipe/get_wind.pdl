@@ -9,7 +9,7 @@ get_wind - Calculate Solar Wind Plasma Parameters for a Given Carrington Rotatio
 
 =cut
 
-package get_wind;
+# package get_wind;
 
 use pdl_pipe_helper;
 use warnings;
@@ -73,8 +73,6 @@ L<pdl_pipe_helper>, L<map_fluxon_b>, L<map_fluxon_fr>, L<map_fluxon_flow_paralle
 sub get_wind{
 
     my ($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_want, $pythondir) = @_;
-
-    $recompute = 1;
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";

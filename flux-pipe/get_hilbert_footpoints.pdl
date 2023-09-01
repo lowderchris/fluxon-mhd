@@ -5,7 +5,7 @@ get_hilbert_footpoints - Traces Magnetogram to get Footpoints using a Hilbert Cu
 
 =cut
 
-package get_hilbert_footpoints;
+# package get_hilbert_footpoints;
 
 use warnings;
 

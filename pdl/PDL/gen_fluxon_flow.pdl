@@ -6,7 +6,7 @@ gen_fluxon_flow - Calculate Flow and Density in a Fluxon
 
 =cut
 
-package gen_fluxon_flow;
+# package gen_fluxon_flow;
 
 use PDL::Options;  ## This is where the 'parse' function comes from
 use PDL::ImageND;  ## This is where the ConvolveND comes from

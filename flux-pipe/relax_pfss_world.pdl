@@ -5,7 +5,7 @@ relax_pfss_world - Relaxes the initial world state generated from PFSS (Potentia
 
 =cut
 
-package relax_pfss_world;
+# package relax_pfss_world;
 
 use pdl_pipe_helper;
 use strict;

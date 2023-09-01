@@ -5,7 +5,7 @@ magnetogram2wind - FLUX Main Pipeline Script - A script to run the entire FLUX p
 
 =cut
 
-package magnetogram2wind;
+# package magnetogram2wind;
 
 # use strict;
 use warnings;

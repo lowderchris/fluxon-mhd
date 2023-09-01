@@ -4,7 +4,7 @@ gen_fluxon_tflow - Generate Transonic Solar Wind Solution for a Given Fluxon
 
 =cut
 
-package gen_fluxon_flow;
+# package gen_fluxon_flow;
 
 use PDL::Options;
 $PDL::verbose = 0;

@@ -4,7 +4,7 @@
 make_world_from_pfss - Take the PFSS field lines and make a FLUX world from them.
 =cut
 
-package make_world_from_pfss;
+# package make_world_from_pfss;
 
 use strict;
 use warnings;

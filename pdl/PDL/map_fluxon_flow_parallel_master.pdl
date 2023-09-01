@@ -4,7 +4,7 @@ Fluxon Flow Mapper - Parallelized Solar Wind Flow Mapping Along Fluxon Structure
 
 =cut
 
-package map_fluxon_flow_parallel_master;
+# package map_fluxon_flow_parallel_master;
 
 # use strict;
 use warnings;
