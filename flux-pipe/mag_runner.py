@@ -13,7 +13,7 @@ Usage:
 
 Configuration:
     base_dir:       The base directory where the FLUXpipe workflow is located.
-    mhd_dir:        The directory containing the MHD (Magnetohydrodynamics) code.
+    flux_dir:        The directory containing the MHD (Magnetohydrodynamics) code.
     flux_pipe_dir:  The directory containing the FLUXpipe code.
     batch_name:     The name of the batch for the operation.
     rotations:      List of Carrington Rotations to process.
@@ -42,92 +42,51 @@ Note:
     Each iteration takes around a minute. Please be patient if verbose is set to True.
 """
 
-
 import subprocess
 from os import chdir
+import os
 from tqdm import tqdm
-import py_pipe_helper as ph
+# import py_pipe_helper as ph
 
-base_dir = "/Users/cgilbert/vscode/fluxons"
-mhd_dir = f"{base_dir}/fluxon-mhd"
-flux_pipe_dir = f"{mhd_dir}/flux-pipe"
-chdir(mhd_dir)
-new_path = ph.add_top_level_dirs_to_path(mhd_dir)
+flux_dir = os.environ.get("FL_PREFIX")
+chdir(flux_dir)
 
+pdl_run_script_path = f"{flux_dir}/flux-pipe/magnetogram2wind.pdl"
+print(pdl_run_script_path, "\n\n\n\n")
 
-pdl_script_path = f"{flux_pipe_dir}/magnetogram2wind.pdl"
 
 batch_name = "new_test"
-# rotations = [2160, 2193, 2219, 2231]
-rotations = [2100]
+rotations = [2108]  #  [2160, 2193, 2219, 2231]
 do_flux = [1000]  # , 2000, 3000, 4000, 5000, 6000, 8000, 10000]
-do_survey = True  # run the fluxon analysis on a set of fluxon numbers and/or rotations
-
-plot_only = 0  # skip everything except the wind plotting at the end
-recompute = 0  # reperform the fluxon analysis from scratch
-# nflux = 500
-reduction = 2
 
 # Options
+plot_only = 0  # skip everything except the wind plotting at the end
+recompute = 0  # reperform the fluxon analysis from scratch
+reduction = 2
 capture = False
 verbose = True
 do_download = 0
 
-
-if capture:
-    print("\n\n\n")
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print("Magnetogram 2 Wind: Run the entire fluxon pipeline on a set of Carrington rotations.")
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(f"    Target Rotations: {rotations}")
-    print("    Each iteration takes around a minute. Please be patient.")
-    if verbose:
-        print("\n    >>verbose = True. All stdout from the processes \
-              will be printed following each iteration.<<\n")
-else:
-    pass
-
-
 to_break = 0
 print("")
-with tqdm(total=len(rotations), unit="rotation") as pbar:
+n_jobs = len(rotations) * len(do_flux)
+
+print_run_command = False
+
+with tqdm(total=n_jobs, unit="runs") as pbar:
+    # Iterate over the Carrington Rotations
     for rot in rotations:
-        try:
-            # Update the description with the current iteration
-            pbar.set_description(f"Processing Rotation {rot}")
-            print("\n")
+        # Update the description with the current iteration
+        pbar.set_description(f"Rotation {rot}, n_Fluxon {do_flux}")
+        print("\n\n\n")
 
-            if do_survey:
-                recompute = 0
-                # do_flux = [8000]
+        for nflux in do_flux:
+            args = [str(rot), str(reduction), str(do_download), str(recompute), str(nflux), batch_name, str(plot_only)]
 
-                for nflux in do_flux:
-                    result = subprocess.run(["perl", pdl_script_path, str(rot),
-                            str(reduction), str(do_download), str(recompute),
-                            str(nflux), str(batch_name), str(plot_only)],
-                            capture_output=capture, check=False)
-                    # exit()
-                    if capture and verbose:
-                        print(result.stdout.decode())
-                    if result.returncode != 0:
-                        to_break += 1
-                        if to_break > 2:
-                            break
-            else:
-                result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction),
-                            str(do_download), str(recompute), str(nflux), str(batch_name)],
-                            capture_output=capture, check=False)
-                if capture and verbose:
+            if print_run_command:
+                print("Run Command: \n   ", "perl", pdl_run_script_path, " ".join(args), "\n")
 
-                    print(result.stdout.decode())
-                if result.returncode != 0:
-                    to_break += 1
-                    if to_break > 2:
-                        break
+            result = subprocess.run(["perl", pdl_run_script_path] + args, check=False)
 
-            # Increment the progress bar
-            pbar.update(1)
-
-        except Exception as e:
-            print(e)
-            assert False, "Error in the main loop"
+        # Increment the progress bar
+        pbar.update(1)

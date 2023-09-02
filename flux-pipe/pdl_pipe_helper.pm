@@ -332,4 +332,46 @@ sub check_second_file_presence {
     return 0, 0;  # Second file not found
 }
 
+
+# Check if the environment variable is set
+sub set_paths {
+    my ($do_plot) = @_;
+    if (defined $ENV{'FL_PREFIX'}) {
+    my $envpath = "$ENV{'FL_PREFIX'}/perl_paths.pm";
+    print "\nAttempting to require: $envpath\n";
+
+    # Check if the file exists and is readable
+    if (-e $envpath && -r _) {
+        require $envpath;
+        print "\n\n";
+    } else {
+        warn "File does not exist or is not readable: $envpath\n\n";
+    }
+    } else {
+        warn "Environment variable FL_PREFIX is not set.\n\n";
+    }
+
+    # print the lists of directories
+    if ($do_plot) {
+        print "\n\nINC has:\n ";
+        print map { " $_\n" } @INC;
+        print "--------------------------\n";
+
+        print "\nPDL_INC has:\n ";
+        print map { " $_\n" } @PDL_INC;
+        print "--------------------------\n";
+
+        print "\nPDLLIB has:\n ";
+        print map { " $_\n" } @PDLLIB;
+        print "--------------------------\n\n";
+
+        # Print each command-line argument
+        foreach my $arg (@ARGV) {
+            print "Argument: $arg\n";
+            }
+        print "\n\n";
+        }
+    return;
+    }
+
 1;

@@ -105,7 +105,7 @@ sub relax_pfss_world {
         print "\tFound a relaxed file: $file_path_relaxed";
     }
     else {
-        print "\tNo relaxed file found, so we will relax the world.\n\n";
+        print "\tNo relaxed file found, so we will relax the world (fairly slow).\n\n";
     }
     my $directory         = dirname($full_world_path);
     my $file_name_relaxed = $directory . "/" . $file_path_relaxed;

@@ -163,7 +163,7 @@ def load_pfss(pickle_path):
         PFSS solution state function
     """
 
-    print("\n\tGetting Pfss...", end="")
+    print("\n\tGetting PFSS...", end="")
     try:
         with open(pickle_path, 'rb') as inp:
             output = pickle.load(inp)
@@ -201,7 +201,7 @@ def compute_pfss(br_safe, pickle_path, nrho=60, rss=2.5):
     # Ingest inputs
     elapsed = 0
     shp = br_safe.data.shape
-    print(f"\t\tComputing PFSS on {shp} magnetogram...", end="", flush=True)
+    print(f"\t\tComputing PFSS on {shp} magnetogram (fairly slow)...", end="", flush=True)
     before = time()
 
     ###############################################################################

@@ -137,7 +137,7 @@ sub get_hilbert_footpoints{
                 # Adjust step size based on the distance from the desired number of fluxons
                 my $factor = 1 + abs($distance) / ($n_fluxons_wanted * 2);
                 $step *= $factor;
-
+                $step *= 0.9;
                 if ($distance > 0) {
                     $try_fluxons -= $step;
                 } else {

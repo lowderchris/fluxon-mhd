@@ -130,7 +130,7 @@ def plot_bmag(args):
         plt.show()
     plt.close(fig)
     print("Done!\n")
-    print("Saved to ", pngname, "\n")
+    print("\t\tSaved to", pngname, "\n")
 
 
 
