@@ -6,10 +6,6 @@ magnetogram2wind - FLUX Main Pipeline Script - A script to run the entire FLUX p
 =cut
 
 
-
-
-
-
 # use strict;
 use warnings;
 use PDL;

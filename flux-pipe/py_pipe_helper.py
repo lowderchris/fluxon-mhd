@@ -234,7 +234,10 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None,
     # hmi_path = hmidat+'/{file}.fits'
 
     print("\tDownloading HMI from JSOC...")
+
     out = Fido.fetch(res, path=mag_dir)
+    assert len(out) > 0, "No files found!"
+
     hmi_path_out = out[0]
     os.rename(hmi_path_out, big_path)
     print(f"\n\tSaved to {big_path}\n")
