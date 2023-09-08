@@ -11,7 +11,7 @@ Usage:
 
 Arguments:
     --cr:           The Carrington Rotation for which the magnetogram is to be downloaded. Default is 2219.
-    --datdir:       The directory where the downloaded data will be stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
+    --datdir:       The directory where the downloaded data will be stored. Default is '../fluxon-data'.
     --reduce:       The factor by which the magnetogram is reduced. Default is 5.
     --do_download:  Flag to force download the files. Default is 0 (False).
 
@@ -32,8 +32,7 @@ Dependencies:
 import argparse
 from py_pipe_helper import get_magnetogram_file, write_magnetogram_params
 
-datdir = '/Users/cgilbert/vscode/fluxons/fluxon-data'
-
+datdir = '../fluxon-data'
 
 # create the argument parser
 parser = argparse.ArgumentParser(

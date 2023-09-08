@@ -7,50 +7,43 @@ at the lower and upper boundaries. It provides options to specify the Carrington
 batch name, data directory, and other parameters.
 
 Usage:
-    python plot_bmag.py [--cr CARRINGTON_ROTATION] [--dat_dir DATA_DIRECTORY]
-                        [--show SHOW_PLOT] [--batch BATCH_NAME]
-                        [--file FILE_NAME] [--nwant NUMBER_OF_FLUXONS]
+    python plot_bmag.py
 
-Parameters:
-    --cr:       Carrington Rotation for which the data is to be plotted. Default is 0.
-    --dat_dir:  Directory where the data files are stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
-    --show:     Boolean flag to indicate whether to show the plot or not. Default is 0.
-    --batch:    Batch name for the operation. Default is 'default_batch'.
-    --file:     File name for the data. Default is a constructed path based on other parameters.
-    --nwant:    Number of fluxons to plot. Default is None.
+Parameters Controlled by Configuration:
+    CR:         Carrington Rotation for which the data is to be plotted.
+    nwant:      Number of fluxons to plot.
+    file:       File name for the data.
 
 Functions:
-    None (script-based)
+    plot_bmag:  Function to plot magnetic field strength and fluxon area.
 
 Example:
-    python plot_bmag.py --cr 2183 --dat_dir '/path/to/data' --show 1 --batch 'my_batch' --nwant 100
+    python plot_bmag.py
 
 Dependencies:
-    os.path, argparse, matplotlib.pyplot, numpy, py_plot_helper, py_pipe_helper
+    os.path, matplotlib.pyplot, numpy, py_plot_helper, py_pipe_helper, config_reader, argparse
 
 Author:
     Gilly <gilly@swri.org> (and others!)
 
 """
 
-
 import os.path
-import argparse
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+import py_plot_helper
+from py_pipe_helper import get_fixed_coords, load_fits_magnetogram, load_magnetogram_params
+from config_reader import load_configs
 
-import py_plot_helper #required
-from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram, load_magnetogram_params)
+def plot_bmag(configs):
+    # Retrieve parameters from the configuration dictionary
+    CR = configs.get("CR", configs.get("rotations")[0])
+    nwant = configs.get("nwant", configs.get("fluxon_count")[0])
+    file = configs.get("file", None)
 
-
-def plot_bmag(args):
-
-    batch = args.batch
-    (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
-    CR = args.cr or cr or 2183
-
-    filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{CR}/wind/ \
-                                cr{args.cr}_f{args.nwant}_radial_bmag.dat'
+    filename = file or f'{configs["data_dir"]}/batches/{configs["batch_name"]}/cr{CR}/wind/ \
+                                cr{CR}_f{nwant}_radial_bmag.dat'
 
     # Load the dat file
     arr = np.loadtxt(filename).T
@@ -126,8 +119,6 @@ def plot_bmag(args):
     pngname = os.path.join(bdir, imagename)
 
     plt.savefig(pngname)
-    if args.show:
-        plt.show()
     plt.close(fig)
     print("Done!\n")
     print("\t\tSaved to", pngname, "\n")
@@ -143,15 +134,17 @@ if __name__ == "__main__":
     # Create the argument parser
     print("\n\tPlotting Bmag...", end="")
     parser = argparse.ArgumentParser(description=
-                                    'This script plots the expansion factor of the given radial_fr.dat')
-    parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
-    parser.add_argument('--dat_dir', type=str, default=
-                        '/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
-    parser.add_argument('--show', type=int, default=0)
-    parser.add_argument('--batch', type=str, default='default_batch')
-    parser.add_argument('--file', type=str, default="/Users/cgilbert/vscode/fluxons/fluxon-data/batches/default_batch/cr2193/wind/cr2193_f500_radial_bmag.dat")
-    parser.add_argument('--nwant', type=int, default=None, help='magnetogram file')
-
+                                    'This script plots the magnetic field strength and fluxon area \
+        of the fluxons at the lower and upper boundaries. \
+        It provides options to specify the Carrington Rotation (CR), batch name, data directory, and other parameters.')
+    parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
+    parser.add_argument('--nwant', type=int, default=None, help='Number of fluxons to create')
+    parser.add_argument('--file', type=str, default=None, help='path to the dat file')
     args = parser.parse_args()
 
-    plot_bmag(args)
+    configs = load_configs()
+    configs["CR"] = args.cr
+    configs["nwant"] = args.nwant
+    configs["file"] = args.file
+
+    plot_bmag(configs)

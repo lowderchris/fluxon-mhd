@@ -49,10 +49,12 @@ import sunpy
 import sunpy.coordinates
 import sunpy.io
 from sunpy.net import Fido, attrs as a
+from config_reader import load_configs
 
-default_email = "chris.gilly@colorado.edu"
-default_root_dir = "/Users/cgilbert/vscode/fluxons/fluxon-mhd/"
-dat_dir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
+configs = load_configs()
+default_email = configs["jsoc_email"]
+default_root_dir = configs["fl_prefix"]
+dat_dir = configs["data_dir"]
 
 def add_dir_to_path(root_dir=None):
     """Adds a directory and all subdirectories to the PATH environment variable.
