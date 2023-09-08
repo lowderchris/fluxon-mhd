@@ -231,9 +231,9 @@ if __name__ == "__main__":
     parser.add_argument('--closed', type=str, default=None)
     args = parser.parse_args()
 
-    from config_reader import load_configs
+    from config_reader import get_all
 
-    configs = load_configs()
+    configs, varbs, envs = get_all()
 
     n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(
     config=configs,

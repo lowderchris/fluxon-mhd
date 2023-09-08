@@ -642,7 +642,7 @@ sub get_all() {
 ##############################################################################
 if ($0 eq __FILE__) {
     # Call the initialization function at the end
-    my ($configs, $vars, $envs) = initialize_files(1);
+    my ($configs, $vars, $envs) = initialize_files(0);
 
     # At the end of your Perl file
 

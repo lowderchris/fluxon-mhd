@@ -34,7 +34,7 @@ import numpy as np
 import argparse
 import py_plot_helper
 from py_pipe_helper import get_fixed_coords, load_fits_magnetogram, load_magnetogram_params
-from config_reader import load_configs
+from config_reader import get_all
 
 def plot_bmag(configs):
     # Retrieve parameters from the configuration dictionary
@@ -141,8 +141,8 @@ if __name__ == "__main__":
     parser.add_argument('--nwant', type=int, default=None, help='Number of fluxons to create')
     parser.add_argument('--file', type=str, default=None, help='path to the dat file')
     args = parser.parse_args()
-
-    configs = load_configs()
+    configs, varbs, envs = get_all()
+    # configs = load_configs()
     configs["CR"] = args.cr
     configs["nwant"] = args.nwant
     configs["file"] = args.file

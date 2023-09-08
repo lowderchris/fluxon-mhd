@@ -389,10 +389,13 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
-    from config_reader import load_configs
-    args.open = 100
-    args.closed = 200
-    configs = load_configs()
+    from config_reader import get_all
+    configs, varbs, envs = get_all()
+
+    args.open = None
+    args.closed = None
+    args.batch = configs["batch_name"]
+    # configs = load_configs()
     plot_wind_map_detailed(configs, args)
 
 

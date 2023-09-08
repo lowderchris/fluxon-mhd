@@ -408,10 +408,10 @@ def initialize_files():
         print("Please select the config file using 'select_config_file'.")
     init = True
 
-def get_all(verbose=False, silent=False):
-    envs    = get_envs(verbose=verbose, silent=silent)
-    configs = get_configs(verbose=verbose, silent=silent)
-    varbs   = get_vars(verbose=verbose, silent=silent)
+def get_all(verbose=False, silent=True):
+    envs    = get_envs(     verbose=verbose, silent=silent)
+    configs = get_configs(  verbose=verbose, silent=silent)
+    varbs   = get_vars(     verbose=verbose, silent=silent)
     return configs, varbs, envs
 
 def test_reader(verbose = True, silent=False):
@@ -422,4 +422,5 @@ def test_reader(verbose = True, silent=False):
 
 if __name__ == "__main__":
     # Usage Example
-    configs, varbs, envs = get_all(verbose=True, silent=False)
+    test_reader()
+    # configs, varbs, envs = get_all(verbose=False, silent=False)
