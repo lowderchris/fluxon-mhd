@@ -13,7 +13,7 @@ Usage:
 Arguments:
     args: An argparse.Namespace object containing the following attributes:
         --cr:           The Carrington Rotation for which the expansion factor is to be plotted. Default is 2163.
-        --dat_dir:      The directory where the data will be stored. Default is from the config.ini file
+        --dat_dir:      The directory where the data will be stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
         --batch:        The batch name for the operation. Default is 'scalability_test'.
         --show:         Whether to show the plot or not. Default is 0.
         --nwant:        The number of fluxons wanted. Default is None.

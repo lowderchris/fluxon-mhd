@@ -107,26 +107,23 @@ sub fix_envs {
 ########################################################################
 # Main Code
 # ----------------------------------------------------------------------
-
 fix_envs();
-
 make_perl_incs();
-
-print "\n\n->Added flux directories to INC arrays<-";
+print '->Added flux directories to INC arrays<-\n';
 
 my $do_print = 0;
 if ($do_print) {
-    print "\n\nINC has:\n ";
+    print '\n\nINC has:\n ';
     print map { " $_\n" } @INC;
-    print "--------------------------\n";
+    print '--------------------------\n';
 
-    print "\nPDL_INC has:\n ";
+    print '\nPDL_INC has:\n ';
     print map { " $_\n" } @PDL_INC;
-    print "--------------------------\n";
+    print '--------------------------\n';
 
-    print "\nPDLLIB has:\n ";
+    print '\nPDLLIB has:\n ';
     print map { " $_\n" } @PDLLIB;
-    print "--------------------------\n\n";
+    print '--------------------------\n\n';
 }
 
 1;

@@ -250,7 +250,7 @@ Prints a banner with various details.
 
 sub print_banner {
     my ($batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string) = @_;
-    # print "|\n|\n|\n|\n|\n|\n|\n|\n|\n|";
+    print "|\n|\n|\n|\n|\n|\n|\n|\n|\n|";
     print "\n\n";
     print "--------------------------------------------------------------------------------------------------\n";
     print "FLUXPipe: Indicate a Carrington Rotation and this script will run the entire Flux Pipeline for it.\n";

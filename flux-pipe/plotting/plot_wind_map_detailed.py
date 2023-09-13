@@ -8,7 +8,7 @@ data related to solar wind velocity, magnetic fields, and other parameters to ge
 
 Attributes:
     --cr: Carrington Rotation (int, default=None)
-    --dat_dir: Data directory path (str, default is from config.ini)
+    --dat_dir: Data directory path (str, default='/Users/cgilbert/vscode/fluxons/fluxon-data')
     --show: (int, default=1)
     --interp: Interpolation method (str, default='linear')
     --nwant: (int, default=0)
@@ -16,19 +16,19 @@ Attributes:
     --batch: Batch name (str, default='fluxon_paperfigs_5')
 
 Functions:
-    scale_data(): Scale the data between 0 and 1, then raise to a power, then scale by a factor.
+    scale_data(): Scale the data between 0 and 1.
     remove_outliers(): Remove outliers from the dataset recursively.
     hex_plot(): Create a hexagon interpolation of the data.
     hist_plot(): Plot a histogram of the velocity data.
-    plot_wind_map_detailed(): Plot the detailed solar wind map.
 
 """
+
+
 import numpy as np
 import matplotlib as mpl
 mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
-import os
 import os.path as path
 from scipy.interpolate import griddata
 
@@ -42,19 +42,28 @@ from plot_fieldmap import magnet_plot
 
 
 def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, power=1):
-    """
-    Scale the data between 0 and 1, then raise to a power, then scale by a factor.
+    """ Scale the data between 0 and 1, then raise to a power, then scale by a factor
 
-    Parameters:
-    - vel0_clean : numpy.ndarray: The velocity data for the initial state.
-    - vel1_clean : numpy.ndarray: The velocity data for the final state.
-    - outlier_V0 : numpy.ndarray: The outliers in the initial velocity data.
-    - outlier_V1 : numpy.ndarray: The outliers in the final velocity data.
-    - scale : float, optional: The scaling factor, default is 15**2.
-    - power : int, optional: The power to which the scaled data is raised, default is 1.
+    Parameters
+    ----------
+    vel0_clean : numpy.ndarray
+        The velocity data for the initial state.
+    vel1_clean : numpy.ndarray
+        The velocity data for the final state.
+    outlier_V0 : numpy.ndarray
+        The outliers in the initial velocity data.
+    outlier_V1 : numpy.ndarray
+        The outliers in the final velocity data.
+    scale : float, optional
+        The scaling factor, by default 15**2.
+    power : int, optional
+        The power to which the scaled data is raised, by default 1.
 
-    Returns:
-    - tuple: Scaled velocity data and scaled outliers for both initial and final states.
+    Returns
+    -------
+    tuple
+        Scaled velocity data and scaled outliers for both initial and final states.
+
     """
 
     vel0_max = np.nanmax(vel0_clean)
@@ -72,18 +81,28 @@ def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, powe
 
 # Remove outliers from the dataset recursively
 def remove_outliers(data, ph, th, thresh_low=4, thresh_high=2, n_times= 1):
-    """ Remove outliers from the dataset recursively.
+    """ Remove outliers from the dataset recursively
 
-    Parameters:
-    - data : numpy.ndarray: The data array from which to remove outliers.
-    - ph : numpy.ndarray: The phi (azimuthal angle) values corresponding to the data.
-    - th : numpy.ndarray: The theta (polar angle) values corresponding to the data.
-    - thresh_low : int, optional: The lower threshold for outlier removal, default is 4.
-    - thresh_high : int, optional: The upper threshold for outlier removal, default is 2.
-    - n_times : int, optional: The number of times to recursively remove outliers, default is 1.
+    Parameters
+    ----------
+    data : numpy.ndarray
+        The data array from which to remove outliers.
+    ph : numpy.ndarray
+        The phi (azimuthal angle) values corresponding to the data.
+    th : numpy.ndarray
+        The theta (polar angle) values corresponding to the data.
+    thresh_low : int, optional
+        The lower threshold for outlier removal, by default 4.
+    thresh_high : int, optional
+        The upper threshold for outlier removal, by default 2.
+    n_times : int, optional
+        The number of times to recursively remove outliers, by default 1.
 
-    Returns:
-    - tuple: Cleaned data, phi, and theta values, along with the outliers.
+    Returns
+    -------
+    tuple
+        Cleaned data, phi, and theta values, along with the outliers.
+
     """
 
     # Get the Good Points
@@ -112,21 +131,34 @@ def remove_outliers(data, ph, th, thresh_low=4, thresh_high=2, n_times= 1):
 
 
 def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=800, do_print_top=True, do_hex=True, args=None ):
-    """ Create a hexagon interpolation of the data.
+    """ Create a hexagon interpolation of the data
 
-    Parameters:
-    - ph1_clean : numpy.ndarray: The phi values of the cleaned data.
-    - th1_clean : numpy.ndarray: The theta values of the cleaned data.
-    - vel1_clean : numpy.ndarray: The velocity values of the cleaned data.
-    - ax : matplotlib.pyplot.axis, optional: An axis to plot on, default is None.
-    - nx : int, optional: Number of hexagons in the x direction, default is 20.
-    - vmin : int, optional: The minimum value of the colortable, default is 400.
-    - vmax : int, optional: The maximum value of the colortable, default is 800.
-    - do_print_top : bool, optional: Print with more verbosity, default is True.
-    - do_hex : bool, optional: Do the hex plot, else do a contour plot, default is True.
+    Parameters
+    ----------
+    ph1_clean : numpy.ndarray
+        The phi values of the cleaned data.
+    th1_clean : numpy.ndarray
+        The theta values of the cleaned data.
+    vel1_clean : numpy.ndarray
+        The velocity values of the cleaned data.
+    ax : matplotlib.pyplot.axis, optional
+        An axis to plot on, by default None.
+    nx : int, optional
+        Number of hexagons in the x direction, by default 20.
+    vmin : int, optional
+        The minimum value of the colortable, by default 400.
+    vmax : int, optional
+        The maximum value of the colortable, by default 800.
+    do_print_top : bool, optional
+        Print with more verbosity, by default True.
+    do_hex : bool, optional
+        Do the hex plot, else do a contour plot, by default True.
 
-    Returns:
-    - matplotlib.pyplot.draw_handle: The output of the plot command.
+    Returns
+    -------
+    matplotlib.pyplot.draw_handle
+        The output of the plot command.
+
     """
 
     if do_print_top:
@@ -182,19 +214,28 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
 
 
 def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=True, CR="<unset>"):
-    """ Plot a histogram of the velocity data.
+    """ Plot a histogram of the velocity data
 
-    Parameters:
-    - vel1_clean : numpy.ndarray: The velocity data.
-    - ax : matplotlib.pyplot.axis, optional: An axis to plot on, default is None.
-    - vmin : int, optional: The minimum value of the colortable, default is 400.
-    - vmax : int, optional: The maximum value of the colortable, default is 800.
-    - n_bins : int, optional: The number of bins for the histogram, default is 20.
-    - do_print_top : bool, optional: Print with more verbosity, default is True.
-    - CR : str, optional: The Carrington Rotation, default is "<unset>".
+    Parameters
+    ----------
+    vel1_clean : numpy.ndarray
+        The velocity data.
+    ax : matplotlib.pyplot.axis, optional
+        An axis to plot on, by default None.
+    vmin : int, optional
+        The minimum value of the colortable, by default 400.
+    vmax : int, optional
+        The maximum value of the colortable, by default 800.
+    n_bins : int, optional
+        The resolution of the histogram, by default 20.
+    do_print_top : bool, optional
+        Print more verbosely, by default True.
 
-    Returns:
-    - matplotlib.pyplot.draw_handle: The output of the plot command.
+    Returns
+    -------
+    float, float
+        Mean and standard deviation of the velocity data.
+
     """
 
     if do_print_top:
@@ -222,36 +263,34 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
     return mean1, std1
 
 
-def plot_wind_map_detailed(configs, args):
-    """ Plot the detailed solar wind map using various types of plots.
+def plot_wind_map_detailed(args):
+    """ Plot the detailed solar wind map
 
-    This function takes in configuration settings and arguments to generate a detailed solar wind map.
-    It utilizes hexagon interpolation, scatter plots, contour plots, and histograms to visualize the data.
-    Parameters:
-    - configs : dict: Configuration settings including batch name and data directory.
-    - args : object: Arguments containing the Carrington rotation number, file name, and other optional parameters.
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments to the script.
 
-    Returns:
-    None: The function saves the generated plots to disk and does not return any value.
+    Returns
+    -------
+    bool
+        True if the plot was successful, else False.
 
-    Raises:
-    - ValueError: If the data arrays have mismatched shapes.
-    - IndexError: If the wind calculation fails.
-    - FileNotFoundError: If the specified data file is not found.
-
-    Side Effects:
-    - Saves generated plots as PNG and PDF files in specified directories.
     """
 
     print("\n\tPlotting Windmap...", end="\n" if __name__=="__main__" else "")
 
     # Set the arguments
-    batch = configs["batch_name"]
-    dat_dir = configs["data_dir"]
-    CR = args.cr
+    batch = args.batch
+    interp = args.interp
+    dat_dir = args.dat_dir
+
+    # Load the magnetogram parameters
+    (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
+    CR = args.cr or cr
+
     # Load the wind file
     dat_file = args.file or f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{args.nwant}_radial_wind.dat'
-
     # print("loading file: ", dat_file)
     arr = np.loadtxt(dat_file).T
     try:
@@ -286,8 +325,8 @@ def plot_wind_map_detailed(configs, args):
 
     all_vmin, all_vmax = 475, 700
     drk=0.25
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(configs, args,
-        ax=mag_ax, vmin=-500, vmax=500, do_print_top=False)
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch,
+        ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce, nwant=args.nwant, do_print_top=False)
     hex_n = np.max((n_open//10, 3))
 
     hex1 = hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=hex_n,
@@ -316,6 +355,7 @@ def plot_wind_map_detailed(configs, args):
     main_file =  f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
+    import os
     if not path.exists(os.path.dirname(main_file)):
         os.makedirs(os.path.dirname(main_file))
 
@@ -381,19 +421,18 @@ if __name__ == "__main__":
     # Create the argument parser
     parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
     parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
+    parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
     parser.add_argument('--show', type=int, default=1)
     parser.add_argument('--interp', type=str, default="linear")
     # parser.add_argument('--nact', type=int, default=0)
     parser.add_argument('--nwant', type=int, default=0)
     parser.add_argument('--file', type=str, default=None, help='select the file name')
+    parser.add_argument('--batch', type=str, default="fluxon_paperfigs_5", help='select the batch name')
 
 
     args = parser.parse_args()
-    from config_reader import load_configs
-    args.open = 100
-    args.closed = 200
-    configs = load_configs()
-    plot_wind_map_detailed(configs, args)
+
+    plot_wind_map_detailed(args)
 
 
 

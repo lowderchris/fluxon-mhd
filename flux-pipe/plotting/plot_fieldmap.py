@@ -2,19 +2,25 @@
 Primary Script for Plotting the Magnetogram with Footpoints
 ==========================================================
 
-This script is designed to plot the magnetogram along with footpoints. It accepts
-configuration parameters through a dictionary and command-line arguments through an argparse.Namespace object.
+This script is designed to plot the magnetogram along with footpoints. It provides
+options to specify the Carrington Rotation (CR), batch name, reduction factor, data directory,
+and other parameters.
 
 Usage:
     python plot_fieldmap.py [--cr CARRINGTON_ROTATION] [--nwant NUMBER_WANTED]
                              [--open OPEN_FLUXONS] [--closed CLOSED_FLUXONS]
+                             [--dat_dir DATA_DIRECTORY] [--batch BATCH_NAME]
 
 Arguments:
-    --cr, --nwant, --open, --closed, --dat_dir, --batch:
-        These can now be passed through the 'config' dictionary and 'args' argparse.Namespace object.
+    --cr:           The Carrington Rotation for which the magnetogram is to be plotted. Default is None.
+    --nwant:        The number of fluxons wanted. Default is None.
+    --open:         The number of open fluxons. Default is None.
+    --closed:       The number of closed fluxons. Default is None.
+    --dat_dir:      The directory where the data will be stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
+    --batch:        The batch name for the operation. Default is 'default_batch'.
 
 Functions:
-    magnet_plot:    The primary function for plotting the magnetogram with footpoints.
+    magnet_plot:    A primary function for plotting the magnetogram with footpoints.
 
 Example:
     python plot_fieldmap.py --cr 2220 --nwant 100 --open 50 --closed 50 --dat_dir '/path/to/data' --batch 'my_batch'
@@ -29,70 +35,65 @@ Dependencies:
 import os
 import os.path as path
 import argparse
+# import matplotlib as mpl; mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
 from py_plot_helper import get_ax
 from pfss_funcs import pixel_to_latlon
-from py_pipe_helper import (load_fits_magnetogram, load_magnetogram_params, shorten_path)
+from py_pipe_helper import (load_fits_magnetogram, load_magnetogram_params,
+                            shorten_path)
 
-def magnet_plot(config, args, force=False, nact=0, do_print_top=False, ax=None, verb=True, ext="pdf",
+def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False, reduce_amt=0,
+                nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="pdf",
                 plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500):
-    """
-    The primary function for plotting the magnetogram with footpoints.
+    """ The primary function for plotting the magnetogram with footpoints
 
     Parameters
     ----------
-    config : dict
-        Dictionary containing configuration parameters.
-        - CR : int, the Carrington rotation number
-        - data_dir : str, the data directory
-        - batch_name : str, the name of the batch
-        - mag_reduct : int, optional, the factor by which to reduce the magnetogram, default is 0
-        - nwant : int, optional, the desired number of fluxons, default is None
-
-    args : argparse.Namespace
-        Argument parser namespace containing command-line arguments.
-        - open : int, optional, number of open fluxons, default is None
-        - closed : int, optional, number of closed fluxons, default is None
-
+    get_cr : int
+        the carrington rotation number
+    datdir : str
+        the data directory
+    _batch : str
+        the name of the batch
+    open_f : int, optional
+        number of open fluxons, by default None
+    closed_f : int, optional
+        number of closed fluxons, by default None
     force : bool, optional
-        Force the plot to occur, default is False
+        force the plot to occur, by default False
+    reduce_amt : int, optional
+        the factor by which to reduce the magnetogram, by default 0
     nact : int, optional
-        The actual number of fluxons, default is 0
+        the actual number of fluxons, by default 0
+    nwant : int, optional
+        the desired number of fluxons, by default None
     do_print_top : bool, optional
-        Print the top, default is False
+        print the top, by default False
     ax : pyplot axis, optional
-        The axis to plot upon, default is None
+        the axis to plot upon, by default None
     verb : bool, optional
-        Whether to be verbose in output, default is True
+        whether to be verbose in output, by default True
     ext : str, optional
-        The type of plot to save, default is "pdf"
+        the type of plot to save, by default "pdf"
     plot_all : bool, optional
-        Whether to plot all the fluxons, default is True
+        whether to plot all the fluxons, by default True
     plot_open : bool, optional
-        Whether to plot the open fields, default is True
+        whether to plot the open fields, by default True
     do_print : bool, optional
-        Even more verbosity, default is False
+        even more verbosity, by default False
     vmin : int, optional
-        Minimum value of the colortable, default is -500
+        minimum value of the colortable, by default -500
     vmax : int, optional
-        Maximum value of the colortable, default is 500
+        maximum value of the colortable, by default 500
 
     Returns
     -------
     _n_open, _n_closed, _n_flux, _fnum, _n_outliers
-        Integers describing the number of open fluxons, closed fluxons, total fluxons,
+        integers describing the number of open fluxons, closed fluxons, total fluxons,
         actual fluxons, and outliers, respectively
     """
-    # Unpack configuration and args parameters
-    datdir = config["data_dir"]
-    _batch = config["batch_name"]
-    reduce_amt = config["mag_reduct"]
-    get_cr = args.cr
-    nwant = args.nwant
-    open_f = args.open
-    closed_f = args.closed
 
     fig, ax0 = get_ax(ax)
     if do_print:
@@ -221,27 +222,21 @@ def magnet_plot(config, args, force=False, nact=0, do_print_top=False, ax=None, 
 # ----------------------------------------------------------------------
 #
 if __name__ == "__main__":
-
+    # Create the argument parser
     parser = argparse.ArgumentParser(description=
-                                    'This script plots the expansion factor of the given radial_fr.dat')
-    parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
-    parser.add_argument('--nwant', type=int, default=None, help='Number of fluxons to create')
-    parser.add_argument('--file', type=str, default=None, help='path to the dat file')
+            'This script plots the expansion factor of the given radial_fr.dat')
+    parser.add_argument('--cr', type=int, default=None)
+    parser.add_argument('--nwant', type=int, default=None)
     parser.add_argument('--open', type=str, default=None)
     parser.add_argument('--closed', type=str, default=None)
+    parser.add_argument('--dat_dir', type=str, default=
+                        '/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
+    parser.add_argument('--batch', type=str, default="default_batch", help='select the batch name')
     args = parser.parse_args()
+    batch = args.batch
 
-    from config_reader import load_configs
-
-    configs = load_configs()
-
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(
-    config=configs,
-    args=args,
-    do_print=True,
-    do_print_top=True
-)
-
-
-    # n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(configs["CR"], configs["data_dir"], configs["batch_name"], args.open,
-    #         args.closed, do_print=True, reduce_amt=configs["mag_reduct"], nwant=configs["nwant"], do_print_top=True)
+    # Run the code
+    (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
+    CR = args.cr or cr
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, args.dat_dir, batch, args.open,
+            args.closed, do_print=True, reduce_amt=reduce, nwant=args.nwant, do_print_top=True)
