@@ -49,10 +49,9 @@ import sunpy
 import sunpy.coordinates
 import sunpy.io
 from sunpy.net import Fido, attrs as a
-from config_reader import get_all
+from config_reader import load_configs
 
-
-configs, varbs, envs = get_all()
+configs = load_configs()
 default_email = configs["jsoc_email"]
 default_root_dir = configs["fl_prefix"]
 dat_dir = configs["data_dir"]

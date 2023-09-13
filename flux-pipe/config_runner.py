@@ -42,14 +42,13 @@ Note:
 import subprocess
 from os import chdir
 from tqdm import tqdm
-from config_reader import get_all
+from config_reader import load_configs
 
 # Print a separator for better readability
 print("\n|\n|\n|\n|\n|\n|----------------------------------------------------|\n|\n|\n|\n|")
 
 # Load the configuration
-configs, varbs, envs = get_all(verbose=True, silent=True)
-
+configs = load_configs()
 
 # Change the current directory to the FLUXpipe directory
 chdir(configs["fl_prefix"])
