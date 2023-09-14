@@ -212,15 +212,21 @@ Calculates various directories based on the base directory and batch name.
 sub calculate_directories {
 (my $basedir, my $batch_name, my $print) = @_;
 
-    # Calculate Directory Structure
-    my $fluxdir =  "$basedir/fluxon-mhd";
-        my $pipedir =  "$fluxdir/flux-pipe";
-        my $pdldir =   "$fluxdir/pdl/PDL";
+    # Trim whitespace from the beginning and end of the directory and batch name
+    $basedir =~ s/^\s+|\s+$//g;
+    $batch_name =~ s/^\s+|\s+$//g;
 
-    my $datdir =   "$basedir/fluxon-data";
-        my $magdir =   "$datdir/magnetograms";
-        my $batchdir = "$datdir/batches/$batch_name";
-            my $logfile = "$batchdir/pipe_log.txt";
+    use File::Spec::Functions;
+
+    my $fluxdir = catdir($basedir, "fluxon-mhd");
+    my $pipedir = catdir($fluxdir, "flux-pipe");
+    my $pdldir =  catdir($fluxdir, "pdl", "PDL");
+
+    my $datdir =  catdir($basedir, "fluxon-data");
+    my $magdir =  catdir($datdir, "magnetograms");
+    my $batchdir = catdir($datdir, "batches", $batch_name);
+    my $logfile = catfile($batchdir, "pipe_log.txt");
+
 
     set_and_check_env_variable('FLUXPATH', $fluxdir, $print);
     set_and_check_env_variable('PIPEPATH', $pipedir, $print);
