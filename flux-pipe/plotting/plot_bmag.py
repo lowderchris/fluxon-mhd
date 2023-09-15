@@ -40,7 +40,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import py_plot_helper #required
-from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram, load_magnetogram_params)
+from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram, load_magnetogram_params, shorten_path)
 
 
 def plot_bmag(args):
@@ -130,7 +130,7 @@ def plot_bmag(args):
         plt.show()
     plt.close(fig)
     print("Done!\n")
-    print("\t\tSaved to", pngname, "\n")
+    print("\t\tSaved to", shorten_path(pngname), "\n")
 
 
 

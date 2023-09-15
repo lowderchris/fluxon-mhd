@@ -56,30 +56,6 @@ This script automates the entire FLUX pipeline for a given Carrington Rotation (
 =back
 
 
-=head1 OPTIONS
-
-Various options can be set within the script, such as:
-
-=over 4
-
-=item * C<$do_download> - Flag to download the magnetogram.
-
-=item * C<$force_process_magnetogram> - Flag to force the processing of the magnetogram.
-
-=item * C<$do_pfss> - Flag to run the PFSS code.
-
-=item * C<$makeworld> - Flag to create the world.
-
-=item * C<$do_relax> - Flag to relax the world.
-
-=item * C<$do_png> - Flag to generate PNG plots.
-
-=item * C<$do_interactive> - Flag to open a gnuplot window.
-
-=item * C<$do_wind_calc> - Flag to calculate the solar wind.
-
-=back
-
 =head1 NOTES
 
 Until the homebrew issues are fixed, plot using the command: C<$world -> render({'dev'=>'qt'})>.

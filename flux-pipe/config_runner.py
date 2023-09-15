@@ -8,7 +8,7 @@ in an external 'config.ini' file. The script leverages Python's subprocess modul
 invoke the PDL script and uses the tqdm library for tracking progress.
 
 Usage:
-    Run the script using `python mag_runner.py`.
+    Run the script using `python config_runner.py`.
 
 Configuration:
     Edit the 'config.ini' file to set the required configuration parameters.
@@ -21,7 +21,7 @@ Dependencies:
 
 Example:
     1. Edit the 'config.ini' to configure your desired settings.
-    2. Run the script using `python mag_runner.py`.
+    2. Run the script using `python config_runner.py`.
 
 Author:
     Gilly <gilly@swri.org> (and others!)
@@ -85,7 +85,7 @@ def configurations(config_name=None, config_filename="config.ini", debug=False):
 
     if debug:
         print("\nConfiguration file values:\n--------------------------------")
-        for key, value in the_config.items():
+        for key, value in sorted(the_config.items()):
             print(f"{key}: \t{value}")
         print("--------------------------------\n\n")
 

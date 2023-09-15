@@ -16,7 +16,7 @@ use PDL::IO::Storable;
 use File::Path qw(make_path);
 use Time::HiRes qw(clock_gettime);
 use Data::Dumper;
-use Chart::Gnuplot;
+# use Chart::Gnuplot;
 # use PDL::Graphics::Gnuplot qw(gnuplot_closeall);
 
 # Control Flags
@@ -193,43 +193,43 @@ sub map_fluxon_flow_parallel_master {
         (my $farr, my $fr, my $bth, my $bph) = gen_fluxon_tflow($me);
 
 
-        if ($do_plot_charts) {
-            my @rr =  $farr->( 0 , : )->list;
-            my @ww =  $farr->( 1 , : )->list;
-            # if $chartpath does not exist then make it
-            if ( ! -d $chartpath ) {
-                make_path($chartpath);
-            }
+        # if ($do_plot_charts) {
+        #     my @rr =  $farr->( 0 , : )->list;
+        #     my @ww =  $farr->( 1 , : )->list;
+        #     # if $chartpath does not exist then make it
+        #     if ( ! -d $chartpath ) {
+        #         make_path($chartpath);
+        #     }
 
-                # create chart object
-            my $chart = Chart::Gnuplot->new(
-                output => $chartpath . "this_line_op$n_open\_$fid.png",
-                title => "My Plot",
-                xlabel => "radius",
-                ylabel => "wind",
-                bg => "white",
-                logscale => "xy",  # set both x and y axes to logarithmic scale
-            );
+        #         # create chart object
+        #     my $chart = Chart::Gnuplot->new(
+        #         output => $chartpath . "this_line_op$n_open\_$fid.png",
+        #         title => "My Plot",
+        #         xlabel => "radius",
+        #         ylabel => "wind",
+        #         bg => "white",
+        #         logscale => "xy",  # set both x and y axes to logarithmic scale
+        #     );
 
-            # define and plot data set
-            my $dataSet = Chart::Gnuplot::DataSet->new(
-                xdata => \@rr,
-                ydata => \@ww,
-                style => "lines",
-            );
+        #     # define and plot data set
+        #     my $dataSet = Chart::Gnuplot::DataSet->new(
+        #         xdata => \@rr,
+        #         ydata => \@ww,
+        #         style => "lines",
+        #     );
 
-            # # create a data set for the horizontal line
-            # my $horizontalLine = Chart::Gnuplot::DataSet->new(
-            #     xdata => [$rr[0], $rr[-1]],  # x-values from the start to the end of your data
-            #     ydata => [$sound_speed, $sound_speed],  # constant y-value
-            #     style => "lines",
-            #     linetype => "dashed",  # set line type to dashed
-            # );
+        #     # # create a data set for the horizontal line
+        #     # my $horizontalLine = Chart::Gnuplot::DataSet->new(
+        #     #     xdata => [$rr[0], $rr[-1]],  # x-values from the start to the end of your data
+        #     #     ydata => [$sound_speed, $sound_speed],  # constant y-value
+        #     #     style => "lines",
+        #     #     linetype => "dashed",  # set line type to dashed
+        #     # );
 
-            # plot the horizontal line
-            $chart->plot2d($dataSet);
-            # $chart->plot2d($dataSet, $horizontalLine);
-        }
+        #     # plot the horizontal line
+        #     $chart->plot2d($dataSet);
+        #     # $chart->plot2d($dataSet, $horizontalLine);
+        # }
 
         ## Report the Results ####
         # Create a result hash
