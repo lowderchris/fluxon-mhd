@@ -344,7 +344,7 @@ print("(py) Plotting Solar Wind Maps for CR$CR\n");
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
 system(
-"$pythondir $pipedir/plotting/plot_bmag.py --cr $CR --batch $batch_name --dat_dir $datdir " .
+"$pythondir $pipedir/plotting/plot_bmag.py --cr $CR --batch $batch_name" .
                     "--file $out_b --nwant $n_fluxons_wanted"
 ) == 0 or ( die "Python script returned error $?", exit );
 system(

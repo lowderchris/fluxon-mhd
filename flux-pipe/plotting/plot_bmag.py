@@ -7,13 +7,12 @@ at the lower and upper boundaries. It provides options to specify the Carrington
 batch name, data directory, and other parameters.
 
 Usage:
-    python plot_bmag.py [--cr CARRINGTON_ROTATION] [--dat_dir DATA_DIRECTORY]
+    python plot_bmag.py [--cr CARRINGTON_ROTATION]
                         [--show SHOW_PLOT] [--batch BATCH_NAME]
                         [--file FILE_NAME] [--nwant NUMBER_OF_FLUXONS]
 
 Parameters:
     --cr:       Carrington Rotation for which the data is to be plotted. Default is 0.
-    --dat_dir:  Directory where the data files are stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
     --show:     Boolean flag to indicate whether to show the plot or not. Default is 0.
     --batch:    Batch name for the operation. Default is 'default_batch'.
     --file:     File name for the data. Default is a constructed path based on other parameters.
@@ -23,7 +22,7 @@ Functions:
     None (script-based)
 
 Example:
-    python plot_bmag.py --cr 2183 --dat_dir '/path/to/data' --show 1 --batch 'my_batch' --nwant 100
+    python plot_bmag.py --cr 2183 --show 1 --batch 'my_batch' --nwant 100
 
 Dependencies:
     os.path, argparse, matplotlib.pyplot, numpy, py_plot_helper, py_pipe_helper
@@ -42,6 +41,10 @@ import numpy as np
 import py_plot_helper #required
 from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram, load_magnetogram_params, shorten_path)
 
+# Load configurations from disk
+from py_pipe_helper import configurations
+configs = configurations(debug=True)
+a=1
 
 def plot_bmag(args):
 
@@ -145,8 +148,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=
                                     'This script plots the expansion factor of the given radial_fr.dat')
     parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
-    parser.add_argument('--dat_dir', type=str, default=
-                        '/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
+    # parser.add_argument('--dat_dir', type=str, default=
+    #                     '/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
     parser.add_argument('--show', type=int, default=0)
     parser.add_argument('--batch', type=str, default='default_batch')
     parser.add_argument('--file', type=str, default="/Users/cgilbert/vscode/fluxons/fluxon-data/batches/default_batch/cr2193/wind/cr2193_f500_radial_bmag.dat")

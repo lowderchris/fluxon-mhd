@@ -34,65 +34,9 @@ import configparser
 import os
 import ast
 
-def configurations(config_name=None, config_filename="config.ini", debug=False):
-    """
-    Reads and sanitizes configuration settings from a specified config file.
-
-    Args:
-        config_name (str, optional): The specific configuration section to read.
-                                     If not provided, defaults to the DEFAULT section.
-        config_filename (str, optional): The filename of the configuration file.
-                                         Defaults to 'config.ini'.
-        debug (bool, optional): Whether to print debug information. Defaults to False.
-
-    Returns:
-        dict: Configuration settings as key-value pairs.
-    """
-    config_obj = configparser.ConfigParser()
-    config_path = f"fluxon-mhd/flux-pipe/config/{config_filename}"
-
-    # Search for the configuration file in the current directory and subdirectories
-    if not os.path.exists(config_path):
-        found = False
-        for root, dirs, files in os.walk(os.getcwd()):
-            if config_filename in files:
-                config_path = os.path.join(root, config_filename)
-                found = True
-                break
-        if not found:
-            raise FileNotFoundError("Configuration file not found.")
-
-    # Clean the file content: remove comments and trailing whitespaces
-    with open(config_path, "r") as f:
-        lines = f.readlines()
-    clean_lines = [line.split("#")[0].rstrip() for line in lines]
-    clean_content = "\n".join(clean_lines)
-
-    # Parse the clean configuration string
-    config_obj.read_string(clean_content)
-
-    # Fallback to section defined in the DEFAULT section if no specific section is provided
-    if config_name is None:
-        config_name = config_obj["DEFAULT"]['config_name']
-
-    # Extract and further process configuration settings
-    the_config = dict(config_obj[config_name])
-    the_config['abs_rc_path'] = os.path.expanduser(the_config['rc_path'])
-    the_config["run_script"] = os.path.join(the_config['fl_prefix'], the_config["run_script"])
-    the_config["rotations"] = ast.literal_eval(the_config["rotations"])
-    the_config["fluxon_count"] = ast.literal_eval(the_config["fluxon_count"])
-    the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"]))
-
-    if debug:
-        print("\nConfiguration file values:\n--------------------------------")
-        for key, value in sorted(the_config.items()):
-            print(f"{key}: \t{value}")
-        print("--------------------------------\n\n")
-
-    return the_config
-
 
 # Load configurations from disk
+from py_pipe_helper import configurations
 configs = configurations(debug=True)
 
 # Initialize a progress bar with the total number of jobs to run
