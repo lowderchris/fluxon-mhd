@@ -10,14 +10,14 @@ Modules Used:
     - numpy: For numerical operations
     - matplotlib: For plotting graphs and images
     - argparse: For parsing command-line arguments
-    - py_plot_helper: Custom helper for plotting
-    - py_pipe_helper: Custom helper for data loading and manipulation
+    - plot_helper: Custom helper for plotting
+    - pipe_helper: Custom helper for data loading and manipulation
     - os.path: For file and directory operations
     - scipy.interpolate: For data interpolation
 
 Functions from other modules:
     - hex_plot, hist_plot, scale_data, remove_outliers from plot_wind_map_detailed
-    - load_fits_magnetogram, load_magnetogram_params, get_fixed_coords from py_pipe_helper
+    - load_fits_magnetogram, load_magnetogram_params, get_fixed_coords from pipe_helper
 
 Command-line Arguments:
     --cr: Carrington Rotation number (default is 2160)
@@ -48,8 +48,8 @@ import matplotlib as mpl
 mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
-import py_plot_helper
-from py_pipe_helper import (load_fits_magnetogram, load_magnetogram_params, get_fixed_coords)
+import plot_helper
+from pipe_helper import (load_fits_magnetogram, load_magnetogram_params, get_fixed_coords)
 import os.path as path
 from scipy.interpolate import griddata
 

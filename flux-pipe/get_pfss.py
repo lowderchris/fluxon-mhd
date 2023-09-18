@@ -10,7 +10,7 @@ factor, data directory, magnetogram file, and other parameters.
 Functions:
 ----------
 - trace_lines, load_pfss, compute_pfss, load_and_condition_fits_file, get_fluxon_locations:
-    Utility functions imported from 'pfss_funcs' and 'py_pipe_helper'.
+    Utility functions imported from 'pfss_funcs' and 'pipe_helper'.
 - get_pfss:
     Main function that loads the fits file, performs PFSS mapping, gets fluxon locations,
     traces PFSS field lines and records stats in the output file.
@@ -25,7 +25,7 @@ Gilly <gilly@swri.org> (and others!)
 
 Dependencies:
 -------------
-os, argparse, numpy, pfss_funcs, py_pipe_helper
+os, argparse, numpy, pfss_funcs, pipe_helper
 """
 
 # Import required modules
@@ -34,7 +34,7 @@ import argparse
 import numpy as np
 from pfss_funcs import (trace_lines, load_pfss, compute_pfss, \
                         load_and_condition_fits_file, get_fluxon_locations)
-from py_pipe_helper import shorten_path
+from pipe_helper import shorten_path
 
 def get_pfss(args):
     """

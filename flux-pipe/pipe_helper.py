@@ -1,5 +1,5 @@
 """
-py_pipe_helper: Library of Helper Scripts for the Flux-Pipe Algorithm
+pipe_helper: Library of Helper Scripts for the Flux-Pipe Algorithm
 =====================================================================
 
 This library contains a collection of utility functions designed to assist with
@@ -26,7 +26,7 @@ Author:
     Gilly <gilly@swri.org> (and others!)
 
 Dependencies:
-    os, os.path, sys, pathlib.PosixPath, Path, plotting.py_plot_helper, numpy as np,
+    os, os.path, sys, pathlib.PosixPath, Path, plotting.plot_helper, numpy as np,
     matplotlib.pyplot as plt, astropy.io.fits, astropy.nddata.block_reduce, sunpy,
     sunpy.coordinates, sunpy.io, sunpy.net.Fido, attrs as a
 """
@@ -38,7 +38,7 @@ import os.path
 import sys
 import ast
 from pathlib import PosixPath, Path
-import plotting.py_plot_helper
+# import plotting.plot_helper
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -51,9 +51,9 @@ import sunpy.coordinates
 import sunpy.io
 from sunpy.net import Fido, attrs as a
 
-default_email = "chris.gilly@colorado.edu"
-default_root_dir = "/Users/cgilbert/vscode/fluxons/fluxon-mhd/"
-dat_dir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
+
+
+
 
 
 def configurations(config_name=None, config_filename="config.ini", debug=False):
@@ -106,6 +106,9 @@ def configurations(config_name=None, config_filename="config.ini", debug=False):
     the_config["fluxon_count"] = ast.literal_eval(the_config["fluxon_count"])
     the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"]))
 
+    for key, value in the_config.items():
+        the_config[key] = convert_value(value)
+
     if debug:
         print("\nConfiguration file values:\n--------------------------------")
         for key, value in sorted(the_config.items()):
@@ -115,8 +118,40 @@ def configurations(config_name=None, config_filename="config.ini", debug=False):
     return the_config
 
 
+def convert_value(value):
+    """ Convert a string to an int or float if possible, otherwise return the string.
+
+    Parameters
+    ----------
+    value : string
+        the value to convert to a number
+
+    Returns
+    -------
+    int, float, string
+        the input value, typecast appropriately
+    """
+
+    if type(value) is list:
+        new_list = []
+        for item in value:
+            new_list.append(convert_value(item))
+        return new_list
+
+    try:
+        return int(value)
+    except (ValueError):
+        try:
+            return float(value)
+        except ValueError:
+            return value.strip()
 
 
+configs = configurations()
+dat_dir = configs["data_dir"]
+default_email = configs["jsoc_email"]
+
+# PATH MANAGEMENT
 
 def add_dir_to_path(root_dir=None):
     """Adds a directory and all subdirectories to the PATH environment variable.
@@ -128,7 +163,7 @@ def add_dir_to_path(root_dir=None):
     """
 
     if root_dir is None:
-        root_dir = default_root_dir
+        root_dir = os.environ("FL_PREFIX", None) or "fluxon-mhd/"
 
     # Get the current PATH
     current_path = os.environ.get('PATH', '')
@@ -205,6 +240,52 @@ def add_paths(flux_pipe_dir):
     plot_dir = os.path.abspath(os.path.join(flux_pipe_dir, "plotting"))
     sys.path.append(plot_dir)
     return pdl_script_path
+
+
+def find_file_with_string(directory, search_string):
+    """Searches a directory for a file containing a given string.
+
+    Parameters
+    ----------
+    directory : str
+        Search directory path
+    search_string : str
+        Search string
+
+    Returns
+    -------
+    str
+        Search result file path
+
+    """
+    for file_name in os.listdir(directory):
+        if search_string in file_name:
+            return os.path.join(directory, file_name)
+    return None
+
+
+def shorten_path(string):
+    """Removes the DATAPATH environment variable from a string.
+    This makes it much more readable when printing paths.
+
+    Parameters
+    ----------
+    string : str
+        String to shorten
+
+    Returns
+    -------
+    str
+        Shortened string
+    """
+    datapath = os.getenv("DATAPATH")
+    if datapath:
+        return string.replace(datapath, "$DATAPATH")
+    else:
+        return string
+
+
+# MAGNETOGRAM MANAGEMENT
 
 
 def make_mag_dir(datdir):
@@ -565,49 +646,6 @@ def load_magnetogram_params(datdir):
         doplot = int(fp.readline().rstrip())
         reduce = int(fp.readline().rstrip())
     return (hdr, cr, fname, adapt, doplot, reduce)
-
-
-def find_file_with_string(directory, search_string):
-    """Searches a directory for a file containing a given string.
-
-    Parameters
-    ----------
-    directory : str
-        Search directory path
-    search_string : str
-        Search string
-
-    Returns
-    -------
-    str
-        Search result file path
-
-    """
-    for file_name in os.listdir(directory):
-        if search_string in file_name:
-            return os.path.join(directory, file_name)
-    return None
-
-
-def shorten_path(string):
-    """Removes the DATAPATH environment variable from a string.
-    This makes it much more readable when printing paths.
-
-    Parameters
-    ----------
-    string : str
-        String to shorten
-
-    Returns
-    -------
-    str
-        Shortened string
-    """
-    datapath = os.getenv("DATAPATH")
-    if datapath:
-        return string.replace(datapath, "$DATAPATH")
-    else:
-        return string
 
 
 def read_fits_data(fname):

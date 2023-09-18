@@ -32,8 +32,8 @@ Author: Gilly <gilly@swri.org> (and others!)
 # [Your code here]
 
 import argparse
-import py_plot_helper
-from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram,
+import plot_helper
+from pipe_helper import (get_fixed_coords, load_fits_magnetogram,
                             load_magnetogram_params)
 
 import matplotlib as mpl

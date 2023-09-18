@@ -1,10 +1,10 @@
 =head1 NAME
 
-pdl_pipe_helper - Utility Functions for File and Environment Management
+pipe_helper - Utility Functions for File and Environment Management
 
 =head1 SYNOPSIS
 
-    use pdl_pipe_helper;
+    use pipe_helper;
     shorten_path($string);
     find_highest_numbered_file($directory);
     set_env_variable($variable, $value);
@@ -99,15 +99,106 @@ use warnings;
 use PDL::AutoLoader;
 use PDL;
 use Time::Piece;
+no warnings 'redefine';
 
-# our @PDLLIB;
-# my @INC;
+# print "\n\nI WAS CALLED\n\n";
+
+
+# # our @PDLLIB;
+# # my @INC;
 
 =head2 shorten_path
 
 Shortens the given file path by replacing the DATAPATH environment variable.
 
 =cut
+
+sub configurations {
+    my ($debug, $config_name, $config_filename) = @_;
+    $config_name //= "DEFAULT";
+    $config_filename //= "config.ini";
+    $debug //= 0;
+
+    use Config::IniFiles;
+    use Cwd;
+    use File::Spec::Functions;
+    use File::Find;
+    use File::Temp qw/ tempfile tempdir /;
+
+
+    # Define the path of the configuration file
+    my $config_path = catfile("fluxon-mhd", "flux-pipe", "config", $config_filename);
+
+    # Check if the file exists at the defined path
+    unless (-e $config_path) {
+        my $found = 0;
+        find(sub {
+            if ($_ eq $config_filename) {
+                $config_path = $File::Find::name;
+                $found = 1;
+            }
+        }, getcwd());
+        die "Configuration file not found." unless $found;
+    }
+
+    # Create a temporary file to store the config data without comments
+    my ($fh, $temp_filename) = tempfile();
+
+    # Remove inline comments and write to temporary file
+    open(my $in, '<', $config_path) or die "Could not open '$config_path' for reading: $!";
+    while (<$in>) {
+        s/#.*$//;  # Remove inline comments
+        s/\s+$//;  # Remove trailing whitespace
+        print $fh "$_\n";  # Append a newline character, then print to file
+    }
+    close $in;
+    close $fh;
+
+    # Read the configuration file
+    my $cfg = Config::IniFiles->new( -file => $temp_filename );
+
+    # Select the correct section
+    $config_name = $cfg->val('DEFAULT', 'config_name') if ($config_name eq 'DEFAULT');
+
+    # Load all parameters from the DEFAULT section
+    my %the_config = ();
+    for my $key ($cfg->Parameters('DEFAULT')) {
+        $the_config{$key} = $cfg->val('DEFAULT', $key);
+    }
+
+    # If a different section is specified, load its parameters, overwriting defaults where applicable
+    if ($config_name ne 'DEFAULT') {
+        $config_name = $cfg->val('DEFAULT', 'config_name') if ($config_name eq 'DEFAULT');
+        for my $key ($cfg->Parameters($config_name)) {
+            $the_config{$key} = $cfg->val($config_name, $key);
+        }
+    }
+
+    # Perform additional processing on the configuration settings
+    $the_config{'abs_rc_path'} = glob($the_config{'rc_path'});
+    $the_config{"run_script"} = catfile($the_config{'fl_prefix'}, $the_config{"run_script"});
+
+    # Remove brackets from rotations and fluxon_count
+    $the_config{"rotations"} =~ s/[\[\]]//g;
+    $the_config{"fluxon_count"} =~ s/[\[\]]//g;
+
+    # Create PDL objects
+    $the_config{"rotations"} = PDL->new(split(/\s*,\s*/, $the_config{"rotations"}));
+    $the_config{"fluxon_count"} = PDL->new(split(/\s*,\s*/, $the_config{"fluxon_count"}));
+
+    $the_config{"n_jobs"} = $the_config{"rotations"}->nelem * $the_config{"fluxon_count"}->nelem;
+
+
+    if ($debug){
+        #Print the content of the configuration hash for debugging.
+        print "Configuration file values:\n--------------------------------\n";
+        foreach my $key (keys %the_config) {
+            print "$key: $the_config{$key}\n";
+        }
+        print "--------------------------------\n\n";
+    }
+    return %the_config;
+}
 
 sub shorten_path {
     my ($string) = @_;

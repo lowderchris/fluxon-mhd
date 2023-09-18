@@ -11,7 +11,7 @@ Usage:
 
 Arguments:
     --cr:           The Carrington Rotation for which the magnetogram is to be downloaded. Default is 2219.
-    --datdir:       The directory where the downloaded data will be stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
+    --datdir:       The directory where the downloaded data will be stored. Default is defined in config.ini.
     --reduce:       The factor by which the magnetogram is reduced. Default is 5.
     --do_download:  Flag to force download the files. Default is 0 (False).
 
@@ -26,30 +26,24 @@ Author:
     Gilly <gilly@swri.org> (and others!)
 
 Dependencies:
-    argparse, py_pipe_helper
+    argparse, pipe_helper
 """
 
 import argparse
-from py_pipe_helper import get_magnetogram_file, write_magnetogram_params
+from pipe_helper import (configurations, get_magnetogram_file, write_magnetogram_params)
 
-datdir = '/Users/cgilbert/vscode/fluxons/fluxon-data'
-
+configs = configurations()
 
 # create the argument parser
 parser = argparse.ArgumentParser(
     description='This script downloads a magnetogram for a particular Carrington Rotation')
-parser.add_argument('--cr', type=int, default=2219, help='Carrington Rotation')
-parser.add_argument('--datdir', type=str,
-                    default=datdir, help='data directory')
-parser.add_argument('--reduce', type=int, default=5,
-                    help='factor by which the magnetogram is reduced')
-parser.add_argument('--do_download', type=int,
-                    default=0, help='download the files')
+parser.add_argument('--cr', type=int,     default=configs["rotations"][0],help='Carrington Rotation')
+parser.add_argument('--reduce', type=int, default=configs["mag_reduce"]  ,help='Reduction factor')
 args = parser.parse_args()
 
 # get the magnetogram files
 big_path, small_path = get_magnetogram_file(
-    cr=args.cr, datdir=args.datdir, force_download=args.do_download, reduce=args.reduce)
+    cr=args.cr, datdir=configs["data_dir"], force_download=configs["do_download"], reduce=args.reduce)
 
 # write the magnetogram parameters
-write_magnetogram_params(args.datdir, args.cr, small_path, args.reduce)
+# write_magnetogram_params(args.datdir, args.cr, small_path, args.reduce)

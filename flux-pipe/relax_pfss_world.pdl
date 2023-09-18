@@ -7,7 +7,7 @@ relax_pfss_world - Relaxes the initial world state generated from PFSS (Potentia
 
 # package relax_pfss_world;
 
-use pdl_pipe_helper;
+use pipe_helper;
 use strict;
 use warnings;
 
@@ -81,7 +81,7 @@ Gilly <gilly@swri.org> (and others!)
 
 =head1 SEE ALSO
 
-L<pdl_pipe_helper>, L<Storable>, L<File::Path>, L<Time::HiRes>
+L<pipe_helper>, L<Storable>, L<File::Path>, L<Time::HiRes>
 
 =cut
 

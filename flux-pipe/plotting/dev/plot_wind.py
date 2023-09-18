@@ -34,8 +34,8 @@ Modules:
     argparse : For command-line argument parsing.
     matplotlib : For plotting.
     numpy : For numerical operations.
-    py_plot_helper : Custom plotting helper module.
-    py_pipe_helper : Custom pipeline helper module.
+    plot_helper : Custom plotting helper module.
+    pipe_helper : Custom pipeline helper module.
 
 Example:
 --------
@@ -59,8 +59,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 mpl.use("qt5agg")
-import py_plot_helper
-from py_pipe_helper import get_fixed_coords, load_fits_magnetogram
+import plot_helper
+from pipe_helper import get_fixed_coords, load_fits_magnetogram
 
 default_cr = 2163
 

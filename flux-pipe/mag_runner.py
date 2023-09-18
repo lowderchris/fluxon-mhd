@@ -27,10 +27,10 @@ Configuration:
     do_download:    Flag to download the files.
 
 Functions:
-    add_top_level_dirs_to_path:  Utility function imported from 'py_pipe_helper'.
+    add_top_level_dirs_to_path:  Utility function imported from 'pipe_helper'.
 
 Dependencies:
-    subprocess, os, tqdm, py_pipe_helper
+    subprocess, os, tqdm, pipe_helper
 
 Example:
     Modify the configuration variables as needed and run `python mag_runner.py`.
@@ -46,7 +46,6 @@ import subprocess
 from os import chdir
 import os
 from tqdm import tqdm
-# import py_pipe_helper as ph
 
 flux_dir = os.environ.get("FL_PREFIX")
 chdir(flux_dir)

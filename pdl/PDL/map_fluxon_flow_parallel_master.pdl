@@ -30,16 +30,13 @@ This Perl module provides functionality to map the solar wind flow along fluxon 
 
 =head1 AUTHOR
 
-Your Name <your.email@example.com>
+Gilly <gilly@swri.org> and others!
 
 =head1 LICENSE
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 
 =cut
-
-
-
 
 
 =head2 map_fluxon_flow_parallel_master
@@ -99,7 +96,7 @@ sub map_fluxon_flow_parallel_master {
     my $n_choke = 12;
     my $choke = 0;
     my $do_plot_charts = 0;
-    my $chartpath = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/fluxons/profiles/";
+    # my $chartpath = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/fluxons/profiles/";
 
     # Count the number of open and closed fluxons
     my $n_closed = 0;
@@ -297,6 +294,8 @@ if ($0 eq __FILE__) {
     use Time::HiRes qw(clock_gettime);
     use File::Basename qw(fileparse);
 
+
+
     my $datdir = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/";
     push(@PDLLIB,"+".$datdir);
     push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly");
@@ -304,8 +303,9 @@ if ($0 eq __FILE__) {
     push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/flux-pipe");
     push(@INC, "+/Users/cgilbert/opt");
     push(@INC, "/Users/cgilbert/.cpan/build");
-
     system("cd /Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/flux-pipe");
+
+
 
 
     my $cr = 2160;

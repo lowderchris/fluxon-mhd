@@ -16,7 +16,7 @@ Arguments:
     --nwant:        The number of fluxons wanted. Default is None.
     --open:         The number of open fluxons. Default is None.
     --closed:       The number of closed fluxons. Default is None.
-    --dat_dir:      The directory where the data will be stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
+    --dat_dir:      The directory where the data will be stored. Default is defined in the config.ini file.
     --batch:        The batch name for the operation. Default is 'default_batch'.
 
 Functions:
@@ -29,7 +29,7 @@ Author:
     Gilly <gilly@swri.org> (and others!)
 
 Dependencies:
-    os, os.path, argparse, matplotlib.pyplot, numpy, py_plot_helper, pfss_funcs, py_pipe_helper
+    os, os.path, argparse, matplotlib.pyplot, numpy, plot_helper, pfss_funcs, pipe_helper
 """
 
 import os
@@ -39,9 +39,9 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 
-from py_plot_helper import get_ax
+from plot_helper import get_ax
 from pfss_funcs import pixel_to_latlon
-from py_pipe_helper import (load_fits_magnetogram, load_magnetogram_params,
+from pipe_helper import (configurations, load_fits_magnetogram, load_magnetogram_params,
                             shorten_path)
 
 def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False, reduce_amt=0,
@@ -221,22 +221,27 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
 # Main Code
 # ----------------------------------------------------------------------
 #
+
 if __name__ == "__main__":
     # Create the argument parser
     parser = argparse.ArgumentParser(description=
             'This script plots the expansion factor of the given radial_fr.dat')
-    parser.add_argument('--cr', type=int, default=None)
-    parser.add_argument('--nwant', type=int, default=None)
+    parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
+    parser.add_argument('--file', type=str, default=None, help='Data File Name')
+    parser.add_argument('--nwant', type=int, default=None, help='Number of Fluxons')
     parser.add_argument('--open', type=str, default=None)
     parser.add_argument('--closed', type=str, default=None)
-    parser.add_argument('--dat_dir', type=str, default=
-                        '/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
-    parser.add_argument('--batch', type=str, default="default_batch", help='select the batch name')
+
     args = parser.parse_args()
-    batch = args.batch
+    configs = configurations(debug=False)
+
 
     # Run the code
-    (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
-    CR = args.cr or cr
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, args.dat_dir, batch, args.open,
-            args.closed, do_print=True, reduce_amt=reduce, nwant=args.nwant, do_print_top=True)
+    # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
+    CR = args.cr or configs["rotations"][0]
+    nwant = args.nwant or configs["fluxon_count"][0]
+
+    magnet_plot(CR,             configs["data_dir"],    configs["batch_name"],
+                args.open,      args.closed,            do_print=configs["verbose"],
+                reduce_amt=configs["mag_reduce"],       nwant=nwant,
+                do_print_top=True)

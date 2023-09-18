@@ -30,8 +30,8 @@ Modules:
 - argparse: For command-line arguments
 - os.path: For file path manipulations
 - scipy.interpolate: For data interpolation
-- py_plot_helper: Custom module for plotting helpers
-- py_pipe_helper: Custom module for loading FITS magnetograms and parameters
+- plot_helper: Custom module for plotting helpers
+- pipe_helper: Custom module for loading FITS magnetograms and parameters
 - plot_fieldmap: Custom module for magnet plot
 - plot_wind_map_detailed: Custom module for detailed wind map plotting
 
@@ -49,8 +49,8 @@ import argparse
 import os.path as path
 from scipy.interpolate import griddata
 
-from py_plot_helper import get_ax
-from py_pipe_helper import load_fits_magnetogram, load_magnetogram_params, get_fixed_coords
+from plot_helper import get_ax
+from pipe_helper import load_fits_magnetogram, load_magnetogram_params, get_fixed_coords
 from plot_fieldmap import magnet_plot
 from plot_wind_map_detailed import hex_plot, hist_plot, scale_data, remove_outliers
 

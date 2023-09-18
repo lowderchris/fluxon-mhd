@@ -8,7 +8,7 @@ data related to solar wind velocity, magnetic fields, and other parameters to ge
 
 Attributes:
     --cr: Carrington Rotation (int, default=None)
-    --dat_dir: Data directory path (str, default='/Users/cgilbert/vscode/fluxons/fluxon-data')
+    --dat_dir: Data directory path (str, default is defined in config.ini)
     --show: (int, default=1)
     --interp: Interpolation method (str, default='linear')
     --nwant: (int, default=0)
@@ -32,10 +32,10 @@ import argparse
 import os.path as path
 from scipy.interpolate import griddata
 
-from py_plot_helper import get_ax
+from plot_helper import get_ax
 
-from py_pipe_helper import \
-    (load_fits_magnetogram, load_magnetogram_params, get_fixed_coords)
+from pipe_helper import (configurations, load_fits_magnetogram,
+                         load_magnetogram_params, get_fixed_coords)
 
 from plot_fieldmap import magnet_plot
 
@@ -419,17 +419,17 @@ def plot_wind_map_detailed(args):
 #
 if __name__ == "__main__":
     # Create the argument parser
+    from pipe_helper import configurations
+    configs = configurations()
+
     parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
-    parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
-    parser.add_argument('--dat_dir', type=str, default='/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
-    parser.add_argument('--show', type=int, default=1)
+    parser.add_argument('--cr', type=int, default=configs["rotations"][0], help='Carrington Rotation')
     parser.add_argument('--interp', type=str, default="linear")
-    # parser.add_argument('--nact', type=int, default=0)
-    parser.add_argument('--nwant', type=int, default=0)
+    parser.add_argument('--show', type=int, default=configs["verbose"])
     parser.add_argument('--file', type=str, default=None, help='select the file name')
-    parser.add_argument('--batch', type=str, default="fluxon_paperfigs_5", help='select the batch name')
-
-
+    parser.add_argument('--dat_dir', type=str, default=configs['data_dir'], help='data directory')
+    parser.add_argument('--nwant', type=int, default=configs["fluxon_count"][0], help='number of fluxons')
+    parser.add_argument('--batch', type=str, default=configs["batch_name"], help='select the batch name')
     args = parser.parse_args()
 
     plot_wind_map_detailed(args)

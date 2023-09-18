@@ -30,13 +30,8 @@ Author:
 
 import subprocess
 from tqdm import tqdm
-import configparser
-import os
-import ast
+from pipe_helper import configurations
 
-
-# Load configurations from disk
-from py_pipe_helper import configurations
 configs = configurations(debug=True)
 
 # Initialize a progress bar with the total number of jobs to run

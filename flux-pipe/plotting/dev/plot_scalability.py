@@ -19,7 +19,7 @@ Example:
     python plot_scalability.py
 
 Dependencies:
-    os.path, matplotlib.pyplot, numpy, pandas, py_plot_helper
+    os.path, matplotlib.pyplot, numpy, pandas, plot_helper
 
 Output:
     A plot saved as a PNG format in the specified directory.
@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.ticker import ScalarFormatter
-from py_plot_helper import load_data
+from plot_helper import load_data
 
 datdir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"
 batch = "scalability_test"

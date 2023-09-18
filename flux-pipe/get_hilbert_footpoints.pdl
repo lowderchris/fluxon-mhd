@@ -11,7 +11,7 @@ use warnings;
 
 =head1 SYNOPSIS
 
-    use pdl_pipe_helper;
+    use pipe_helper;
     my ($floc, $N_actual) = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $process_magnetogram);
 
 =head1 DESCRIPTION
@@ -72,14 +72,14 @@ Gilly <gilly@swri.org> (and others!)
 
 =head1 SEE ALSO
 
-L<pdl_pipe_helper>, L<fluxon_placement_hilbert>, L<rfits>, L<wcols>, L<rcols>
+L<pipe_helper>, L<fluxon_placement_hilbert>, L<rfits>, L<wcols>, L<rcols>
 
 =cut
 
 
 sub get_hilbert_footpoints{
     my ($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $process_magnetogram) = @_;
-    use pdl_pipe_helper;
+    use pipe_helper;
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Tracing Magnetogram to get $n_fluxons_wanted Footpoints\n";

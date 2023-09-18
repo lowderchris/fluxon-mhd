@@ -25,7 +25,7 @@ Example:
     python plot_bmag.py --cr 2183 --show 1 --batch 'my_batch' --nwant 100
 
 Dependencies:
-    os.path, argparse, matplotlib.pyplot, numpy, py_plot_helper, py_pipe_helper
+    os.path, argparse, matplotlib.pyplot, numpy, plot_helper, pipe_helper
 
 Author:
     Gilly <gilly@swri.org> (and others!)
@@ -35,22 +35,17 @@ Author:
 
 import os.path
 import argparse
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from pipe_helper import (configurations, get_fixed_coords, load_fits_magnetogram,
+                         load_magnetogram_params, shorten_path)
 
-import py_plot_helper #required
-from py_pipe_helper import (get_fixed_coords, load_fits_magnetogram, load_magnetogram_params, shorten_path)
 
-# Load configurations from disk
-from py_pipe_helper import configurations
-configs = configurations(debug=True)
-a=1
+def plot_bmag(args, configs):
 
-def plot_bmag(args):
-
-    batch = args.batch
-    (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
-    CR = args.cr or cr or 2183
+    batch = configs["batch_name"]
+    # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
+    CR = args.cr or configs["rotations"][0]
 
     filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{CR}/wind/ \
                                 cr{args.cr}_f{args.nwant}_radial_bmag.dat'
@@ -129,7 +124,7 @@ def plot_bmag(args):
     pngname = os.path.join(bdir, imagename)
 
     plt.savefig(pngname)
-    if args.show:
+    if configs['verbose']:
         plt.show()
     plt.close(fig)
     print("Done!\n")
@@ -146,15 +141,27 @@ if __name__ == "__main__":
     # Create the argument parser
     print("\n\tPlotting Bmag...", end="")
     parser = argparse.ArgumentParser(description=
-                                    'This script plots the expansion factor of the given radial_fr.dat')
-    parser.add_argument('--cr', type=int, default=0, help='Carrington Rotation')
-    # parser.add_argument('--dat_dir', type=str, default=
-    #                     '/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
-    parser.add_argument('--show', type=int, default=0)
-    parser.add_argument('--batch', type=str, default='default_batch')
-    parser.add_argument('--file', type=str, default="/Users/cgilbert/vscode/fluxons/fluxon-data/batches/default_batch/cr2193/wind/cr2193_f500_radial_bmag.dat")
-    parser.add_argument('--nwant', type=int, default=None, help='magnetogram file')
-
+                                    'This script plots the radial magnetic field')
+    parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
+    parser.add_argument('--file', type=str, default=None, help='Data File Name')
+    parser.add_argument('--nwant', type=int, default=None, help='Number of Fluxons')
     args = parser.parse_args()
+    configs = configurations(debug=False)
 
-    plot_bmag(args)
+    plot_bmag(args, configs)
+
+
+
+# import plot_helper #required
+# dirlist = plot_helper.add_fluxon_dirs_to_path(do_print=True)
+# plot_helper.path_add(dirlist, do_print=True)
+
+# a = [print(x) for x in dirlist]
+# import pdb; pdb.set_trace()
+# # import helpers
+# 1/0
+# import plot_helper
+
+# import sys
+# # sys.path.append(os.path.join(os.environ["FL_PREFIX"], "flux-pipe"))
+# a=[print(x) for x in sys.path]

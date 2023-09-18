@@ -19,7 +19,7 @@ Example:
     python plot_scalability_single.py
 
 Dependencies:
-    os.path, numpy, matplotlib.pyplot, pandas, py_plot_helper
+    os.path, numpy, matplotlib.pyplot, pandas, plot_helper
 
 Output:
     A plot saved as both PNG and PDF formats in the specified directory.
@@ -34,7 +34,7 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from py_plot_helper import load_data
+from plot_helper import load_data
 
 run_name = "fluxon r3"
 datdir = "/Users/cgilbert/vscode/fluxons/fluxon-data/"

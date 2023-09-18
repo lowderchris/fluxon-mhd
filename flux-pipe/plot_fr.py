@@ -13,7 +13,7 @@ Usage:
 Arguments:
     args: An argparse.Namespace object containing the following attributes:
         --cr:           The Carrington Rotation for which the expansion factor is to be plotted. Default is 2163.
-        --dat_dir:      The directory where the data will be stored. Default is '/Users/cgilbert/vscode/fluxons/fluxon-data'.
+        --dat_dir:      The directory where the data will be stored. Default is defined in config.ini.
         --batch:        The batch name for the operation. Default is 'scalability_test'.
         --show:         Whether to show the plot or not. Default is 0.
         --nwant:        The number of fluxons wanted. Default is None.
@@ -31,14 +31,14 @@ Author:
     Gilly <gilly@swri.org>
 
 Dependencies:
-    argparse, os.path, matplotlib.pyplot, numpy, py_plot_helper
+    argparse, os.path, matplotlib.pyplot, numpy, plot_helper
 """
 
 import argparse
 import os.path
 import matplotlib.pyplot as plt
 import numpy as np
-import py_plot_helper
+import plot_helper
 
 def plot_fr(args):
     """
@@ -51,8 +51,7 @@ def plot_fr(args):
         True
     """
     batch = args.batch
-    filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{args.cr} \
-                                /wind/cr{args.cr}_f{args.nwant}_radial_fr.dat'
+    filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_fr.dat'
     imagename = os.path.basename(filename.replace(".dat", ".png"))
     imagedir = os.path.dirname(os.path.dirname(os.path.dirname(filename)))
     frdir = os.path.join(imagedir, "imgs", "fr")
@@ -143,15 +142,17 @@ def plot_fr(args):
 if __name__ == "__main__":
     # Create the argument parser
     print("\tPlotting Fr...", end="")
+    from pipe_helper import configurations
+    configs = configurations()
+
     parser = argparse.ArgumentParser(description=
                             'This script plots the expansion factor of the given radial_fr.dat')
-    parser.add_argument('--cr', type=int, default=2163, help='Carrington Rotation')
-    parser.add_argument('--dat_dir', type=str, default=
-                            '/Users/cgilbert/vscode/fluxons/fluxon-data', help='data directory')
-    parser.add_argument('--batch', type=str, default="scalability_test", help='select the batch name')
-    parser.add_argument('--show', type=int, default=0)
-    parser.add_argument('--nwant', type=int, default=None, help='magnetogram file')
-    parser.add_argument('--file', type=str, default=None)
+    parser.add_argument('--cr',     type=int, default=configs['rotations'][0],    help='Carrington Rotation')
+    parser.add_argument('--dat_dir',type=str, default=configs["data_dir"],        help='data directory')
+    parser.add_argument('--batch',  type=str, default=configs["batch_name"],      help='select the batch name')
+    parser.add_argument('--nwant',  type=int, default=configs["fluxon_count"][0], help='magnetogram file')
+    parser.add_argument('--show',   type=int, default=0)
+    parser.add_argument('--file',   type=str, default=None)
 
     args = parser.parse_args()
 

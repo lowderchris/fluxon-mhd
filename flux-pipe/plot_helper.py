@@ -70,29 +70,11 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pipe_helper import convert_value
 
 
 ## Helper functions to parse the output file
-def convert_value(value):
-    """ Convert a string to an int or float if possible, otherwise return the string.
 
-    Parameters
-    ----------
-    value : string
-        the value to convert to a number
-
-    Returns
-    -------
-    int, float, string
-        the input value, typecast appropriately
-    """
-    try:
-        return int(value)
-    except ValueError:
-        try:
-            return float(value)
-        except ValueError:
-            return value.strip()
 
 
 def parse_line(line):
@@ -173,6 +155,7 @@ def add_fluxon_dirs_to_path(do_print=False):
 
     # Get the current directory path
     this_cwd = os.getcwd()
+    # print(f"WE ARE AT {this_cwd}")
 
     # Get the list of directories in the current directory
     dirs = list_directories(this_cwd)
@@ -183,6 +166,7 @@ def add_fluxon_dirs_to_path(do_print=False):
         if "mhd" in thepath:
             dirlist.append(os.path.join(thepath, "flux-pipe"))
             dirlist.append(os.path.join(thepath, "flux-pipe", "plotting"))
+            dirlist.append(os.path.join(thepath, "flux-pipe", "helpers"))
             break
 
     # Get the pipedir environment variable and add it to the path
@@ -190,12 +174,18 @@ def add_fluxon_dirs_to_path(do_print=False):
     if pipedir is not None:
         dirlist.append(pipedir)
 
-    # Add the parent directory to the module search path
+    path_add(dirlist, do_print=do_print)
+
+    if do_print:
+        print("Added fluxon directories to path.\n")
+
+    return dirlist
+
+def path_add(dirlist, do_print=False):    # Add the parent directory to the module search path
     for path in dirlist:
         sys.path.append(path)
         if do_print:
             print(path)
-
 
 def list_directories(path):
     """ List the directories in the given path.

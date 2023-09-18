@@ -20,7 +20,7 @@ use PDL::IO::Misc;
 use Time::HiRes qw(clock_gettime);
 use File::Basename qw(fileparse);
 use File::Basename;
-use pdl_pipe_helper;
+use pipe_helper;
 
 =head1 SYNOPSIS
 

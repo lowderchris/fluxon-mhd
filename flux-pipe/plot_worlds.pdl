@@ -10,14 +10,14 @@ plot_worlds - Perl PDL Script for Plotting Initial and Relaxed Worlds
 use warnings;
 use PDL::AutoLoader;
 use PDL;
-use pdl_pipe_helper;
+use pipe_helper;
 
 =head1 SYNOPSIS
 
     use warnings;
     use PDL::AutoLoader;
     use PDL;
-    use pdl_pipe_helper;
+    use pipe_helper;
     plot_worlds($this_world_orig, $this_world_relaxed, $do_interactive, $do_png, $full_world_path, $datdir, $batch_name, $CR, $N_actual, $nwant, $lim, $lim2, $stepnum);
 
 =head1 DESCRIPTION
@@ -73,9 +73,11 @@ Gilly <gilly@swri.org> (and others!)
 
 =head1 SEE ALSO
 
-L<PDL>, L<PDL::AutoLoader>, L<pdl_pipe_helper>
+L<PDL>, L<PDL::AutoLoader>, L<pipe_helper>
 
 =cut
+
+
 
 sub plot_worlds {
     our (
