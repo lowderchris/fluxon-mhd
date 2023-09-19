@@ -1,32 +1,7 @@
-
 =head1 NAME
 
-magnetogram2wind - FLUX Main Pipeline Script - A script to run the entire FLUX pipeline on a single Carrington Rotation (CR).
-
-=cut
-
-use strict;
-use warnings;
-use PDL;
-use PDL::AutoLoader;
-use PDL::Transform;
-use PDL::NiceSlice;
-use PDL::Options;
-
-use Flux;
-use PDL::IO::Misc;
-use File::Path;
-use File::Find;
-use Time::HiRes    qw(clock_gettime sleep);
-use File::Basename qw(fileparse);
-
-# Makes sure the current directory is always in the path
-use FindBin qw($RealBin);
-use lib $RealBin;
-use pipe_helper;
-
-$PDL::BIGPDL = 1;
-
+magnetogram2wind - FLUX Main Pipeline Script
+A script to run the entire FLUX pipeline on a single Carrington Rotation (CR).
 
 =head1 SYNOPSIS
 
@@ -34,26 +9,20 @@ $PDL::BIGPDL = 1;
 
 =head1 DESCRIPTION
 
-This script automates the entire FLUX pipeline for a given Carrington Rotation (CR). The pipeline consists of several stages:
+This script automates the entire FLUX pipeline for a given Carrington Rotation (CR).
+The pipeline consists of several stages:
 
 =over 4
 
 =item 1. Downloading the Magnetogram
-
 =item 2. Processing the Magnetogram to find footpoints
-
 =item 3. Running the Python PFSS Code to trace the footpoints into the corona
-
 =item 4. Generating an initial FLUX world from the PFSS output
-
 =item 5. Relaxing the initial world state using the FLUX code
-
 =item 6. Plotting the world states
-
 =item 7. Computing and plotting the solar wind and other derived quantities
 
 =back
-
 
 =head1 NOTES
 
@@ -65,11 +34,33 @@ Gilly <gilly@swri.org> (and others!)
 
 =head1 SEE ALSO
 
-L<PDL>, L<PDL::AutoLoader>, L<PDL::Transform>, L<PDL::NiceSlice>, L<PDL::Options>, L<Flux>, L<PDL::IO::Misc>, L<File::Path>, L<Time::HiRes>, L<File::Basename>, L<pipe_helper>
+L<PDL>, L<PDL::AutoLoader>, L<PDL::Transform>, L<PDL::NiceSlice>, L<PDL::Options>,
+L<Flux>, L<PDL::IO::Misc>, L<File::Path>, L<Time::HiRes>, L<File::Basename>, L<pipe_helper>
 
 =cut
 
+# Import required modules
+use strict;
+use warnings;
+use PDL;
+use PDL::AutoLoader;
+use PDL::Transform;
+use PDL::NiceSlice;
+use PDL::Options;
+use Flux;
+use PDL::IO::Misc;
+use File::Path;
+use File::Find;
+use Time::HiRes qw(clock_gettime sleep);
+use File::Basename qw(fileparse);
 
+# Ensure the current directory is always in the path
+use FindBin qw($RealBin);
+use lib $RealBin;
+use pipe_helper;
+set_paths();
+
+$PDL::BIGPDL = 1;
 
 #######################################################################################################
 ## Job Settings #######################################################################################
