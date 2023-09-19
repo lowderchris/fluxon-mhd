@@ -1,49 +1,42 @@
-"""
-Download a Magnetogram for a Particular Carrington Rotation
+"""Download a Magnetogram for a Particular Carrington Rotation
 ===========================================================
 
-This script automates the process of downloading a magnetogram for a specific Carrington Rotation (CR).
+This module automates the process of downloading a magnetogram for a specific Carrington Rotation (CR).
 It provides options to specify the CR, data directory, reduction factor, and whether to force download the files.
 
-Usage:
-    python get_magnetograms.py [--cr CARRINGTON_ROTATION] [--datdir DATA_DIRECTORY]
-                               [--reduce REDUCTION_FACTOR] [--do_download DOWNLOAD_FLAG]
+Attributes
+----------
+configs : dict
+    The configuration parameters loaded from 'config.ini'.
 
-Arguments:
-    --cr:           The Carrington Rotation for which the magnetogram is to be downloaded. Default is 2219.
-    --datdir:       The directory where the downloaded data will be stored. Default is defined in config.ini.
-    --reduce:       The factor by which the magnetogram is reduced. Default is 5.
-    --do_download:  Flag to force download the files. Default is 0 (False).
+Functions
+---------
+get_magnetogram_file : function
+    Fetches the magnetogram file based on the provided arguments.
 
-Functions:
-    get_magnetogram_file:  Fetches the magnetogram file based on the provided arguments.
-    write_magnetogram_params: Writes the parameters of the downloaded magnetogram to a file.
+Examples
+--------
+Run the script with the following command:
+    python get_magnetograms.py --cr 2220  --reduce 4
 
-Example:
-    python get_magnetograms.py --cr 2220 --datdir '/path/to/data' --reduce 4 --do_download 1
-
-Author:
-    Gilly <gilly@swri.org> (and others!)
-
-Dependencies:
-    argparse, pipe_helper
+Authors
+-------
+Gilly <gilly@swri.org> (and others!)
 """
 
+
 import argparse
-from pipe_helper import (configurations, get_magnetogram_file, write_magnetogram_params)
+from pipe_helper import (configurations, get_magnetogram_file)
 
 configs = configurations()
 
-# create the argument parser
+# Create the argument parser
 parser = argparse.ArgumentParser(
     description='This script downloads a magnetogram for a particular Carrington Rotation')
-parser.add_argument('--cr', type=int,     default=configs["rotations"][0],help='Carrington Rotation')
-parser.add_argument('--reduce', type=int, default=configs["mag_reduce"]  ,help='Reduction factor')
+parser.add_argument('--cr', type=int,     default=configs["rotations"][0],  help='Carrington Rotation')
+parser.add_argument('--reduce', type=int, default=configs["mag_reduce"],    help='Reduction factor')
 args = parser.parse_args()
 
-# get the magnetogram files
+# Get the magnetogram files
 big_path, small_path = get_magnetogram_file(
     cr=args.cr, datdir=configs["data_dir"], force_download=configs["do_download"], reduce=args.reduce)
-
-# write the magnetogram parameters
-# write_magnetogram_params(args.datdir, args.cr, small_path, args.reduce)

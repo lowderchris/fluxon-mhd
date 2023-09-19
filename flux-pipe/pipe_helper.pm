@@ -188,6 +188,13 @@ sub configurations {
 
     $the_config{"n_jobs"} = $the_config{"rotations"}->nelem * $the_config{"fluxon_count"}->nelem;
 
+    # Calculate directories
+    calculate_directories(\%the_config);
+
+
+    my $reduct = $the_config{"mag_reduce"};
+    my $magdir = $the_config{'mag_dir'};
+    $the_config{'magfile'} = "$magdir/CR%s\_r$reduct\_hmi.fits";
 
     if ($debug){
         #Print the content of the configuration hash for debugging.
@@ -301,9 +308,12 @@ Calculates various directories based on the base directory and batch name.
 =cut
 
 sub calculate_directories {
-(my $basedir, my $batch_name, my $print) = @_;
-
+    my ($config_ref) = @_;
     # Trim whitespace from the beginning and end of the directory and batch name
+    $basedir     = $config_ref->{'base_dir'};
+    $data_dir    = $config_ref->{'data_dir'};  # Assuming you have this in your config
+    $batch_name  = $config_ref->{'batch_name'};
+
     $basedir =~ s/^\s+|\s+$//g;
     $batch_name =~ s/^\s+|\s+$//g;
 
@@ -313,19 +323,25 @@ sub calculate_directories {
     my $pipedir = catdir($fluxdir, "flux-pipe");
     my $pdldir =  catdir($fluxdir, "pdl", "PDL");
 
-    my $datdir =  catdir($basedir, "fluxon-data");
+    # Use the provided data_dir if defined, otherwise calculate it
+    my $datdir = defined($data_dir) ? $data_dir : catdir($basedir, "fluxon-data");
+
     my $magdir =  catdir($datdir, "magnetograms");
     my $batchdir = catdir($datdir, "batches", $batch_name);
     my $logfile = catfile($batchdir, "pipe_log.txt");
 
 
-    set_and_check_env_variable('FLUXPATH', $fluxdir, $print);
-    set_and_check_env_variable('PIPEPATH', $pipedir, $print);
-    set_and_check_env_variable('BATCHPATH', $batchdir, $print);
-    set_and_check_env_variable('DATAPATH', $datdir, $print);
+    # Update the original config hash
+    $config_ref->{'pipe_dir'} = $pipedir;
+    $config_ref->{'pdl_dir'} = $pdldir;
+    $config_ref->{'datdir'} = $datdir;
+    $config_ref->{'mag_dir'} = $magdir;
+    $config_ref->{'batch_dir'} = $batchdir;
+    $config_ref->{'logfile'} = $logfile;
 
-    return ($pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile);
+    set_and_check_env_variable('DATAPATH', $datdir, 0);
 }
+
 
 =head2 set_python_path
 
@@ -347,7 +363,7 @@ Prints a banner with various details.
 
 sub print_banner {
     my ($batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string) = @_;
-    print "|\n|\n|\n|\n|\n|\n|\n|\n|\n|";
+    print "\n\n\n\n\n\n|\n|\n|\n|\n|\n|\n|\n|\n|\n|";
     print "\n\n";
     print "--------------------------------------------------------------------------------------------------\n";
     print "FLUXPipe: Indicate a Carrington Rotation and this script will run the entire Flux Pipeline for it.\n";
@@ -435,7 +451,6 @@ sub set_paths {
     my ($do_plot) = @_;
     if (defined $ENV{'FL_PREFIX'}) {
     my $envpath = "$ENV{'FL_PREFIX'}/perl_paths.pm";
-    print "\nAttempting to require: $envpath\n";
 
     # Check if the file exists and is readable
     if (-e $envpath && -r _) {

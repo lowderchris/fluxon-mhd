@@ -106,6 +106,11 @@ def configurations(config_name=None, config_filename="config.ini", debug=False):
     the_config["fluxon_count"] = ast.literal_eval(the_config["fluxon_count"])
     the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"]))
 
+    # Calculate directories
+    calculate_directories(the_config)
+
+    the_config['magfile'] = f"{the_config['mag_dir']}/CR{{}}_r{the_config['mag_reduce']}_hmi.fits"
+
     for key, value in the_config.items():
         the_config[key] = convert_value(value)
 
@@ -145,6 +150,31 @@ def convert_value(value):
             return float(value)
         except ValueError:
             return value.strip()
+
+# Helper function to calculate directories
+def calculate_directories(the_config):
+    basedir = the_config['base_dir'].strip()
+    batch_name = the_config['batch_name'].strip()
+    dat_dir = the_config.get('data_dir', None)  # Assuming you have this in your config
+
+    fluxdir = os.path.join(basedir, "fluxon-mhd")
+    pipedir = os.path.join(fluxdir, "flux-pipe")
+    pdldir = os.path.join(fluxdir, "pdl", "PDL")
+
+    # Use the provided data_dir if defined, otherwise calculate it
+    datdir = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
+
+    magdir = os.path.join(datdir, "magnetograms")
+    batchdir = os.path.join(datdir, "batches", batch_name)
+    logfile = os.path.join(batchdir, "pipe_log.txt")
+
+    # Update the original config dictionary
+    the_config['pipe_dir']  = pipedir
+    the_config['pdl_dir']   = pdldir
+    the_config['datdir']    = datdir
+    the_config['mag_dir']   = magdir
+    the_config['batch_dir'] = batchdir
+    the_config['logfile']   = logfile
 
 
 configs = configurations()

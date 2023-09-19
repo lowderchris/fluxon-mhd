@@ -131,7 +131,7 @@ if ($recompute) {
 
 
 my ( $pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile ) =
-  calculate_directories( $basedir, $batch_name, $print_dirs );
+    @configs{qw/pipe_dir pdl_dir datdir mag_dir batch_dir logfile/};
 
 
 print_banner( $batch_name, $CR, $reduction, $n_fluxons_wanted,
@@ -182,8 +182,7 @@ if ( not $plot_only ) {
 # into the corona to define an initial placeholder geometry.
 # This lets us extend this into 3d space with real linking topology.
     my $pfss_command =
-    "$pythondir $pipedir/get_pfss.py --force $do_pfss --batch $batch_name --reduce $reduction " .
-                        "--datdir $datdir --cr $CR --magfile $magfile --nwant $n_fluxons_wanted";
+    "$pythondir $pipedir/get_pfss.py --cr $CR --magfile $magfile --nwant $n_fluxons_wanted";
 
     system($pfss_command) == 0 or ( die "Python script returned error $?", exit );
 
