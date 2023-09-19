@@ -29,6 +29,8 @@ import matplotlib as mpl
 mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
+import os
+
 import os.path as path
 from scipy.interpolate import griddata
 
@@ -352,7 +354,6 @@ def plot_wind_map_detailed(args):
     main_file =  f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
-    import os
     if not path.exists(os.path.dirname(main_file)):
         os.makedirs(os.path.dirname(main_file))
 
@@ -416,7 +417,6 @@ def plot_wind_map_detailed(args):
 #
 if __name__ == "__main__":
     # Create the argument parser
-    from pipe_helper import configurations
     configs = configurations()
 
     parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
@@ -430,6 +430,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     plot_wind_map_detailed(args)
-
-
-
