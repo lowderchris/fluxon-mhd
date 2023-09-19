@@ -1,36 +1,69 @@
 """
-pipe_helper: Library of Helper Scripts for the Flux-Pipe Algorithm
-=====================================================================
+pipe_helper: Comprehensive Library for Flux-Pipe Algorithm and Fluxon Simulations
+===============================================================================
 
-This library contains a collection of utility functions designed to assist with
-the flux-pipe algorithm. It includes methods for managing directories, handling
-FITS files, and manipulating magnetogram data.
+This library provides a collection of utility functions to assist with the
+Flux-Pipe algorithm and Fluxon simulations. It offers functionalities for managing directories,
+handling FITS files, manipulating magnetogram data, parsing and plotting data generated from fluxon simulations.
 
-Usage:
-    import flux_pipe_helper as fph
-
-Arguments:
-    No command-line arguments are required when using this library as a module.
+Modules:
+--------
+- os, os.path, sys, pathlib.PosixPath, Path
+- numpy as np
+- matplotlib.pyplot as plt
+- astropy.io.fits, astropy.nddata.block_reduce
+- sunpy, sunpy.coordinates, sunpy.io, sunpy.net.Fido, attrs as a
+- pandas
 
 Functions:
-    add_dir_to_path, add_top_level_dirs_to_path, add_paths, make_mag_dir, get_magnetogram_file,
-    reduce_mag_file, reduce_fits_image, plot_raw_magnetogram, load_fits_magnetogram,
-    write_magnetogram_params, load_magnetogram_params, find_file_with_string, shorten_path,
-    read_fits_data, get_fixed_coords
+----------
+### General Utilities
+- `configurations`: Reads and sanitizes configuration settings from a specified config file.
+- `convert_value`: Converts a string to an int or float if possible.
+- `calculate_directories`: Helper function to calculate directories.
+- `add_dir_to_path`: Adds a directory and all subdirectories to the PATH environment variable.
+- `add_top_level_dirs_to_path`: Adds the top-level directories under a root directory to the PATH.
+- `add_paths`: Adds various paths to the system path.
+- `find_file_with_string`: Searches a directory for a file containing a given string.
+- `shorten_path`: Removes the DATAPATH environment variable from a string.
 
-Example:
-    import flux_pipe_helper as fph
-    fph.add_dir_to_path("/path/to/directory")
+### Magnetogram Utilities
+- `make_mag_dir`: Creates a directory for magnetogram data.
+- `get_magnetogram_file`: Grabs HMI data.
+- `reduce_mag_file`: Reduces the size of a magnetogram FITS file by a given factor.
+- `reduce_fits_image`: Reduces the size of a FITS image.
+- `plot_raw_magnetogram`: Plots the magnetogram.
+- `load_fits_magnetogram`: Loads a magnetogram from a FITS file.
+- `write_magnetogram_params`: Writes the magnetic_target.params file for a given CR and reduction amount.
+- `load_magnetogram_params`: Reads the magnetic_target.params file and returns the parameters.
+- `read_fits_data`: Reads FITS data and fixes/ignores any non-standard FITS keywords.
+- `get_fixed_coords`: Corrects input coordinates.
+
+### Fluxon Simulation Utilities
+- `parse_line`: Parse a line of the output file into a dictionary.
+- `load_data`: Load the data from the file into a pandas DataFrame.
+- `get_ax`: Get or create a pyplot figure and axis pair.
+- `add_fluxon_dirs_to_path`: Add the fluxon directories to the system path.
+- `list_directories`: List the directories in the given path.
+- `path_add`: Add directories to the system path.
+
+Usage Example:
+--------------
+```python
+# Example usage of convert_value function
+import pipe_helper as ph
+result = ph.convert_value("42")
 
 Author:
+-------
     Gilly <gilly@swri.org> (and others!)
 
 Dependencies:
-    os, os.path, sys, pathlib.PosixPath, Path, plotting.plot_helper, numpy as np,
-    matplotlib.pyplot as plt, astropy.io.fits, astropy.nddata.block_reduce, sunpy,
-    sunpy.coordinates, sunpy.io, sunpy.net.Fido, attrs as a
+-------------
+    os, os.path, sys, pathlib.PosixPath, Path, numpy as np,
+    matplotlib.pyplot as plt, astropy.io.fits, astropy.nddata.block_reduce,
+    sunpy, sunpy.coordinates, sunpy.io, sunpy.net.Fido, attrs as a, pandas
 """
-
 
 # Import libraries
 import os
@@ -38,7 +71,6 @@ import os.path
 import sys
 import ast
 from pathlib import PosixPath, Path
-# import plotting.plot_helper
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,9 +82,6 @@ import sunpy
 import sunpy.coordinates
 import sunpy.io
 from sunpy.net import Fido, attrs as a
-
-
-
 
 
 
@@ -247,6 +276,45 @@ def add_top_level_dirs_to_path(root_dir):
     # news_list.sort()
     # a=[print(x) for x in news_list]
     return new_path
+
+
+def set_paths(do_plot=False):
+    """
+    Checks if the environment variable FL_PREFIX is set and optionally prints the paths.
+
+    Parameters:
+        do_plot (bool): Whether to print the paths or not.
+
+    Returns:
+        None
+    """
+
+    fl_prefix = os.environ.get('FL_PREFIX')
+
+    if fl_prefix:
+        envpath = os.path.join(fl_prefix, 'python_paths.py')
+
+        # Check if the file exists and is readable
+        if os.path.exists(envpath) and os.access(envpath, os.R_OK):
+            exec(open(envpath).read())
+        else:
+            print(f"File does not exist or is not readable: {envpath}")
+    else:
+        print("Environment variable FL_PREFIX is not set.")
+
+    # Optionally print the lists of directories
+    if do_plot:
+        print("\n\nsys.path has:")
+        for path in sys.path:
+            print(f" {path}")
+        print("--------------------------\n")
+
+        # Add any additional paths you want to print here
+        # For example, if you have a list similar to Python's sys.path
+        # print("\nYour_Path has:")
+        # for path in Your_Path:
+        #     print(f" {path}")
+        # print("--------------------------\n")
 
 
 def add_paths(flux_pipe_dir):
@@ -715,3 +783,215 @@ def get_fixed_coords(phi0, theta0):
     """
     ph0, th0 = phi0+np.pi, np.sin(-(theta0-(np.pi/2)))
     return ph0, th0
+
+
+
+"""
+Helper Functions for Plotting Data from Fluxon Simulations
+==========================================================
+
+Description
+-----------
+This module contains a collection of helper functions designed to assist in parsing and
+plotting data generated from fluxon simulations.
+
+Functions
+---------
+    convert_value(value: str) -> Union[int, float, str]:
+        Convert a string to an int or float if possible, otherwise return the string.
+
+    parse_line(line: str) -> Dict[str, Union[int, float, str]]:
+        Parse a line of the output file into a dictionary.
+
+    load_data(the_path: str) -> pd.DataFrame:
+        Load the data from the file into a pandas DataFrame.
+
+    get_ax(ax: Optional[matplotlib.axis]) -> Tuple[matplotlib.figure, matplotlib.axis]:
+        Get or create a pyplot figure and axis pair.
+
+    add_fluxon_dirs_to_path(do_print: bool = False) -> None:
+        Add the fluxon directories to the system path.
+
+    list_directories(path: str) -> List[str]:
+        List the directories in the given path.
+
+Modules
+-------
+    os :
+        For directory and file operations.
+
+    sys :
+        For system-specific parameters and functions.
+
+    matplotlib.pyplot :
+        For plotting.
+
+    numpy :
+        For numerical operations.
+
+    pandas :
+        For data manipulation and analysis.
+
+Example
+-------
+    ```python
+    # Example usage of convert_value function
+    result = convert_value("42")
+    ```
+
+Raises
+------
+    FileNotFoundError:
+        If the specified file in `load_data` cannot be found.
+
+    ValueError:
+        If the data file cannot be loaded or parsed correctly.
+
+See Also
+--------
+    Other related scripts and modules for fluxon simulations.
+
+"""
+
+import os
+import sys
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from pipe_helper import convert_value
+
+
+## Helper functions to parse the output file
+
+
+
+def parse_line(line):
+    """ Parse a line of the output file into a dictionary.
+
+    Parameters
+    ----------
+    line : str
+        one line of the output file, with key:value pairs separated by commas
+
+    Returns
+    -------
+    dict
+        a dictionary of the key:value pairs
+    """
+
+    key_values = line.strip().split(',')
+    # print(key_values)
+    parsed_dict = {}
+    for key_value in key_values:
+        if ':' in key_value:
+            key, value = key_value.split(':')
+            parsed_dict[key.strip()] = convert_value(value)
+    return parsed_dict
+
+
+def load_data(the_path):
+    """Load the data from the file into a pandas DataFrame.
+
+    Parameters
+    ----------
+    the_path : str
+        the path to the file to load
+
+    Returns
+    -------
+    dataframe
+        the data from the file given by the_path
+    """
+
+    data = []
+    print("\n", the_path, '\n')
+    with open(the_path, 'r', encoding="utf-8") as file:
+        for line in file.readlines():
+            data.append(parse_line(line))
+    return pd.DataFrame(data)
+
+
+def get_ax(ax=None):
+    """ Get the fig and ax. If None, create a new fig and ax.
+    Otherwise, return the given ax.
+
+    Parameters
+    ----------
+    ax : pyplot axis or None, optional
+        Either an axis or None, by default None
+
+    Returns
+    -------
+    figure, axis
+        a pyplot figure and axis pair
+    """
+    if ax is not None:
+        fig, ax0 = ax.get_figure(), ax
+    else:
+        fig, ax0 = plt.subplots(1)
+    return fig, ax0
+
+
+def add_fluxon_dirs_to_path(do_print=False):
+    """ Add the fluxon directories to the system path.
+
+    Parameters
+    ----------
+    do_print : bool, optional
+        print the paths added, by default False
+    """
+
+    # Get the current directory path
+    this_cwd = os.getcwd()
+    # print(f"WE ARE AT {this_cwd}")
+
+    # Get the list of directories in the current directory
+    dirs = list_directories(this_cwd)
+    dirlist = [os.path.join(this_cwd, x) for x in dirs if "fluxon" in x]
+
+    # Add the pipe and plotting directories to the path
+    for thepath in dirlist:
+        if "mhd" in thepath:
+            dirlist.append(os.path.join(thepath, "flux-pipe"))
+            dirlist.append(os.path.join(thepath, "flux-pipe", "plotting"))
+            dirlist.append(os.path.join(thepath, "flux-pipe", "helpers"))
+            break
+
+    # Get the pipedir environment variable and add it to the path
+    pipedir = os.environ.get("PIPEPATH")
+    if pipedir is not None:
+        dirlist.append(pipedir)
+
+    path_add(dirlist, do_print=do_print)
+
+    if do_print:
+        print("Added fluxon directories to path.\n")
+
+    return dirlist
+
+def path_add(dirlist, do_print=False):    # Add the parent directory to the module search path
+    for path in dirlist:
+        sys.path.append(path)
+        if do_print:
+            print(path)
+
+def list_directories(path):
+    """ List the directories in the given path.
+
+    Parameters
+    ----------
+    path : str
+        the directory to list the subdirectories of
+
+    Returns
+    -------
+    list
+        a list of the subdirectories of the given path
+    """
+
+    dirs = []
+    with os.scandir(path) as entries:
+        for entry in entries:
+            if entry.is_dir():
+                dirs.append(entry.name)
+    return dirs

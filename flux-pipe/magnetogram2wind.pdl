@@ -24,7 +24,6 @@ use File::Basename qw(fileparse);
 use FindBin qw($RealBin);
 use lib $RealBin;
 use pipe_helper;
-set_paths();
 
 $PDL::BIGPDL = 1;
 

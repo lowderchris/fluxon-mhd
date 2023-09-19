@@ -32,13 +32,10 @@ import argparse
 import os.path as path
 from scipy.interpolate import griddata
 
-from plot_helper import get_ax
-
 from pipe_helper import (configurations, load_fits_magnetogram,
-                         load_magnetogram_params, get_fixed_coords)
+                         load_magnetogram_params, get_fixed_coords, get_ax)
 
 from plot_fieldmap import magnet_plot
-
 
 
 def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, power=1):

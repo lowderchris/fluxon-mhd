@@ -18,6 +18,12 @@ setting and checking environment variables, and more.
 
 =head1 FUNCTIONS
 
+=head2 configurations
+
+    configurations($debug, $config_name, $config_filename);
+
+Reads and processes a configuration file, returning a hash of the configuration settings.
+
 =head2 shorten_path
 
     shorten_path($string);
@@ -56,7 +62,7 @@ Sets an environment variable and then checks if it is set.
 
 =head2 calculate_directories
 
-    calculate_directories($basedir, $batch_name, $print);
+    calculate_directories($config_ref);
 
 Calculates various directories based on the base directory and batch name.
 
@@ -94,18 +100,13 @@ L<PDL::AutoLoader>, L<PDL>, L<Time::Piece>
 
 =cut
 
+
 # use strict;
 use warnings;
 use PDL::AutoLoader;
 use PDL;
 use Time::Piece;
 no warnings 'redefine';
-
-# print "\n\nI WAS CALLED\n\n";
-
-
-# # our @PDLLIB;
-# # my @INC;
 
 =head2 shorten_path
 

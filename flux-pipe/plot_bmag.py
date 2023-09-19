@@ -25,7 +25,7 @@ Example:
     python plot_bmag.py --cr 2183 --show 1 --batch 'my_batch' --nwant 100
 
 Dependencies:
-    os.path, argparse, matplotlib.pyplot, numpy, plot_helper, pipe_helper
+    os.path, argparse, matplotlib.pyplot, numpy, pipe_helper
 
 Author:
     Gilly <gilly@swri.org> (and others!)
@@ -149,19 +149,3 @@ if __name__ == "__main__":
     configs = configurations(debug=False)
 
     plot_bmag(args, configs)
-
-
-
-# import plot_helper #required
-# dirlist = plot_helper.add_fluxon_dirs_to_path(do_print=True)
-# plot_helper.path_add(dirlist, do_print=True)
-
-# a = [print(x) for x in dirlist]
-# import pdb; pdb.set_trace()
-# # import helpers
-# 1/0
-# import plot_helper
-
-# import sys
-# # sys.path.append(os.path.join(os.environ["FL_PREFIX"], "flux-pipe"))
-# a=[print(x) for x in sys.path]

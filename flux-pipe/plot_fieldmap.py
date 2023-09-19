@@ -29,7 +29,7 @@ Author:
     Gilly <gilly@swri.org> (and others!)
 
 Dependencies:
-    os, os.path, argparse, matplotlib.pyplot, numpy, plot_helper, pfss_funcs, pipe_helper
+    os, os.path, argparse, matplotlib.pyplot, numpy, pfss_funcs, pipe_helper
 """
 
 import os
@@ -39,10 +39,10 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 
-from plot_helper import get_ax
+
 from pfss_funcs import pixel_to_latlon
 from pipe_helper import (configurations, load_fits_magnetogram, load_magnetogram_params,
-                            shorten_path)
+                            shorten_path, get_ax)
 
 def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False, reduce_amt=0,
                 nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="pdf",

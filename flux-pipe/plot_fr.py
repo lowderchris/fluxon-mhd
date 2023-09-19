@@ -31,14 +31,14 @@ Author:
     Gilly <gilly@swri.org>
 
 Dependencies:
-    argparse, os.path, matplotlib.pyplot, numpy, plot_helper
+    argparse, os.path, matplotlib.pyplot, numpy
 """
 
 import argparse
 import os.path
 import matplotlib.pyplot as plt
 import numpy as np
-import plot_helper
+
 
 def plot_fr(args):
     """

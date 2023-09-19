@@ -35,8 +35,8 @@ os, argparse, numpy, pfss_funcs, pipe_helper
 import os
 import argparse
 import numpy as np
-from pfss_funcs import (trace_lines, load_pfss, compute_pfss, \
-                        load_and_condition_fits_file, get_fluxon_locations)
+from pfss_funcs import (trace_lines, load_pfss, compute_pfss,
+        load_and_condition_fits_file, get_fluxon_locations)
 from pipe_helper import shorten_path, configurations
 
 def get_pfss(configs=None):
@@ -45,15 +45,14 @@ def get_pfss(configs=None):
 
     Parameters
     ----------
-    args : argparse.Namespace
-        Command line arguments parsed via argparse.
+    configs : dict, optional
+        Configuration parameters. If not provided, defaults are loaded from 'configurations'.
 
     Returns
     -------
     bool
         Returns True upon successful completion.
     """
-    """Main function to generate a fluxon mapping from a given GONG-sourced PFSS coronal field solution."""
     configs = configs or configurations()
 
     # Extract arguments or use defaults from configs
@@ -64,6 +63,7 @@ def get_pfss(configs=None):
     nwant =     configs.get("fluxon_count")[0]
     reduce =    configs.get("mag_reduce")
     batch =     configs.get("batch_name")
+
 
     # Print initial message
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -134,17 +134,14 @@ def get_pfss(configs=None):
 # ----------------------------------------------------------------------
 #
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='This script downloads a magnetogram for a particular Carrington Rotation')
+    parser = argparse.ArgumentParser(description='Generate a fluxon mapping from a GONG-sourced PFSS coronal field solution.')
 
     # Use default values from configs
     configs = configurations()
-    parser.add_argument('--cr',     type=int, default=configs.get('rotations')[0], help='Carrington Rotation')
-    parser.add_argument('--nwant',  type=int, default=configs.get('fluxon_count')[0], help='magnetogram file')
-    parser.add_argument('--magfile',type=str, default=None, help='magnetogram file')
-    parser.add_argument('--force',  type=int, default=0, help='force the computation of the PFSS mapping')
-    # parser.add_argument('--batch',  type=str, default=configs.get('batch_name', 'default_batch'), help='batch name')
-    # parser.add_argument('--reduce', type=int, default=configs.get('mag_reduce', 2), help='factor by which the magnetogram is reduced')
-    # parser.add_argument('--datdir', type=str, default=configs.get('data_dir', None), help='data directory')
+    parser.add_argument('--cr', type=int, default=configs.get('rotations')[0], help='Carrington Rotation')
+    parser.add_argument('--nwant', type=int, default=configs.get('fluxon_count')[0], help='Number of fluxons wanted')
+    parser.add_argument('--magfile', type=str, default=None, help='Magnetogram file')
+    parser.add_argument('--force', type=int, default=0, help='Force computation of PFSS mapping')
 
     args = parser.parse_args()
 
