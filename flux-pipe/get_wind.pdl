@@ -130,7 +130,7 @@ sub get_wind{
         } else {
             print $skipstring;
         }
-        use warnings 'misc'
+        use warnings 'misc';
     } else {
         print $skipstring;
     }

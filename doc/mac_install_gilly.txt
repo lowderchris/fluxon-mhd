@@ -1,8 +1,5 @@
 # Macintosh Installation
 
-Note that for some quasi-locked down Macintosh systems where the user does not have
-primary access to an admin user, a slightly different installation is required, outlined here.
-
 Here's the path to installing FLUX:
 
 - Install homebrew perl, or local perl, as an admin -------------------------------------------
@@ -16,11 +13,12 @@ Here's the path to installing FLUX:
 
 - Set the primary environment variables -------------------------------------------------------
 
-    export PL_PREFIX='absolute/path/to/perl5'           #example: '/Users/<username>/perl5'
+    export PL_PREFIX='absolute/path/to/perl5'       #example: '/Users/<username>/perl5'
     export FL_PREFIX='absolute/path/to/fluxon-mhd'  #example: '/Users/<username>/fluxons/fluxon-mhd'
 
-- In the perl directory, install PDL and its dependencies --------------------------------------
+- Cd to the PL_PREFIX directory and install PDL and its dependencies --------------------------
 
+    cd $PL_PREFIX
     cpan PDL
     PERL_MM_OPT="INSTALL_BASE=$PL_PREFIX/lib/perl5"
     cpan local::lib
@@ -31,34 +29,25 @@ Here's the path to installing FLUX:
     cpan Math::RungeKutta
 
 
-- Finally, in the $FL_PREFIX directory, run
+- To compile FLUX, go to the $FL_PREFIX directory and run
 
     make everything
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- To use the python components of FLUX (including FLUXpipe), follow these steps:
 
+    - If you don't have python installed, start by installing anaconda:
+        - Download the installer from https://www.anaconda.com/products/individual
+        - Run the installer
 
+    - Once you have python installed:
+        - make a new environment using conda, and activate it
+            ```conda create -n flux```
+            ```conda activate flux```
+        - navigate to the flux-pipe directory and
+          install the required packages either by running
+            ```pip install -r requirements.txt```
+                or
+            ```pip install -e .```
 
-
-scratch
-
-- Modify the default.perldlrc file to remove or comment out the following lines ----------------
-
-    if ( $PERLDL::TERM->ReadLine() =~ /::Perl$/ ) {
-        if ( defined $readline::rl_MaxHistorySize ) {
-        $readline::rl_MaxHistorySize = $PERLDL::HISTFILESIZE if defined $PERLDL::HISTFILESIZE;
-        }
-    }
-
-- Add this to your .perldlrc, usually located in $HOME ----------------------------------------
-
-    require('PDL/default.perldlrc'); # See the note in the next step
-
-    use PDL::AutoLoader;
-    $PDL::AutoLoader::Rescan=1;
-
-    # Function to populate INC arrays
-    # based on the FL_PREFIX environment variable
-    require "$ENV{'FL_PREFIX'}/.perldlrc";
-
-    1;
