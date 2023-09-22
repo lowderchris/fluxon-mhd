@@ -147,7 +147,6 @@ sub gen_fluxon_flow {
     my $ierr;
 
     # Get rid of end anomalies
-    # CL - Equating these values does make for some strange end/open point behavior later...
     $A->((0)) .= $A->((1));
     $A->((-1)) .= $A->((-2));
 
@@ -168,9 +167,7 @@ sub gen_fluxon_flow {
     $dfr_dr->(0) .= ($fr->(1) - $fr->(0)) / ($r->(1) - $fr->(0));
     $dfr_dr->(-1) .= ($fr->(-1) - $fr->(-2)) / ($r->(-1) - $r->(-2));
 
-    # Chunk of code to calculate
-
-
+    # Chunk of code to calculate numerical derivative
     my $dydx = sub {
         my $rnow = shift;
         #my $vnow = shift;

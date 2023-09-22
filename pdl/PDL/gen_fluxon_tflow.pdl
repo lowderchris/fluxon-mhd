@@ -53,18 +53,11 @@ This module depends on the following Perl modules:
 
 Set the C<$verbose> flag to 1 for diagnostic output.
 
-=head1 AUTHOR
-
-Your Name <your.email@example.com>
-
 =head1 SEE ALSO
 
 Other relevant modules and documentation.
 
 =cut
-
-
-
 
 =head2 gen_fluxon_tflow
 
