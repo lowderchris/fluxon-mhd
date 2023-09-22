@@ -1,0 +1,64 @@
+# Macintosh Installation
+
+Note that for some quasi-locked down Macintosh systems where the user does not have
+primary access to an admin user, a slightly different installation is required, outlined here.
+
+Here's the path to installing FLUX:
+
+- Install homebrew perl, or local perl, as an admin -------------------------------------------
+    (Admin) brew install perl
+
+
+- Install homebrew packages  ------------------------------------------------------------------
+    (Admin) brew install gnuplot
+    (Admin) brew install fftw
+
+
+- Set the primary environment variables -------------------------------------------------------
+
+    export PL_PREFIX='absolute/path/to/perl5'           #example: '/Users/<username>/perl5'
+    export FL_PREFIX='absolute/path/to/fluxon-mhd'  #example: '/Users/<username>/fluxons/fluxon-mhd'
+
+- In the perl directory, install PDL and its dependencies --------------------------------------
+
+    cpan PDL
+    PERL_MM_OPT="INSTALL_BASE=$PL_PREFIX/lib/perl5"
+    cpan local::lib
+    echo 'eval "$(perl -I$PL_PREFIX/lib/perl5/lib/perl5 -Mlocal::lib=$PL_PREFIX/lib/perl5)"' >> ~/.zshrc
+
+    cpan File::ShareDir
+    cpan PDL::Graphics::Gnuplot
+    cpan Math::RungeKutta
+
+
+- Finally, in the $FL_PREFIX directory, run
+
+    make everything
+
+
+
+
+
+
+scratch
+
+- Modify the default.perldlrc file to remove or comment out the following lines ----------------
+
+    if ( $PERLDL::TERM->ReadLine() =~ /::Perl$/ ) {
+        if ( defined $readline::rl_MaxHistorySize ) {
+        $readline::rl_MaxHistorySize = $PERLDL::HISTFILESIZE if defined $PERLDL::HISTFILESIZE;
+        }
+    }
+
+- Add this to your .perldlrc, usually located in $HOME ----------------------------------------
+
+    require('PDL/default.perldlrc'); # See the note in the next step
+
+    use PDL::AutoLoader;
+    $PDL::AutoLoader::Rescan=1;
+
+    # Function to populate INC arrays
+    # based on the FL_PREFIX environment variable
+    require "$ENV{'FL_PREFIX'}/.perldlrc";
+
+    1;

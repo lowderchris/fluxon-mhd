@@ -1,19 +1,80 @@
 use PDL::NiceSlice;
-=head2 gen_fluxon_flow
 
-=for ref
+=head1 NAME
 
-Given a fluxon and some options, calculate the flow and density in the fluxon if it is open (or leave it blank if it is closed).
-
-Returns a 2xN PDL, containing (r, vr).  By default, it also updates these fields in the fluxon itself. Returns two PDLs containing the starting / ending theta and phi values for the fluxon.
-
-If the fluxon is doubly open or doubly closed or a plasmoid, return udnef.
+gen_fluxon_flow - Calculate Flow and Density in a Fluxon
 
 =cut
+
+# package gen_fluxon_flow;
+
 use PDL::Options;  ## This is where the 'parse' function comes from
 use PDL::ImageND;  ## This is where the ConvolveND comes from
 use Math::RungeKutta; ## This requires extra package: cpan install Math::RungeKutta
-use PDL::GSL::INTEG; ## This requires extra package: cpan install PDL::GSL::INTEG, and ALSO you have to install GSL to the machine, first. 
+use PDL::GSL::INTEG; ## This requires extra package: cpan install PDL::GSL::INTEG, and ALSO you have to install GSL to the machine, first.
+use warnings;
+
+=head1 SYNOPSIS
+
+Given a fluxon and some options, this function calculates the flow and density in the fluxon if it is open,
+or leaves it blank if it is closed.
+
+=head1 DESCRIPTION
+
+This function returns a 2xN PDL containing (r, vr). By default, it also updates these fields in the fluxon itself.
+Additionally, it returns two PDLs containing the starting and ending theta and phi values for the fluxon.
+
+If the fluxon is doubly open, doubly closed, or a plasmoid, the function returns undef.
+
+=head1 USAGE
+
+    use gen_fluxon_flow;
+    my $result = gen_fluxon_flow($fluxon, \%options);
+
+=head1 OPTIONS
+
+=over 4
+
+=item * steps: Number of steps for calculation. Default is 500.
+
+=item * g0: Gravitational acceleration in m/s^2. Default is 280.
+
+=item * r0: Radius in meters. Default is 696e6.
+
+=item * v0: Velocity in km/sec. Default is a random number between 10 and 20.
+
+=item * cs: Sound speed in km/sec at 2e6K and fully ionized protons. Default is 180.
+
+=back
+
+=head1 DEPENDENCIES
+
+This module depends on the following Perl modules:
+
+=over 4
+
+=item * PDL::NiceSlice
+=item * PDL::Options
+=item * PDL::ImageND
+=item * Math::RungeKutta
+=item * PDL::GSL::INTEG
+
+=back
+
+To install the extra packages, you can use:
+
+    cpan install Math::RungeKutta
+    cpan install PDL::GSL::INTEG
+
+You also need to install GSL on your machine.
+
+=head1 AUTHOR
+
+Gilly <gilly@swri.org> (and others!)
+
+
+=cut
+
 
 sub gen_fluxon_flow {
     my $me = shift;
@@ -86,10 +147,9 @@ sub gen_fluxon_flow {
     my $ierr;
 
     # Get rid of end anomalies
-    # CL - Equating these values does make for some strange end/open point behavior later...
     $A->((0)) .= $A->((1));
     $A->((-1)) .= $A->((-2));
-    
+
 
     # Define gravitational acceleration g as a function of radius
     our $g = $g0 * ($opt{r0} / $r)**2;
@@ -107,9 +167,7 @@ sub gen_fluxon_flow {
     $dfr_dr->(0) .= ($fr->(1) - $fr->(0)) / ($r->(1) - $fr->(0));
     $dfr_dr->(-1) .= ($fr->(-1) - $fr->(-2)) / ($r->(-1) - $r->(-2));
 
-    # Chunk of code to calculate
-
-
+    # Chunk of code to calculate numerical derivative
     my $dydx = sub {
         my $rnow = shift;
         #my $vnow = shift;

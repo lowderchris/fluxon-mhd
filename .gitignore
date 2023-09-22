@@ -7,6 +7,8 @@
 *.gcda
 *.gcno
 *.png
+*.pyc
+*.json
 cover_db/
 
 #the local sandbox build
