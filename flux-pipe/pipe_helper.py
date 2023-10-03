@@ -54,6 +54,11 @@ Usage Example:
 import pipe_helper as ph
 result = ph.convert_value("42")
 
+# Example usage of the configurations module
+from pipe_helper import configurations
+configs = configurations()
+
+
 Author:
 -------
     Gilly <gilly@swri.org> (and others!)
@@ -87,7 +92,7 @@ import sunpy.io
 from sunpy.net import Fido, attrs as a
 import configparser
 
-
+# CONFIGURATION MANAGEMENT #######################################################
 
 def configurations(config_name=None, config_filename="config.ini", debug=False):
     """
@@ -127,21 +132,17 @@ def configurations(config_name=None, config_filename="config.ini", debug=False):
     config_obj.read_string(clean_content)
 
     # Fallback to section defined in the DEFAULT section if no specific section is provided
-    if config_name is None:
-        config_name = config_obj["DEFAULT"]['config_name']
+    config_name = config_name or config_obj["DEFAULT"]['config_name']
+
+    # Create the configuration dictionary
+    the_config = dict(config_obj[config_name])
 
     # Extract and further process configuration settings
-    the_config = dict(config_obj[config_name])
-    the_config['abs_rc_path'] = os.path.expanduser(the_config['rc_path'])
-    the_config["run_script"] = os.path.join(the_config['fl_prefix'], the_config["run_script"])
-    the_config["rotations"] = ast.literal_eval(the_config["rotations"])
-    the_config["fluxon_count"] = ast.literal_eval(the_config["fluxon_count"])
-    the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"]))
+    compute_configs(the_config)
 
     # Calculate directories
     calculate_directories(the_config)
 
-    the_config['magfile'] = f"{the_config['mag_dir']}/CR{{}}_r{the_config['mag_reduce']}_hmi.fits"
 
     for key, value in the_config.items():
         the_config[key] = convert_value(value)
@@ -154,6 +155,39 @@ def configurations(config_name=None, config_filename="config.ini", debug=False):
 
     return the_config
 
+def compute_configs(the_config):
+    the_config['abs_rc_path'] = os.path.expanduser(the_config['rc_path'])
+    the_config["run_script"] = os.path.join(the_config['fl_prefix'], the_config["run_script"])
+    the_config["rotations"] = ast.literal_eval(the_config["rotations"])
+    the_config["fluxon_count"] = ast.literal_eval(the_config["fluxon_count"])
+    the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"]))
+
+def calculate_directories(the_config):
+    # Helper function to calculate directories
+    basedir = the_config['base_dir'].strip()
+    batch_name = the_config['batch_name'].strip()
+    dat_dir = the_config.get('data_dir', None)  # Assuming you have this in your config
+
+    fluxdir = os.path.join(basedir, "fluxon-mhd")
+    pipedir = os.path.join(fluxdir, "flux-pipe")
+    pdldir = os.path.join(fluxdir, "pdl", "PDL")
+
+    # Use the provided data_dir if defined, otherwise calculate it
+    datdir = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
+
+    magdir = os.path.join(datdir, "magnetograms")
+    batchdir = os.path.join(datdir, "batches", batch_name)
+    logfile = os.path.join(batchdir, "pipe_log.txt")
+
+    # Update the original config dictionary
+    the_config['pipe_dir']  = pipedir
+    the_config['pdl_dir']   = pdldir
+    the_config['datdir']    = datdir
+    the_config['mag_dir']   = magdir
+    the_config['batch_dir'] = batchdir
+    the_config['logfile']   = logfile
+
+    the_config['magfile'] = f"{the_config['mag_dir']}/CR{{}}_r{the_config['mag_reduce']}_hmi.fits"
 
 def convert_value(value):
     """ Convert a string to an int or float if possible, otherwise return the string.
@@ -183,37 +217,13 @@ def convert_value(value):
         except ValueError:
             return value.strip()
 
-# Helper function to calculate directories
-def calculate_directories(the_config):
-    basedir = the_config['base_dir'].strip()
-    batch_name = the_config['batch_name'].strip()
-    dat_dir = the_config.get('data_dir', None)  # Assuming you have this in your config
-
-    fluxdir = os.path.join(basedir, "fluxon-mhd")
-    pipedir = os.path.join(fluxdir, "flux-pipe")
-    pdldir = os.path.join(fluxdir, "pdl", "PDL")
-
-    # Use the provided data_dir if defined, otherwise calculate it
-    datdir = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
-
-    magdir = os.path.join(datdir, "magnetograms")
-    batchdir = os.path.join(datdir, "batches", batch_name)
-    logfile = os.path.join(batchdir, "pipe_log.txt")
-
-    # Update the original config dictionary
-    the_config['pipe_dir']  = pipedir
-    the_config['pdl_dir']   = pdldir
-    the_config['datdir']    = datdir
-    the_config['mag_dir']   = magdir
-    the_config['batch_dir'] = batchdir
-    the_config['logfile']   = logfile
-
-
 configs = configurations()
 dat_dir = configs["data_dir"]
 default_email = configs["jsoc_email"]
 
-# PATH MANAGEMENT
+
+
+# PATH MANAGEMENT ################################################################
 
 def add_dir_to_path(root_dir=None):
     """Adds a directory and all subdirectories to the PATH environment variable.
