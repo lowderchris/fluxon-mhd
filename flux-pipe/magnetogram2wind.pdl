@@ -283,9 +283,9 @@ system(
 system(
 "$pythondir $pipedir/plot_fr.py  --cr $CR --file $out_fr --nwant $n_fluxons_wanted"
 ) == 0 or ( die "Python script returned error $?", exit );
-system(
-"$pythondir $pipedir/plot_wind_map_detailed.py --cr $CR --file $out_wind --nwant $n_fluxons_wanted"
-) == 0 or ( die "Python script returned error $?", exit );
+# system(
+# "$pythondir $pipedir/plot_wind_map_detailed.py --cr $CR --file $out_wind --nwant $n_fluxons_wanted"
+# ) == 0 or ( die "Python script returned error $?", exit );
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## Count the total time and write to file

@@ -220,7 +220,7 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
     print(res)
     print("\tDownloading ADAPT map...\n")
     out = Fido.fetch(res, path=mag_dir)
-    assert len(out) == 1, "More than one file found!"
+    assert len(out) == 1, f"More than one file found! {out}"
     if len(out) ==1: print("\tSuccess!")
     print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
