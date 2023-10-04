@@ -46,7 +46,7 @@ from pipe_helper import (configurations, load_fits_magnetogram, load_magnetogram
 
 def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False, reduce_amt=0,
                 nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="pdf",
-                plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500):
+                plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500, adapt=False):
     """ The primary function for plotting the magnetogram with footpoints
 
     Parameters
@@ -109,6 +109,9 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
     top_dir   = f"{datdir}/batches/{_batch}/imgs/footpoints/"
     if not path.exists(top_dir):
         os.makedirs(top_dir)
+
+    if adapt:
+        reduce_amt = "A"
 
     # Define the file names with their complete paths
     open_file   = open_f     or   f"{floc_path}floc_open_cr{get_cr}_r{reduce_amt}_f{nwant}.dat"
@@ -238,9 +241,8 @@ if __name__ == "__main__":
 
     # Run the code
     # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
-    CR = configs["cr"] or configs["rotations"][0]
-    nwant = configs["nwant"] or configs["fluxon_count"][0]
-
+    CR = configs.get("cr", configs.get("rotations")[0])
+    nwant = configs.get("nwant", configs.get("fluxon_count")[0])
     magnet_plot(CR,              configs["data_dir"],  configs["batch_name"],
                 configs["open"], configs["closed"],    do_print=configs["verbose"],
                 reduce_amt=configs["mag_reduce"],      nwant=nwant,
