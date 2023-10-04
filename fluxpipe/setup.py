@@ -17,7 +17,9 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     license='BSD-3-Clause',
-    url='https://github.com/GillySpace27/sunback',
+    url='https://github.com/lowderchris/fluxon-mhd',
+
+    # Packages to include
     packages=find_packages(),
     include_package_data=True,
     setup_requires=[],
