@@ -15,7 +15,7 @@ setup(
     long_description_content_type="text/markdown",
     version='105',
     license='BSD-3-Clause',
-    url='https://github.com/GillySpace27/sunback',
+    url='https://github.com/lowderchris/fluxon-mhd',
 
     # Packages to include
     packages=find_packages(),
