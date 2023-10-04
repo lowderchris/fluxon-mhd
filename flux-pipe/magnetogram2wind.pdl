@@ -57,7 +57,7 @@ use File::Basename qw(fileparse);
 # Ensure the current directory is always in the path
 use FindBin qw($RealBin);
 use lib $RealBin;
-use pipe_helper;
+use pipe_helper qw(set_paths configurations print_banner search_files_in_directory);
 set_paths();
 
 $PDL::BIGPDL = 1;
@@ -68,10 +68,12 @@ $PDL::BIGPDL = 1;
 
 # Read configurations from disk
 my %configs = configurations();
-$adapt = 1;
+my $adapt = $configs{adapt};
 my $CR = $ARGV[0] // ($configs{rotations}->at(0));
 my $n_fluxons_wanted = $ARGV[1] // ($configs{fluxon_count}->at(0));
-$adapt = 1;
+my $closed_file;
+my $open_file;
+my $world_out_path;
 
 if (!defined $ARGV[0] and $configs{verbose}) {
     print "Using first value ($CR) from config for Carrington Rotation.\n";
@@ -145,11 +147,13 @@ if ( not $plot_only ) {
 #######################################################################################################
 ## Download the Magnetogram ###########################################################################
 #######################################################################################################
-$command = "$pythondir get_magnetograms.py --cr $CR --reduce $reduction --datdir $datdir --do_download $do_download --ADAPT $adapt";
+
+use FindBin;
+my $this_dir = $FindBin::RealBin;
+my $get_mag_path="$this_dir/get_magnetograms.py";
+my $command = "$pythondir $get_mag_path --cr $CR --reduce $reduction --datdir $datdir --do_download $do_download --ADAPT $adapt";
+
 system($command) == 0 or (die "Python script returned error $?", exit);
-
-
-
 
 
 
@@ -157,23 +161,24 @@ system($command) == 0 or (die "Python script returned error $?", exit);
 ## Process the Magnetogram ## Find the Root Points ####################################################
 #######################################################################################################
 # The hilbert curve code defines where fluxons should be rooted based on the distribution of flux at 1R_sun.
-# Since each contains a discretized amount of magnetic flux, we need to subdivide the domain to reflect how to represent that with fluxons.
-my $flocdir  = "$batchdir/cr$CR/floc";
-my $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
-if (!$adapt){
-        my $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
-    $full_magfile  = $magdir . "/CR$CR\_r$reduction\_hmi.fits";
+# Since each contains a discretized amount of magnetic flux, we need to subdivide the domain to reflect
+# how to represent that with fluxons.
+
+my $flocdir = "$batchdir/cr$CR/floc";
+my ($flocfile, $full_magfile, $magfile);
+
+if (!$adapt) {
+    $flocfile = "$flocdir/floc_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
+    $full_magfile = "$magdir/CR$CR\_r$reduction\_hmi.fits";
 } else {
     $flocfile = "$flocdir/floc_cr$CR\_rA\_f$n_fluxons_wanted.dat";
-    $magdir = $magdir . "/ADAPT/";
+    $magdir .= "/ADAPT/";
     $magfile = search_files_in_directory($magdir, "CR$CR\_rf", "fits");
-    $full_magfile = $magdir . $magfile;
+    $full_magfile = "$magdir$magfile";
 }
 
-# print $magdir . $magfile . "\n";
-# Get the Footpoints
-$N_actual = get_hilbert_footpoints($flocdir, $flocfile, $full_magfile, $n_fluxons_wanted, $force_process_magnetogram, $adapt);
-
+# Retrieve the Footpoints using the Hilbert method
+my $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $full_magfile, $n_fluxons_wanted, $force_process_magnetogram, $adapt);
 
 
 
@@ -185,12 +190,12 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $full_magfile, $n_fluxon
 # Then we take those root points and use the pfss tracer to map upward from those initial points
 # into the corona to define an initial placeholder geometry.
 # This lets us extend this into 3d space with real linking topology.
-    my $pfss_command =
-    "$pythondir get_pfss.py --cr $CR --magfile $magfile --nwant $n_fluxons_wanted";
+my $get_pfss_path="$this_dir/get_pfss.py";
+
+my $pfss_command =
+    "$pythondir $get_pfss_path --cr $CR --magfile $full_magfile --nwant $n_fluxons_wanted";
 
     system($pfss_command) == 0 or ( die "Python script returned error $?", exit );
-
-
 
 
 
@@ -198,31 +203,15 @@ $N_actual = get_hilbert_footpoints($flocdir, $flocfile, $full_magfile, $n_fluxon
 #######################################################################################################
 ## Generate World from PFSS ###########################################################################
 #######################################################################################################
-    # Define the output directory
-    my $world_out_dir   = "$datdir/batches/$batch_name/cr$CR/world";
-    my $floc_path       = "$datdir/batches/$batch_name/cr$CR/floc";
+my $force_make_world = 0;
 
-if ($adapt){
-    $reduction= "A";
-}
-    my $open_file       = "$floc_path/floc_open_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
-    my $closed_file     = "$floc_path/floc_closed_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
-
-    # Plot the field map
-    my $fmap_command = "$pythondir $pipedir/plot_fieldmap.py --cr $CR --open $open_file" .
-                        " --closed $closed_file --nwant $n_fluxons_wanted";
-
-    system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
-
-    # Make the world
-    make_world_from_pfss(
-        $world_out_dir, $floc_path,        $open_file, $closed_file,
-        $makeworld,     $CR,               $datdir,    $batch_name,
-        $N_actual,      $n_fluxons_wanted, $lim,       $lim2
+    ($open_file, $closed_file, $world_out_path) = make_world_from_pfss(
+        $datdir,           $batch_name,       $CR,
+        $reduction,        $n_fluxons_wanted, $adapt,
+        $force_make_world, $lim,              $lim2
     );
 
-
-
+# print "$open_file\n\n\n\n";
 
 #######################################################################################################
 ## Relax the initial world state ##Use the FLUX Code ##################################################
@@ -231,7 +220,7 @@ if ($adapt){
 # but allowing for currents (not a potential field any longer).
 
     # Select the World
-    $world_out_dir   = $datdir . "/batches/$batch_name/cr" . $CR . '/world/';
+    my $world_out_dir   = $datdir . "/batches/$batch_name/cr" . $CR . '/world/';
     my $full_world_path = $world_out_dir . 'cr' . $CR . "_f$n_fluxons_wanted.flux";
     ( my $this_world_orig, $this_world_relaxed, my $stepnum ) = relax_pfss_world(
         $world_out_dir, $full_world_path,  $do_relax,
@@ -257,6 +246,13 @@ if ($adapt){
 }
 
 
+# Plot the field map
+my $fmap_command = "$pythondir $pipedir/plot_fieldmap.py --cr $CR --open $open_file" .
+                    " --closed $closed_file --nwant $n_fluxons_wanted";
+    system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
+
+
+
 
 
 #######################################################################################################
@@ -268,6 +264,8 @@ my ( $out_b, $out_fr, $out_wind ) = get_wind( $this_world_relaxed, $datdir,
 
 
 
+
+
 #######################################################################################################
 ## Plot the Solar wind Solutions  #####################################################################
 #######################################################################################################
@@ -275,6 +273,9 @@ my ( $out_b, $out_fr, $out_wind ) = get_wind( $this_world_relaxed, $datdir,
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 print("(py) Plotting Solar Wind Maps for CR$CR\n");
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+
+
+
 
 system(
 "$pythondir $pipedir/plot_bmag.py --cr $CR --file $out_b --nwant $n_fluxons_wanted"

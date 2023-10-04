@@ -63,6 +63,7 @@ def get_pfss(configs=None):
     nwant =     configs.get("fluxon_count")[0]
     reduce =    configs.get("mag_reduce")
     batch =     configs.get("batch_name")
+    adapt =     configs.get("adapt") == 1
 
 
     # Print initial message
@@ -73,7 +74,7 @@ def get_pfss(configs=None):
     elapsed = 0
 
     # Load the fits file and format the data and header
-    br_safe, fits_path = load_and_condition_fits_file(magfile, datdir)
+    br_safe, fits_path = load_and_condition_fits_file(magfile, datdir, adapt)
 
 
 
@@ -100,30 +101,39 @@ def get_pfss(configs=None):
 
     # Get the fluxon locations
     floc_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
-    f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch)
+    f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch, cr=cr)
 
     # Trace pfss field lines
     skip_num = 'x'
     timeout_num = 'x'
     open_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_open_cr{cr}_r{reduce}_f{nwant}.dat"
     closed_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_closed_cr{cr}_r{reduce}_f{nwant}.dat"
+    # print("Open Path = ", open_path)
+    # print("Closed Path = ", closed_path)
 
     print("\n\tTracing Open and Closed Fluxons...", end="")
-    if not os.path.exists(open_path) or force_trace:
-        trace_out = trace_lines(output, (f_lon, f_lat, f_sgn),
-                                open_path, closed_path, adapt)
-        fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed = trace_out
-    else:
-        fl_open = np.loadtxt(open_path)
-        fl_closed = np.loadtxt(closed_path)
-        flnum_open = len(np.unique(fl_open[:, 0]))+1
-        flnum_closed = 2*len(np.unique(fl_closed[:, 0]))
-        print("Skipped! Floc dat files already exist:")
-        print(f"\t\t{shorten_path(open_path)}")
-        print(f"\t\t{shorten_path(closed_path)}")
-        print(
-            f"\t\tFootpoints:\t Open: {flnum_open}, Closed: \
-                {flnum_closed}, Total: {flnum_open+flnum_closed}")
+    need = not os.path.exists(open_path) or not os.path.exists(closed_path) or force_trace
+    print(f"\n\t\tNeed to trace? {need==True}: ", end='')
+    if not need:
+        try:
+            # Just load the lines
+            fl_open = np.loadtxt(open_path)
+            fl_closed = np.loadtxt(closed_path)
+            flnum_open = len(np.unique(fl_open[:, 0]))+1
+            flnum_closed = 2*len(np.unique(fl_closed[:, 0]))
+            print("Fluxon Loc data files already exist!")
+            print(f"\t\t\t{shorten_path(open_path)}")
+            print(f"\t\t\t{shorten_path(closed_path)}")
+            print(f"\t\tFootpoints:\t Open: {flnum_open}, Closed: \
+                    {flnum_closed}, Total: {flnum_open+flnum_closed}")
+        except FileNotFoundError:
+            need = True
+
+    if need:
+        # Trace the lines now
+        fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed  = trace_lines(
+                                    output, (f_lon, f_lat, f_sgn), open_path, closed_path, adapt)
+
 
     # Record stats in the output file
     shp = br_safe.data.shape
@@ -148,20 +158,12 @@ def get_pfss(configs=None):
 #
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate a fluxon mapping from a GONG-sourced PFSS coronal field solution.')
-
-    # Use default values from configs
     configs = configurations()
     parser.add_argument('--cr', type=int, default=configs.get('rotations')[0], help='Carrington Rotation')
     parser.add_argument('--nwant', type=int, default=configs.get('fluxon_count')[0], help='Number of fluxons wanted')
     parser.add_argument('--magfile', type=str, default=None, help='Magnetogram file')
     parser.add_argument('--force', type=int, default=0, help='Force computation of PFSS mapping')
-
-    args = parser.parse_args()
-
-    # Update configs with command-line arguments
-    for arg, value in vars(args).items():
-        if value is not None:
-            configs[arg] = value
+    configs = configurations(args=parser.parse_args())
 
     # Run the main function
     get_pfss(configs)

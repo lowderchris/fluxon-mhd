@@ -195,7 +195,11 @@ sub configurations {
 
     my $reduct = $the_config{"mag_reduce"};
     my $magdir = $the_config{'mag_dir'};
-    $the_config{'magfile'} = "$magdir/CR%s\_r$reduct\_hmi.fits";
+    if ($the_config{'adapt'} == 1){
+        $the_config{'magfile'} = "$magdir/ADAPT/CR%s\_rf$reduct\_adapt.fits";
+    } else {
+        $the_config{'magfile'} = "$magdir/CR%s\_r$reduct\_hmi.fits";
+    }
 
     if ($debug){
         #Print the content of the configuration hash for debugging.
@@ -392,6 +396,9 @@ Searches for files in a directory that match a known string and file extension.
 
 =cut
 
+
+
+
 sub search_files_in_directory {
     my ($directory, $known_string, $extension) = @_;
 
@@ -406,10 +413,10 @@ sub search_files_in_directory {
         next if ($file =~ /^\./);  # Skip hidden files/directories
         next unless ($file =~ /$pattern/);
         print "$file\n";  # Process the matching file
+        closedir($dh);
+        # print $file;
+        return $file;
     }
-    closedir($dh);
-
-    return 1;
 }
 
 =head2 check_second_file_presence

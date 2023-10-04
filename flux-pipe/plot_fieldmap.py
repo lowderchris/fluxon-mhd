@@ -103,7 +103,7 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
 
 
     if do_print_top:
-        print("\n\tMaking Magnetogram with Footpoints...")
+        print("\tMaking Magnetogram with Footpoints...")
     # Define the directory paths for the files
     floc_path = f"{datdir}/batches/{_batch}/cr{get_cr}/floc/"
     top_dir   = f"{datdir}/batches/{_batch}/imgs/footpoints/"
@@ -128,7 +128,7 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
         print(f"\t\tOpening {shorten_path(closed_file)}...\n")
     cflnum, _, _, _, crad = np.loadtxt(closed_file, unpack=True)
 
-    magnet, header = load_fits_magnetogram(batch=_batch, ret_all=True)
+    magnet, header = load_fits_magnetogram(batch=_batch, ret_all=True, cr=get_cr)
     f_lat, f_lon, f_sgn, _fnum = pixel_to_latlon(magnet, header, fluxon_location)
 
     ## Keep only the values where the radius is 1.0
@@ -233,15 +233,15 @@ if __name__ == "__main__":
     parser.add_argument('--closed', type=str, default=None)
 
     args = parser.parse_args()
-    configs = configurations(debug=False)
+    configs = configurations(debug=False, args=args)
 
 
     # Run the code
     # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
-    CR = args.cr or configs["rotations"][0]
-    nwant = args.nwant or configs["fluxon_count"][0]
+    CR = configs["cr"] or configs["rotations"][0]
+    nwant = configs["nwant"] or configs["fluxon_count"][0]
 
-    magnet_plot(CR,             configs["data_dir"],    configs["batch_name"],
-                args.open,      args.closed,            do_print=configs["verbose"],
-                reduce_amt=configs["mag_reduce"],       nwant=nwant,
+    magnet_plot(CR,              configs["data_dir"],  configs["batch_name"],
+                configs["open"], configs["closed"],    do_print=configs["verbose"],
+                reduce_amt=configs["mag_reduce"],      nwant=nwant,
                 do_print_top=True)

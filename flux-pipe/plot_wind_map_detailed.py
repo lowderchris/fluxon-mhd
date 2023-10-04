@@ -129,7 +129,7 @@ def remove_outliers(data, ph, th, thresh_low=4, thresh_high=2, n_times= 1):
         return data_good_2, ph_good_2, th_good_2, bad_data_all, bad_ph_all, bad_th_all
 
 
-def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=800, do_print_top=True, do_hex=True, args=None ):
+def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=800, do_print_top=True, do_hex=True, configs=None, CR=None):
     """ Create a hexagon interpolation of the data
 
     Parameters
@@ -181,7 +181,7 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
     vel1_wrapped = np.concatenate((vel1, vel1, vel1))
 
     # Create a grid for interpolation
-    Ny, Nx = load_fits_magnetogram(batch=args.batch, bo=3, bn=2).shape
+    Ny, Nx = load_fits_magnetogram(batch=configs["batch_name"], bo=3, bn=2, cr=configs["cr"]).shape
     grid_x, grid_y = np.linspace(x_min, x_max, Nx, endpoint=False), np.linspace(-1, 1, Ny)
     grid_x, grid_y = np.meshgrid(grid_x, grid_y)
 
@@ -262,7 +262,7 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
     return mean1, std1
 
 
-def plot_wind_map_detailed(args):
+def plot_wind_map_detailed(configs):
     """ Plot the detailed solar wind map
 
     Parameters
@@ -278,19 +278,21 @@ def plot_wind_map_detailed(args):
     """
 
     print("\n\tPlotting Windmap...", end="\n" if __name__=="__main__" else "")
+    configs = configs or configurations()
 
     # Set the arguments
-    batch = args.batch
-    interp = args.interp
-    dat_dir = args.dat_dir
+    batch =     configs.get("batch_name")
+    dat_dir =   configs.get("data_dir")
+    nwant =     configs.get("nwant")
+    CR =        configs.get("cr")
+    dat_file =  configs.get("file", f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind.dat')
+    reduce_amt = configs.get("mag_reduce")
 
     # Load the magnetogram parameters
-    (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
-    CR = args.cr or cr
+    # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
+    # CR = args.cr or configs["rotations"][0]
 
     # Load the wind file
-    dat_file = args.file or f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{args.nwant}_radial_wind.dat'
-    # print("loading file: ", dat_file)
     arr = np.loadtxt(dat_file).T
     try:
         fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1, fr1b = arr
@@ -325,11 +327,11 @@ def plot_wind_map_detailed(args):
     all_vmin, all_vmax = 475, 700
     drk=0.25
     n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch,
-        ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce, nwant=args.nwant, do_print_top=False)
+        ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce_amt, nwant=nwant, do_print_top=False)
     hex_n = np.max((n_open//10, 3))
 
     hex1 = hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=hex_n,
-                    vmin=all_vmin, vmax=all_vmax, args=args)
+                    vmin=all_vmin, vmax=all_vmax, configs=configs)
 
     scatter_ax.set_facecolor('grey')
     contour_ax.set_facecolor('grey')
@@ -428,5 +430,7 @@ if __name__ == "__main__":
     parser.add_argument('--nwant', type=int, default=configs["fluxon_count"][0], help='number of fluxons')
     parser.add_argument('--batch', type=str, default=configs["batch_name"], help='select the batch name')
     args = parser.parse_args()
+    configs = configurations(args=args)
 
-    plot_wind_map_detailed(args)
+
+    plot_wind_map_detailed(configs)

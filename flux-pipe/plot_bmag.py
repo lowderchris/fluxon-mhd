@@ -41,14 +41,14 @@ from pipe_helper import (configurations, get_fixed_coords, load_fits_magnetogram
                          load_magnetogram_params, shorten_path)
 
 
-def plot_bmag(args, configs):
+def plot_bmag(configs):
 
-    batch = configs["batch_name"]
+    # batch =
     # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
-    CR = args.cr or configs["rotations"][0]
+    # CR = configs['cr'] #args.cr or configs["rotations"][0]
 
-    filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{CR}/wind/ \
-                                cr{args.cr}_f{args.nwant}_radial_bmag.dat'
+
+    filename = configs.get('file', f"{configs['data_dir']}/batches/{configs['batch_name']}/cr{configs['cr']}/wind/cr{configs['cr']}_f{configs['nwant']}_radial_bmag.dat")
 
     # Load the dat file
     arr = np.loadtxt(filename).T
@@ -75,7 +75,7 @@ def plot_bmag(args, configs):
     # Plot the Data
     fig, (ax0, ax1) = plt.subplots(2)
 
-    magnet = load_fits_magnetogram()
+    magnet = load_fits_magnetogram(cr=configs['cr'])
     ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
             extent=(0,2*np.pi,-1,1), aspect='auto')
     ax1.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
@@ -142,10 +142,10 @@ if __name__ == "__main__":
     print("\n\tPlotting Bmag...", end="")
     parser = argparse.ArgumentParser(description=
                                     'This script plots the radial magnetic field')
-    parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
+    parser.add_argument('--cr', type=int, default=2219, help='Carrington Rotation')
     parser.add_argument('--file', type=str, default=None, help='Data File Name')
-    parser.add_argument('--nwant', type=int, default=None, help='Number of Fluxons')
+    parser.add_argument('--nwant', type=int, default=100, help='Number of Fluxons')
     args = parser.parse_args()
-    configs = configurations(debug=False)
-
-    plot_bmag(args, configs)
+    configs = configurations(debug=False, args=args)
+    # a=[print(x) for x in configs.items()]
+    plot_bmag(configs)

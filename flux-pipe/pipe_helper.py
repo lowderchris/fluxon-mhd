@@ -91,10 +91,11 @@ import sunpy.coordinates
 import sunpy.io
 from sunpy.net import Fido, attrs as a
 import configparser
+from py_pipe_helper import *
 
 # CONFIGURATION MANAGEMENT #######################################################
 
-def configurations(config_name=None, config_filename="config.ini", debug=False):
+def configurations(config_name=None, config_filename="config.ini", args=None, debug=False):
     """
     Reads and sanitizes configuration settings from a specified config file.
 
@@ -143,7 +144,7 @@ def configurations(config_name=None, config_filename="config.ini", debug=False):
     # Calculate directories
     calculate_directories(the_config)
 
-
+    # Set the types to be correct
     for key, value in the_config.items():
         the_config[key] = convert_value(value)
 
@@ -153,7 +154,17 @@ def configurations(config_name=None, config_filename="config.ini", debug=False):
             print(f"{key}: \t{value}")
         print("--------------------------------\n\n")
 
+    # Update configs with command-line arguments
+    assimilate_args(the_config, args)
+
     return the_config
+
+def assimilate_args(configs, args=None):
+    if args is not None:
+        # Update configs with command-line arguments
+        for arg, value in vars(args).items():
+            if value is not None:
+                configs[arg] = value
 
 def compute_configs(the_config):
     the_config['abs_rc_path'] = os.path.expanduser(the_config['rc_path'])
@@ -187,7 +198,10 @@ def calculate_directories(the_config):
     the_config['batch_dir'] = batchdir
     the_config['logfile']   = logfile
 
-    the_config['magfile'] = f"{the_config['mag_dir']}/CR{{}}_r{the_config['mag_reduce']}_hmi.fits"
+    if int(the_config['adapt']):
+        the_config['magfile'] = f"{the_config['mag_dir']}/ADAPT/CR{{}}_rf{the_config['mag_reduce']}_adapt.fits"
+    else:
+        the_config['magfile'] = f"{the_config['mag_dir']}/CR{{}}_r{the_config['mag_reduce']}_hmi.fits"
 
 def convert_value(value):
     """ Convert a string to an int or float if possible, otherwise return the string.
@@ -563,7 +577,7 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None,
             data = hdul[1].data
 
         current_resolution = max(data.shape)
-        print("\tOriginal Shape: ", data.shape)
+        print("\t\tOriginal Shape: ", data.shape)
 
         # Calculate the reduction amount if target resolution is specified
         if target_resolution is not None:
@@ -595,7 +609,7 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None,
         useheader['CDELT1'] = 360 / small_image.shape[1]  ## DEGREES
         useheader['CDELT2'] = np.deg2rad(360 / (small_image.shape[0] * np.pi)) #RADIANS
 
-        print("\tFinal Shape:    ", small_image.shape)
+        print("\t\tFinal Shape:    ", small_image.shape)
 
         print("\tSaving  ", small_file)
         fits.writeto(small_file, small_image, useheader, overwrite=True)
@@ -656,7 +670,7 @@ def plot_raw_magnetogram(fits_path, data, small_image):
     plt.close()
 
 
-def load_fits_magnetogram(datdir=None, batch="fluxon", bo=2, bn=2, ret_all=False):
+def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fname=None, cr=None):
     """Loads a magnetogram from a FITS file.
 
     Parameters
@@ -679,16 +693,20 @@ def load_fits_magnetogram(datdir=None, batch="fluxon", bo=2, bn=2, ret_all=False
     Header
         Magnetogram header object
     """
+    configs = configurations()
+    # print(cr, "\n\n\n\n")
+    assert cr is not None, "Must specify a Carrington rotation number!"
+    fname = fname or configs["magfile"].format(cr)
+    batch = batch or configs["batch_name"]
+    datdir = datdir or configs["data_dir"]
 
-    if not datdir:
-        datdir = dat_dir
-    fname = load_magnetogram_params(datdir)[2]
-    fname = fname.replace("/fluxon/", f"/{batch}/").replace(f"_{bo}_", f"_{bn}_")
-    fits_path = datdir + fname
-    try:
-        hdulist = read_fits_data(fits_path)
-    except FileNotFoundError:
-        hdulist = read_fits_data(fname)
+    # fname = load_magnetogram_params(datdir)[2]
+    # fname = fname.replace("/fluxon/", f"/{batch}/").replace(f"_{bo}_", f"_{bn}_")
+    # fits_path = datdir + fname
+    hdulist = read_fits_data(fname)
+    # try:
+    #     hdulist = read_fits_data(fits_path)
+    # except FileNotFoundError:
     brdat = hdulist[0].data
     header= hdulist[0].header
     brdat = brdat - np.mean(brdat)

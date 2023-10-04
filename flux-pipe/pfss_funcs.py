@@ -73,7 +73,7 @@ mpl.use("qt5agg")
 
 
 
-def load_and_condition_fits_file(fname, datdir):
+def load_and_condition_fits_file(fname, datdir, adapt):
     """
     Load and condition the FITS file containing the magnetogram data.
     This involves subtracting the mean from the data to enforce div(B) = 0 on the solar surface.
@@ -102,7 +102,10 @@ def load_and_condition_fits_file(fname, datdir):
         fits_path = fname
         hdulist = read_fits_data(fits_path)
     except FileNotFoundError:
-        fits_path = os.path.join(datdir, fname)
+        if adapt:
+            fits_path = os.path.join(datdir, "ADAPT", fname)
+        else:
+            fits_path = os.path.join(datdir, fname)
         hdulist = read_fits_data(fits_path)
     print("\t\t", shorten_path(fits_path))
 
@@ -264,7 +267,7 @@ def pixel_to_latlon(mag_map, header, fluxon_location):
     return f_lat, f_lon, f_sgn, n_flux
 
 
-def get_fluxon_locations(floc_path, batch):
+def get_fluxon_locations(floc_path, batch, cr):
     """Loads the fluxon location file
 
     Parameters
@@ -287,7 +290,7 @@ def get_fluxon_locations(floc_path, batch):
     """
 
     fluxon_location = np.genfromtxt(floc_path)
-    magnet, header = load_fits_magnetogram(batch=batch, ret_all=True)
+    magnet, header = load_fits_magnetogram(batch=batch, ret_all=True, cr=cr)
     f_lat, f_lon, f_sgn, n_flux = pixel_to_latlon(
         magnet, header, fluxon_location)
     return f_lat, f_lon, f_sgn, n_flux
@@ -331,7 +334,7 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
     """
 
     floc_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
-    f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch)
+    f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch, cr)
     fluxon_location = np.genfromtxt(floc_path)
 
     if not do_plot:

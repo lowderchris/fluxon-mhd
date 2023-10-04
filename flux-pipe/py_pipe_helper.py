@@ -43,7 +43,7 @@ def make_mag_dir(datdir, ADAPT=False):
         mag_dir = os.path.join(mag_dir, "ADAPT")
 
     if not os.path.exists(mag_dir):
-        os.makedirs(mag_dir)    
+        os.makedirs(mag_dir)
     return mag_dir
 
 def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_download=False, reduce = False):
@@ -75,7 +75,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
         CR = int(sunpy.coordinates.sun.carrington_rotation_number(date))
     else:
         raise ValueError("Must specify either cr or date!")
-    
+
 
 
     mag_dir = make_mag_dir(datdir)
@@ -98,7 +98,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
     if found_file:
         if force_download:
             print("\tForcing redownload...")
-        else: 
+        else:
             small_path = reduce_mag_file(file, reduce, force=force_download)
             return file, small_path
 
@@ -106,7 +106,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None, force_down
     c = drms.Client()
     # Generate a search
     crot = a.jsoc.PrimeKey('CAR_ROT', str(CR))
-    res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crot, 
+    res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crot,
                     a.jsoc.Notify(jsoc_email))
 
     # Once the query is made and trimmed down...
@@ -138,6 +138,9 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
     Returns:
         None
     """
+
+    print(reduce)
+    print("_____________________")
 
     ## Parse the Dates
     # Set the Carrington rotation number
@@ -176,13 +179,17 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
     date_obs = [date, date + (1.9999999 * u.hour), date - (1.9999999 * u.hour)]
 
     dates = [xx.strftime("%Y%m%d") for xx in date_obs]
-    
+
     import pathlib
     path_obj = pathlib.Path(mag_dir)
     file_list = list(path_obj.iterdir())
 
     for file in file_list:
-        if str(CR)+"_r1_" in str(file):
+        look = str(CR)+"_r1_"
+        file_string = str(file)
+        if look in file_string:
+            found_file = True
+            break
             for ii, dt in enumerate(dates):
                 if dt in str(file):
                     print(f"\t\tFound '{os.path.basename(file)}' in '{shorten_path(mag_dir)}'")
@@ -195,7 +202,7 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
     if found_file:
         if force_download:
             print("\tForcing redownload...")
-        else: 
+        else:
             print("\tSkipping Download!\n")
             # small_path = None # reduce_mag_file(file, reduce, force=force_download)
             # mean_path = format_ADAPT_file(file, reduce, force=force_download)
@@ -219,8 +226,10 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
 
 
     file_all = str(out[0])
-    file_end = file_all.split('adapt')[1]
-    big_path = os.path.join(mag_dir, f"CR{CR}_r1_adapt{file_end}")
+    # file_end = file_all.split('adapt')[1].split('.')
+    # file_end = file_all.split('adapt')[1].split('.')[1:]
+    big_path = os.path.join(mag_dir, f"CR{CR}_r1_adapt.fts.gz")
+
 
     os.rename(file_all, big_path)
     print(f"\n\t\tSaved to {big_path}")
@@ -253,7 +262,7 @@ def plot_all_adapt(adapt_maps):
 def plot_mean_adapt(mean_adapt):
     map_mean = np.nanmean(mean_adapt)
     map_std = np.std(mean_adapt)
-    plt.imshow(mean_adapt, vmin = map_mean - 2*map_std, vmax=map_mean + 2*map_std)   
+    plt.imshow(mean_adapt, vmin = map_mean - 2*map_std, vmax=map_mean + 2*map_std)
     plt.show(block=True)
 
 def format_ADAPT_file(filename, method='mean', force=False):
@@ -299,11 +308,11 @@ def format_ADAPT_file(filename, method='mean', force=False):
             expose_adapt_fits(adapt_fits)
             print_adapt_maps(adapt_maps)
             plot_mean_adapt(mean_adapt)
-        
+
     elif type(method) == int:
         adapt_map = sunpy.map.Map((main_data[method], main_header))
         output_map = np.asarray(adapt_map.data)
-    else: 
+    else:
         assert False, "Method not recognized!"
 
     useheader = fix_header_ADAPT(header2, output_map)
@@ -327,7 +336,7 @@ def reduce_mag_file(mag_file, reduction=3, force=False):
     else:
         print("Skipped! Reduced file already exists:")
         # print("\t\t", shorten_path(str(small_file), 2))
-        ### WORKING HERE 
+        ### WORKING HERE
         print(f"\t\tFound '{os.path.basename(small_file)}' in '{shorten_path(os.path.dirname(small_file))}'")
         print("\n\t\t\t```````````````````````````````\n \n\n")
 
@@ -360,7 +369,7 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_a
         data = hdul[0].data
         if data is None:
             data = hdul[1].data
-            
+
         current_resolution = max(data.shape)
         print("\tOriginal Shape: ", data.shape)
 
@@ -378,7 +387,7 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_a
         after_sum = np.sum(small_image)
         if not np.isclose(before_sum, after_sum):
             print("\tREDUCTION WARNING: \n\tSum before:    ", before_sum, "\n\tSum after:     ", after_sum)
-        
+
         try:
             hdul[0].header["DATE"]
             useheader = hdul[0].header
@@ -564,14 +573,14 @@ def get_fixed_coords(phi0, theta0):
 #         #     data = hdul[0].data
 #         #     if data is None:
 #         #         data = hdul[1].data
-            
+
 #     #     # if adapt:
 #     #     #     smag = smag[:,:,2].squeeze()
 
 #             # print("\n")
 #         print("\n\t**Placing {0} footpoints using Hilbert Curves...\n".format(N_fluxons))
 
-#         tolerance = N_fluxons * 0.05 
+#         tolerance = N_fluxons * 0.05
 #         step = N_fluxons * 0.1
 #         width = 100
 #         most = N_fluxons + width
@@ -588,9 +597,9 @@ def get_fixed_coords(phi0, theta0):
 #             try_fluxons = int(try_fluxons)
 #             result = subprocess.run(["perl", hilbertpath, mag_path, str(try_fluxons), flocpath])
 #             # floc = fluxon_placement_hilbert(smag, try_fluxons)
-            
+
 #             exit()
-#             N_actual = len(floc) / 3  
+#             N_actual = len(floc) / 3
 #             count += 1
 
 #             print("\t  Placing footpoints:: iter: {0}/{1}. Wanted: {2}, Tried: {3}, Placed: {4}...".format(count, maxreps, N_fluxons, try_fluxons, N_actual))
@@ -604,7 +613,7 @@ def get_fixed_coords(phi0, theta0):
 #                     try_fluxons -= step
 #                 else:
 #                     try_fluxons += step
-                
+
 #                 iterate = 1
 #                 print("Retrying!\n")
 #             else:
@@ -677,7 +686,7 @@ def get_fixed_coords(phi0, theta0):
 
     # Specify requested rotations
 
-    # if cr 
+    # if cr
 
     # if cr is None and date is None:
     #     if len(crlist) == 0:
@@ -730,14 +739,14 @@ def get_fixed_coords(phi0, theta0):
     # ADAPTMagData
 
 
-    
+
     # print(baseurl)
     # from sunpy.net import Scraper
     # scraper = Scraper(baseurl, regex=True)
     # import pdb; pdb.set_trace()
 
     # scraper = Scraper(baseurl, pattern, regex=True)
-    
+
     # @classmethod
     # def register_time(cls):
     #     map_time = a.TimeParameter('map_time', a.Time)
@@ -819,7 +828,7 @@ def get_fixed_coords(phi0, theta0):
     # baseurl = (r'https://gong.nso.edu/adapt/maps/gong/'
     #            r'adapt[ZXABR_CCEFFF]_{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d}_[TIIJJKKLLGQ].fts')
     # pattern = r'adapt(?P<modeltag>[ZXABR_CCEFFF])_(?P<datetime>{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d})_(?P<lastobstag>[TIIJJKKLLGQ]).fts'
-    
+
     # baseurl = r'https://gong.nso.edu/adapt/maps/gong/' '\d{4}/adapt\d{5}_\d{2}[a-z]\d{3}_\d{12}_[a-z]\d{8}[a-z]\d{1}.fts.gz'
     # pattern = r'{}/{:d}/adapt{:d}_{:d}{:l}{:d}_{:d}{:d}{:d}{:d}_{:l}{:d}{:d}{:d}{:d}{:l}{:d}.fts.gz'
     # https://gong.nso.edu/adapt/maps/gong/2010/adapt40311_03k012_201005010200_i00100900n1.fts.gz
