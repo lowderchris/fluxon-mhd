@@ -73,7 +73,7 @@ The function writes the results to disk and returns nothing.
 
 
 my $concurrency = 11;
-my $temp_dir = "flux-pipe/windtemp";
+my $temp_dir = "fluxpipe/fluxpipe/windtemp";
 
 #TODO Make the gen_fluxon_flow and gen_fluxon_tflow functions get loaded only once.
 
@@ -297,14 +297,12 @@ if ($0 eq __FILE__) {
 
 
 
-    my $datdir = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/";
+    # my $datdir = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/";
     push(@PDLLIB,"+".$datdir);
-    push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly");
+    # push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly");
     push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/PDL");
-    push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/flux-pipe");
     push(@INC, "+/Users/cgilbert/opt");
     push(@INC, "/Users/cgilbert/.cpan/build");
-    system("cd /Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/flux-pipe");
 
 
 

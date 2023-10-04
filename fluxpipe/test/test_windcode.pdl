@@ -16,11 +16,11 @@ $datdir = "/Users/cgilbert/fluxons/fluxon-data/";
 push(@PDLLIB,"+".$datdir);
 push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-data");
 push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/PDL");
-push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/flux-pipe");
+push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/fluxpipe");
 push(@INC, "+/Users/cgilbert/opt");
 push(@INC, "/Users/cgilbert/.cpan/build");
 
-system("cd /Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/flux-pipe");
+system("cd /Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/fluxpipe");
 
 
 $cr = 2160;

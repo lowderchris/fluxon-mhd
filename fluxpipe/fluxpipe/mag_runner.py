@@ -5,7 +5,7 @@ import sys
 import pipe_helper as ph
 
 
-flux_pipe_dir = "/Users/cgilbert/vscode/fluxon-mhd/flux-pipe/"
+flux_pipe_dir = "/Users/cgilbert/vscode/fluxon-mhd/fluxpipe/fluxpipe/"
 batch_name = "adapt_test2"
 # rotations = [2160, 2193, 2219, 2231]
 rotations = [2193]

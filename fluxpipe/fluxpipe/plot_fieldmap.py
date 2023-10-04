@@ -226,7 +226,7 @@ if __name__ == "__main__":
     # Create the argument parser
     parser = argparse.ArgumentParser(description=
             'This script plots the expansion factor of the given radial_fr.dat')
-    parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
+    parser.add_argument('--cr', type=int, default=2200, help='Carrington Rotation')
     parser.add_argument('--file', type=str, default=None, help='Data File Name')
     parser.add_argument('--nwant', type=int, default=None, help='Number of Fluxons')
     parser.add_argument('--open', type=str, default=None)
@@ -238,8 +238,8 @@ if __name__ == "__main__":
 
     # Run the code
     # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
-    CR = configs["cr"] or configs["rotations"][0]
-    nwant = configs["nwant"] or configs["fluxon_count"][0]
+    CR = configs.get("cr", configs["rotations"][0])
+    nwant = configs.get("nwant", configs["fluxon_count"][0])
 
     magnet_plot(CR,              configs["data_dir"],  configs["batch_name"],
                 configs["open"], configs["closed"],    do_print=configs["verbose"],
