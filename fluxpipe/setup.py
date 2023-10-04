@@ -1,7 +1,13 @@
 from setuptools import setup, find_packages
 import versioneer
+import sys
+
+# Set conditional requirement for pytest-runner
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
 
 setup(
+    # Self-descriptive entries which should always be present
     name='fluxpipe',
     author='Gilly',
     author_email='gilly@swri.org',
