@@ -213,6 +213,7 @@ if ($0 eq __FILE__) {
     use File::Path;
     use Time::HiRes qw(clock_gettime);
     use File::Basename qw(fileparse);
+    use pipe_helper qw(configurations);
 
     use pipe_helper qw(configurations);
 
