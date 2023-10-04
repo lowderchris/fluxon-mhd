@@ -458,7 +458,7 @@ sub check_second_file_presence {
 sub set_paths {
     my ($do_plot) = @_;
     if (defined $ENV{'FL_PREFIX'}) {
-    my $envpath = "$ENV{'FL_PREFIX'}/perl_paths.pm";
+    my $envpath = "$ENV{'FL_PREFIX'}/flux-pipe/perl_paths.pm";
 
     # Check if the file exists and is readable
     if (-e $envpath && -r _) {
