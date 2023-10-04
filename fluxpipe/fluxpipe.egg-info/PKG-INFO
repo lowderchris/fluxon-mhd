@@ -2,7 +2,7 @@ Metadata-Version: 2.1
 Name: fluxpipe
 Version: 105
 Summary: Forward-model coronal magnetic fields and the solar wind using magnetograms.
-Home-page: https://github.com/lowderchris/fluxon-mhd
+Home-page: https://github.com/GillySpace27/sunback
 Author: Gilly
 Author-email: gilly@swri.org
 License: BSD-3-Clause

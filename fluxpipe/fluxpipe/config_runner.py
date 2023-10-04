@@ -29,7 +29,7 @@ Gilly <gilly@swri.org> (and others!)
 
 import subprocess
 from tqdm import tqdm
-from fluxpipe.helpers.pipe_helper import configurations
+from fluxpipe.pipe_helper import configurations
 
 configs = configurations(debug=False)
 def run():
@@ -53,11 +53,4 @@ def run():
                 pbar.update(1)
 
 if __name__ == "__main__":
-
-    # import os
-    # import sys
-    # sys.exec(open(os.path.expanduser('~/.zshrc')).read())
-    # print(os.environ.get('PERL5LIB'))
-
-
     run()
