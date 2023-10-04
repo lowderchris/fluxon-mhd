@@ -33,6 +33,7 @@ Here's the path to installing FLUX:
 
     make everything
 
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - To use the python components of FLUX (including FLUXpipe), follow these steps:
@@ -48,4 +49,13 @@ Here's the path to installing FLUX:
         - navigate to the fluxpipe directory and
           install the package by running
             ```pip install -e .```
+
+    - Now we need to install the flux pdl package too
+        - go to the fluxpipe directory and run
+            cpanm --installdeps .
+            cpanm --notest --local-lib=local/ .
+        - next, place the following line in your zshrc file and reload the terminal
+            export PERL5LIB=$FL_PREFIX/fluxpipe/local/lib/perl5:$PERL5LIB
+
+
 

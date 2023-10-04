@@ -47,6 +47,9 @@ use PDL::AutoLoader;
 use PDL::Transform;
 use PDL::NiceSlice;
 use PDL::Options;
+
+print "Loading Flux...\n";
+# use Fluxpipe;
 use Flux;
 use PDL::IO::Misc;
 use File::Path;
@@ -57,6 +60,7 @@ use File::Basename qw(fileparse);
 # Ensure the current directory is always in the path
 use FindBin qw($RealBin);
 use lib $RealBin;
+use lib "$RealBin/..";
 use pipe_helper qw(set_paths configurations print_banner search_files_in_directory);
 set_paths();
 

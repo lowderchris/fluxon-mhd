@@ -33,9 +33,10 @@ sub make_perl_incs {
 
 # Function to set Perl environment variables
 sub fix_envs {
+    print("Fixing Envs!");
     my $perl_path = $ENV{'PL_PREFIX'};
     $ENV{PERL_LOCAL_LIB_ROOT} = $perl_path;
-    $ENV{PERL5LIB} = "$perl_path/lib/perl5";
+    $ENV{PERL5LIB} = $ENV{PERL5LIB}.": $perl_path/lib/perl5";
     return 1;
 }
 
