@@ -45,7 +45,9 @@ Here's the path to installing FLUX:
         - make a new environment using conda, and activate it
             ```conda create -n flux```
             ```conda activate flux```
-        - navigate to the fluxpipe directory and
-          install the package by running
+        - navigate to the flux-pipe directory and
+          install the required packages either by running
+            ```pip install -r requirements.txt```
+                or
             ```pip install -e .```
 

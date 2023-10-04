@@ -1,9 +1,9 @@
 """
-pipe_helper: Comprehensive Library for FLUXpipe Algorithm and Fluxon Simulations
+pipe_helper: Comprehensive Library for Flux-Pipe Algorithm and Fluxon Simulations
 ===============================================================================
 
 This library provides a collection of utility functions to assist with the
-FLUXpipe algorithm and Fluxon simulations. It offers functionalities for managing directories,
+Flux-Pipe algorithm and Fluxon simulations. It offers functionalities for managing directories,
 handling FITS files, manipulating magnetogram data, parsing and plotting data generated from fluxon simulations.
 
 Modules:
@@ -110,7 +110,7 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
         dict: Configuration settings as key-value pairs.
     """
     config_obj = configparser.ConfigParser()
-    config_path = f"fluxon-mhd/fluxpipe/fluxpipe/config/{config_filename}"
+    config_path = f"fluxon-mhd/flux-pipe/config/{config_filename}"
 
     # Search for the configuration file in the current directory and subdirectories
     if not os.path.exists(config_path):
@@ -180,7 +180,7 @@ def calculate_directories(the_config):
     dat_dir = the_config.get('data_dir', None)  # Assuming you have this in your config
 
     fluxdir = os.path.join(basedir, "fluxon-mhd")
-    pipedir = os.path.join(fluxdir, "fluxpipe", "fluxpipe")
+    pipedir = os.path.join(fluxdir, "flux-pipe")
     pdldir = os.path.join(fluxdir, "pdl", "PDL")
 
     # Use the provided data_dir if defined, otherwise calculate it
@@ -864,9 +864,9 @@ def add_fluxon_dirs_to_path(do_print=False):
     # Add the pipe and plotting directories to the path
     for thepath in dirlist:
         if "mhd" in thepath:
-            dirlist.append(os.path.join(thepath, "fluxpipe"))
-            dirlist.append(os.path.join(thepath, "fluxpipe", "plotting"))
-            dirlist.append(os.path.join(thepath, "fluxpipe", "helpers"))
+            dirlist.append(os.path.join(thepath, "flux-pipe"))
+            dirlist.append(os.path.join(thepath, "flux-pipe", "plotting"))
+            dirlist.append(os.path.join(thepath, "flux-pipe", "helpers"))
             break
 
     # Get the pipedir environment variable and add it to the path
