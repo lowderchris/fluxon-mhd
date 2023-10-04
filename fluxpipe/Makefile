@@ -184,30 +184,30 @@ PERL_ARCHIVE_AFTER =
 
 
 TO_INST_PM = fluxpipe/.gitattributes \
-	fluxpipe/ADAPTClient.py \
 	fluxpipe/__init__.py \
 	fluxpipe/_version.py \
 	fluxpipe/config/config.ini \
-	fluxpipe/config_runner.py \
-	fluxpipe/get_hilbert_footpoints.pdl \
-	fluxpipe/get_magnetograms.py \
-	fluxpipe/get_pfss.py \
-	fluxpipe/get_wind.pdl \
-	fluxpipe/mag_runner.py \
-	fluxpipe/magnetogram2wind.pdl \
-	fluxpipe/make_world_from_pfss.pdl \
-	fluxpipe/manual_runner.py \
-	fluxpipe/perl_paths.pm \
-	fluxpipe/pfss_funcs.py \
-	fluxpipe/pipe_helper.pm \
-	fluxpipe/pipe_helper.py \
-	fluxpipe/plot_bmag.py \
-	fluxpipe/plot_fieldmap.py \
-	fluxpipe/plot_fr.py \
-	fluxpipe/plot_wind_map_detailed.py \
-	fluxpipe/plot_worlds.pdl \
-	fluxpipe/relax_pfss_world.pdl \
-	fluxpipe/science/perltidy.ERR
+	fluxpipe/fidoclients/ADAPTClient.py \
+	fluxpipe/helpers/perl_paths.pm \
+	fluxpipe/helpers/pipe_helper.pm \
+	fluxpipe/helpers/pipe_helper.py \
+	fluxpipe/plotting/plot_bmag.py \
+	fluxpipe/plotting/plot_fieldmap.py \
+	fluxpipe/plotting/plot_fr.py \
+	fluxpipe/plotting/plot_wind_map_detailed.py \
+	fluxpipe/plotting/plot_worlds.pdl \
+	fluxpipe/runners/config_runner.py \
+	fluxpipe/runners/mag_runner.py \
+	fluxpipe/runners/manual_runner.py \
+	fluxpipe/science/get_hilbert_footpoints.pdl \
+	fluxpipe/science/get_magnetograms.py \
+	fluxpipe/science/get_pfss.py \
+	fluxpipe/science/get_wind.pdl \
+	fluxpipe/science/magnetogram2wind.pdl \
+	fluxpipe/science/make_world_from_pfss.pdl \
+	fluxpipe/science/perltidy.ERR \
+	fluxpipe/science/pfss_funcs.py \
+	fluxpipe/science/relax_pfss_world.pdl
 
 
 # --- MakeMaker platform_constants section:
@@ -877,30 +877,30 @@ ppd :
 pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	$(NOECHO) $(ABSPERLRUN) -MExtUtils::Install -e 'pm_to_blib({@ARGV}, '\''$(INST_LIB)/auto'\'', q[$(PM_FILTER)], '\''$(PERM_DIR)'\'')' -- \
 	  'fluxpipe/.gitattributes' '$(INST_LIB)/fluxpipe/.gitattributes' \
-	  'fluxpipe/ADAPTClient.py' '$(INST_LIB)/fluxpipe/ADAPTClient.py' \
 	  'fluxpipe/__init__.py' '$(INST_LIB)/fluxpipe/__init__.py' \
 	  'fluxpipe/_version.py' '$(INST_LIB)/fluxpipe/_version.py' \
 	  'fluxpipe/config/config.ini' '$(INST_LIB)/fluxpipe/config/config.ini' \
-	  'fluxpipe/config_runner.py' '$(INST_LIB)/fluxpipe/config_runner.py' \
-	  'fluxpipe/get_hilbert_footpoints.pdl' '$(INST_LIB)/fluxpipe/get_hilbert_footpoints.pdl' \
-	  'fluxpipe/get_magnetograms.py' '$(INST_LIB)/fluxpipe/get_magnetograms.py' \
-	  'fluxpipe/get_pfss.py' '$(INST_LIB)/fluxpipe/get_pfss.py' \
-	  'fluxpipe/get_wind.pdl' '$(INST_LIB)/fluxpipe/get_wind.pdl' \
-	  'fluxpipe/mag_runner.py' '$(INST_LIB)/fluxpipe/mag_runner.py' \
-	  'fluxpipe/magnetogram2wind.pdl' '$(INST_LIB)/fluxpipe/magnetogram2wind.pdl' \
-	  'fluxpipe/make_world_from_pfss.pdl' '$(INST_LIB)/fluxpipe/make_world_from_pfss.pdl' \
-	  'fluxpipe/manual_runner.py' '$(INST_LIB)/fluxpipe/manual_runner.py' \
-	  'fluxpipe/perl_paths.pm' '$(INST_LIB)/fluxpipe/perl_paths.pm' \
-	  'fluxpipe/pfss_funcs.py' '$(INST_LIB)/fluxpipe/pfss_funcs.py' \
-	  'fluxpipe/pipe_helper.pm' '$(INST_LIB)/fluxpipe/pipe_helper.pm' \
-	  'fluxpipe/pipe_helper.py' '$(INST_LIB)/fluxpipe/pipe_helper.py' \
-	  'fluxpipe/plot_bmag.py' '$(INST_LIB)/fluxpipe/plot_bmag.py' \
-	  'fluxpipe/plot_fieldmap.py' '$(INST_LIB)/fluxpipe/plot_fieldmap.py' \
-	  'fluxpipe/plot_fr.py' '$(INST_LIB)/fluxpipe/plot_fr.py' \
-	  'fluxpipe/plot_wind_map_detailed.py' '$(INST_LIB)/fluxpipe/plot_wind_map_detailed.py' \
-	  'fluxpipe/plot_worlds.pdl' '$(INST_LIB)/fluxpipe/plot_worlds.pdl' \
-	  'fluxpipe/relax_pfss_world.pdl' '$(INST_LIB)/fluxpipe/relax_pfss_world.pdl' \
-	  'fluxpipe/science/perltidy.ERR' '$(INST_LIB)/fluxpipe/science/perltidy.ERR' 
+	  'fluxpipe/fidoclients/ADAPTClient.py' '$(INST_LIB)/fluxpipe/fidoclients/ADAPTClient.py' \
+	  'fluxpipe/helpers/perl_paths.pm' '$(INST_LIB)/fluxpipe/helpers/perl_paths.pm' \
+	  'fluxpipe/helpers/pipe_helper.pm' '$(INST_LIB)/fluxpipe/helpers/pipe_helper.pm' \
+	  'fluxpipe/helpers/pipe_helper.py' '$(INST_LIB)/fluxpipe/helpers/pipe_helper.py' \
+	  'fluxpipe/plotting/plot_bmag.py' '$(INST_LIB)/fluxpipe/plotting/plot_bmag.py' \
+	  'fluxpipe/plotting/plot_fieldmap.py' '$(INST_LIB)/fluxpipe/plotting/plot_fieldmap.py' \
+	  'fluxpipe/plotting/plot_fr.py' '$(INST_LIB)/fluxpipe/plotting/plot_fr.py' \
+	  'fluxpipe/plotting/plot_wind_map_detailed.py' '$(INST_LIB)/fluxpipe/plotting/plot_wind_map_detailed.py' \
+	  'fluxpipe/plotting/plot_worlds.pdl' '$(INST_LIB)/fluxpipe/plotting/plot_worlds.pdl' \
+	  'fluxpipe/runners/config_runner.py' '$(INST_LIB)/fluxpipe/runners/config_runner.py' \
+	  'fluxpipe/runners/mag_runner.py' '$(INST_LIB)/fluxpipe/runners/mag_runner.py' \
+	  'fluxpipe/runners/manual_runner.py' '$(INST_LIB)/fluxpipe/runners/manual_runner.py' \
+	  'fluxpipe/science/get_hilbert_footpoints.pdl' '$(INST_LIB)/fluxpipe/science/get_hilbert_footpoints.pdl' \
+	  'fluxpipe/science/get_magnetograms.py' '$(INST_LIB)/fluxpipe/science/get_magnetograms.py' \
+	  'fluxpipe/science/get_pfss.py' '$(INST_LIB)/fluxpipe/science/get_pfss.py' \
+	  'fluxpipe/science/get_wind.pdl' '$(INST_LIB)/fluxpipe/science/get_wind.pdl' \
+	  'fluxpipe/science/magnetogram2wind.pdl' '$(INST_LIB)/fluxpipe/science/magnetogram2wind.pdl' \
+	  'fluxpipe/science/make_world_from_pfss.pdl' '$(INST_LIB)/fluxpipe/science/make_world_from_pfss.pdl' \
+	  'fluxpipe/science/perltidy.ERR' '$(INST_LIB)/fluxpipe/science/perltidy.ERR' \
+	  'fluxpipe/science/pfss_funcs.py' '$(INST_LIB)/fluxpipe/science/pfss_funcs.py' \
+	  'fluxpipe/science/relax_pfss_world.pdl' '$(INST_LIB)/fluxpipe/science/relax_pfss_world.pdl' 
 	$(NOECHO) $(TOUCH) pm_to_blib
 
 

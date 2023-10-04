@@ -18,7 +18,7 @@ sandbox/
 _Inline/
 include/flux/
 
-fluxpipe/blib/
-fluxpipe/local/
-fluxpipe/data/
+fluxon-mhd/fluxpipe/blib/
+/local/
+/data/
 perltidy.ERR

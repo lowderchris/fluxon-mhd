@@ -28,7 +28,7 @@ Gilly <gilly@swri.org> (and others!)
 
 
 import argparse
-from fluxpipe.pipe_helper import (configurations, get_magnetogram_file, get_ADAPT_file)
+from pipe_helper import (configurations, get_magnetogram_file, get_ADAPT_file)
 configs = configurations()
 # Create the argument parser
 parser = argparse.ArgumentParser(description='This script downloads a magnetogram for a particular Carrington Rotation')
@@ -40,6 +40,7 @@ parser.add_argument('--ADAPT', type=int, default=1, help='download the files')
 args = parser.parse_args()
 
 # get the magnetogram files
+# get_adapt = True
 if args.ADAPT:
     big_path, processed_path = get_ADAPT_file(cr=args.cr, datdir=args.datdir, force_download=args.do_download, reduce=args.reduce)
 else:

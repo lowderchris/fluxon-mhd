@@ -95,7 +95,7 @@ import configparser
 
 # CONFIGURATION MANAGEMENT #######################################################
 
-def configurations(config_name=None, config_filename="config.ini", args=None, debug=False, adapt=False):
+def configurations(config_name=None, config_filename="config.ini", args=None, debug=False):
     """
     Reads and sanitizes configuration settings from a specified config file.
 
@@ -113,7 +113,7 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
     config_path = f"fluxon-mhd/fluxpipe/fluxpipe/config/{config_filename}"
 
     # Search for the configuration file in the current directory and subdirectories
-    if not os.path.exists(os.path.abspath(config_path)):
+    if not os.path.exists(config_path):
         found = False
         for root, dirs, files in os.walk(os.getcwd()):
             if config_filename in files:
@@ -137,12 +137,6 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
 
     # Create the configuration dictionary
     the_config = dict(config_obj[config_name])
-
-    batch_name = the_config['batch_name'].strip()
-    if adapt and not "adapt" in batch_name:
-        batch_name = batch_name + "_adapt"
-    the_config["adapt"] = adapt
-    the_config['batch_name'] = batch_name
 
     # Extract and further process configuration settings
     compute_configs(the_config)
@@ -177,14 +171,12 @@ def compute_configs(the_config):
     the_config["run_script"] = os.path.join(the_config['fl_prefix'], the_config["run_script"])
     the_config["rotations"] = ast.literal_eval(the_config["rotations"])
     the_config["fluxon_count"] = ast.literal_eval(the_config["fluxon_count"])
-    the_config["adapts"] = ast.literal_eval(the_config["adapts"])
-    the_config["n_jobs"] = str(len(the_config["adapts"]) * len(the_config["rotations"]) * len(the_config["fluxon_count"]))
+    the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"]))
 
 def calculate_directories(the_config):
     # Helper function to calculate directories
     basedir = the_config['base_dir'].strip()
-
-
+    batch_name = the_config['batch_name'].strip()
     dat_dir = the_config.get('data_dir', None)  # Assuming you have this in your config
 
     fluxdir = os.path.join(basedir, "fluxon-mhd")
@@ -195,7 +187,7 @@ def calculate_directories(the_config):
     datdir = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
 
     magdir = os.path.join(datdir, "magnetograms")
-    batchdir = os.path.join(datdir, "batches", the_config["batch_name"])
+    batchdir = os.path.join(datdir, "batches", batch_name)
     logfile = os.path.join(batchdir, "pipe_log.txt")
 
     # Update the original config dictionary
@@ -239,9 +231,9 @@ def convert_value(value):
         except ValueError:
             return value.strip()
 
-# configs = configurations()
-# dat_dir = configs["data_dir"]
-# default_email = configs["jsoc_email"]
+configs = configurations()
+dat_dir = configs["data_dir"]
+default_email = configs["jsoc_email"]
 
 
 
@@ -306,6 +298,10 @@ def add_top_level_dirs_to_path(root_dir):
     # Update the PATH
     os.environ['PATH'] = new_path
 
+    # news = os.environ.get('PATH', '')
+    # news_list = news.split(os.pathsep)
+    # news_list.sort()
+    # a=[print(x) for x in news_list]
     return new_path
 
 
@@ -340,13 +336,20 @@ def set_paths(do_plot=False):
             print(f" {path}")
         print("--------------------------\n")
 
+        # Add any additional paths you want to print here
+        # For example, if you have a list similar to Python's sys.path
+        # print("\nYour_Path has:")
+        # for path in Your_Path:
+        #     print(f" {path}")
+        # print("--------------------------\n")
 
-def add_paths(fluxpipe_dir):
+
+def add_paths(flux_pipe_dir):
     """Adds various paths to the system path.
 
     Parameters
     ----------
-    fluxpipe_dir : str
+    flux_pipe_dir : str
         FLUXpipe directory path
 
     Returns
@@ -356,11 +359,10 @@ def add_paths(fluxpipe_dir):
     """
 
     # Path to the PDL script
-    pdl_script_path = fluxpipe_dir + "magnetogram2wind.pdl"
-    os.chdir(fluxpipe_dir)
-
+    pdl_script_path = flux_pipe_dir + "magnetogram2wind.pdl"
+    os.chdir(flux_pipe_dir)
     # Get the plotscript directory path
-    plot_dir = os.path.abspath(os.path.join(fluxpipe_dir, "plotting"))
+    plot_dir = os.path.abspath(os.path.join(flux_pipe_dir, "plotting"))
     sys.path.append(plot_dir)
     return pdl_script_path
 
@@ -491,7 +493,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None,
             small_path = reduce_mag_file(file, reduce, force=force_download)
             return file, small_path
 
-
+    # c = drms.Client()
     # Generate a search
     crot = a.jsoc.PrimeKey('CAR_ROT', str(CR))
     res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crot,
@@ -934,12 +936,12 @@ import matplotlib.pyplot as plt # Import libraries
 # from sunpy.net.dataretriever import GenericClient
 
 
-def add_paths(fluxpipe_dir):
+def add_paths(flux_pipe_dir):
     # Path to the PDL script
-    pdl_script_path = fluxpipe_dir + "magnetogram2wind.pdl"
-    os.chdir(fluxpipe_dir)
+    pdl_script_path = flux_pipe_dir + "magnetogram2wind.pdl"
+    os.chdir(flux_pipe_dir)
     # Get the plotscript directory path
-    plot_dir = os.path.abspath(os.path.join(fluxpipe_dir, "plotting"))
+    plot_dir = os.path.abspath(os.path.join(flux_pipe_dir, "plotting"))
     sys.path.append(plot_dir)
     return pdl_script_path
 
@@ -1047,6 +1049,9 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
     Returns:
         None
     """
+
+    print(reduce)
+    print("_____________________")
 
     ## Parse the Dates
     # Set the Carrington rotation number
@@ -1302,11 +1307,23 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_a
 
         del useheader['BLANK']
         useheader = fix_header(useheader, small_image)
+        # small_file = fits_path.replace('_r1_', f'_r{reduction_amount}_')
+
+        # del useheader['BLANK']
+        # useheader['DATAMIN'] = np.min(small_image)
+        # useheader['DATAMAX'] = np.max(small_image)
+        # useheader['BZERO'] = 0
+        # useheader['BSCALE'] = 1
+
+        # useheader['CDELT1'] = 360 / small_image.shape[1]  ## DEGREES
+        # useheader['CDELT2'] = np.deg2rad(360 / (small_image.shape[0] * np.pi)) #RADIANS
 
         print("\tFinal Shape:    ", small_image.shape)
+
         print("\tSaving  ", small_file)
         fits.writeto(small_file, small_image, useheader, overwrite=True)
 
+        # plot_raw_magnetogram(fits_path, data, small_image)
 
         print("    Reduction Complete!\n")
     print("```````````````````````````\n")
@@ -1373,8 +1390,23 @@ def plot_raw_magnetogram(fits_path, data, small_image):
     plt.savefig(low_res_output_path, bbox_inches='tight', dpi=4*DPI)
     plt.close()
 
-def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False,
-                          fname=None, cr=None, adapt=None):
+# def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/fluxon-data/", batch="fluxon", bo=2, bn=2, ret_all=False):
+#     """Loads a magnetogram from a FITS file."""
+#     fname = load_magnetogram_params(datdir)[2].replace("/fluxon/", f"/{batch}/").replace(f"_{bo}_", f"_{bn}_")
+#     fits_path = datdir + fname
+#     try:
+#         hdulist = read_fits_data(fits_path)
+#     except FileNotFoundError as e:
+#         hdulist = read_fits_data(fname)
+#     brdat = hdulist[0].data
+#     header= hdulist[0].header
+#     brdat = brdat - np.mean(brdat)
+#     if ret_all:
+#         return brdat, header
+#     else:
+#         return brdat
+
+def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fname=None, cr=None):
     """Loads a magnetogram from a FITS file.
 
     Parameters
@@ -1398,24 +1430,19 @@ def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False,
         Magnetogram header object
     """
     configs = configurations()
-
-    if batch is not None:
-        adapt = adapt or ("adapt" in batch)
-
+    # print(cr, "\n\n\n\n")
     assert cr is not None, "Must specify a Carrington rotation number!"
     fname = fname or configs["magfile"].format(cr)
-    if adapt:
-        fname = fname.replace("magnetograms", "magnetograms/ADAPT").replace("hmi", "adapt").replace("_r", "_rf")
-
     batch = batch or configs["batch_name"]
-    configs["batch_name"] = batch
     datdir = datdir or configs["data_dir"]
 
-    try:
-        hdulist = read_fits_data(fname)
-    except FileNotFoundError as e:
-        raise e
-
+    # fname = load_magnetogram_params(datdir)[2]
+    # fname = fname.replace("/fluxon/", f"/{batch}/").replace(f"_{bo}_", f"_{bn}_")
+    # fits_path = datdir + fname
+    hdulist = read_fits_data(fname)
+    # try:
+    #     hdulist = read_fits_data(fits_path)
+    # except FileNotFoundError:
     brdat = hdulist[0].data
     header= hdulist[0].header
     brdat = brdat - np.mean(brdat)

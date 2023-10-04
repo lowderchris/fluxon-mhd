@@ -20,7 +20,7 @@ use PDL::IO::Misc;
 use Time::HiRes qw(clock_gettime);
 use File::Basename qw(fileparse);
 use File::Basename;
-use fluxpipe::fluxpipe::pipe_helper;
+use pipe_helper;
 
 =head1 SYNOPSIS
 
@@ -103,11 +103,6 @@ L<PDL>, L<PDL::Transform>, L<PDL::NiceSlice>, L<PDL::Options>, L<Flux>, L<PDL::I
 
 sub make_world_from_pfss {
     my ($datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2) = @_;
-
-    if ($adapt && !($batch_name =~ /adapt/)) {
-        $batch_name = $batch_name . "_adapt";
-    }
-
 
     # Define the output directory and floc path
     my $world_out_dir = "$datdir/batches/$batch_name/cr$CR/world";
@@ -218,6 +213,10 @@ sub make_world_from_pfss {
 
         # number of open fluxons, number of fluxons, number of fluxons requested
         my $top_dir = $datdir."/batches/$batch_name/imgs/initial/";
+        # my $wide_dir = $datdir."/batches/$batch/imgs/world/wide/";
+        # my $narrow_dir = $datdir."/batches/$batch/imgs/world/narrow/";
+
+
 
         if (! -d $top_dir ) {mkpath($top_dir) or die "Failed to create directory: $top_dir $!\n";}
         my $wide_dir = $world_out_dir ."wide/";
@@ -227,13 +226,17 @@ sub make_world_from_pfss {
 
         my $ext = 'png';
         my $renderer = $ext.'cairo';
+        # my $filename
         my $world_png_path = $narrow_dir."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss.$ext";
         my $world_png_path2= $wide_dir."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss_wide.$ext";
         my $world_png_path_top = $top_dir   ."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss.$ext";
 
+        # my $window00 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path);
+        # $world->render( {'window'=>$window00, range=>$range_i});
         my $window000 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path_top);
         $world->render( {'window'=>$window000, range=>$range_i});
-
+        # my $window01 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path2);
+        # $world->render( {'window'=>$window01, range=>$range_f2});
         print "Done!\n";
 
     } else {

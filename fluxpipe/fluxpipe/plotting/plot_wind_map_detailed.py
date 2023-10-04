@@ -181,7 +181,7 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
     vel1_wrapped = np.concatenate((vel1, vel1, vel1))
 
     # Create a grid for interpolation
-    Ny, Nx = load_fits_magnetogram(batch=configs["batch_name"], bo=3, bn=2, cr=configs["cr"], adapt=configs["adapt"]).shape
+    Ny, Nx = load_fits_magnetogram(batch=configs["batch_name"], bo=3, bn=2, cr=configs["cr"]).shape
     grid_x, grid_y = np.linspace(x_min, x_max, Nx, endpoint=False), np.linspace(-1, 1, Ny)
     grid_x, grid_y = np.meshgrid(grid_x, grid_y)
 
@@ -288,6 +288,10 @@ def plot_wind_map_detailed(configs):
     dat_file =  configs.get("file", f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind.dat')
     reduce_amt = configs.get("mag_reduce")
 
+    # Load the magnetogram parameters
+    # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(dat_dir)
+    # CR = args.cr or configs["rotations"][0]
+
     # Load the wind file
     arr = np.loadtxt(dat_file).T
     try:
@@ -325,7 +329,7 @@ def plot_wind_map_detailed(configs):
     if configs["adapt"]:
         reduce_amt = 'A'
     n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch,
-        ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce_amt, nwant=nwant, do_print_top=False, adapt=configs["adapt"])
+        ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce_amt, nwant=nwant, do_print_top=False)
     hex_n = np.max((n_open//10, 3))
 
     hex1 = hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=hex_n,
@@ -385,6 +389,8 @@ def plot_wind_map_detailed(configs):
                             aspect=15)
         cbar.cmap.set_over('lime')
         cbar.cmap.set_under('darkviolet')
+        # cbar.cmap.set_over('lightgreen')
+        # cbar.cmap.set_under('lightblue')
 
     cbar.set_label("Interp. Wind Speed [km/s]", labelpad=-50)
 
@@ -395,9 +401,11 @@ def plot_wind_map_detailed(configs):
     # Save the Figures
     print("\n\t\tSaving figures to disk...", end="")
     # print(main_file)
+    main_pdf = main_file.replace(".png", ".pdf")
     outer_pdf = outer_file.replace("png", "pdf")
 
     plt.savefig(outer_file, dpi=200)
+    # print("\t\t\tSaving ", shorten_path(outer_pdf))
     plt.savefig(outer_pdf, dpi=200)
 
     plt.close(fig)
@@ -423,7 +431,6 @@ if __name__ == "__main__":
     parser.add_argument('--dat_dir', type=str, default=configs['data_dir'], help='data directory')
     parser.add_argument('--nwant', type=int, default=configs["fluxon_count"][0], help='number of fluxons')
     parser.add_argument('--batch', type=str, default=configs["batch_name"], help='select the batch name')
-    parser.add_argument('--adapt', type=int, default=configs["adapt"], help='using adapt maps')
     args = parser.parse_args()
     configs = configurations(args=args)
 
