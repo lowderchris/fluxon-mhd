@@ -2,7 +2,7 @@ import subprocess
 from tqdm import tqdm
 import os
 import sys
-import pipe_helper as ph
+import py_pipe_helper as ph
 
 
 flux_pipe_dir = "/Users/cgilbert/vscode/fluxon-mhd/flux-pipe/"
@@ -39,7 +39,7 @@ else:
     pass
     # print("\n\nProcessing the following CR: ", rotations, "\n\n")
     # print(f"\n\n Batch Name {batch_name} \n\n")
-
+    
 
 to_break = 0
 print("")
@@ -55,7 +55,7 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
                 # do_flux = [8000]
 
                 for nflux in do_flux:
-                    result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download),
+                    result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), 
                                              str(recompute), str(nflux), str(batch_name), str(plot_only), str(ADAPT)], capture_output=capture)
                     # exit()
                     if capture and verbose:
@@ -65,10 +65,10 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
                         if to_break > 2:
                             break
             else:
-                result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download),
+                result = subprocess.run(["perl", pdl_script_path, str(rot), str(reduction), str(do_download), 
                                          str(recompute), str(nflux), str(batch_name), str(plot_only), str(ADAPT)], capture_output=capture)
                 if capture and verbose:
-
+                    
                     print(result.stdout.decode())
                 if result.returncode != 0:
                     to_break += 1
@@ -80,7 +80,7 @@ with tqdm(total=len(rotations), unit="rotation") as pbar:
 
         except Exception as e:
             print(e)
-
+        
 
 
 
