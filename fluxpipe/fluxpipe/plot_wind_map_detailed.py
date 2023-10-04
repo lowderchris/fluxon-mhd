@@ -322,6 +322,8 @@ def plot_wind_map_detailed(configs):
 
     all_vmin, all_vmax = 475, 700
     drk=0.25
+    if configs["adapt"]:
+        reduce_amt = 'A'
     n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch,
         ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce_amt, nwant=nwant, do_print_top=False, adapt=configs["adapt"])
     hex_n = np.max((n_open//10, 3))
@@ -348,7 +350,7 @@ def plot_wind_map_detailed(configs):
 
     ## SAVING
     # Set the output file names
-    filename = f"png_cr{CR}_f{args.nwant}_ou{n_open}_radial_wind.png"
+    filename = f"png_cr{CR}_f{nwant}_ou{n_open}_radial_wind.png"
     main_file =  f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 

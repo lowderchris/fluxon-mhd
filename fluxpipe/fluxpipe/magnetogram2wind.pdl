@@ -213,8 +213,6 @@ if ( not $plot_only ) {
         $force_make_world, $lim,              $lim2
     );
 
-    # print "$open_file\n\n\n\n";
-
 #######################################################################################################
 ## Relax the initial world state ##Use the FLUX Code ##################################################
 #######################################################################################################
@@ -277,11 +275,16 @@ print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 system(
 "$pythondir $pipedir/plot_bmag.py --cr $CR --file $out_b --nwant $n_fluxons_wanted --adapt $adapt"
 ) == 0 or ( die "Python script returned error $?", exit );
+
 system(
 "$pythondir $pipedir/plot_fr.py  --cr $CR --file $out_fr --nwant $n_fluxons_wanted --adapt $adapt"
 ) == 0 or ( die "Python script returned error $?", exit );
+
 system(
-"$pythondir $pipedir/plot_wind_map_detailed.py --cr $CR --file $out_wind --nwant $n_fluxons_wanted --adapt $adapt"
+        "$pythondir $pipedir/plot_wind_map_detailed.py"
+      . " --cr $CR --file $out_wind --nwant $n_fluxons_wanted"
+
+      #    . " --open $open_file --closed $closed_file "
 ) == 0 or ( die "Python script returned error $?", exit );
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

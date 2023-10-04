@@ -128,8 +128,8 @@ sub configurations {
     use File::Temp qw/ tempfile tempdir /;
 
     # Define the path of the configuration file
-    my $config_path =
-      catfile( "fluxon-mhd", "fluxpipe", "config", $config_filename );
+    my $config_path = catfile( "fluxon-mhd", "fluxpipe", "fluxpipe", "config",
+        $config_filename );
 
     # Check if the file exists at the defined path
     unless ( -e $config_path ) {

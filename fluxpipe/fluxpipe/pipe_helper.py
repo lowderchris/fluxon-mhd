@@ -1,9 +1,9 @@
 """
-pipe_helper: Comprehensive Library for Flux-Pipe Algorithm and Fluxon Simulations
+pipe_helper: Comprehensive Library for FLUXpipe Algorithm and Fluxon Simulations
 ===============================================================================
 
 This library provides a collection of utility functions to assist with the
-Flux-Pipe algorithm and Fluxon simulations. It offers functionalities for managing directories,
+FLUXpipe algorithm and Fluxon simulations. It offers functionalities for managing directories,
 handling FITS files, manipulating magnetogram data, parsing and plotting data generated from fluxon simulations.
 
 Modules:
