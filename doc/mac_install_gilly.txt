@@ -33,6 +33,7 @@ Here's the path to installing FLUX:
 
     make everything
 
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - To use the python components of FLUX (including FLUXpipe), follow these steps:
@@ -45,9 +46,17 @@ Here's the path to installing FLUX:
         - make a new environment using conda, and activate it
             ```conda create -n flux```
             ```conda activate flux```
-        - navigate to the flux-pipe directory and
-          install the required packages either by running
-            ```pip install -r requirements.txt```
-                or
+        - navigate to the fluxpipe directory and
+          install the package by running
             ```pip install -e .```
 
+    - Now we need to install the flux pdl package too
+        - go to the fluxpipe directory and run
+            cpanm --installdeps .
+            cpanm --notest --local-lib=local/ .
+        - next, place the following line in your zshrc file and reload the terminal
+            export PERL5LIB=$FL_PREFIX/fluxpipe/local/lib/perl5:$PERL5LIB
+
+
+        - This symbolic link made the pdl update automatically
+            -: ln -s /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/local/lib/perl5/FLUX/Fluxpipe
