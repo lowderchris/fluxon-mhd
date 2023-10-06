@@ -1,0 +1,23 @@
+from setuptools import setup, find_packages
+import versioneer
+
+setup(
+    name='fluxpipe',
+    author='Gilly',
+    author_email='gilly@swri.org',
+    description="Forward-model coronal magnetic fields and the solar wind using magnetograms.",
+    long_description="Forward-model coronal magnetic fields and the solar wind using magnetograms.",
+    long_description_content_type="text/markdown",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+    license='BSD-3-Clause',
+    url='https://github.com/GillySpace27/sunback',
+    packages=find_packages(),
+    include_package_data=True,
+    setup_requires=[],
+    install_requires=[],
+    python_requires=">=3.0",
+    classifiers=[
+        'Development Status :: 4 - Beta',
+    ],
+)

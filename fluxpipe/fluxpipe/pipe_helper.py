@@ -110,12 +110,13 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
         dict: Configuration settings as key-value pairs.
     """
     config_obj = configparser.ConfigParser()
-    config_path = f"fluxon-mhd/fluxpipe/config/{config_filename}"
+    config_path = f"fluxon-mhd/fluxpipe/fluxpipe/config/{config_filename}"
 
     # Search for the configuration file in the current directory and subdirectories
-    if not os.path.exists(config_path):
+    if not os.path.exists(os.path.abspath(config_path)):
         found = False
         for root, dirs, files in os.walk(os.getcwd()):
+            print(root)
             if config_filename in files:
                 config_path = os.path.join(root, config_filename)
                 found = True

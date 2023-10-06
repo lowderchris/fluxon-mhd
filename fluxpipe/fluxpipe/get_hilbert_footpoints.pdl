@@ -7,7 +7,10 @@ get_hilbert_footpoints - Traces Magnetogram to get Footpoints using a Hilbert Cu
 
 # package get_hilbert_footpoints;
 
+use strict;
 use warnings;
+use fluxpipe::pipe_helper;
+
 
 =head1 SYNOPSIS
 
@@ -78,7 +81,6 @@ L<pipe_helper>, L<fluxon_placement_hilbert>, L<rfits>, L<wcols>, L<rcols>
 
 
 sub get_hilbert_footpoints{
-    use pipe_helper;
     my ($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $process_magnetogram, $adapt) = @_;
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
