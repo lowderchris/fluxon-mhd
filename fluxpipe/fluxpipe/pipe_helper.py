@@ -110,7 +110,7 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
         dict: Configuration settings as key-value pairs.
     """
     config_obj = configparser.ConfigParser()
-    config_path = f"fluxon-mhd/flux-pipe/config/{config_filename}"
+    config_path = f"fluxon-mhd/fluxpipe/config/{config_filename}"
 
     # Search for the configuration file in the current directory and subdirectories
     if not os.path.exists(config_path):
@@ -180,7 +180,7 @@ def calculate_directories(the_config):
     dat_dir = the_config.get('data_dir', None)  # Assuming you have this in your config
 
     fluxdir = os.path.join(basedir, "fluxon-mhd")
-    pipedir = os.path.join(fluxdir, "flux-pipe")
+    pipedir = os.path.join(fluxdir, "fluxpipe")
     pdldir = os.path.join(fluxdir, "pdl", "PDL")
 
     # Use the provided data_dir if defined, otherwise calculate it
@@ -344,12 +344,12 @@ def set_paths(do_plot=False):
         # print("--------------------------\n")
 
 
-def add_paths(flux_pipe_dir):
+def add_paths(fluxpipe_dir):
     """Adds various paths to the system path.
 
     Parameters
     ----------
-    flux_pipe_dir : str
+    fluxpipe_dir : str
         FLUXpipe directory path
 
     Returns
@@ -359,10 +359,10 @@ def add_paths(flux_pipe_dir):
     """
 
     # Path to the PDL script
-    pdl_script_path = flux_pipe_dir + "magnetogram2wind.pdl"
-    os.chdir(flux_pipe_dir)
+    pdl_script_path = fluxpipe_dir + "magnetogram2wind.pdl"
+    os.chdir(fluxpipe_dir)
     # Get the plotscript directory path
-    plot_dir = os.path.abspath(os.path.join(flux_pipe_dir, "plotting"))
+    plot_dir = os.path.abspath(os.path.join(fluxpipe_dir, "plotting"))
     sys.path.append(plot_dir)
     return pdl_script_path
 
@@ -864,9 +864,9 @@ def add_fluxon_dirs_to_path(do_print=False):
     # Add the pipe and plotting directories to the path
     for thepath in dirlist:
         if "mhd" in thepath:
-            dirlist.append(os.path.join(thepath, "flux-pipe"))
-            dirlist.append(os.path.join(thepath, "flux-pipe", "plotting"))
-            dirlist.append(os.path.join(thepath, "flux-pipe", "helpers"))
+            dirlist.append(os.path.join(thepath, "fluxpipe"))
+            dirlist.append(os.path.join(thepath, "fluxpipe", "plotting"))
+            dirlist.append(os.path.join(thepath, "fluxpipe", "helpers"))
             break
 
     # Get the pipedir environment variable and add it to the path
@@ -936,12 +936,12 @@ import matplotlib.pyplot as plt # Import libraries
 # from sunpy.net.dataretriever import GenericClient
 
 
-def add_paths(flux_pipe_dir):
+def add_paths(fluxpipe_dir):
     # Path to the PDL script
-    pdl_script_path = flux_pipe_dir + "magnetogram2wind.pdl"
-    os.chdir(flux_pipe_dir)
+    pdl_script_path = fluxpipe_dir + "magnetogram2wind.pdl"
+    os.chdir(fluxpipe_dir)
     # Get the plotscript directory path
-    plot_dir = os.path.abspath(os.path.join(flux_pipe_dir, "plotting"))
+    plot_dir = os.path.abspath(os.path.join(fluxpipe_dir, "plotting"))
     sys.path.append(plot_dir)
     return pdl_script_path
 

@@ -128,7 +128,7 @@ sub configurations {
 
 
     # Define the path of the configuration file
-    my $config_path = catfile("fluxon-mhd", "flux-pipe", "config", $config_filename);
+    my $config_path = catfile("fluxon-mhd", "fluxpipe", "config", $config_filename);
 
     # Check if the file exists at the defined path
     unless (-e $config_path) {
@@ -325,7 +325,7 @@ sub calculate_directories {
     use File::Spec::Functions;
 
     my $fluxdir = catdir($basedir, "fluxon-mhd");
-    my $pipedir = catdir($fluxdir, "flux-pipe");
+    my $pipedir = catdir($fluxdir, "fluxpipe");
     my $pdldir =  catdir($fluxdir, "pdl", "PDL");
 
     # Use the provided data_dir if defined, otherwise calculate it
@@ -458,7 +458,7 @@ sub check_second_file_presence {
 sub set_paths {
     my ($do_plot) = @_;
     if (defined $ENV{'FL_PREFIX'}) {
-    my $envpath = "$ENV{'FL_PREFIX'}/flux-pipe/perl_paths.pm";
+    my $envpath = "$ENV{'FL_PREFIX'}/fluxpipe/perl_paths.pm";
 
     # Check if the file exists and is readable
     if (-e $envpath && -r _) {
