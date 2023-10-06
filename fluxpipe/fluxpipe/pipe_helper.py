@@ -116,7 +116,6 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
     if not os.path.exists(os.path.abspath(config_path)):
         found = False
         for root, dirs, files in os.walk(os.getcwd()):
-            print(root)
             if config_filename in files:
                 config_path = os.path.join(root, config_filename)
                 found = True
@@ -181,7 +180,7 @@ def calculate_directories(the_config):
     dat_dir = the_config.get('data_dir', None)  # Assuming you have this in your config
 
     fluxdir = os.path.join(basedir, "fluxon-mhd")
-    pipedir = os.path.join(fluxdir, "fluxpipe")
+    pipedir = os.path.join(fluxdir, "fluxpipe", "fluxpipe")
     pdldir = os.path.join(fluxdir, "pdl", "PDL")
 
     # Use the provided data_dir if defined, otherwise calculate it
@@ -299,10 +298,6 @@ def add_top_level_dirs_to_path(root_dir):
     # Update the PATH
     os.environ['PATH'] = new_path
 
-    # news = os.environ.get('PATH', '')
-    # news_list = news.split(os.pathsep)
-    # news_list.sort()
-    # a=[print(x) for x in news_list]
     return new_path
 
 
@@ -337,13 +332,6 @@ def set_paths(do_plot=False):
             print(f" {path}")
         print("--------------------------\n")
 
-        # Add any additional paths you want to print here
-        # For example, if you have a list similar to Python's sys.path
-        # print("\nYour_Path has:")
-        # for path in Your_Path:
-        #     print(f" {path}")
-        # print("--------------------------\n")
-
 
 def add_paths(fluxpipe_dir):
     """Adds various paths to the system path.
@@ -362,6 +350,7 @@ def add_paths(fluxpipe_dir):
     # Path to the PDL script
     pdl_script_path = fluxpipe_dir + "magnetogram2wind.pdl"
     os.chdir(fluxpipe_dir)
+
     # Get the plotscript directory path
     plot_dir = os.path.abspath(os.path.join(fluxpipe_dir, "plotting"))
     sys.path.append(plot_dir)
@@ -494,7 +483,7 @@ def get_magnetogram_file(cr=None, date=None, datdir=None, email=None,
             small_path = reduce_mag_file(file, reduce, force=force_download)
             return file, small_path
 
-    # c = drms.Client()
+
     # Generate a search
     crot = a.jsoc.PrimeKey('CAR_ROT', str(CR))
     res = Fido.search(a.jsoc.Series('hmi.Synoptic_Mr_polfil_720s'), crot,
@@ -1051,9 +1040,6 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
         None
     """
 
-    print(reduce)
-    print("_____________________")
-
     ## Parse the Dates
     # Set the Carrington rotation number
     if cr is not None:
@@ -1308,23 +1294,11 @@ def reduce_fits_image(fits_path, small_file, target_resolution=None, reduction_a
 
         del useheader['BLANK']
         useheader = fix_header(useheader, small_image)
-        # small_file = fits_path.replace('_r1_', f'_r{reduction_amount}_')
-
-        # del useheader['BLANK']
-        # useheader['DATAMIN'] = np.min(small_image)
-        # useheader['DATAMAX'] = np.max(small_image)
-        # useheader['BZERO'] = 0
-        # useheader['BSCALE'] = 1
-
-        # useheader['CDELT1'] = 360 / small_image.shape[1]  ## DEGREES
-        # useheader['CDELT2'] = np.deg2rad(360 / (small_image.shape[0] * np.pi)) #RADIANS
 
         print("\tFinal Shape:    ", small_image.shape)
-
         print("\tSaving  ", small_file)
         fits.writeto(small_file, small_image, useheader, overwrite=True)
 
-        # plot_raw_magnetogram(fits_path, data, small_image)
 
         print("    Reduction Complete!\n")
     print("```````````````````````````\n")
@@ -1390,22 +1364,6 @@ def plot_raw_magnetogram(fits_path, data, small_image):
     fig.set_size_inches((sz1, sz0))
     plt.savefig(low_res_output_path, bbox_inches='tight', dpi=4*DPI)
     plt.close()
-
-# def load_fits_magnetogram(datdir = "/Users/cgilbert/vscode/fluxon-data/", batch="fluxon", bo=2, bn=2, ret_all=False):
-#     """Loads a magnetogram from a FITS file."""
-#     fname = load_magnetogram_params(datdir)[2].replace("/fluxon/", f"/{batch}/").replace(f"_{bo}_", f"_{bn}_")
-#     fits_path = datdir + fname
-#     try:
-#         hdulist = read_fits_data(fits_path)
-#     except FileNotFoundError as e:
-#         hdulist = read_fits_data(fname)
-#     brdat = hdulist[0].data
-#     header= hdulist[0].header
-#     brdat = brdat - np.mean(brdat)
-#     if ret_all:
-#         return brdat, header
-#     else:
-#         return brdat
 
 def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fname=None, cr=None):
     """Loads a magnetogram from a FITS file.

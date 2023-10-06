@@ -10,7 +10,7 @@ plot_worlds - Perl PDL Script for Plotting Initial and Relaxed Worlds
 use warnings;
 use PDL::AutoLoader;
 use PDL;
-use pipe_helper;
+use fluxpipe::fluxpipe::pipe_helper;
 
 =head1 SYNOPSIS
 
@@ -76,8 +76,6 @@ Gilly <gilly@swri.org> (and others!)
 L<PDL>, L<PDL::AutoLoader>, L<pipe_helper>
 
 =cut
-
-
 
 sub plot_worlds {
     our (

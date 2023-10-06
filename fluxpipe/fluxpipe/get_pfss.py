@@ -108,8 +108,6 @@ def get_pfss(configs=None):
     timeout_num = 'x'
     open_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_open_cr{cr}_r{reduce}_f{nwant}.dat"
     closed_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_closed_cr{cr}_r{reduce}_f{nwant}.dat"
-    # print("Open Path = ", open_path)
-    # print("Closed Path = ", closed_path)
 
     print("\n\tTracing Open and Closed Fluxons...", end="")
     need = not os.path.exists(open_path) or not os.path.exists(closed_path) or force_trace

@@ -9,7 +9,9 @@ get_hilbert_footpoints - Traces Magnetogram to get Footpoints using a Hilbert Cu
 
 use strict;
 use warnings;
-use fluxpipe::pipe_helper;
+use fluxpipe::fluxpipe::pipe_helper;
+use PDL;
+use PDL::NiceSlice;
 
 
 =head1 SYNOPSIS
@@ -87,11 +89,9 @@ sub get_hilbert_footpoints{
     print "(pdl) Tracing Magnetogram to get $n_fluxons_wanted Footpoints\n";
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 
-
     my $no_floc = 0;
     my $floc = 0;
     my $N_actual = 0;
-    my $adapt = 0;
 
     if (! -e $flocfile ) {
         $no_floc = 1;
@@ -103,11 +103,8 @@ sub get_hilbert_footpoints{
         print "Not found.\n\n";
         print "\tRunning Hilbert Tracer...\n";
         print "\t\tFile: ". shorten_path($magfile) . "\n\n";
-        # print "\n\t**Reading Magnetogram...";
-        # die;
+
         my $smag = rfits($magfile);
-        # eval {my $smag = rfits($magfile)};
-        # if ($@) {$smag = rfits($datdir.$magfile)};
 
         # Extra step for adapt br maps
         if ($adapt) {$smag = $smag(:,:,2)->squeeze};

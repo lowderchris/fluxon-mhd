@@ -43,17 +43,11 @@ from pipe_helper import (configurations, get_fixed_coords, load_fits_magnetogram
 
 def plot_bmag(configs):
 
-    # batch =
-    # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
-    # CR = configs['cr'] #args.cr or configs["rotations"][0]
-
-
     filename = configs.get('file', f"{configs['data_dir']}/batches/{configs['batch_name']}/cr{configs['cr']}/wind/cr{configs['cr']}_f{configs['nwant']}_radial_bmag.dat")
 
     # Load the dat file
     arr = np.loadtxt(filename).T
     fid, phi0, theta0, phi1, theta1, br0, br1, ar0, ar1 = arr
-    nfluxon = arr.shape[1]
 
     # Convert coords to correct coords
     ph0, th0 = get_fixed_coords(phi0, theta0)
@@ -147,5 +141,4 @@ if __name__ == "__main__":
     parser.add_argument('--nwant', type=int, default=100, help='Number of Fluxons')
     args = parser.parse_args()
     configs = configurations(debug=False, args=args)
-    # a=[print(x) for x in configs.items()]
     plot_bmag(configs)

@@ -40,8 +40,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-from pfss_funcs import pixel_to_latlon
-from pipe_helper import (configurations, load_fits_magnetogram, load_magnetogram_params,
+from fluxpipe.pfss_funcs import pixel_to_latlon
+from fluxpipe.pipe_helper import (configurations, load_fits_magnetogram,
                             shorten_path, get_ax)
 
 def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False, reduce_amt=0,

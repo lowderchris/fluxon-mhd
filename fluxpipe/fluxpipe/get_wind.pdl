@@ -1,3 +1,4 @@
+
 =head1 NAME
 
 get_wind - Calculate Solar Wind Plasma Parameters for a Given Carrington Rotation (CR)
@@ -10,9 +11,9 @@ get_wind - Calculate Solar Wind Plasma Parameters for a Given Carrington Rotatio
 =cut
 
 # package get_wind;
-
-use pipe_helper;
+use strict;
 use warnings;
+use fluxpipe::fluxpipe::pipe_helper;
 
 =head1 DESCRIPTION
 
@@ -68,11 +69,11 @@ L<pipe_helper>, L<map_fluxon_b>, L<map_fluxon_fr>, L<map_fluxon_flow_parallel_ma
 
 =cut
 
+sub get_wind {
 
-
-sub get_wind{
-
-    my ($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_want, $pythondir) = @_;
+    my ( $this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute,
+        $n_want, $pythondir )
+      = @_;
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
@@ -80,27 +81,30 @@ sub get_wind{
 
     my $do_wind_calc = 0;
 
-    my $wind_out_dir = $datdir."/batches/$batch_name/cr".$CR.'/wind';
-    my $prefix = "$wind_out_dir/cr$CR\_f$n_want";
-    my $out_b = "$prefix\_radial_bmag.dat";
-    my $out_fr = "$prefix\_radial_fr.dat";
-    my $out_wind = "$prefix\_radial_wind.dat";
+    my $wind_out_dir   = $datdir . "/batches/$batch_name/cr" . $CR . '/wind';
+    my $prefix         = "$wind_out_dir/cr$CR\_f$n_want";
+    my $out_b          = "$prefix\_radial_bmag.dat";
+    my $out_fr         = "$prefix\_radial_fr.dat";
+    my $out_wind       = "$prefix\_radial_wind.dat";
     my $short_out_wind = shorten_path($out_wind);
-    my $skipstring = "\n\tWind Calculation Skipped! \n\t\tFound $short_out_wind\n\n";
+    my $skipstring =
+      "\n\tWind Calculation Skipped! \n\t\tFound $short_out_wind\n\n";
 
     # Make the directory if necessary
-    if (! -d $wind_out_dir ) {
+    if ( !-d $wind_out_dir ) {
         $do_wind_calc = 1;
-        mkpath($wind_out_dir) or die "Failed to create directory: $wind_out_dir $!\n";
-        }
+        mkpath($wind_out_dir)
+          or die "Failed to create directory: $wind_out_dir $!\n";
+    }
 
     # Check if the files exist
-    if (! -f $out_b or ! -f $out_fr or ! -f $out_wind or $recompute) {
+    if ( !-f $out_b or !-f $out_fr or !-f $out_wind or $recompute ) {
         $do_wind_calc = 1;
-        }
+    }
 
     # Perform the calculation if necessary
-    if ($do_wind_calc || $recompute){
+    if ( $do_wind_calc || $recompute ) {
+
         #Initialize the world
         print "\n\tUpdating neighbors...";
         $this_world_relaxed->update_force(0);
@@ -109,33 +113,35 @@ sub get_wind{
 
         # Calculate the radial magnetic field
         print "\n\tRadial Magnetic Field (B) Calculation...";
-        map_fluxon_b($out_b, \@fluxons);
+        map_fluxon_b( $out_b, \@fluxons );
         print "Done!\n";
-        # print "\t\t...done with radial B!";
 
         # Calculate the radial expansion factor
         print "\n\tRadial Expansion Factor (Fr) Calculation...";
-        map_fluxon_fr($out_fr, \@fluxons);
+        map_fluxon_fr( $out_fr, \@fluxons );
         print "Done!";
 
         # Calculate the radial wind speed
         no warnings 'misc';
         print "\n\n\tRadial Wind Speed Calculation...\n";
         my $do_wind_map = 0 || $recompute;
+
         # $do_wind_map=1; #OVERRIDE WIND MAP
 
-        if (! -e $out_wind ) {$do_wind_map=1;}
-        if ($do_wind_map){
-            map_fluxon_flow_parallel_master($out_wind, \@fluxons);
-        } else {
+        if ( !-e $out_wind ) { $do_wind_map = 1; }
+        if ($do_wind_map) {
+            map_fluxon_flow_parallel_master( $out_wind, \@fluxons );
+        }
+        else {
             print $skipstring;
         }
         use warnings 'misc';
-    } else {
+    }
+    else {
         print $skipstring;
     }
 
-        print "\t\t\t```````````````````````````````\n\n\n\n";
+    print "\t\t\t```````````````````````````````\n\n\n\n";
 
     return $out_b, $out_fr, $out_wind;
 }
