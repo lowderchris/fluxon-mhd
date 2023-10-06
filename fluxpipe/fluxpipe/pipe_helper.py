@@ -171,7 +171,9 @@ def compute_configs(the_config):
     the_config["run_script"] = os.path.join(the_config['fl_prefix'], the_config["run_script"])
     the_config["rotations"] = ast.literal_eval(the_config["rotations"])
     the_config["fluxon_count"] = ast.literal_eval(the_config["fluxon_count"])
-    the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"]))
+    the_config["adapts"] = ast.literal_eval(the_config["adapts"])
+    the_config["adapt"] = the_config["adapts"][0]
+    the_config["n_jobs"] = str(len(the_config["adapts"]) * len(the_config["rotations"]) * len(the_config["fluxon_count"]))
 
 def calculate_directories(the_config):
     # Helper function to calculate directories

@@ -189,12 +189,15 @@ sub configurations {
     # Remove brackets from rotations and fluxon_count
     $the_config{"rotations"}    =~ s/[\[\]]//g;
     $the_config{"fluxon_count"} =~ s/[\[\]]//g;
+    $the_config{"adapts"}       =~ s/[\[\]]//g;
 
     # Create PDL objects
     $the_config{"rotations"} =
       PDL->new( split( /\s*,\s*/, $the_config{"rotations"} ) );
     $the_config{"fluxon_count"} =
       PDL->new( split( /\s*,\s*/, $the_config{"fluxon_count"} ) );
+    $the_config{"adapts"} =
+      PDL->new( split( /\s*,\s*/, $the_config{"adapts"} ) );
 
     $the_config{"n_jobs"} =
       $the_config{"rotations"}->nelem * $the_config{"fluxon_count"}->nelem;

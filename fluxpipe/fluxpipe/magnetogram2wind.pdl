@@ -70,10 +70,13 @@ $PDL::BIGPDL = 1;
 #######################################################################################################
 
 # Read configurations from disk
-my %configs          = configurations();
-my $adapt            = $configs{adapt};
+my %configs = configurations();
+
+# my $adapt   = $configs{adapts}[0];
+# print $adapt . "\n\n\n\n\n";
 my $CR               = $ARGV[0] // ( $configs{rotations}->at(0) );
 my $n_fluxons_wanted = $ARGV[1] // ( $configs{fluxon_count}->at(0) );
+my $adapt            = $ARGV[2] // ( $configs{adapts}->at(0) );
 my $closed_file;
 my $open_file;
 my $world_out_path;

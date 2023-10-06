@@ -29,25 +29,28 @@ Gilly <gilly@swri.org> (and others!)
 
 import subprocess
 from tqdm import tqdm
-from pipe_helper import configurations
+from fluxpipe.pipe_helper import configurations
 
 configs = configurations(debug=True)
 
 # Initialize a progress bar with the total number of jobs to run
 with tqdm(total=int(configs["n_jobs"]), unit="runs") as pbar:
 
-    # Loop through specified Carrington Rotations
-    for rot in configs["rotations"]:
+    # Loop through specified adapt values
+    for adapt in configs["adapts"]:
 
-        # Loop through specified fluxon counts
-        for nflux in configs["fluxon_count"]:
+        # Loop through specified Carrington Rotations
+        for rot in configs["rotations"]:
 
-            # Update the progress bar description
-            pbar.set_description(f"Rotation {rot}, n_fluxon {nflux}")
+            # Loop through specified fluxon counts
+            for nflux in configs["fluxon_count"]:
 
-            # Execute the PDL script with the current parameters
-            result = subprocess.run(["perl", configs["run_script"],
-                                     str(rot), str(nflux)], check=False)
+                # Update the progress bar description
+                pbar.set_description(f"Rotation {rot}, n_fluxon {nflux}")
 
-            # Update the progress bar
-            pbar.update(1)
+                # Execute the PDL script with the current parameters
+                result = subprocess.run(["perl", configs["run_script"],
+                                        str(rot), str(nflux), str(adapt)], check=False)
+
+                # Update the progress bar
+                pbar.update(1)
