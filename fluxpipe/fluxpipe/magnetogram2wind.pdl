@@ -205,7 +205,7 @@ if ( not $plot_only ) {
 #######################################################################################################
     my $force_make_world = 0;
 
-    print "This is adapt:  " . $adapt . "\n\n\n\n\n";
+    # print "This is adapt:  " . $adapt . "\n\n\n\n\n";
 
     ( $open_file, $closed_file, $world_out_path ) = make_world_from_pfss(
         $datdir,           $batch_name,       $CR,
@@ -257,6 +257,12 @@ system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
 #######################################################################################################
 ## Begin solar wind computation  ######################################################################
 #######################################################################################################
+
+if ( $adapt && !( $batch_name =~ /adapt/ ) ) {
+    $batch_name = $batch_name . "_adapt";
+}
+print $batch_name, "\n\n\n\n\n\n\n\n";
+
 my ( $out_b, $out_fr, $out_wind ) = get_wind( $this_world_relaxed, $datdir,
     $batch_name, $CR, $N_actual, $recompute, $n_fluxons_wanted, $pythondir );
 

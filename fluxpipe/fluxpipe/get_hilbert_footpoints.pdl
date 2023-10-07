@@ -94,6 +94,16 @@ sub get_hilbert_footpoints {
     my $floc     = 0;
     my $N_actual = 0;
 
+    if ($adapt) {
+        if ( $flocdir =~ m{batches/([^/]+)/cr} ) {
+            my $substring = $1;
+            $substring .= '_adapt';
+            $flocdir  =~ s{(batches/)([^/]+)(/cr)}{$1$substring$3};
+            $flocfile =~ s{(batches/)([^/]+)(/cr)}{$1$substring$3};
+
+        }
+    }
+
     if ( !-e $flocfile ) {
         $no_floc = 1;
         if ( !-d $flocdir ) {

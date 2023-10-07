@@ -1250,7 +1250,6 @@ def reduce_mag_file(mag_file, reduction=3, force=False):
 
 def read_fits_data(fname):
     """Reads FITS data and fixes/ignores any non-standard FITS keywords."""
-    print(fname, "alskjdfhalsdkjfkdsfla\n\n");
     hdulist = fits.open(fname, ignore_missing_simple=True)
     hdulist.verify('silentfix+warn')
     return hdulist
@@ -1400,7 +1399,8 @@ def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False,
     """
     configs = configurations()
 
-    adapt = adapt or ("adapt" in batch)
+    if batch is not None:
+        adapt = adapt or ("adapt" in batch)
 
     assert cr is not None, "Must specify a Carrington rotation number!"
     fname = fname or configs["magfile"].format(cr)

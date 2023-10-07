@@ -133,7 +133,7 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
         print(f"\t\tOpening {shorten_path(closed_file)}...\n")
     cflnum, _, _, _, crad = np.loadtxt(closed_file, unpack=True)
 
-    print(adapt, _batch)
+    # print(adapt, _batch)
 
     magnet, header = load_fits_magnetogram(batch=_batch, ret_all=True, cr=get_cr, adapt=adapt)
     f_lat, f_lon, f_sgn, _fnum = pixel_to_latlon(magnet, header, fluxon_location)

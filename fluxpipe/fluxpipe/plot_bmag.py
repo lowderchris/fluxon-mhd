@@ -45,6 +45,10 @@ def plot_bmag(configs):
 
     filename = configs.get('file', f"{configs['data_dir']}/batches/{configs['batch_name']}/cr{configs['cr']}/wind/cr{configs['cr']}_f{configs['nwant']}_radial_bmag.dat")
 
+    if configs['adapt'] and not "adapt" in filename:
+        filename = filename.replace(configs['batch_name'], f"{configs['batch_name']}_adapt")
+
+
     # Load the dat file
     arr = np.loadtxt(filename).T
     fid, phi0, theta0, phi1, theta1, br0, br1, ar0, ar1 = arr
@@ -139,7 +143,7 @@ if __name__ == "__main__":
     parser.add_argument('--cr', type=int, default=2219, help='Carrington Rotation')
     parser.add_argument('--file', type=str, default=None, help='Data File Name')
     parser.add_argument('--nwant', type=int, default=100, help='Number of Fluxons')
-    parser.add_argument('--adapt', type=int, default=0, help='using adapt maps')
+    parser.add_argument('--adapt', type=int, default=1, help='using adapt maps')
     args = parser.parse_args()
     configs = configurations(debug=False, args=args)
     plot_bmag(configs)
