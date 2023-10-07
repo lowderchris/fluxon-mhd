@@ -288,9 +288,12 @@ def get_fluxon_locations(floc_path, batch, cr):
     n_flux : int
         Fluxon count
     """
-
+    adapt=False
+    if "adapt" in floc_path and not "adapt" in batch:
+        batch += "_adapt"
+        adapt = True
     fluxon_location = np.genfromtxt(floc_path)
-    magnet, header = load_fits_magnetogram(batch=batch, ret_all=True, cr=cr)
+    magnet, header = load_fits_magnetogram(batch=batch, ret_all=True, cr=cr, adapt=adapt)
     f_lat, f_lon, f_sgn, n_flux = pixel_to_latlon(
         magnet, header, fluxon_location)
     return f_lat, f_lon, f_sgn, n_flux

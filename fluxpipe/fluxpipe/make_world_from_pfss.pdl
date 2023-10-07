@@ -104,6 +104,11 @@ L<PDL>, L<PDL::Transform>, L<PDL::NiceSlice>, L<PDL::Options>, L<Flux>, L<PDL::I
 sub make_world_from_pfss {
     my ($datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2) = @_;
 
+    if ($adapt && !($batch_name =~ /adapt/)) {
+        $batch_name = $batch_name . "_adapt";
+    }
+
+
     # Define the output directory and floc path
     my $world_out_dir = "$datdir/batches/$batch_name/cr$CR/world";
     my $floc_path = "$datdir/batches/$batch_name/cr$CR/floc";

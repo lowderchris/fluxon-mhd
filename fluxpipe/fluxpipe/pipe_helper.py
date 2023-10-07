@@ -95,7 +95,7 @@ import configparser
 
 # CONFIGURATION MANAGEMENT #######################################################
 
-def configurations(config_name=None, config_filename="config.ini", args=None, debug=False):
+def configurations(config_name=None, config_filename="config.ini", args=None, debug=False, adapt=False):
     """
     Reads and sanitizes configuration settings from a specified config file.
 
@@ -138,6 +138,12 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
     # Create the configuration dictionary
     the_config = dict(config_obj[config_name])
 
+    batch_name = the_config['batch_name'].strip()
+    if adapt and not "adapt" in batch_name:
+        batch_name = batch_name + "_adapt"
+    the_config["adapt"] = adapt
+    the_config['batch_name'] = batch_name
+
     # Extract and further process configuration settings
     compute_configs(the_config)
 
@@ -172,13 +178,13 @@ def compute_configs(the_config):
     the_config["rotations"] = ast.literal_eval(the_config["rotations"])
     the_config["fluxon_count"] = ast.literal_eval(the_config["fluxon_count"])
     the_config["adapts"] = ast.literal_eval(the_config["adapts"])
-    the_config["adapt"] = the_config["adapts"][0]
     the_config["n_jobs"] = str(len(the_config["adapts"]) * len(the_config["rotations"]) * len(the_config["fluxon_count"]))
 
 def calculate_directories(the_config):
     # Helper function to calculate directories
     basedir = the_config['base_dir'].strip()
-    batch_name = the_config['batch_name'].strip()
+
+
     dat_dir = the_config.get('data_dir', None)  # Assuming you have this in your config
 
     fluxdir = os.path.join(basedir, "fluxon-mhd")
@@ -189,7 +195,7 @@ def calculate_directories(the_config):
     datdir = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
 
     magdir = os.path.join(datdir, "magnetograms")
-    batchdir = os.path.join(datdir, "batches", batch_name)
+    batchdir = os.path.join(datdir, "batches", the_config["batch_name"])
     logfile = os.path.join(batchdir, "pipe_log.txt")
 
     # Update the original config dictionary
@@ -233,9 +239,9 @@ def convert_value(value):
         except ValueError:
             return value.strip()
 
-configs = configurations()
-dat_dir = configs["data_dir"]
-default_email = configs["jsoc_email"]
+# configs = configurations()
+# dat_dir = configs["data_dir"]
+# default_email = configs["jsoc_email"]
 
 
 
@@ -1244,6 +1250,7 @@ def reduce_mag_file(mag_file, reduction=3, force=False):
 
 def read_fits_data(fname):
     """Reads FITS data and fixes/ignores any non-standard FITS keywords."""
+    print(fname, "alskjdfhalsdkjfkdsfla\n\n");
     hdulist = fits.open(fname, ignore_missing_simple=True)
     hdulist.verify('silentfix+warn')
     return hdulist
@@ -1367,7 +1374,8 @@ def plot_raw_magnetogram(fits_path, data, small_image):
     plt.savefig(low_res_output_path, bbox_inches='tight', dpi=4*DPI)
     plt.close()
 
-def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fname=None, cr=None):
+def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False,
+                          fname=None, cr=None, adapt=None):
     """Loads a magnetogram from a FITS file.
 
     Parameters
@@ -1391,19 +1399,23 @@ def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fn
         Magnetogram header object
     """
     configs = configurations()
-    # print(cr, "\n\n\n\n")
+
+    adapt = adapt or ("adapt" in batch)
+
     assert cr is not None, "Must specify a Carrington rotation number!"
     fname = fname or configs["magfile"].format(cr)
+    if adapt:
+        fname = fname.replace("magnetograms", "magnetograms/ADAPT").replace("hmi", "adapt").replace("_r", "_rf")
+
     batch = batch or configs["batch_name"]
+    configs["batch_name"] = batch
     datdir = datdir or configs["data_dir"]
 
-    # fname = load_magnetogram_params(datdir)[2]
-    # fname = fname.replace("/fluxon/", f"/{batch}/").replace(f"_{bo}_", f"_{bn}_")
-    # fits_path = datdir + fname
-    hdulist = read_fits_data(fname)
-    # try:
-    #     hdulist = read_fits_data(fits_path)
-    # except FileNotFoundError:
+    try:
+        hdulist = read_fits_data(fname)
+    except FileNotFoundError as e:
+        raise e
+
     brdat = hdulist[0].data
     header= hdulist[0].header
     brdat = brdat - np.mean(brdat)

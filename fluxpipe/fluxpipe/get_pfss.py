@@ -64,7 +64,9 @@ def get_pfss(configs=None):
     reduce =    configs.get("mag_reduce")
     batch =     configs.get("batch_name")
     adapt =     configs.get("adapt") == 1
-
+    if adapt and not "adapt" in batch:
+        batch = batch + "_adapt"
+        configs["batch_name"] = batch
 
     # Print initial message
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -101,6 +103,8 @@ def get_pfss(configs=None):
 
     # Get the fluxon locations
     floc_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
+    print(floc_path)
+    print(batch)
     f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch, cr=cr)
 
     # Trace pfss field lines
@@ -161,6 +165,7 @@ if __name__ == "__main__":
     parser.add_argument('--nwant', type=int, default=configs.get('fluxon_count')[0], help='Number of fluxons wanted')
     parser.add_argument('--magfile', type=str, default=None, help='Magnetogram file')
     parser.add_argument('--force', type=int, default=0, help='Force computation of PFSS mapping')
+    parser.add_argument('--adapt', type=int, default=0, help='Use ADAPT magnetogram')
     configs = configurations(args=parser.parse_args())
 
     # Run the main function

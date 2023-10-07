@@ -115,7 +115,8 @@ Shortens the given file path by replacing the DATAPATH environment variable.
 =cut
 
 sub configurations {
-    my ( $debug, $config_name, $config_filename ) = @_;
+    my ( $adapt, $debug, $config_name, $config_filename ) = @_;
+    $adapt           //= 0;
     $config_name     //= "DEFAULT";
     $config_filename //= "config.ini";
     $debug           //= 0;
@@ -182,6 +183,8 @@ sub configurations {
     }
 
     # Perform additional processing on the configuration settings
+
+    $the_config{'adapt'}       = $adapt;
     $the_config{'abs_rc_path'} = glob( $the_config{'rc_path'} );
     $the_config{"run_script"} =
       catfile( $the_config{'fl_prefix'}, $the_config{"run_script"} );
@@ -200,14 +203,16 @@ sub configurations {
       PDL->new( split( /\s*,\s*/, $the_config{"adapts"} ) );
 
     $the_config{"n_jobs"} =
-      $the_config{"rotations"}->nelem * $the_config{"fluxon_count"}->nelem;
+      $the_config{"rotations"}->nelem *
+      $the_config{"fluxon_count"}->nelem *
+      $the_config{"adapts"}->nelem;
 
     # Calculate directories
     calculate_directories( \%the_config );
 
     my $reduct = $the_config{"mag_reduce"};
     my $magdir = $the_config{'mag_dir'};
-    if ( $the_config{'adapt'} == 1 ) {
+    if ($adapt) {
         $the_config{'magfile'} = "$magdir/ADAPT/CR%s\_rf$reduct\_adapt.fits";
     }
     else {
@@ -343,6 +348,9 @@ sub calculate_directories {
 
     $basedir    =~ s/^\s+|\s+$//g;
     $batch_name =~ s/^\s+|\s+$//g;
+    if ( $config_ref->{'adapt'} && index( $batch_name, "adapt" ) == -1 ) {
+        $batch_name = $batch_name . "_adapt";
+    }
 
     use File::Spec::Functions;
 
@@ -388,8 +396,9 @@ Prints a banner with various details.
 =cut
 
 sub print_banner {
-    my ( $batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string ) =
-      @_;
+    my ( $batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string,
+        $adapt )
+      = @_;
     print "\n\n\n\n\n\n|\n|\n|\n|\n|\n|\n|\n|\n|\n|";
     print "\n\n";
     print
@@ -402,7 +411,7 @@ sub print_banner {
 
     check_env_variable( 'DATAPATH', 1 );
     print
-"\nBatch: $batch_name, CR: $CR, Reduction: $reduction, Fluxons: $n_fluxons_wanted";
+"\nBatch: $batch_name, CR: $CR, Reduction: $reduction, Fluxons: $n_fluxons_wanted, Adapt: $adapt\n";
 
     my $time  = localtime;
     my $ftime = $time->strftime('%m-%d-%Y %H:%M:%S');

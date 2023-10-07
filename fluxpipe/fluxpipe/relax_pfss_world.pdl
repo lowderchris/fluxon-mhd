@@ -90,8 +90,18 @@ sub relax_pfss_world {
         $world_out_dir, $full_world_path,  $do_relax,
         $do_steps,      $relax_threshold,  $max_cycles,
         $timefile,      $n_fluxons_wanted, $N_actual,
-        $datdir,        $batch_name,       $CR
+        $datdir,        $batch_name,       $CR,
+        $adapt,
     ) = @_;
+
+    my $orig_batch = $batch_name;
+    if ( $adapt && !( $batch_name =~ /adapt/ ) ) {
+        $batch_name = $batch_name . "_adapt";
+    }
+    if ($adapt) {
+        $world_out_dir   =~ s/$orig_batch/${orig_batch}_adapt/;
+        $full_world_path =~ s/$orig_batch/${orig_batch}_adapt/;
+    }
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Relax the Initial World State from PFSS\n";
@@ -101,11 +111,13 @@ sub relax_pfss_world {
       find_highest_numbered_file($world_out_dir);
     my ( $second_file_present, $file_path_relaxed ) =
       check_second_file_presence($full_world_path);
+
     if ($second_file_present) {
         print "\tFound a relaxed file: $file_path_relaxed";
     }
     else {
-        print "\tNo relaxed file found, so we will relax the world (fairly slow).\n\n";
+        print
+"\tNo relaxed file found, so we will relax the world (fairly slow).\n\n";
     }
     my $directory         = dirname($full_world_path);
     my $file_name_relaxed = $directory . "/" . $file_path_relaxed;
@@ -220,9 +232,9 @@ sub relax_pfss_world {
         # my $short_world_out_path = shorten_path($world_out_dir);
 
         # # print "\n\tWorld saved to $short_world_out_path";
-    # print $this_world_orig;
-    # print $this_world_relaxed;
-    # die;
+        # print $this_world_orig;
+        # print $this_world_relaxed;
+        # die;
         return $this_world_orig, $this_world_relaxed, $stepnum;
 
     }

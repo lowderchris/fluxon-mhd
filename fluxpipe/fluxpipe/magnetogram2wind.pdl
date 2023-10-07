@@ -57,7 +57,8 @@ use File::Basename qw(fileparse);
 
 # Ensure the current directory is always in the path
 use FindBin qw($RealBin);
-print $RealBin;
+
+# print $RealBin;
 use lib $RealBin;
 use pipe_helper
   qw(set_paths configurations print_banner search_files_in_directory);
@@ -71,15 +72,20 @@ $PDL::BIGPDL = 1;
 
 # Read configurations from disk
 my %configs = configurations();
+my $adapt   = $ARGV[2] // ( $configs{adapts}->at(0) );
+%configs = configurations($adapt);
+
+# $ENV{'adapt'} = $adapt;
 
 # my $adapt   = $configs{adapts}[0];
 # print $adapt . "\n\n\n\n\n";
 my $CR               = $ARGV[0] // ( $configs{rotations}->at(0) );
 my $n_fluxons_wanted = $ARGV[1] // ( $configs{fluxon_count}->at(0) );
-my $adapt            = $ARGV[2] // ( $configs{adapts}->at(0) );
 my $closed_file;
 my $open_file;
 my $world_out_path;
+
+$configs{adapt} = $adapt;
 
 if ( !defined $ARGV[0] and $configs{verbose} ) {
     print "Using first value ($CR) from config for Carrington Rotation.\n";
@@ -135,7 +141,7 @@ my ( $pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile ) =
   @configs{qw/pipe_dir pdl_dir datdir mag_dir batch_dir logfile/};
 
 print_banner( $batch_name, $CR, $reduction, $n_fluxons_wanted,
-    $recompute_string );
+    $recompute_string, $adapt );
 
 my $very_beginning = clock_gettime();
 
@@ -189,7 +195,7 @@ if ( not $plot_only ) {
     my $get_pfss_path = "$this_dir/get_pfss.py";
 
     my $pfss_command =
-"$pythondir $get_pfss_path --cr $CR --magfile $full_magfile --nwant $n_fluxons_wanted";
+"$pythondir $get_pfss_path --cr $CR --magfile $full_magfile --nwant $n_fluxons_wanted --adapt $adapt";
 
     system($pfss_command) == 0
       or ( die "Python script returned error $?", exit );
@@ -198,6 +204,8 @@ if ( not $plot_only ) {
 ## Generate World from PFSS ###########################################################################
 #######################################################################################################
     my $force_make_world = 0;
+
+    print "This is adapt:  " . $adapt . "\n\n\n\n\n";
 
     ( $open_file, $closed_file, $world_out_path ) = make_world_from_pfss(
         $datdir,           $batch_name,       $CR,
@@ -217,12 +225,14 @@ if ( not $plot_only ) {
     my $world_out_dir = $datdir . "/batches/$batch_name/cr" . $CR . '/world/';
     my $full_world_path =
       $world_out_dir . 'cr' . $CR . "_f$n_fluxons_wanted.flux";
+
     ( my $this_world_orig, $this_world_relaxed, my $stepnum ) =
       relax_pfss_world(
         $world_out_dir, $full_world_path,  $do_relax,
         $do_steps,      $relax_threshold,  $max_cycles,
         $logfile,       $n_fluxons_wanted, $N_actual,
-        $datdir,        $batch_name,       $CR
+        $datdir,        $batch_name,       $CR,
+        $adapt,
       );
 
 #######################################################################################################
@@ -233,7 +243,7 @@ if ( not $plot_only ) {
         $do_png,           $full_world_path,    $datdir,
         $batch_name,       $CR,                 $N_actual,
         $n_fluxons_wanted, $lim,                $lim2,
-        $stepnum
+        $stepnum,          $adapt,
     );
 
 }
@@ -241,7 +251,7 @@ if ( not $plot_only ) {
 # Plot the field map
 my $fmap_command =
     "$pythondir $pipedir/plot_fieldmap.py --cr $CR --open $open_file"
-  . " --closed $closed_file --nwant $n_fluxons_wanted";
+  . " --closed $closed_file --nwant $n_fluxons_wanted --adapt $adapt";
 system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
 
 #######################################################################################################
@@ -259,13 +269,13 @@ print("(py) Plotting Solar Wind Maps for CR$CR\n");
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
 system(
-"$pythondir $pipedir/plot_bmag.py --cr $CR --file $out_b --nwant $n_fluxons_wanted"
+"$pythondir $pipedir/plot_bmag.py --cr $CR --file $out_b --nwant $n_fluxons_wanted --adapt $adapt"
 ) == 0 or ( die "Python script returned error $?", exit );
 system(
-"$pythondir $pipedir/plot_fr.py  --cr $CR --file $out_fr --nwant $n_fluxons_wanted"
+"$pythondir $pipedir/plot_fr.py  --cr $CR --file $out_fr --nwant $n_fluxons_wanted --adapt $adapt"
 ) == 0 or ( die "Python script returned error $?", exit );
 system(
-"$pythondir $pipedir/plot_wind_map_detailed.py --cr $CR --file $out_wind --nwant $n_fluxons_wanted"
+"$pythondir $pipedir/plot_wind_map_detailed.py --cr $CR --file $out_wind --nwant $n_fluxons_wanted --adapt $adapt"
 ) == 0 or ( die "Python script returned error $?", exit );
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

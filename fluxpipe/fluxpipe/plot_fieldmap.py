@@ -104,14 +104,16 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
 
     if do_print_top:
         print("\tMaking Magnetogram with Footpoints...")
+
+    if adapt:
+        reduce_amt = "A"
+        if not "adapt" in _batch:
+            _batch = _batch + "_adapt"
     # Define the directory paths for the files
     floc_path = f"{datdir}/batches/{_batch}/cr{get_cr}/floc/"
     top_dir   = f"{datdir}/batches/{_batch}/imgs/footpoints/"
     if not path.exists(top_dir):
         os.makedirs(top_dir)
-
-    if adapt:
-        reduce_amt = "A"
 
     # Define the file names with their complete paths
     open_file   = open_f     or   f"{floc_path}floc_open_cr{get_cr}_r{reduce_amt}_f{nwant}.dat"
@@ -131,7 +133,9 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
         print(f"\t\tOpening {shorten_path(closed_file)}...\n")
     cflnum, _, _, _, crad = np.loadtxt(closed_file, unpack=True)
 
-    magnet, header = load_fits_magnetogram(batch=_batch, ret_all=True, cr=get_cr)
+    print(adapt, _batch)
+
+    magnet, header = load_fits_magnetogram(batch=_batch, ret_all=True, cr=get_cr, adapt=adapt)
     f_lat, f_lon, f_sgn, _fnum = pixel_to_latlon(magnet, header, fluxon_location)
 
     ## Keep only the values where the radius is 1.0
@@ -234,6 +238,7 @@ if __name__ == "__main__":
     parser.add_argument('--nwant', type=int, default=None, help='Number of Fluxons')
     parser.add_argument('--open', type=str, default=None)
     parser.add_argument('--closed', type=str, default=None)
+    parser.add_argument('--adapt', type=int, default=0)
 
     args = parser.parse_args()
     configs = configurations(debug=False, args=args)
@@ -246,4 +251,4 @@ if __name__ == "__main__":
     magnet_plot(CR,              configs["data_dir"],  configs["batch_name"],
                 configs["open"], configs["closed"],    do_print=configs["verbose"],
                 reduce_amt=configs["mag_reduce"],      nwant=nwant,
-                do_print_top=True)
+                do_print_top=True, adapt=configs["adapt"])

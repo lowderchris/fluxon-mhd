@@ -181,7 +181,7 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
     vel1_wrapped = np.concatenate((vel1, vel1, vel1))
 
     # Create a grid for interpolation
-    Ny, Nx = load_fits_magnetogram(batch=configs["batch_name"], bo=3, bn=2, cr=configs["cr"]).shape
+    Ny, Nx = load_fits_magnetogram(batch=configs["batch_name"], bo=3, bn=2, cr=configs["cr"], adapt=configs["adapt"]).shape
     grid_x, grid_y = np.linspace(x_min, x_max, Nx, endpoint=False), np.linspace(-1, 1, Ny)
     grid_x, grid_y = np.meshgrid(grid_x, grid_y)
 
@@ -421,6 +421,7 @@ if __name__ == "__main__":
     parser.add_argument('--dat_dir', type=str, default=configs['data_dir'], help='data directory')
     parser.add_argument('--nwant', type=int, default=configs["fluxon_count"][0], help='number of fluxons')
     parser.add_argument('--batch', type=str, default=configs["batch_name"], help='select the batch name')
+    parser.add_argument('--adapt', type=int, default=configs["adapt"], help='using adapt maps')
     args = parser.parse_args()
     configs = configurations(args=args)
 

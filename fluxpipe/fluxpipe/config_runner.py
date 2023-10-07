@@ -31,13 +31,14 @@ import subprocess
 from tqdm import tqdm
 from fluxpipe.pipe_helper import configurations
 
-configs = configurations(debug=True)
+configs = configurations()
 
 # Initialize a progress bar with the total number of jobs to run
 with tqdm(total=int(configs["n_jobs"]), unit="runs") as pbar:
 
     # Loop through specified adapt values
     for adapt in configs["adapts"]:
+        configs = configurations(adapt=adapt)
 
         # Loop through specified Carrington Rotations
         for rot in configs["rotations"]:
