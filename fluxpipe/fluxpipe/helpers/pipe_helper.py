@@ -198,6 +198,10 @@ def calculate_directories(the_config):
     the_config['batch_dir'] = batchdir
     the_config['logfile']   = logfile
 
+    if not the_config.get("adapt", None):
+        the_config['adapt'] = False
+
+
     if int(the_config['adapt']):
         the_config['magfile'] = f"{the_config['mag_dir']}/ADAPT/CR{{}}_rf{the_config['mag_reduce']}_adapt.fits"
     else:
