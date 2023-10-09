@@ -294,6 +294,7 @@ def plot_wind_map_detailed(configs):
 
     # Load the wind file
     arr = np.loadtxt(dat_file).T
+
     try:
         fid, phi0, theta0, phi1, theta1, vel0, vel1, fr0, fr1, fr1b = arr
     except ValueError:
