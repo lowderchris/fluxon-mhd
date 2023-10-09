@@ -53,7 +53,7 @@ from tqdm import tqdm
 # Initialize variables and options
 flux_dir = os.environ.get("FL_PREFIX")
 chdir(flux_dir)
-pdl_run_script_path = f"{flux_dir}/fluxpipe/magnetogram2wind.pdl"
+pdl_run_script_path = f"{flux_dir}/fluxpipe/fluxpipe/magnetogram2wind.pdl"
 
 
 batch_name = "new_test"

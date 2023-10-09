@@ -37,21 +37,23 @@ import os.path
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-from pipe_helper import (configurations, get_fixed_coords, load_fits_magnetogram,
+from fluxpipe.helpers.pipe_helper import (configurations, get_fixed_coords, load_fits_magnetogram,
                          load_magnetogram_params, shorten_path)
 
 
 def plot_bmag(configs):
 
+    # batch =
+    # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
+    # CR = configs['cr'] #args.cr or configs["rotations"][0]
+
+
     filename = configs.get('file', f"{configs['data_dir']}/batches/{configs['batch_name']}/cr{configs['cr']}/wind/cr{configs['cr']}_f{configs['nwant']}_radial_bmag.dat")
-
-    if configs['adapt'] and not "adapt" in filename:
-        filename = filename.replace(configs['batch_name'], f"{configs['batch_name']}_adapt")
-
 
     # Load the dat file
     arr = np.loadtxt(filename).T
     fid, phi0, theta0, phi1, theta1, br0, br1, ar0, ar1 = arr
+    nfluxon = arr.shape[1]
 
     # Convert coords to correct coords
     ph0, th0 = get_fixed_coords(phi0, theta0)
@@ -73,7 +75,7 @@ def plot_bmag(configs):
     # Plot the Data
     fig, (ax0, ax1) = plt.subplots(2)
 
-    magnet = load_fits_magnetogram(cr=configs['cr'], adapt=configs['adapt'],    )
+    magnet = load_fits_magnetogram(configs=configs)
     ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
             extent=(0,2*np.pi,-1,1), aspect='auto')
     ax1.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
@@ -143,7 +145,8 @@ if __name__ == "__main__":
     parser.add_argument('--cr', type=int, default=2219, help='Carrington Rotation')
     parser.add_argument('--file', type=str, default=None, help='Data File Name')
     parser.add_argument('--nwant', type=int, default=100, help='Number of Fluxons')
-    parser.add_argument('--adapt', type=int, default=1, help='using adapt maps')
+    parser.add_argument('--adapt', type=int, default=0, help='Use ADAPT magnetograms')
     args = parser.parse_args()
     configs = configurations(debug=False, args=args)
+    # a=[print(x) for x in configs.items()]
     plot_bmag(configs)

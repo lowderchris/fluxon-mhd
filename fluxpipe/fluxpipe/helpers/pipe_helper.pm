@@ -101,8 +101,14 @@ L<PDL::AutoLoader>, L<PDL>, L<Time::Piece>
 
 =cut
 
-# use strict;
+package pipe_helper;
+use strict;
 use warnings;
+use Exporter qw(import);
+our @EXPORT_OK =
+  qw(shorten_path find_highest_numbered_file set_env_variable get_env_variable check_env_variable configs_update_magdir
+  set_and_check_env_variable calculate_directories set_python_path set_paths print_banner search_files_in_directory check_second_file_presence configurations);
+use File::Basename qw(dirname basename);
 use PDL::AutoLoader;
 use PDL;
 use Time::Piece;
@@ -120,6 +126,7 @@ sub configurations {
     $config_name     //= "DEFAULT";
     $config_filename //= "config.ini";
     $debug           //= 0;
+    $debug           //= 0;
 
     use Config::IniFiles;
     use Cwd;
@@ -128,20 +135,26 @@ sub configurations {
     use File::Temp qw/ tempfile tempdir /;
 
     # Define the path of the configuration file
-    my $config_path =
-      catfile( "fluxon-mhd", "fluxpipe", "config", $config_filename );
+    my $config_path = catfile(
+        "fluxon-mhd", "fluxpipe", "fluxpipe", "config",
+
+        $config_filename
+    );
 
     # Check if the file exists at the defined path
     unless ( -e $config_path ) {
         my $found = 0;
         find(
+
             sub {
                 if ( $_ eq $config_filename ) {
                     $config_path = $File::Find::name;
                     $found       = 1;
                 }
             },
+
             getcwd()
+
         );
         die "Configuration file not found." unless $found;
     }
@@ -190,34 +203,43 @@ sub configurations {
       catfile( $the_config{'fl_prefix'}, $the_config{"run_script"} );
 
     # Remove brackets from rotations and fluxon_count
-    $the_config{"rotations"}    =~ s/[\[\]]//g;
-    $the_config{"fluxon_count"} =~ s/[\[\]]//g;
-    $the_config{"adapts"}       =~ s/[\[\]]//g;
+    $the_config{'rotations'}    =~ s/[\[\]]//g;
+    $the_config{'fluxon_count'} =~ s/[\[\]]//g;
+    $the_config{'adapts'}       =~ s/[\[\]]//g;
 
     # Create PDL objects
-    $the_config{"rotations"} =
-      PDL->new( split( /\s*,\s*/, $the_config{"rotations"} ) );
-    $the_config{"fluxon_count"} =
-      PDL->new( split( /\s*,\s*/, $the_config{"fluxon_count"} ) );
-    $the_config{"adapts"} =
-      PDL->new( split( /\s*,\s*/, $the_config{"adapts"} ) );
+    $the_config{'rotations'} =
+      PDL->new( split( /\s*,\s*/, $the_config{'rotations'} ) );
+    $the_config{'fluxon_count'} =
+      PDL->new( split( /\s*,\s*/, $the_config{'fluxon_count'} ) );
+    $the_config{'adapts'} =
+      PDL->new( split( /\s*,\s*/, $the_config{'adapts'} ) );
 
-    $the_config{"n_jobs"} =
-      $the_config{"rotations"}->nelem *
-      $the_config{"fluxon_count"}->nelem *
-      $the_config{"adapts"}->nelem;
+    $the_config{'n_jobs'} =
+      $the_config{'rotations'}->nelem *
+      $the_config{'fluxon_count'}->nelem *
+      $the_config{'adapts'}->nelem;
 
     # Calculate directories
     calculate_directories( \%the_config );
 
-    my $reduct = $the_config{"mag_reduce"};
-    my $magdir = $the_config{'mag_dir'};
-    if ($adapt) {
-        $the_config{'magfile'} = "$magdir/ADAPT/CR%s\_rf$reduct\_adapt.fits";
+    my $magfile;
+    my $reduction    = $the_config{'mag_reduce'};
+    my $magdir       = $the_config{'mag_dir'};
+    my $adapt_select = $the_config{'adapt_select'};
+
+    if ( $the_config{'adapt'} ) {
+        $magfile = "CR%s\_rf$adapt_select\_adapt.fits";
     }
     else {
-        $the_config{'magfile'} = "$magdir/CR%s\_r$reduct\_hmi.fits";
+        $magfile = "CR%s\_r$reduction\_hmi.fits";
     }
+
+    $the_config{'magfile'} = $magfile;
+    $the_config{'magpath'} = "$magdir/$magfile";
+
+    # $the_config{'flocfile'} = $flocfile;
+    # $the_config{'flocpath'} = "$flocdir/$flocfile";
 
     if ($debug) {
 
@@ -235,9 +257,45 @@ sub shorten_path {
     my ($string) = @_;
     my $datapath = $ENV{'DATAPATH'};
     if ($datapath) {
-        $string =~ s/\Q$datapath\E/\$DATAPATH/g;
+        $string =~ s/\Q$datapath\E/\$DATAPATH\ /g;
     }
     return $string;
+}
+
+sub configs_update_magdir {
+    my ($configs_ref) = @_;    # get the hash reference
+
+    my $magdir           = $configs_ref->{'mag_dir'};
+    my $adapt_select     = $configs_ref->{'adapt_select'};
+    my $CR               = $configs_ref->{'CR'};
+    my $batchdir         = $configs_ref->{'batch_dir'};
+    my $flocdir          = "$batchdir/cr$CR/floc";
+    my $n_fluxons_wanted = $configs_ref->{'n_fluxons_wanted'};
+    my $reduction        = $configs_ref->{'mag_reduce'};
+    my $magfile;
+    my $flocfile;
+
+    if ( $configs_ref->{'adapt'} ) {
+
+        # Run the adapt maps
+        $magfile = "CR$CR\_rf$adapt_select\_adapt.fits";
+        $flocfile =
+          "floc_cr$CR\_rf$adapt_select\_f$n_fluxons_wanted\_adapt.dat";
+    }
+    else {
+        # Run the hmi maps
+        $magfile  = "CR$CR\_r$reduction\_hmi.fits";
+        $flocfile = "floc_cr$CR\_r$reduction\_f$n_fluxons_wanted\_hmi.dat";
+    }
+
+    my $magpath  = "$magdir/$magfile";
+    my $flocpath = "$flocdir/$flocfile";
+
+    # $configs_ref->{'magfile'}  = $magfile;
+    $configs_ref->{'magpath'}  = $magpath;
+    $configs_ref->{'flocdir'}  = $flocdir;
+    $configs_ref->{'flocfile'} = $flocfile;
+    $configs_ref->{'flocpath'} = $flocpath;
 }
 
 =head2 find_highest_numbered_file
@@ -341,10 +399,10 @@ sub calculate_directories {
     my ($config_ref) = @_;
 
     # Trim whitespace from the beginning and end of the directory and batch name
-    $basedir = $config_ref->{'base_dir'};
-    $data_dir =
+    my $basedir = $config_ref->{'base_dir'};
+    my $data_dir =
       $config_ref->{'data_dir'};    # Assuming you have this in your config
-    $batch_name = $config_ref->{'batch_name'};
+    my $batch_name = $config_ref->{'batch_name'};
 
     $basedir    =~ s/^\s+|\s+$//g;
     $batch_name =~ s/^\s+|\s+$//g;
@@ -494,7 +552,8 @@ sub check_second_file_presence {
 sub set_paths {
     my ($do_plot) = @_;
     if ( defined $ENV{'FL_PREFIX'} ) {
-        my $envpath = "$ENV{'FL_PREFIX'}/fluxpipe/fluxpipe/perl_paths.pm";
+        my $envpath =
+          "$ENV{'FL_PREFIX'}/fluxpipe/fluxpipe/helpers/perl_paths.pm";
 
         # Check if the file exists and is readable
         if ( -e $envpath && -r _ ) {
@@ -511,6 +570,8 @@ sub set_paths {
 
     # print the lists of directories
     if ($do_plot) {
+        my @PDL_INC;
+        my @PDLLIB;
         print "\n\nINC has:\n ";
         print map { " $_\n" } @INC;
         print "--------------------------\n";

@@ -1,7 +1,13 @@
 from setuptools import setup, find_packages
 import versioneer
+import sys
+
+# Set conditional requirement for pytest-runner
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
 
 setup(
+    # Self-descriptive entries which should always be present
     name='fluxpipe',
     author='Gilly',
     author_email='gilly@swri.org',
@@ -11,7 +17,9 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     license='BSD-3-Clause',
-    url='https://github.com/GillySpace27/sunback',
+    url='https://github.com/lowderchris/fluxon-mhd',
+
+    # Packages to include
     packages=find_packages(),
     include_package_data=True,
     setup_requires=[],

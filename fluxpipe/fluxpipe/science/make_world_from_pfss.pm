@@ -4,10 +4,12 @@
 make_world_from_pfss - Take the PFSS field lines and make a FLUX world from them.
 =cut
 
-# package make_world_from_pfss;
-
+package make_world_from_pfss;
 use strict;
 use warnings;
+use Exporter qw(import);
+our @EXPORT_OK = qw(make_world_from_pfss);
+use make_world_sphere qw(make_world_sphere);
 use PDL::AutoLoader;
 use PDL;
 use PDL::Transform;
@@ -16,11 +18,17 @@ use PDL::Options;
 use Flux;
 use PDL::IO::Misc;
 use File::Path;
-use PDL::IO::Misc;
 use Time::HiRes qw(clock_gettime);
 use File::Basename qw(fileparse);
 use File::Basename;
-use fluxpipe::fluxpipe::pipe_helper;
+use pipe_helper qw(shorten_path);
+use Flux::World qw(str2world);
+use PDL::Graphics::Gnuplot qw(gpwin);
+use File::Path  qw(mkpath);
+
+
+# use Flux::World "str2world";
+# str2world();
 
 =head1 SYNOPSIS
 
@@ -102,24 +110,24 @@ L<PDL>, L<PDL::Transform>, L<PDL::NiceSlice>, L<PDL::Options>, L<Flux>, L<PDL::I
 
 
 sub make_world_from_pfss {
-    my ($datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2) = @_;
-
-    if ($adapt && !($batch_name =~ /adapt/)) {
-        $batch_name = $batch_name . "_adapt";
-    }
-
+    my ($datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2, $configs) = @_;
 
     # Define the output directory and floc path
     my $world_out_dir = "$datdir/batches/$batch_name/cr$CR/world";
     my $floc_path = "$datdir/batches/$batch_name/cr$CR/floc";
+    my $file_end;
 
     if ($adapt) {
-        $reduction = "A";
+        $reduction = "f".$configs->{'adapt_select'};
+        $file_end = "adapt"
+    } else {
+        # $reduction = "R";
+        $file_end = "hmi"
     }
 
-    my $open_file = "$floc_path/floc_open_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
-    my $closed_file = "$floc_path/floc_closed_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
-    my $world_out_path = $world_out_dir .'/cr'.$CR.'_f'.$n_fluxons_wanted.'.flux';
+    my $open_file = "$floc_path/floc_open_cr$CR\_r$reduction\_f$n_fluxons_wanted\_$file_end.dat";
+    my $closed_file = "$floc_path/floc_closed_cr$CR\_r$reduction\_f$n_fluxons_wanted\_$file_end.dat";
+    my $world_out_path = $world_out_dir .'/cr'.$CR.'_f'.$n_fluxons_wanted."\_$file_end.flux";
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Converting PFSS Fieldlines into FLUX Fluxons\n";
@@ -218,6 +226,10 @@ sub make_world_from_pfss {
 
         # number of open fluxons, number of fluxons, number of fluxons requested
         my $top_dir = $datdir."/batches/$batch_name/imgs/initial/";
+        # my $wide_dir = $datdir."/batches/$batch/imgs/world/wide/";
+        # my $narrow_dir = $datdir."/batches/$batch/imgs/world/narrow/";
+
+
 
         if (! -d $top_dir ) {mkpath($top_dir) or die "Failed to create directory: $top_dir $!\n";}
         my $wide_dir = $world_out_dir ."wide/";
@@ -227,13 +239,17 @@ sub make_world_from_pfss {
 
         my $ext = 'png';
         my $renderer = $ext.'cairo';
+        # my $filename
         my $world_png_path = $narrow_dir."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss.$ext";
         my $world_png_path2= $wide_dir."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss_wide.$ext";
         my $world_png_path_top = $top_dir   ."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss.$ext";
 
+        # my $window00 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path);
+        # $world->render( {'window'=>$window00, range=>$range_i});
         my $window000 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path_top);
         $world->render( {'window'=>$window000, range=>$range_i});
-
+        # my $window01 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path2);
+        # $world->render( {'window'=>$window01, range=>$range_f2});
         print "Done!\n";
 
     } else {

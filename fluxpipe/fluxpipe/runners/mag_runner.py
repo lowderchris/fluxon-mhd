@@ -2,10 +2,10 @@ import subprocess
 from tqdm import tqdm
 import os
 import sys
-import py_pipe_helper as ph
+import pipe_helper as ph
 
 
-fluxpipe_dir = "/Users/cgilbert/vscode/fluxon-mhd/fluxpipe/"
+flux_pipe_dir = "/Users/cgilbert/vscode/fluxon-mhd/fluxpipe/fluxpipe/"
 batch_name = "adapt_test2"
 # rotations = [2160, 2193, 2219, 2231]
 rotations = [2193]
@@ -18,7 +18,7 @@ plot_only = 0 # skip everything except the wind plotting at the end
 recompute = 0 # reperform the fluxon analysis from scratch
 # nflux = 500
 reduction = 2 # if not ADAPT else 'A'
-pdl_script_path = ph.add_paths(fluxpipe_dir)
+pdl_script_path = ph.add_paths(flux_pipe_dir)
 
 # Options
 capture = False

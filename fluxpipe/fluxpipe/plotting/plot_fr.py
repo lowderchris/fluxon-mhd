@@ -55,7 +55,6 @@ def plot_fr(args):
     imagename = os.path.basename(filename.replace(".dat", ".png"))
     imagedir = os.path.dirname(os.path.dirname(os.path.dirname(filename)))
     frdir = os.path.join(imagedir, "imgs", "fr")
-    adapt = args.adapt
     if not os.path.exists(frdir):
         os.makedirs(frdir)
     frname = os.path.join(frdir, imagename)
@@ -143,7 +142,7 @@ def plot_fr(args):
 if __name__ == "__main__":
     # Create the argument parser
     print("\tPlotting Fr...", end="")
-    from pipe_helper import configurations
+    from fluxpipe.helpers.pipe_helper import configurations
     configs = configurations()
 
     parser = argparse.ArgumentParser(description=
@@ -154,7 +153,8 @@ if __name__ == "__main__":
     parser.add_argument('--nwant',  type=int, default=configs["fluxon_count"][0], help='magnetogram file')
     parser.add_argument('--show',   type=int, default=0)
     parser.add_argument('--file',   type=str, default=None)
-    parser.add_argument('--adapt',  type=int, default=0)
+    parser.add_argument('--adapt', type=int, default=configs["adapt"], help='Use ADAPT magnetograms')
+
 
     args = parser.parse_args()
 

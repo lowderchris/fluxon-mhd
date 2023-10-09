@@ -10,10 +10,16 @@ get_wind - Calculate Solar Wind Plasma Parameters for a Given Carrington Rotatio
 
 =cut
 
-# package get_wind;
+package get_wind;
 use strict;
 use warnings;
-use fluxpipe::fluxpipe::pipe_helper;
+use Exporter qw(import);
+our @EXPORT_OK = qw(get_wind);
+use pipe_helper                     qw(shorten_path);
+use File::Path                      qw(mkpath);
+use map_fluxon_b                    qw(map_fluxon_b);
+use map_fluxon_fr                   qw(map_fluxon_fr);
+use map_fluxon_flow_parallel_master qw(map_fluxon_flow_parallel_master);
 
 =head1 DESCRIPTION
 
@@ -116,6 +122,8 @@ sub get_wind {
         map_fluxon_b( $out_b, \@fluxons );
         print "Done!\n";
 
+        # print "\t\t...done with radial B!";
+
         # Calculate the radial expansion factor
         print "\n\tRadial Expansion Factor (Fr) Calculation...";
         map_fluxon_fr( $out_fr, \@fluxons );
@@ -130,7 +138,13 @@ sub get_wind {
 
         if ( !-e $out_wind ) { $do_wind_map = 1; }
         if ($do_wind_map) {
-            map_fluxon_flow_parallel_master( $out_wind, \@fluxons );
+            {
+                no warnings;    # Suppress warnings
+                eval {
+                    map_fluxon_flow_parallel_master( $out_wind, \@fluxons );
+                };
+            };
+
         }
         else {
             print $skipstring;
@@ -145,3 +159,4 @@ sub get_wind {
 
     return $out_b, $out_fr, $out_wind;
 }
+1;

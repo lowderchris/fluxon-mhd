@@ -4,8 +4,14 @@ Fluxon Flow Mapper - Parallelized Solar Wind Flow Mapping Along Fluxon Structure
 
 =cut
 
+package map_fluxon_flow_parallel_master;
+
 use strict;
 use warnings;
+
+use Exporter qw(import);
+our @EXPORT_OK = qw(map_fluxon_flow_parallel_master);
+
 use PDL;
 use PDL::NiceSlice;
 use PDL::Options;
@@ -14,9 +20,16 @@ use PDL::IO::Storable;
 use File::Path qw(make_path);
 use Time::HiRes qw(clock_gettime);
 use Data::Dumper;
+use Chart::Gnuplot;
+use gen_fluxon_tflow qw(gen_fluxon_tflow);
+# use PDL::Graphics::Gnuplot qw(gnuplot_closeall);
+# gnuplot_closeall();
+
 
 # Control Flags
 $PDL::verbose = 0;
+# no warnings 'cleanup';
+# my $do_max = 10000;
 
 =head1 DESCRIPTION
 
@@ -31,6 +44,7 @@ Gilly <gilly@swri.org> and others!
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 
 =cut
+
 
 =head2 map_fluxon_flow_parallel_master
 
@@ -60,13 +74,21 @@ The function writes the results to disk and returns nothing.
 
 =cut
 
-my $concurrency = 11;
-my $temp_dir = "fluxpipe/windtemp";
 
-# Count the number of open and closed fluxons
-my $n_closed = 0;
-my @open_inds = ();
-my $n_open = 0;
+
+
+my $concurrency = 11;
+my $temp_dir = "fluxons/fluxon-mhd/temp";
+
+#TODO Make the gen_fluxon_flow and gen_fluxon_tflow functions get loaded only once.
+
+=head2 map_fluxon_flow_parallel_master
+
+=for ref
+
+Given a world and list of fluxons, generates a mapping of the solar wind flow along these fluxon structures.
+
+=cut
 
 sub map_fluxon_flow_parallel_master {
     my $file_name      = shift;
@@ -77,10 +99,16 @@ sub map_fluxon_flow_parallel_master {
     my $highest_fid_done = 0;
     my $before = clock_gettime();
 
+
     my $n_choke = 12;
     my $choke = 0;
+    my $do_plot_charts = 0;
+    # my $chartpath = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/fluxons/profiles/";
 
     # Count the number of open and closed fluxons
+    my $n_closed = 0;
+    my @open_inds = ();
+    my $n_open = 0;
     for my $fid ( 0 .. scalar(@fluxons) - 1 ) {
         ## Condition the Input ####
         my $me = $fluxons[$fid];
@@ -109,6 +137,7 @@ sub map_fluxon_flow_parallel_master {
         if ($exit_code == 0) {
             push(@results, $result);
             my $this_fid = $result->{fps}+1;
+            # print "\nExit_code: $exit_code, Result: $this_fid, Highest: $highest_fid_done, Itercount: $itercount\n";
 
             if ($this_fid > $highest_fid_done) {
                 $highest_fid_done = $this_fid;
@@ -128,9 +157,22 @@ sub map_fluxon_flow_parallel_master {
         }
     });
 
+    #     # create chart object
+    # my $chart = Chart::Gnuplot->new(
+    #     output => "/Users/cgilbert/vscode/Fluxon-Scripts-Gilly/this_line_all.png",
+    #     title => "My Plot",
+    #     xlabel => "radius",
+    #     ylabel => "wind",
+    # );
+
+
+
+
     my $n_tot = scalar(@fluxons);
     my $n_act = 2*($n_tot - $n_open) + $n_open;
     print "\n\t\tRunning with $max_processes Cores on $n_open open Fluxons out of $n_tot total Fluxons from $n_act footpoints!\n\n\t\tBeginning Calculation...\n\n";
+
+
 
     $PDL::verbose = 0;
     no warnings;
@@ -149,10 +191,48 @@ sub map_fluxon_flow_parallel_master {
         ## Condition the Input ####
         my $me = $fluxons[$fid];
 
-        ## Run the Main Algorithm ####
-        # Find the transonic wind solution
+        # ## Run the Main Algorithm ####
+        # # Find the transonic wind solution
         (my $farr, my $fr, my $bth, my $bph) = gen_fluxon_tflow($me);
 
+
+        # if ($do_plot_charts) {
+        #     my @rr =  $farr->( 0 , : )->list;
+        #     my @ww =  $farr->( 1 , : )->list;
+        #     # if $chartpath does not exist then make it
+        #     if ( ! -d $chartpath ) {
+        #         make_path($chartpath);
+        #     }
+
+        #         # create chart object
+        #     my $chart = Chart::Gnuplot->new(
+        #         output => $chartpath . "this_line_op$n_open\_$fid.png",
+        #         title => "My Plot",
+        #         xlabel => "radius",
+        #         ylabel => "wind",
+        #         bg => "white",
+        #         logscale => "xy",  # set both x and y axes to logarithmic scale
+        #     );
+
+        #     # define and plot data set
+        #     my $dataSet = Chart::Gnuplot::DataSet->new(
+        #         xdata => \@rr,
+        #         ydata => \@ww,
+        #         style => "lines",
+        #     );
+
+        #     # # create a data set for the horizontal line
+        #     # my $horizontalLine = Chart::Gnuplot::DataSet->new(
+        #     #     xdata => [$rr[0], $rr[-1]],  # x-values from the start to the end of your data
+        #     #     ydata => [$sound_speed, $sound_speed],  # constant y-value
+        #     #     style => "lines",
+        #     #     linetype => "dashed",  # set line type to dashed
+        #     # );
+
+        #     # plot the horizontal line
+        #     $chart->plot2d($dataSet);
+        #     # $chart->plot2d($dataSet, $horizontalLine);
+        # }
 
         ## Report the Results ####
         # Create a result hash
@@ -173,12 +253,16 @@ sub map_fluxon_flow_parallel_master {
         $fork_manager->finish( 0, $result );
     }
 
+
     ## Outside of the Loop ## #############################################
     $fork_manager->wait_all_children;    # Wait for all processes to finish
+
+    # $chart->plot2d($dataSet);
 
     my $after   = clock_gettime();
     my $elapsed = $after - $before;
     my $round_elapsed = rint($elapsed*10) / 10;
+    # print "\n\n\t\tWind calculation took: $round_elapsed(s) with $max_processes cores\n \n";
     print "\n\n\t\tWind Calculation Complete\n\n";
     ## Output the Results ##
     # Sort the results by fps
@@ -203,11 +287,13 @@ sub map_fluxon_flow_parallel_master {
 
 
 if ($0 eq __FILE__) {
+    # use warnings;
     use PDL::AutoLoader;
     use PDL;
     use PDL::Transform;
     use PDL::NiceSlice;
     use PDL::Options;
+    # # use PDL::ImageND;
     use Flux;
     use PDL::IO::Misc;
     use File::Path;
@@ -215,10 +301,19 @@ if ($0 eq __FILE__) {
     use File::Basename qw(fileparse);
     use pipe_helper qw(configurations);
 
-    use pipe_helper qw(configurations);
-
     my %configs = configurations();
     my $datdir = $configs{datdir};
+
+    # my $datdir = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/";
+    # push(@PDLLIB,"+".$datdir);
+    # push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly");
+    # push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/PDL");
+    # push(@INC, "+/Users/cgilbert/opt");
+    # push(@INC, "/Users/cgilbert/.cpan/build");
+
+
+
+
     my $cr = 2160;
     my $batch_name = "fluxon_paperfigs";
 
@@ -236,5 +331,48 @@ if ($0 eq __FILE__) {
     map_fluxon_flow_parallel_master($wind_out_file, \@fluxons);
 }
 
+
 1;
 __END__
+
+            # Pass the functions to the child processes using run_on_start callback
+            # $fork_manager->run_on_start(sub {
+            #     my ($pid, $ident) = @_;
+            #     # Access the function references from the global variable
+            #     my $gen_fluxon_tflow = $FUNCTION_REFERENCES->{gen_fluxon_tflow};
+            #     my $gen_fluxon_flow = $FUNCTION_REFERENCES->{gen_fluxon_flow};
+            #     # Now $gen_fluxon_tflow and $gen_fluxon_flow contain the functions in the child process
+            # });
+
+                    # if ( $choke && ($fid > $n_choke) ) {
+        #     # For only doing a subset of the inputs
+        #     # Finish the process and move to the next iteration
+        #     $fork_manager->finish(1);
+        #     next;
+        # }
+        # # Check for open fieldline, and skip if not
+        # my $st_open = ( $me->{fc_start}->{label} == -1 );
+        # my $en_open = ( $me->{fc_end}->{label} == -2 );
+        # if ( $me->{plasmoid} || ( $st_open + $en_open != 1 ) ) {
+        #     $fork_manager->finish(1);    # Finish the process and move to the next iteration
+        #     # finish( 0, $result )
+        #     next;
+        # }
+
+                # # Print timing information
+        # my $after   = clock_gettime();
+        # my $elapsed = $after - $before;
+        # my $round_elapsed = rint($elapsed*10) / 10;
+        # my $remaining = $n_open - $fid;
+        # my $time_each = $elapsed / $fid;
+        # my $time_remaining = $remaining * $time_each;
+        # print "\r", '  Calculated fluxons: ', $fid, ' of ', $n_open, ", ", $round_elapsed, "(s) elapsed, ", $time_remaining, "(s) remaining.";
+
+
+        # if (grep { $_ == $fid } @open_inds) {}
+        # else {
+        #     # Finish the process and move to the next iteration
+        #     print "FAILLLL";
+        #     $fork_manager->finish(1);
+        #     next;
+        # }

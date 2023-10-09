@@ -5,15 +5,20 @@ plot_worlds - Perl PDL Script for Plotting Initial and Relaxed Worlds
 
 =cut
 
-# package plot_worlds;
-
+package plot_worlds;
+use strict;
 use warnings;
-use PDL::AutoLoader;
+use Exporter qw(import);
+our @EXPORT_OK = qw(plot_worlds);
 use PDL;
-use fluxpipe::fluxpipe::pipe_helper;
+use File::Basename         qw(dirname fileparse);
+use File::Path             qw(mkpath);
+use pipe_helper            qw(shorten_path);
+use PDL::Graphics::Gnuplot qw(gpwin);
+use PDL::AutoLoader;
 
 =head1 SYNOPSIS
-
+    asdf
     use warnings;
     use PDL::AutoLoader;
     use PDL;
@@ -83,18 +88,8 @@ sub plot_worlds {
         $do_png,          $full_world_path,    $datdir,
         $batch_name,      $CR,                 $N_actual,
         $nwant,           $lim,                $lim2,
-        $stepnum,         $adapt,
+        $stepnum
     ) = @_;
-
-    my $orig_batch = $batch_name;
-    if ( $adapt && !( $batch_name =~ /adapt/ ) ) {
-        $batch_name = $batch_name . "_adapt";
-    }
-    if ($adapt) {
-        $this_world_relaxed =~ s/$orig_batch/${orig_batch}_adapt/;
-        $this_world_orig    =~ s/$orig_batch/${orig_batch}_adapt/;
-        $full_world_path    =~ s/$orig_batch/${orig_batch}_adapt/;
-    }
 
     my $range_i  = [ -$lim,  $lim,  -$lim,  $lim,  -$lim,  $lim ];
     my $range_f  = [ -$lim,  $lim,  -$lim,  $lim,  -$lim,  $lim ];
@@ -116,11 +111,22 @@ sub plot_worlds {
             dashed => 0,
             title  => 'After Relaxation'
         );
+        ## Create a sphere with radius 1
+        ## $sphere = sphere(50) * 1;
+        ## $window2->splot($sphere);
+        ## $window2->gnuplot("set style data lines");
+        ## $window2->gnuplot("set hidden3d");
 
         $this_world_orig->render( { 'window' => $window1, range => $range_i } );
         $this_world_relaxed->render(
             { 'window' => $window2, range => $range_f } );    #, hull=>'1'});
+        ## use PDL;
 
+        ## my $plot = gpwin();
+        ## $plot->gnuplot("set view equal xyz");
+        ## $plot->gnuplot("set xrange [-1:1]");
+        ## $plot->gnuplot("set yrange [-1:1]");
+        ## $plot->gnuplot("set zrange [-1:1]");
     }
 
     # print "\n \n**Plotting the Worlds...";
@@ -158,6 +164,18 @@ sub plot_worlds {
         }
         my $top_filename_relaxed =
           $top_path . "cr" . $CR . "_f$nwant\_relaxed\_s$stepnum.png";
+
+# my $short_new_filename_initial = shorten_path($new_filename_initial);
+# print "\t\tRendering $short_new_filename_initial\n";
+# my $window25=   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_initial);
+# $this_world_orig->render( {'window'=>$window25, range=>$range_i});
+# $window25 = null;
+
+# my $short_new_filename_initial2 = shorten_path($new_filename_initial2);
+# print "\t\tRendering $short_new_filename_initial2\n";
+# my $window3 =   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_initial2);
+# $this_world_orig->render( {'window'=>$window3, range=>$range_f2});
+# $window3 = null;
 
         my $short_new_filename_relaxed = shorten_path($new_filename_relaxed);
 
@@ -198,6 +216,16 @@ sub plot_worlds {
             { 'window' => $windowTop, range => $range_f } );
         $windowTop = null;
 
+        # $this_world_orig    = null;
+        # $this_world_relaxed = null;
+
+        ## Create a sphere with radius 1
+        # $sphere = sphere(50) * 1;
+
+        # $window25->splot($sphere);
+        # $window3->splot($sphere);
+        # $window4->splot($sphere);
+        # $window5->splot($sphere);
     }
 
     my $short_name   = shorten_path($new_filename_initial);
