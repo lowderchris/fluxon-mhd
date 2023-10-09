@@ -17,4 +17,7 @@ sandbox/
 #any Inline stuff
 _Inline/
 include/flux/
-perltidy.ERR
+
+blib/
+data/
+local/

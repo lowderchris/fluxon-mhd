@@ -185,12 +185,16 @@ PERL_ARCHIVE_AFTER =
 
 TO_INST_PM = fluxpipe/.gitattributes \
 	fluxpipe/__init__.py \
+	fluxpipe/__pycache__/__init__.cpython-310.pyc \
+	fluxpipe/__pycache__/_version.cpython-310.pyc \
 	fluxpipe/_version.py \
 	fluxpipe/config/config.ini \
 	fluxpipe/fidoclients/ADAPTClient.py \
+	fluxpipe/helpers/__pycache__/pipe_helper.cpython-310.pyc \
 	fluxpipe/helpers/perl_paths.pm \
 	fluxpipe/helpers/pipe_helper.pm \
 	fluxpipe/helpers/pipe_helper.py \
+	fluxpipe/plotting/__pycache__/plot_fieldmap.cpython-310.pyc \
 	fluxpipe/plotting/plot_bmag.py \
 	fluxpipe/plotting/plot_fieldmap.py \
 	fluxpipe/plotting/plot_fr.py \
@@ -199,6 +203,7 @@ TO_INST_PM = fluxpipe/.gitattributes \
 	fluxpipe/runners/config_runner.py \
 	fluxpipe/runners/mag_runner.py \
 	fluxpipe/runners/manual_runner.py \
+	fluxpipe/science/__pycache__/pfss_funcs.cpython-310.pyc \
 	fluxpipe/science/fluxon_placement_hilbert.pm \
 	fluxpipe/science/gen_fluxon_flow.pm \
 	fluxpipe/science/gen_fluxon_tflow.pm \
@@ -889,12 +894,16 @@ pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	$(NOECHO) $(ABSPERLRUN) -MExtUtils::Install -e 'pm_to_blib({@ARGV}, '\''$(INST_LIB)/auto'\'', q[$(PM_FILTER)], '\''$(PERM_DIR)'\'')' -- \
 	  'fluxpipe/.gitattributes' '$(INST_LIB)/fluxpipe/.gitattributes' \
 	  'fluxpipe/__init__.py' '$(INST_LIB)/fluxpipe/__init__.py' \
+	  'fluxpipe/__pycache__/__init__.cpython-310.pyc' '$(INST_LIB)/fluxpipe/__pycache__/__init__.cpython-310.pyc' \
+	  'fluxpipe/__pycache__/_version.cpython-310.pyc' '$(INST_LIB)/fluxpipe/__pycache__/_version.cpython-310.pyc' \
 	  'fluxpipe/_version.py' '$(INST_LIB)/fluxpipe/_version.py' \
 	  'fluxpipe/config/config.ini' '$(INST_LIB)/fluxpipe/config/config.ini' \
 	  'fluxpipe/fidoclients/ADAPTClient.py' '$(INST_LIB)/fluxpipe/fidoclients/ADAPTClient.py' \
+	  'fluxpipe/helpers/__pycache__/pipe_helper.cpython-310.pyc' '$(INST_LIB)/fluxpipe/helpers/__pycache__/pipe_helper.cpython-310.pyc' \
 	  'fluxpipe/helpers/perl_paths.pm' '$(INST_LIB)/fluxpipe/helpers/perl_paths.pm' \
 	  'fluxpipe/helpers/pipe_helper.pm' '$(INST_LIB)/fluxpipe/helpers/pipe_helper.pm' \
 	  'fluxpipe/helpers/pipe_helper.py' '$(INST_LIB)/fluxpipe/helpers/pipe_helper.py' \
+	  'fluxpipe/plotting/__pycache__/plot_fieldmap.cpython-310.pyc' '$(INST_LIB)/fluxpipe/plotting/__pycache__/plot_fieldmap.cpython-310.pyc' \
 	  'fluxpipe/plotting/plot_bmag.py' '$(INST_LIB)/fluxpipe/plotting/plot_bmag.py' \
 	  'fluxpipe/plotting/plot_fieldmap.py' '$(INST_LIB)/fluxpipe/plotting/plot_fieldmap.py' \
 	  'fluxpipe/plotting/plot_fr.py' '$(INST_LIB)/fluxpipe/plotting/plot_fr.py' \
@@ -903,6 +912,7 @@ pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	  'fluxpipe/runners/config_runner.py' '$(INST_LIB)/fluxpipe/runners/config_runner.py' \
 	  'fluxpipe/runners/mag_runner.py' '$(INST_LIB)/fluxpipe/runners/mag_runner.py' \
 	  'fluxpipe/runners/manual_runner.py' '$(INST_LIB)/fluxpipe/runners/manual_runner.py' \
+	  'fluxpipe/science/__pycache__/pfss_funcs.cpython-310.pyc' '$(INST_LIB)/fluxpipe/science/__pycache__/pfss_funcs.cpython-310.pyc' \
 	  'fluxpipe/science/fluxon_placement_hilbert.pm' '$(INST_LIB)/fluxpipe/science/fluxon_placement_hilbert.pm' \
 	  'fluxpipe/science/gen_fluxon_flow.pm' '$(INST_LIB)/fluxpipe/science/gen_fluxon_flow.pm' \
 	  'fluxpipe/science/gen_fluxon_tflow.pm' '$(INST_LIB)/fluxpipe/science/gen_fluxon_tflow.pm' \
