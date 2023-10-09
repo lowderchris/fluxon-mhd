@@ -93,9 +93,9 @@ $PDL::BIGPDL = 1;
 # Read configurations from disk
 print "Reading configurations...\n";
 my %configs          = configurations();
-my $adapt            = $configs{adapt};
 my $CR               = $ARGV[0] // ( $configs{rotations}->at(0) );
 my $n_fluxons_wanted = $ARGV[1] // ( $configs{fluxon_count}->at(0) );
+my $adapt            = $ARGV[2] // ( $configs{adapt}->at(0) );
 my $closed_file;
 my $open_file;
 my $world_out_path;

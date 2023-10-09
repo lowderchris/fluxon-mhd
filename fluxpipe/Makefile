@@ -220,7 +220,6 @@ TO_INST_PM = fluxpipe/.gitattributes \
 	fluxpipe/science/map_fluxon_flow_parallel.pm \
 	fluxpipe/science/map_fluxon_flow_parallel_master.pm \
 	fluxpipe/science/map_fluxon_fr.pm \
-	fluxpipe/science/perltidy.ERR \
 	fluxpipe/science/pfss_funcs.py \
 	fluxpipe/science/relax_pfss_world.pm \
 	fluxpipe/science/simple_relaxer.pm
@@ -929,7 +928,6 @@ pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	  'fluxpipe/science/map_fluxon_flow_parallel.pm' '$(INST_LIB)/fluxpipe/science/map_fluxon_flow_parallel.pm' \
 	  'fluxpipe/science/map_fluxon_flow_parallel_master.pm' '$(INST_LIB)/fluxpipe/science/map_fluxon_flow_parallel_master.pm' \
 	  'fluxpipe/science/map_fluxon_fr.pm' '$(INST_LIB)/fluxpipe/science/map_fluxon_fr.pm' \
-	  'fluxpipe/science/perltidy.ERR' '$(INST_LIB)/fluxpipe/science/perltidy.ERR' \
 	  'fluxpipe/science/pfss_funcs.py' '$(INST_LIB)/fluxpipe/science/pfss_funcs.py' \
 	  'fluxpipe/science/relax_pfss_world.pm' '$(INST_LIB)/fluxpipe/science/relax_pfss_world.pm' \
 	  'fluxpipe/science/simple_relaxer.pm' '$(INST_LIB)/fluxpipe/science/simple_relaxer.pm' 

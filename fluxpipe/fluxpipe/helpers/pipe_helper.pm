@@ -225,7 +225,7 @@ sub configurations {
     my $reduct = $the_config{"mag_reduce"};
 
     my $magdir = $the_config{'mag_dir'};
-    if ($adapt) {
+    if ( $the_config{'adapt'} ) {
         $the_config{'magfile'} = "$magdir/ADAPT/CR%s\_rf$reduct\_adapt.fits";
     }
     else {
