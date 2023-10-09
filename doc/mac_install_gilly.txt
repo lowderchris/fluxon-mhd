@@ -56,5 +56,5 @@ Here's the path to installing FLUX:
             cpanm --notest --local-lib=local/ .
         - next, place the following line in your zshrc file and reload the terminal
             export PERL5LIB=$FL_PREFIX/fluxpipe/local/lib/perl5:$PERL5LIB
-    I also set up an action to reinstall using the local command every time I save.
+    I also set up an action to reinstall using the above command every time I save.
 

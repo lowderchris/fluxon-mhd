@@ -229,12 +229,6 @@ sub relax_pfss_world {
         }
         $this_world_relaxed->write_world($out_world);
 
-        # my $short_world_out_path = shorten_path($world_out_dir);
-
-        # # print "\n\tWorld saved to $short_world_out_path";
-        # print $this_world_orig;
-        # print $this_world_relaxed;
-        # die;
         return $this_world_orig, $this_world_relaxed, $stepnum;
 
     }
