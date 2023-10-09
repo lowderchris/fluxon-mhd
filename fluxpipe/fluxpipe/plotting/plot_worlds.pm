@@ -5,15 +5,20 @@ plot_worlds - Perl PDL Script for Plotting Initial and Relaxed Worlds
 
 =cut
 
-# package plot_worlds;
-
+package plot_worlds;
+use strict;
 use warnings;
-use PDL::AutoLoader;
+use Exporter qw(import);
+our @EXPORT_OK = qw(plot_worlds);
 use PDL;
-use pipe_helper;
+use File::Basename         qw(dirname fileparse);
+use File::Path             qw(mkpath);
+use pipe_helper            qw(shorten_path);
+use PDL::Graphics::Gnuplot qw(gpwin);
+use PDL::AutoLoader;
 
 =head1 SYNOPSIS
-
+    asdf
     use warnings;
     use PDL::AutoLoader;
     use PDL;
@@ -76,8 +81,6 @@ Gilly <gilly@swri.org> (and others!)
 L<PDL>, L<PDL::AutoLoader>, L<pipe_helper>
 
 =cut
-
-
 
 sub plot_worlds {
     our (

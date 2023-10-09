@@ -142,7 +142,7 @@ def plot_fr(args):
 if __name__ == "__main__":
     # Create the argument parser
     print("\tPlotting Fr...", end="")
-    from pipe_helper import configurations
+    from fluxpipe.helpers.pipe_helper import configurations
     configs = configurations()
 
     parser = argparse.ArgumentParser(description=

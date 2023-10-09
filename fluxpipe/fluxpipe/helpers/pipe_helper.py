@@ -405,7 +405,7 @@ def shorten_path(string):
     """
     datapath = os.getenv("DATAPATH")
     if datapath:
-        return string.replace(datapath, "$DATAPATH")
+        return string.replace(datapath, "$DATAPATH ")
     else:
         return string
 
@@ -1050,7 +1050,7 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
         None
     """
 
-    print(reduce)
+    # print(reduce)
     print("_____________________")
 
     ## Parse the Dates
@@ -1124,7 +1124,7 @@ def get_ADAPT_file(cr=None, date=None, datdir=None, email=None, force_download=F
         print("\t\tNo file found!")
 
     print("\n\tSearching FIDO for ADAPT Map...\n")
-    from ADAPTClient import ADAPTLngType
+    from fluxpipe.fidoclients.ADAPTClient import ADAPTLngType
     LngType = '0' # 0 is carrington, 1 is central meridian
     print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
     res = Fido.search(a.Instrument('adapt'), a.Time(get_date, get_date_end), ADAPTLngType(LngType))
@@ -1461,7 +1461,7 @@ def find_file_with_string(directory, search_string):
 def shorten_path(string, __=None):
     datapath = os.getenv("DATAPATH")
     if datapath:
-        return string.replace(datapath, "$DATAPATH")
+        return string.replace(datapath, "$DATAPATH ")
     else:
         return string
 

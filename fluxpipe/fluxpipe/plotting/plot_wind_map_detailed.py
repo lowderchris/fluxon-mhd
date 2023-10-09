@@ -34,10 +34,10 @@ import os
 import os.path as path
 from scipy.interpolate import griddata
 
-from pipe_helper import (configurations, load_fits_magnetogram,
+from fluxpipe.helpers.pipe_helper import (configurations, load_fits_magnetogram,
                          load_magnetogram_params, get_fixed_coords, get_ax)
 
-from plot_fieldmap import magnet_plot
+from fluxpipe.plotting.plot_fieldmap import magnet_plot
 
 
 def scale_data(vel0_clean, vel1_clean, outlier_V0, outlier_V1, scale=15**2, power=1):
@@ -326,8 +326,8 @@ def plot_wind_map_detailed(configs):
 
     all_vmin, all_vmax = 475, 700
     drk=0.25
-    if configs["adapt"]:
-        reduce_amt = 'A'
+    # if configs["adapt"]:
+    #     reduce_amt = 'A'
     n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch,
         ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce_amt, nwant=nwant, do_print_top=False)
     hex_n = np.max((n_open//10, 3))

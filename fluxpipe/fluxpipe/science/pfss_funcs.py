@@ -59,7 +59,7 @@ import timeout_decorator
 from pfsspy import tracing
 from tqdm import tqdm
 
-from pipe_helper import load_fits_magnetogram, read_fits_data, shorten_path
+from fluxpipe.helpers.pipe_helper import load_fits_magnetogram, read_fits_data, shorten_path
 
 mpl.use("qt5agg")
 

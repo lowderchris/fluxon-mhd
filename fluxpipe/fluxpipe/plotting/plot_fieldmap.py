@@ -40,8 +40,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-from pfss_funcs import pixel_to_latlon
-from pipe_helper import (configurations, load_fits_magnetogram, load_magnetogram_params,
+from fluxpipe.science.pfss_funcs import pixel_to_latlon
+from fluxpipe.helpers.pipe_helper import (configurations, load_fits_magnetogram, load_magnetogram_params,
                             shorten_path, get_ax)
 
 def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False, reduce_amt=0,
@@ -109,6 +109,8 @@ def magnet_plot(get_cr, datdir, _batch, open_f=None, closed_f=None, force=False,
     top_dir   = f"{datdir}/batches/{_batch}/imgs/footpoints/"
     if not path.exists(top_dir):
         os.makedirs(top_dir)
+
+    # print(f"\n\n Reduce: {reduce_amt}\n\n\n")
 
     # Define the file names with their complete paths
     open_file   = open_f     or   f"{floc_path}floc_open_cr{get_cr}_r{reduce_amt}_f{nwant}.dat"

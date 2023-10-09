@@ -195,19 +195,30 @@ TO_INST_PM = fluxpipe/.gitattributes \
 	fluxpipe/plotting/plot_fieldmap.py \
 	fluxpipe/plotting/plot_fr.py \
 	fluxpipe/plotting/plot_wind_map_detailed.py \
-	fluxpipe/plotting/plot_worlds.pdl \
+	fluxpipe/plotting/plot_worlds.pm \
 	fluxpipe/runners/config_runner.py \
 	fluxpipe/runners/mag_runner.py \
 	fluxpipe/runners/manual_runner.py \
-	fluxpipe/science/get_hilbert_footpoints.pdl \
+	fluxpipe/science/fluxon_placement_hilbert.pm \
+	fluxpipe/science/gen_fluxon_flow.pm \
+	fluxpipe/science/gen_fluxon_tflow.pm \
+	fluxpipe/science/get_hilbert_footpoints.pm \
 	fluxpipe/science/get_magnetograms.py \
 	fluxpipe/science/get_pfss.py \
-	fluxpipe/science/get_wind.pdl \
+	fluxpipe/science/get_wind.pm \
+	fluxpipe/science/hilbert.pm \
 	fluxpipe/science/magnetogram2wind.pdl \
-	fluxpipe/science/make_world_from_pfss.pdl \
+	fluxpipe/science/make_world_from_pfss.pm \
+	fluxpipe/science/make_world_sphere.pm \
+	fluxpipe/science/map_fluxon_b.pm \
+	fluxpipe/science/map_fluxon_flow.pm \
+	fluxpipe/science/map_fluxon_flow_parallel.pm \
+	fluxpipe/science/map_fluxon_flow_parallel_master.pm \
+	fluxpipe/science/map_fluxon_fr.pm \
 	fluxpipe/science/perltidy.ERR \
 	fluxpipe/science/pfss_funcs.py \
-	fluxpipe/science/relax_pfss_world.pdl
+	fluxpipe/science/relax_pfss_world.pm \
+	fluxpipe/science/simple_relaxer.pm
 
 
 # --- MakeMaker platform_constants section:
@@ -888,19 +899,30 @@ pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	  'fluxpipe/plotting/plot_fieldmap.py' '$(INST_LIB)/fluxpipe/plotting/plot_fieldmap.py' \
 	  'fluxpipe/plotting/plot_fr.py' '$(INST_LIB)/fluxpipe/plotting/plot_fr.py' \
 	  'fluxpipe/plotting/plot_wind_map_detailed.py' '$(INST_LIB)/fluxpipe/plotting/plot_wind_map_detailed.py' \
-	  'fluxpipe/plotting/plot_worlds.pdl' '$(INST_LIB)/fluxpipe/plotting/plot_worlds.pdl' \
+	  'fluxpipe/plotting/plot_worlds.pm' '$(INST_LIB)/fluxpipe/plotting/plot_worlds.pm' \
 	  'fluxpipe/runners/config_runner.py' '$(INST_LIB)/fluxpipe/runners/config_runner.py' \
 	  'fluxpipe/runners/mag_runner.py' '$(INST_LIB)/fluxpipe/runners/mag_runner.py' \
 	  'fluxpipe/runners/manual_runner.py' '$(INST_LIB)/fluxpipe/runners/manual_runner.py' \
-	  'fluxpipe/science/get_hilbert_footpoints.pdl' '$(INST_LIB)/fluxpipe/science/get_hilbert_footpoints.pdl' \
+	  'fluxpipe/science/fluxon_placement_hilbert.pm' '$(INST_LIB)/fluxpipe/science/fluxon_placement_hilbert.pm' \
+	  'fluxpipe/science/gen_fluxon_flow.pm' '$(INST_LIB)/fluxpipe/science/gen_fluxon_flow.pm' \
+	  'fluxpipe/science/gen_fluxon_tflow.pm' '$(INST_LIB)/fluxpipe/science/gen_fluxon_tflow.pm' \
+	  'fluxpipe/science/get_hilbert_footpoints.pm' '$(INST_LIB)/fluxpipe/science/get_hilbert_footpoints.pm' \
 	  'fluxpipe/science/get_magnetograms.py' '$(INST_LIB)/fluxpipe/science/get_magnetograms.py' \
 	  'fluxpipe/science/get_pfss.py' '$(INST_LIB)/fluxpipe/science/get_pfss.py' \
-	  'fluxpipe/science/get_wind.pdl' '$(INST_LIB)/fluxpipe/science/get_wind.pdl' \
+	  'fluxpipe/science/get_wind.pm' '$(INST_LIB)/fluxpipe/science/get_wind.pm' \
+	  'fluxpipe/science/hilbert.pm' '$(INST_LIB)/fluxpipe/science/hilbert.pm' \
 	  'fluxpipe/science/magnetogram2wind.pdl' '$(INST_LIB)/fluxpipe/science/magnetogram2wind.pdl' \
-	  'fluxpipe/science/make_world_from_pfss.pdl' '$(INST_LIB)/fluxpipe/science/make_world_from_pfss.pdl' \
+	  'fluxpipe/science/make_world_from_pfss.pm' '$(INST_LIB)/fluxpipe/science/make_world_from_pfss.pm' \
+	  'fluxpipe/science/make_world_sphere.pm' '$(INST_LIB)/fluxpipe/science/make_world_sphere.pm' \
+	  'fluxpipe/science/map_fluxon_b.pm' '$(INST_LIB)/fluxpipe/science/map_fluxon_b.pm' \
+	  'fluxpipe/science/map_fluxon_flow.pm' '$(INST_LIB)/fluxpipe/science/map_fluxon_flow.pm' \
+	  'fluxpipe/science/map_fluxon_flow_parallel.pm' '$(INST_LIB)/fluxpipe/science/map_fluxon_flow_parallel.pm' \
+	  'fluxpipe/science/map_fluxon_flow_parallel_master.pm' '$(INST_LIB)/fluxpipe/science/map_fluxon_flow_parallel_master.pm' \
+	  'fluxpipe/science/map_fluxon_fr.pm' '$(INST_LIB)/fluxpipe/science/map_fluxon_fr.pm' \
 	  'fluxpipe/science/perltidy.ERR' '$(INST_LIB)/fluxpipe/science/perltidy.ERR' \
 	  'fluxpipe/science/pfss_funcs.py' '$(INST_LIB)/fluxpipe/science/pfss_funcs.py' \
-	  'fluxpipe/science/relax_pfss_world.pdl' '$(INST_LIB)/fluxpipe/science/relax_pfss_world.pdl' 
+	  'fluxpipe/science/relax_pfss_world.pm' '$(INST_LIB)/fluxpipe/science/relax_pfss_world.pm' \
+	  'fluxpipe/science/simple_relaxer.pm' '$(INST_LIB)/fluxpipe/science/simple_relaxer.pm' 
 	$(NOECHO) $(TOUCH) pm_to_blib
 
 

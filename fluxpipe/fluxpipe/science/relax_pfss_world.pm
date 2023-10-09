@@ -5,11 +5,18 @@ relax_pfss_world - Relaxes the initial world state generated from PFSS (Potentia
 
 =cut
 
-# package relax_pfss_world;
-
-use pipe_helper;
+package relax_pfss_world;
 use strict;
 use warnings;
+use Exporter qw(import);
+our @EXPORT_OK = qw(relax_pfss_world);
+use File::Basename qw(dirname);
+use File::Path     qw(mkpath);
+use pipe_helper    qw(find_highest_numbered_file check_second_file_presence);
+use Flux::World    qw(read_world);
+use Time::HiRes    qw(clock_gettime);
+use simple_relaxer qw(simple_relaxer);
+use pipe_helper    qw(shorten_path);
 
 =head1 SYNOPSIS
 
@@ -105,11 +112,12 @@ sub relax_pfss_world {
         print "\tFound a relaxed file: $file_path_relaxed";
     }
     else {
-        print "\tNo relaxed file found, so we will relax the world (fairly slow).\n\n";
+        print
+"\tNo relaxed file found, so we will relax the world (fairly slow).\n\n";
     }
     my $directory         = dirname($full_world_path);
     my $file_name_relaxed = $directory . "/" . $file_path_relaxed;
-    my $stepnum           = 0;
+    $stepnum = 0;
 
     # exit();
     my $do_the_relax = ( $do_relax || not $second_file_present );
@@ -210,7 +218,7 @@ sub relax_pfss_world {
         substr( $out_world, -5 ) = "_relaxed_s$stepnum.flux";
         my $short_world_path = shorten_path($out_world);
         print "\n\n\tSaving the World to $short_world_path\n";
-        my $world_out_dir = dirname($out_world);
+        my $world_out_dir = File::Basename::dirname($out_world);
         if ( !-d $world_out_dir ) {
             mkpath($world_out_dir)
               or die "Failed to create directory: $world_out_dir $!\n";
@@ -220,9 +228,9 @@ sub relax_pfss_world {
         # my $short_world_out_path = shorten_path($world_out_dir);
 
         # # print "\n\tWorld saved to $short_world_out_path";
-    # print $this_world_orig;
-    # print $this_world_relaxed;
-    # die;
+        # print $this_world_orig;
+        # print $this_world_relaxed;
+        # die;
         return $this_world_orig, $this_world_relaxed, $stepnum;
 
     }

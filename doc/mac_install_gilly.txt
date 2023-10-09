@@ -19,20 +19,19 @@ Here's the path to installing FLUX:
 - Cd to the PL_PREFIX directory and install PDL and its dependencies --------------------------
 
     cd $PL_PREFIX
-    cpan PDL
+    cpanm PDL
     PERL_MM_OPT="INSTALL_BASE=$PL_PREFIX/lib/perl5"
-    cpan local::lib
+    cpanm local::lib
     echo 'eval "$(perl -I$PL_PREFIX/lib/perl5/lib/perl5 -Mlocal::lib=$PL_PREFIX/lib/perl5)"' >> ~/.zshrc
 
-    cpan File::ShareDir
-    cpan PDL::Graphics::Gnuplot
-    cpan Math::RungeKutta
-
+    cpanm File::ShareDir
+    cpanm PDL::Graphics::Gnuplot
+    cpanm Math::RungeKutta
+      and others...
 
 - To compile FLUX, go to the $FL_PREFIX directory and run
 
     make everything
-
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,7 +54,19 @@ Here's the path to installing FLUX:
         - go to the fluxpipe directory and run
             cpanm --installdeps .
             cpanm --notest --local-lib=local/ .
+
         - next, place the following line in your zshrc file and reload the terminal
             export PERL5LIB=$FL_PREFIX/fluxpipe/local/lib/perl5:$PERL5LIB
-    I also set up an action to reinstall using the local command every time I save.
 
+        ##- This symbolic link made the pdl update automatically (nope, had to have a post-save event)
+          ##  -: ln -s /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/local/lib/perl5/FLUX/Fluxpipe
+
+        - If you place this in your settings.json file in vscode, it will keep your pdl up to date when you save
+            "filewatcher.commands": [
+                {
+                    "match": ".*\\.(pdl|pm)$",
+                    "isAsync": true,
+                    "event": "onFileChange",
+                    "cmd": "cd $FL_PREFIX/fluxpipe && cpanm --notest --local-lib=local/ . && echo $(date) "
+                }
+            ],

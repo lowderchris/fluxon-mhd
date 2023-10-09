@@ -4,10 +4,12 @@
 make_world_from_pfss - Take the PFSS field lines and make a FLUX world from them.
 =cut
 
-# package make_world_from_pfss;
-
+package make_world_from_pfss;
 use strict;
 use warnings;
+use Exporter qw(import);
+our @EXPORT_OK = qw(make_world_from_pfss);
+use make_world_sphere qw(make_world_sphere);
 use PDL::AutoLoader;
 use PDL;
 use PDL::Transform;
@@ -16,11 +18,17 @@ use PDL::Options;
 use Flux;
 use PDL::IO::Misc;
 use File::Path;
-use PDL::IO::Misc;
 use Time::HiRes qw(clock_gettime);
 use File::Basename qw(fileparse);
 use File::Basename;
-use pipe_helper;
+use pipe_helper qw(shorten_path);
+use Flux::World qw(str2world);
+use PDL::Graphics::Gnuplot qw(gpwin);
+use File::Path  qw(mkpath);
+
+
+# use Flux::World "str2world";
+# str2world();
 
 =head1 SYNOPSIS
 
@@ -108,9 +116,9 @@ sub make_world_from_pfss {
     my $world_out_dir = "$datdir/batches/$batch_name/cr$CR/world";
     my $floc_path = "$datdir/batches/$batch_name/cr$CR/floc";
 
-    if ($adapt) {
-        $reduction = "A";
-    }
+    # if ($adapt) {
+    #     $reduction = "A";
+    # }
 
     my $open_file = "$floc_path/floc_open_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
     my $closed_file = "$floc_path/floc_closed_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";

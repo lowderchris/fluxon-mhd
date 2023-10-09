@@ -37,7 +37,7 @@ import os.path
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-from pipe_helper import (configurations, get_fixed_coords, load_fits_magnetogram,
+from fluxpipe.helpers.pipe_helper import (configurations, get_fixed_coords, load_fits_magnetogram,
                          load_magnetogram_params, shorten_path)
 
 

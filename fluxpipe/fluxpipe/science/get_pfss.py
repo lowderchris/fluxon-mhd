@@ -35,9 +35,9 @@ os, argparse, numpy, pfss_funcs, pipe_helper
 import os
 import argparse
 import numpy as np
-from pfss_funcs import (trace_lines, load_pfss, compute_pfss,
+from fluxpipe.science.pfss_funcs import (trace_lines, load_pfss, compute_pfss,
         load_and_condition_fits_file, get_fluxon_locations)
-from pipe_helper import shorten_path, configurations
+from fluxpipe.helpers.pipe_helper import shorten_path, configurations
 
 def get_pfss(configs=None):
     """
@@ -56,15 +56,16 @@ def get_pfss(configs=None):
     configs = configs or configurations()
 
     # Extract arguments or use defaults from configs
-    cr =        configs.get("rotations")[0]
+    cr =        configs.get("cr")
+    nwant =     configs.get("nwant")
     magfile =   configs.get("magfile").format(cr)
     force_trace=configs.get("force", 0)
     datdir =    configs.get("data_dir")
-    nwant =     configs.get("fluxon_count")[0]
-    reduce =    configs.get("mag_reduce")
+    mag_reduce =configs.get("mag_reduce")
     batch =     configs.get("batch_name")
     adapt =     configs.get("adapt") == 1
-
+    # print(configs['cr'])
+    # print("\n\n\n")
 
     # Print initial message
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -87,27 +88,31 @@ def get_pfss(configs=None):
     if 'ADAPT' in magfile:
         adapt = True
         pickle_dir = os.path.join(datdir, "pfss/ADAPT")
-        reduce = 'A'
+        # mag_reduce = 'A'
     else:
         pickle_dir = os.path.join(datdir, "pfss")
 
     if not os.path.exists(pickle_dir): os.makedirs(pickle_dir)
 
-    pickle_path = os.path.join(pickle_dir, f"pfss_cr{cr}_r{reduce}.pkl")
+    pickle_path = os.path.join(pickle_dir, f"pfss_cr{cr}_r{mag_reduce}.pkl")
 
     output = load_pfss(pickle_path)
     if not output:
         output, elapsed = compute_pfss(br_safe, pickle_path)  # , nrho, rss
 
+    # print("mag_reduce = ", mag_reduce)
+
     # Get the fluxon locations
-    floc_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
+    floc_dir = f"{datdir}/batches/{batch}/cr{cr}/floc"
+    floc_path   = f"{floc_dir}/floc_cr{cr}_r{mag_reduce}_f{nwant}.dat"
+    open_path   = f"{floc_dir}/floc_open_cr{cr}_r{mag_reduce}_f{nwant}.dat"
+    closed_path = f"{floc_dir}/floc_closed_cr{cr}_r{mag_reduce}_f{nwant}.dat"
+
     f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch, cr=cr)
 
     # Trace pfss field lines
     skip_num = 'x'
     timeout_num = 'x'
-    open_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_open_cr{cr}_r{reduce}_f{nwant}.dat"
-    closed_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_closed_cr{cr}_r{reduce}_f{nwant}.dat"
     # print("Open Path = ", open_path)
     # print("Closed Path = ", closed_path)
 
@@ -140,7 +145,7 @@ def get_pfss(configs=None):
     pix = shp[0]*shp[1]
     timefile = f'{datdir}/batches/{batch}/pipe_log.txt'
     with open(timefile, 'a+', encoding="utf-8") as f:
-        elap = f"\ncr: {cr}, r: {reduce}, rx: {shp[0]}, ry: {shp[1]}, \
+        elap = f"\ncr: {cr}, r: {mag_reduce}, rx: {shp[0]}, ry: {shp[1]}, \
                 pf_elp: {elapsed:0>3.3f}, t_kpix: {1000*elapsed/pix:0.3f}"
         nlines = f"TrOpen: {flnum_open}, TrClosed: {flnum_closed}, TrGood: \
                 {flnum_open+flnum_closed}, TrFail: {skip_num+timeout_num}, "
@@ -164,6 +169,8 @@ if __name__ == "__main__":
     parser.add_argument('--magfile', type=str, default=None, help='Magnetogram file')
     parser.add_argument('--force', type=int, default=0, help='Force computation of PFSS mapping')
     configs = configurations(args=parser.parse_args())
+
+
 
     # Run the main function
     get_pfss(configs)

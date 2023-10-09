@@ -1,0 +1,123 @@
+
+package map_fluxon_b;
+use strict;
+use warnings;
+use Exporter qw(import);
+our @EXPORT_OK = qw(map_fluxon_b);
+use PDL::NiceSlice;
+use PDL qw(squeeze);
+=head2 map_fluxon_flow
+
+=for ref
+
+Given a world and list of fluxons, generates a mapping of the representative magnetic field from these fluxons.
+
+=cut
+use PDL::Options;
+
+sub map_fluxon_b {
+    my $fn = shift;
+    my $fluxons = shift;
+    my @fluxons = @{$fluxons};
+
+# Generate some blank storage arrays
+my @fps = ();   # Fluxon array position
+my @phb = ();   # Begining coordinates
+my @thb = ();
+my @phe = ();   # End coordinates
+my @the = ();
+my @brb = ();   # Beginning and end magnetic field
+my @bre = ();
+my @arb = ();
+my @are = ();
+
+#die "I need something to work on!" if $#$fluxons<0;
+
+# Loop through open fluxons and generate wind profiles
+#for my $fid(0..$#$fluxons){
+for my $fid(0..scalar(@fluxons)-1){
+
+    my $me = $fluxons[$fid];
+
+    # Check for open fieldlines
+    my $st_open = ($me->{fc_start}->{label}==-1);
+    my $en_open = ($me->{fc_end}->{label}==-2);
+    if ($me->{plasmoid} || ($st_open + $en_open != 1)){
+       next;
+    }
+
+    my $r0 = 696e6;
+    my $r;
+    my $th;
+    my $ph;
+    my $A;
+
+    ## Grab coordinates
+    if($en_open) {
+        my $x = squeeze($me->dump_vecs->(0));
+        my $y = squeeze($me->dump_vecs->(1));
+        my $z = squeeze($me->dump_vecs->(2));
+        my $r1 = ($x**2 + $y**2 + $z**2)->sqrt * $r0;
+        $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
+        $th = acos($z/$r1*$r0);
+        $ph = atan2($y, $x);
+        $A = pdl(map {$_->{A}} ($me->vertices)) * $r0 * $r0;
+        $A(-1) .= $A(-2);
+    } else {
+        my $x = squeeze($me->dump_vecs->(0,-1:0:-1));
+        my $y = squeeze($me->dump_vecs->(1,-1:0:-1));
+        my $z = squeeze($me->dump_vecs->(2,-1:0:-1));
+        my $r1 = ($x**2 + $y**2 + $z**2)->sqrt * $r0;
+        $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
+        $th = acos($z/$r1*$r0);
+        $ph = atan2($y, $x);
+        $A = pdl(map { $_->{A}} ($me->vertices))->(-1:0:-1) * $r0 * $r0;
+        $A(0) .= $A(1);
+        ## $A(0:-2) .= $A(1:-1);
+    }
+
+    ## $xb = $me->vertex(0)->{x};
+    ## $xe = $me->vertex(-1)->{x};
+
+    ## $bb = $me->{start}->{b_mag};
+    ## $be = $me->{end}->{b_mag};
+
+    my $bfield0 = $me->bfield();
+    ## $bmag =  zeros(2,$bfield0->shape->(1));
+
+    my $bmag = cat squeeze(sqrt($bfield0(0,:)**2 + $bfield0(1,:)**2 + $bfield0(2,:)**2)), squeeze(sqrt($bfield0(3,:)**2 + $bfield0(4,:)**2 + $bfield0(5,:)**2));
+
+    if ($bmag(0,0) > $bmag(-1,0)){
+       $bmag = $bmag->(-1:0:-1,:);
+    }
+
+    ## First / last two points without b-field
+    $bmag = $bmag->slice('2:-2,:');
+
+    ## Interpolate once this is fixed
+    ## ($bb, $err) = interpolate(21.5, squeeze($bmag(:,0)), squeeze($bmag(:,1)));
+
+    ## The faster way
+    my $bb = squeeze($bmag(0,1));
+    my $bm = squeeze($bmag($bmag->shape->(0)/2,1));
+    my $be = squeeze($bmag(-1,1));
+
+    # Append any needed values and move along home
+    push(@fps, $fid);
+    push(@phb, squeeze($ph(0)));
+    push(@thb, squeeze($th(0)));
+    push(@phe, squeeze($ph(-1)));
+    push(@the, squeeze($th(-1)));
+    push(@brb, $bb);
+    push(@bre, $be);
+    push(@arb, squeeze($A(0)));
+    push(@are, squeeze($A(-1)));
+}
+
+# Output this data to disk
+wcols pdl(@fps), pdl(@phb), pdl(@thb), pdl(@phe), pdl(@the), squeeze(pdl(@brb)), squeeze(pdl(@bre)), squeeze(pdl(@arb)), squeeze(pdl(@are)), $fn;
+
+}
+
+__END__
+

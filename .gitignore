@@ -18,7 +18,10 @@ sandbox/
 _Inline/
 include/flux/
 
-fluxpipe/local/
-/data/
-perltidy.ERR
 fluxpipe/blib/
+fluxpipe/local/
+fluxpipe/data/
+perltidy.ERR
+
+.gitignore
+Makefile
