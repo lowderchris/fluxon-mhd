@@ -102,10 +102,7 @@ def load_and_condition_fits_file(fname, datdir, adapt):
         fits_path = fname
         hdulist = read_fits_data(fits_path)
     except FileNotFoundError:
-        if adapt:
-            fits_path = os.path.join(datdir, "ADAPT", fname)
-        else:
-            fits_path = os.path.join(datdir, fname)
+        fits_path = os.path.join(datdir, fname)
         hdulist = read_fits_data(fits_path)
     print("\t\t", shorten_path(fits_path))
 
@@ -224,9 +221,10 @@ def compute_pfss(br_safe, pickle_path, nrho=60, rss=2.5):
     ###############################################################################
     # Save the results
     with open(pickle_path, 'wb') as outp:
-        print("\t\tSaving Pickled Result.")
+        print("\t\tSaving Pickled Results...", end="")
         pickle.dump(output, outp, pickle.HIGHEST_PROTOCOL)
-
+        print("Success!")
+        # print(pickle_path)
     return output, elapsed
 
 
@@ -267,7 +265,7 @@ def pixel_to_latlon(mag_map, header, fluxon_location):
     return f_lat, f_lon, f_sgn, n_flux
 
 
-def get_fluxon_locations(floc_path, batch, cr):
+def get_fluxon_locations(floc_path, batch, configs=None):
     """Loads the fluxon location file
 
     Parameters
@@ -290,7 +288,7 @@ def get_fluxon_locations(floc_path, batch, cr):
     """
 
     fluxon_location = np.genfromtxt(floc_path)
-    magnet, header = load_fits_magnetogram(batch=batch, ret_all=True, cr=cr)
+    magnet, header = load_fits_magnetogram(batch=batch, ret_all=True, configs=configs)
     f_lat, f_lon, f_sgn, n_flux = pixel_to_latlon(
         magnet, header, fluxon_location)
     return f_lat, f_lon, f_sgn, n_flux

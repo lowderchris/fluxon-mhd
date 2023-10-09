@@ -110,19 +110,24 @@ L<PDL>, L<PDL::Transform>, L<PDL::NiceSlice>, L<PDL::Options>, L<Flux>, L<PDL::I
 
 
 sub make_world_from_pfss {
-    my ($datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2) = @_;
+    my ($datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2, $configs) = @_;
 
     # Define the output directory and floc path
     my $world_out_dir = "$datdir/batches/$batch_name/cr$CR/world";
     my $floc_path = "$datdir/batches/$batch_name/cr$CR/floc";
+    my $file_end;
 
-    # if ($adapt) {
-    #     $reduction = "A";
-    # }
+    if ($adapt) {
+        $reduction = "f".$configs->{'adapt_select'};
+        $file_end = "adapt"
+    } else {
+        # $reduction = "R";
+        $file_end = "hmi"
+    }
 
-    my $open_file = "$floc_path/floc_open_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
-    my $closed_file = "$floc_path/floc_closed_cr$CR\_r$reduction\_f$n_fluxons_wanted.dat";
-    my $world_out_path = $world_out_dir .'/cr'.$CR.'_f'.$n_fluxons_wanted.'.flux';
+    my $open_file = "$floc_path/floc_open_cr$CR\_r$reduction\_f$n_fluxons_wanted\_$file_end.dat";
+    my $closed_file = "$floc_path/floc_closed_cr$CR\_r$reduction\_f$n_fluxons_wanted\_$file_end.dat";
+    my $world_out_path = $world_out_dir .'/cr'.$CR.'_f'.$n_fluxons_wanted."\_$file_end.flux";
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Converting PFSS Fieldlines into FLUX Fluxons\n";

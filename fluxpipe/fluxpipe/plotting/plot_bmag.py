@@ -75,7 +75,7 @@ def plot_bmag(configs):
     # Plot the Data
     fig, (ax0, ax1) = plt.subplots(2)
 
-    magnet = load_fits_magnetogram(cr=configs['cr'])
+    magnet = load_fits_magnetogram(configs=configs)
     ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
             extent=(0,2*np.pi,-1,1), aspect='auto')
     ax1.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
@@ -145,6 +145,7 @@ if __name__ == "__main__":
     parser.add_argument('--cr', type=int, default=2219, help='Carrington Rotation')
     parser.add_argument('--file', type=str, default=None, help='Data File Name')
     parser.add_argument('--nwant', type=int, default=100, help='Number of Fluxons')
+    parser.add_argument('--adapt', type=int, default=0, help='Use ADAPT magnetograms')
     args = parser.parse_args()
     configs = configurations(debug=False, args=args)
     # a=[print(x) for x in configs.items()]

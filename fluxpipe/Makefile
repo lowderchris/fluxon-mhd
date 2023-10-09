@@ -183,13 +183,17 @@ PERL_ARCHIVEDEP    =
 PERL_ARCHIVE_AFTER = 
 
 
-TO_INST_PM = fluxpipe/.gitattributes \
+TO_INST_PM = fluxpipe/.DS_Store \
+	fluxpipe/.gitattributes \
 	fluxpipe/__init__.py \
 	fluxpipe/__pycache__/__init__.cpython-310.pyc \
 	fluxpipe/__pycache__/_version.cpython-310.pyc \
 	fluxpipe/_version.py \
+	fluxpipe/config/__pycache__/ConfigManager.cpython-310.pyc \
+	fluxpipe/config/__pycache__/__init__.cpython-310.pyc \
 	fluxpipe/config/config.ini \
 	fluxpipe/fidoclients/ADAPTClient.py \
+	fluxpipe/fidoclients/__pycache__/ADAPTClient.cpython-310.pyc \
 	fluxpipe/helpers/__pycache__/pipe_helper.cpython-310.pyc \
 	fluxpipe/helpers/perl_paths.pm \
 	fluxpipe/helpers/pipe_helper.pm \
@@ -891,13 +895,17 @@ ppd :
 
 pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	$(NOECHO) $(ABSPERLRUN) -MExtUtils::Install -e 'pm_to_blib({@ARGV}, '\''$(INST_LIB)/auto'\'', q[$(PM_FILTER)], '\''$(PERM_DIR)'\'')' -- \
+	  'fluxpipe/.DS_Store' '$(INST_LIB)/fluxpipe/.DS_Store' \
 	  'fluxpipe/.gitattributes' '$(INST_LIB)/fluxpipe/.gitattributes' \
 	  'fluxpipe/__init__.py' '$(INST_LIB)/fluxpipe/__init__.py' \
 	  'fluxpipe/__pycache__/__init__.cpython-310.pyc' '$(INST_LIB)/fluxpipe/__pycache__/__init__.cpython-310.pyc' \
 	  'fluxpipe/__pycache__/_version.cpython-310.pyc' '$(INST_LIB)/fluxpipe/__pycache__/_version.cpython-310.pyc' \
 	  'fluxpipe/_version.py' '$(INST_LIB)/fluxpipe/_version.py' \
+	  'fluxpipe/config/__pycache__/ConfigManager.cpython-310.pyc' '$(INST_LIB)/fluxpipe/config/__pycache__/ConfigManager.cpython-310.pyc' \
+	  'fluxpipe/config/__pycache__/__init__.cpython-310.pyc' '$(INST_LIB)/fluxpipe/config/__pycache__/__init__.cpython-310.pyc' \
 	  'fluxpipe/config/config.ini' '$(INST_LIB)/fluxpipe/config/config.ini' \
 	  'fluxpipe/fidoclients/ADAPTClient.py' '$(INST_LIB)/fluxpipe/fidoclients/ADAPTClient.py' \
+	  'fluxpipe/fidoclients/__pycache__/ADAPTClient.cpython-310.pyc' '$(INST_LIB)/fluxpipe/fidoclients/__pycache__/ADAPTClient.cpython-310.pyc' \
 	  'fluxpipe/helpers/__pycache__/pipe_helper.cpython-310.pyc' '$(INST_LIB)/fluxpipe/helpers/__pycache__/pipe_helper.cpython-310.pyc' \
 	  'fluxpipe/helpers/perl_paths.pm' '$(INST_LIB)/fluxpipe/helpers/perl_paths.pm' \
 	  'fluxpipe/helpers/pipe_helper.pm' '$(INST_LIB)/fluxpipe/helpers/pipe_helper.pm' \

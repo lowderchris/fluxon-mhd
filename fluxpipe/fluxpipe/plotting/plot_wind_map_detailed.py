@@ -181,7 +181,7 @@ def hex_plot(ph1_clean, th1_clean, vel1_clean, ax=None, nx=20, vmin=400, vmax=80
     vel1_wrapped = np.concatenate((vel1, vel1, vel1))
 
     # Create a grid for interpolation
-    Ny, Nx = load_fits_magnetogram(batch=configs["batch_name"], bo=3, bn=2, cr=configs["cr"]).shape
+    Ny, Nx = load_fits_magnetogram(configs=configs, bo=3, bn=2).shape
     grid_x, grid_y = np.linspace(x_min, x_max, Nx, endpoint=False), np.linspace(-1, 1, Ny)
     grid_x, grid_y = np.meshgrid(grid_x, grid_y)
 
@@ -328,8 +328,8 @@ def plot_wind_map_detailed(configs):
     drk=0.25
     # if configs["adapt"]:
     #     reduce_amt = 'A'
-    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(CR, dat_dir, batch,
-        ax=mag_ax, vmin=-500, vmax=500, reduce_amt=reduce_amt, nwant=nwant, do_print_top=False)
+    n_open, n_closed, n_flux, fnum, n_outliers = magnet_plot(configs=configs,
+        ax=mag_ax, vmin=-500, vmax=500, do_print_top=False)
     hex_n = np.max((n_open//10, 3))
 
     hex1 = hex_plot(ph1_clean, th1_clean, vel1_clean, ax=hex_ax, nx=hex_n,
@@ -431,6 +431,7 @@ if __name__ == "__main__":
     parser.add_argument('--dat_dir', type=str, default=configs['data_dir'], help='data directory')
     parser.add_argument('--nwant', type=int, default=configs["fluxon_count"][0], help='number of fluxons')
     parser.add_argument('--batch', type=str, default=configs["batch_name"], help='select the batch name')
+    parser.add_argument('--adapt', type=int, default=configs["adapt"], help='Use ADAPT magnetograms')
     args = parser.parse_args()
     configs = configurations(args=args)
 

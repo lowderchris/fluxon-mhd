@@ -106,7 +106,8 @@ use strict;
 use warnings;
 use Exporter qw(import);
 our @EXPORT_OK =
-  qw(shorten_path find_highest_numbered_file set_env_variable get_env_variable check_env_variable set_and_check_env_variable calculate_directories set_python_path set_paths print_banner search_files_in_directory check_second_file_presence configurations);
+  qw(shorten_path find_highest_numbered_file set_env_variable get_env_variable check_env_variable configs_update_magdir
+  set_and_check_env_variable calculate_directories set_python_path set_paths print_banner search_files_in_directory check_second_file_presence configurations);
 use File::Basename qw(dirname basename);
 use PDL::AutoLoader;
 use PDL;
@@ -202,35 +203,43 @@ sub configurations {
       catfile( $the_config{'fl_prefix'}, $the_config{"run_script"} );
 
     # Remove brackets from rotations and fluxon_count
-    $the_config{"rotations"}    =~ s/[\[\]]//g;
-    $the_config{"fluxon_count"} =~ s/[\[\]]//g;
-    $the_config{"adapts"}       =~ s/[\[\]]//g;
+    $the_config{'rotations'}    =~ s/[\[\]]//g;
+    $the_config{'fluxon_count'} =~ s/[\[\]]//g;
+    $the_config{'adapts'}       =~ s/[\[\]]//g;
 
     # Create PDL objects
-    $the_config{"rotations"} =
-      PDL->new( split( /\s*,\s*/, $the_config{"rotations"} ) );
-    $the_config{"fluxon_count"} =
-      PDL->new( split( /\s*,\s*/, $the_config{"fluxon_count"} ) );
-    $the_config{"adapts"} =
-      PDL->new( split( /\s*,\s*/, $the_config{"adapts"} ) );
+    $the_config{'rotations'} =
+      PDL->new( split( /\s*,\s*/, $the_config{'rotations'} ) );
+    $the_config{'fluxon_count'} =
+      PDL->new( split( /\s*,\s*/, $the_config{'fluxon_count'} ) );
+    $the_config{'adapts'} =
+      PDL->new( split( /\s*,\s*/, $the_config{'adapts'} ) );
 
-    $the_config{"n_jobs"} =
-      $the_config{"rotations"}->nelem *
-      $the_config{"fluxon_count"}->nelem *
-      $the_config{"adapts"}->nelem;
+    $the_config{'n_jobs'} =
+      $the_config{'rotations'}->nelem *
+      $the_config{'fluxon_count'}->nelem *
+      $the_config{'adapts'}->nelem;
 
     # Calculate directories
     calculate_directories( \%the_config );
 
-    my $reduct = $the_config{"mag_reduce"};
+    my $magfile;
+    my $reduction    = $the_config{'mag_reduce'};
+    my $magdir       = $the_config{'mag_dir'};
+    my $adapt_select = $the_config{'adapt_select'};
 
-    my $magdir = $the_config{'mag_dir'};
     if ( $the_config{'adapt'} ) {
-        $the_config{'magfile'} = "$magdir/ADAPT/CR%s\_rf$reduct\_adapt.fits";
+        $magfile = "CR%s\_rf$adapt_select\_adapt.fits";
     }
     else {
-        $the_config{'magfile'} = "$magdir/CR%s\_r$reduct\_hmi.fits";
+        $magfile = "CR%s\_r$reduction\_hmi.fits";
     }
+
+    $the_config{'magfile'} = $magfile;
+    $the_config{'magpath'} = "$magdir/$magfile";
+
+    # $the_config{'flocfile'} = $flocfile;
+    # $the_config{'flocpath'} = "$flocdir/$flocfile";
 
     if ($debug) {
 
@@ -251,6 +260,42 @@ sub shorten_path {
         $string =~ s/\Q$datapath\E/\$DATAPATH\ /g;
     }
     return $string;
+}
+
+sub configs_update_magdir {
+    my ($configs_ref) = @_;    # get the hash reference
+
+    my $magdir           = $configs_ref->{'mag_dir'};
+    my $adapt_select     = $configs_ref->{'adapt_select'};
+    my $CR               = $configs_ref->{'CR'};
+    my $batchdir         = $configs_ref->{'batch_dir'};
+    my $flocdir          = "$batchdir/cr$CR/floc";
+    my $n_fluxons_wanted = $configs_ref->{'n_fluxons_wanted'};
+    my $reduction        = $configs_ref->{'mag_reduce'};
+    my $magfile;
+    my $flocfile;
+
+    if ( $configs_ref->{'adapt'} ) {
+
+        # Run the adapt maps
+        $magfile = "CR$CR\_rf$adapt_select\_adapt.fits";
+        $flocfile =
+          "floc_cr$CR\_rf$adapt_select\_f$n_fluxons_wanted\_adapt.dat";
+    }
+    else {
+        # Run the hmi maps
+        $magfile  = "CR$CR\_r$reduction\_hmi.fits";
+        $flocfile = "floc_cr$CR\_r$reduction\_f$n_fluxons_wanted\_hmi.dat";
+    }
+
+    my $magpath  = "$magdir/$magfile";
+    my $flocpath = "$flocdir/$flocfile";
+
+    # $configs_ref->{'magfile'}  = $magfile;
+    $configs_ref->{'magpath'}  = $magpath;
+    $configs_ref->{'flocdir'}  = $flocdir;
+    $configs_ref->{'flocfile'} = $flocfile;
+    $configs_ref->{'flocpath'} = $flocpath;
 }
 
 =head2 find_highest_numbered_file

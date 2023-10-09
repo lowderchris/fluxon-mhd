@@ -53,18 +53,21 @@ def get_pfss(configs=None):
     bool
         Returns True upon successful completion.
     """
+
     configs = configs or configurations()
 
     # Extract arguments or use defaults from configs
     cr =        configs.get("cr")
     nwant =     configs.get("nwant")
-    magfile =   configs.get("magfile").format(cr)
+    magpath =   configs.get("magpath").format(cr)
     force_trace=configs.get("force", 0)
     datdir =    configs.get("data_dir")
     mag_reduce =configs.get("mag_reduce")
+    adapt_select =configs.get("adapt_select")
     batch =     configs.get("batch_name")
     adapt =     configs.get("adapt") == 1
     # print(configs['cr'])
+
     # print("\n\n\n")
 
     # Print initial message
@@ -75,40 +78,39 @@ def get_pfss(configs=None):
     elapsed = 0
 
     # Load the fits file and format the data and header
-    br_safe, fits_path = load_and_condition_fits_file(magfile, datdir, adapt)
+    br_safe, fits_path = load_and_condition_fits_file(magpath, datdir, adapt)
 
 
 
     ###############################################################################
     # Do the PFSS mapping
-    from pfss_funcs import load_pfss, compute_pfss
+    from fluxpipe.science.pfss_funcs import load_pfss, compute_pfss
 
-
-    adapt = False
-    if 'ADAPT' in magfile:
+    # Get the fluxon locations
+    if configs.get("adapt"):
+        inst = "adapt"
         adapt = True
-        pickle_dir = os.path.join(datdir, "pfss/ADAPT")
-        # mag_reduce = 'A'
+        mag_reduce = "f"+str(adapt_select)
     else:
-        pickle_dir = os.path.join(datdir, "pfss")
+        inst = "hmi"
+
+    pickle_dir = os.path.join(datdir, "pfss")
 
     if not os.path.exists(pickle_dir): os.makedirs(pickle_dir)
 
-    pickle_path = os.path.join(pickle_dir, f"pfss_cr{cr}_r{mag_reduce}.pkl")
+    pickle_path = os.path.join(pickle_dir, f"pfss_cr{cr}_r{mag_reduce}_{inst}.pkl")
 
     output = load_pfss(pickle_path)
     if not output:
         output, elapsed = compute_pfss(br_safe, pickle_path)  # , nrho, rss
 
-    # print("mag_reduce = ", mag_reduce)
-
-    # Get the fluxon locations
     floc_dir = f"{datdir}/batches/{batch}/cr{cr}/floc"
-    floc_path   = f"{floc_dir}/floc_cr{cr}_r{mag_reduce}_f{nwant}.dat"
-    open_path   = f"{floc_dir}/floc_open_cr{cr}_r{mag_reduce}_f{nwant}.dat"
-    closed_path = f"{floc_dir}/floc_closed_cr{cr}_r{mag_reduce}_f{nwant}.dat"
+    floc_path   = f"{floc_dir}/floc_cr{cr}_r{mag_reduce}_f{nwant}_{inst}.dat"
+    open_path   = f"{floc_dir}/floc_open_cr{cr}_r{mag_reduce}_f{nwant}_{inst}.dat"
+    closed_path = f"{floc_dir}/floc_closed_cr{cr}_r{mag_reduce}_f{nwant}_{inst}.dat"
 
-    f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch, cr=cr)
+    # print(closed_path, "\n\n\n")
+    f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch, configs=configs)
 
     # Trace pfss field lines
     skip_num = 'x'
@@ -163,14 +165,19 @@ def get_pfss(configs=None):
 #
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate a fluxon mapping from a GONG-sourced PFSS coronal field solution.')
-    configs = configurations()
-    parser.add_argument('--cr', type=int, default=configs.get('rotations')[0], help='Carrington Rotation')
-    parser.add_argument('--nwant', type=int, default=configs.get('fluxon_count')[0], help='Number of fluxons wanted')
-    parser.add_argument('--magfile', type=str, default=None, help='Magnetogram file')
+    # configs_t = configurations()
+    parser.add_argument('--cr', type=int, default=2270, help='Carrington Rotation')
+    parser.add_argument('--nwant', type=int, default=100, help='Number of fluxons wanted')
+    parser.add_argument('--magpath', type=str, default=None, help='Magnetogram file')
     parser.add_argument('--force', type=int, default=0, help='Force computation of PFSS mapping')
-    configs = configurations(args=parser.parse_args())
+    parser.add_argument('--adapt', type=int, default=0, help='Use ADAPT magnetograms')
+    args = parser.parse_args()
+    configs = configurations(args=args)
 
-
+    # print("\n\n\n\n\n\n|\n|\n|\n A:")
+    # print(args.magpath)
+    # print(configs["magpath"])
+    # print("\n\n\n\n\n\n|\n|\n|\n")
 
     # Run the main function
     get_pfss(configs)

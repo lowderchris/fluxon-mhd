@@ -8,7 +8,7 @@ get_hilbert_footpoints - Traces Magnetogram to get Footpoints using a Hilbert Cu
 =head1 SYNOPSIS
 
     use pipe_helper;
-    my ($floc, $N_actual) = get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $process_magnetogram);
+    my ($floc, $N_actual) = get_hilbert_footpoints($flocdir, $flocpath, $magfile, $n_fluxons_wanted, $process_magnetogram);
 
 =head1 DESCRIPTION
 
@@ -20,7 +20,7 @@ footpoint placement, and data writing.
 
 =head2 get_hilbert_footpoints
 
-       get_hilbert_footpoints($flocdir, $flocfile, $magfile, $n_fluxons_wanted, $process_magnetogram);
+       get_hilbert_footpoints($flocdir, $flocpath, $magfile, $n_fluxons_wanted, $process_magnetogram);
 
 This function does the following:
 
@@ -44,7 +44,7 @@ This function does the following:
 
 =item * C<$flocdir>: Directory where the footpoint file is located or will be saved.
 
-=item * C<$flocfile>: File name for the footpoints.
+=item * C<$flocpath>: File name for the footpoints.
 
 =item * C<$magfile>: Path to magnetogram file to be traced.
 
@@ -85,9 +85,15 @@ use PDL;
 use PDL::NiceSlice;
 
 sub get_hilbert_footpoints {
-    my ( $flocdir, $flocfile, $magfile, $n_fluxons_wanted,
-        $process_magnetogram, $adapt )
-      = @_;
+    my ( %configs, $process_magnetogram ) = @_;    # get the hash reference
+
+    my $magfile          = $configs{'magfile'};
+    my $magpath          = $configs{'magpath'};
+    my $flocdir          = $configs{'flocdir'};
+    my $flocfile         = $configs{'flocfile'};
+    my $flocpath         = $configs{'flocpath'};
+    my $adapt            = $configs{'adapt'};
+    my $n_fluxons_wanted = $configs{'n_fluxons_wanted'};
 
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Tracing Magnetogram to get $n_fluxons_wanted Footpoints\n";
@@ -99,7 +105,7 @@ sub get_hilbert_footpoints {
 
     # $adapt = 0;
 
-    if ( !-e $flocfile ) {
+    if ( !-e $flocpath ) {
         $no_floc = 1;
         if ( !-d $flocdir ) {
             mkpath($flocdir) or die "Failed to create directory: $flocdir !\n";
@@ -112,12 +118,13 @@ sub get_hilbert_footpoints {
         print "\tRunning Hilbert Tracer...\n";
 
         # print "\t\tFile: ". shorten_path($magfile) . "\n\n";
-        print "\t\tFile: " . $magfile . "\n\n";
+        print "\t\tFile: " . $magpath . "\n\n";
 
         # print "\n\t**Reading Magnetogram...";
         # die;
-        my $smag = rfits($magfile);
-        print $smag->info;
+        my $smag = rfits($magpath);
+
+        # print $smag->info;
 
         # eval {my $smag = rfits($magfile)};
         # if ($@) {$smag = rfits($datdir.$magfile)};
@@ -182,19 +189,19 @@ sub get_hilbert_footpoints {
         ## Write to disk ############################################
         print "\n";
         print "\t\tWriting Result...";
-        wcols $floc->transpose, $flocfile;
+        wcols $floc->transpose, $flocpath;
         print "Success! File saved to:";
-        print "\n\t\t\t " . shorten_path($flocfile);
+        print "\n\t\t\t " . shorten_path($flocpath);
         print "\n";
     }
     else {
-        $floc     = rcols $flocfile;
+        $floc     = rcols $flocpath;
         $floc     = $floc->transpose;
         $N_actual = int( ( $floc->nelem ) );
         print "\n\t\tFound a $N_actual footpoint file on Disk:";
-        my $flocfile_short = shorten_path( $flocfile, 5 );
+        my $flocpath_short = shorten_path( $flocpath, 5 );
 
-        print "\n\t\t\t$flocfile_short\n";
+        # print "\n\t\t\t$flocpath_short\n";
     }
     print "\n\t\t\t```````````````````````````````\n\n\n";
     return $floc, $N_actual;
