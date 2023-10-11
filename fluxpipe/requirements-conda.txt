@@ -183,7 +183,6 @@ traitlets
 typing-extensions
 tzdata
 urllib3
-versioneer
 wcwidth
 wheel
 wrapt

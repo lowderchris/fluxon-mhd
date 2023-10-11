@@ -27,3 +27,4 @@ requests
 bs4
 lxml
 zeep
+versioneer

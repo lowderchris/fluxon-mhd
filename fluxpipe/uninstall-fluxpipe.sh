@@ -19,6 +19,8 @@ sed -i.bak2 '/eval "$$(perl -I$PL_PREFIX\/lib\/perl5\/lib\/perl5 -Mlocal::lib=$P
 
 # Deactivate and remove conda environment
 conda deactivate
+conda deactivate
+conda deactivate
 conda env remove -n fluxenv
 conda deactivate
 
@@ -32,13 +34,14 @@ rm -rf "$FL_PREFIX/fluxpipe/.pytest_cache"
 rm -rf "$FL_PREFIX/fluxpipe/pm_to_blib"
 
 
-# Uninstall Perl modules installed via cpanm
-# cd "$PL_PREFIX"
-# cpanm --uninstall File::ShareDir PDL::Graphics::Gnuplot Math::RungeKutta
-# ... Add other dependencies to be removed ...
 
 # Optional sections are kept commented.
 # Uncomment them if you want to use them and ensure you understand the repercussions.
+
+# Optional: Uninstall Perl modules installed via cpanm
+# cd "$PL_PREFIX"
+# cpanm --uninstall File::ShareDir PDL::Graphics::Gnuplot Math::RungeKutta
+# ... Add other dependencies to be removed ...
 
 # Optional: Uninstall perlbrew and its installations (Warning: this will remove ALL perlbrew installations)
 # perlbrew off
