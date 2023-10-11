@@ -222,7 +222,6 @@ TO_INST_PM = fluxpipe/.DS_Store \
 	fluxpipe/__pycache__/__init__.cpython-311.pyc \
 	fluxpipe/__pycache__/_version.cpython-310.pyc \
 	fluxpipe/__pycache__/_version.cpython-311.pyc \
-	fluxpipe/_version.py \
 	fluxpipe/config/__init__.py \
 	fluxpipe/config/config.ini \
 	fluxpipe/fidoclients/ADAPTClient.py \
@@ -980,7 +979,6 @@ pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	  'fluxpipe/__pycache__/__init__.cpython-311.pyc' '$(INST_LIB)/fluxpipe/__pycache__/__init__.cpython-311.pyc' \
 	  'fluxpipe/__pycache__/_version.cpython-310.pyc' '$(INST_LIB)/fluxpipe/__pycache__/_version.cpython-310.pyc' \
 	  'fluxpipe/__pycache__/_version.cpython-311.pyc' '$(INST_LIB)/fluxpipe/__pycache__/_version.cpython-311.pyc' \
-	  'fluxpipe/_version.py' '$(INST_LIB)/fluxpipe/_version.py' \
 	  'fluxpipe/config/__init__.py' '$(INST_LIB)/fluxpipe/config/__init__.py' \
 	  'fluxpipe/config/config.ini' '$(INST_LIB)/fluxpipe/config/config.ini' \
 	  'fluxpipe/fidoclients/ADAPTClient.py' '$(INST_LIB)/fluxpipe/fidoclients/ADAPTClient.py' \
