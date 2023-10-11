@@ -90,11 +90,10 @@ conda activate fluxenv
 echo "Fluxpipe installation complete!\n\n"
 echo "Remember to run 'conda activate fluxenv' before running 'python fluxpipe/fluxpipe/runners/config_runner.py'\n\n"
 
-# read "response?Do you want to test the config_runner? (yes/no): "
-
-# if [[ "$response" == "yes" || "$response" == "y" ]]; then
-#     echo "Running the file..."
-#     chmod +x $FL_PREFIX/fluxpipe/test/run_config.sh
-#     .$FL_PREFIX/fluxpipe/test/run_config.sh
-# fi
+read "response?Do you want to test the config_runner? ([yes]/no): "
+if [[ "$response" == "yes" || "$response" == "y" || "$response" == "" ]]; then
+    echo "Running the file..."
+    cd $FL_PREFIX/fluxpipe/fluxpipe
+    python runners/config_runner.py
+fi
 

@@ -113,7 +113,6 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
     fl_prefix = os.environ.get("FL_PREFIX", "")
     config_path = f"{fl_prefix}/fluxpipe/fluxpipe/config/{config_filename}"
     config_path = os.path.abspath(config_path)
-    print(config_path, "\n\n\n")
 
     # Search for the configuration file in the current directory and subdirectories
     if not os.path.exists(config_path):
