@@ -14,14 +14,16 @@ The whole installation process is being integrated into the makefile. See instal
   ``PL_PATH="/Users/cgilbert/perl5/perlbrew/perls/perl-5.32.0"``
   ``FL_PATH="/Users/cgilbert/vscode/fluxons/fluxon-mhd"``
 
+#### **If you don't have python installed, get anaconda:**
+
+- Download the installer from [https://www.anaconda.com/products/individual](https://www.anaconda.com/products/individual)
+- Run the installer
+
 #### Build and Run the Makefile
 
 ``perl Makefile.PL``
 ``cd ..``
 ``make everything`` (The main fluxon-mhd one)
-
-
-
 
 ## Manual Installation --------------------------------------
 
