@@ -31,10 +31,10 @@ pdlinstall:
 	/bin/sh -c 'cd pdl; make install;';
 
 install_fluxpipe:
-	cd fluxpipe/ && make install_fluxpipe;
+	@cd fluxpipe/ && make install_fluxpipe;
 
 uninstall_fluxpipe:
-	cd fluxpipe/ && make uninstall_fluxpipe;
+	@cd fluxpipe/ && make uninstall_fluxpipe;
 
 clean:
 	rm -f *~ \#* ; \
@@ -49,5 +49,10 @@ realclean: clean
 	rm -rf sandbox
 
 uninstall:
-	rm -r $(FL_PREFIX)/lib/libflux.a $(FL_PREFIX)/include/flux ;
-	cd fluxpipe/ && make uninstall_fluxpipe;
+	@echo "\nUninstalling FLUX...";
+	@-rm -rf $(FL_PREFIX)/lib/libflux.a || true;
+	@-rm -rf $(FL_PREFIX)/include/flux || true;
+	@echo "\tFlux uninstall complete.\n";
+
+	@cd fluxpipe/ && make uninstall_fluxpipe;
+

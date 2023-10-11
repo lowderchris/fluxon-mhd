@@ -8,22 +8,33 @@ If you don't use zsh, you'll need to substitute the shell you use.
 
 The whole installation process is being integrated into the makefile. See install_flux.sh.
 
-#### Put the PL and FL_PREFIX paths into PREFIX_PATHS.sh
+#### 1. If you don't have python installed, get anaconda:
+
+- Download and run the installer from [https://www.anaconda.com/products/individual](https://www.anaconda.com/products/individual)
+
+#### 2. If you don't have perl installed, get perlbrew:
+
+- check ``which perl`` to see if you have perl
+- if not, follow the manual installation instructions under the perl section, below. Don't worry about the cpanminus part.
+
+#### 3. Put the PL and FL_PREFIX paths into /fluxpipe/PREFIX_PATHS.sh
 
  Examples:
   ``PL_PATH="/Users/cgilbert/perl5/perlbrew/perls/perl-5.32.0"``
   ``FL_PATH="/Users/cgilbert/vscode/fluxons/fluxon-mhd"``
 
-#### **If you don't have python installed, get anaconda:**
+#### 4. Build and Run the Makefile
 
-- Download the installer from [https://www.anaconda.com/products/individual](https://www.anaconda.com/products/individual)
-- Run the installer
+* Go to the fluxpipe directory
+  ``cd fluxon-mhd/fluxpipe``
+* Build the makefile
+  ``perl Makefile.PL``
+* Return to the main directory
+  ``cd ..``
+* Run the top-level make command
+  ``make everything``
 
-#### Build and Run the Makefile
-
-``perl Makefile.PL``
-``cd ..``
-``make everything`` (The main fluxon-mhd one)
+Good job! Flux and Fluxpipe should both be working now.
 
 ## Manual Installation --------------------------------------
 

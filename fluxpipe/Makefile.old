@@ -218,28 +218,16 @@ TO_INST_PM = fluxpipe/.DS_Store \
 	fluxpipe/_Inline/lib/auto/hilbert_c5c4/hilbert_c5c4.bundle \
 	fluxpipe/_Inline/lib/auto/hilbert_c5c4/hilbert_c5c4.inl \
 	fluxpipe/__init__.py \
-	fluxpipe/__pycache__/__init__.cpython-310.pyc \
-	fluxpipe/__pycache__/__init__.cpython-311.pyc \
-	fluxpipe/__pycache__/_version.cpython-310.pyc \
-	fluxpipe/__pycache__/_version.cpython-311.pyc \
 	fluxpipe/_version.py \
 	fluxpipe/config/__init__.py \
 	fluxpipe/config/config.ini \
 	fluxpipe/fidoclients/ADAPTClient.py \
 	fluxpipe/fidoclients/__init__.py \
-	fluxpipe/fidoclients/__pycache__/ADAPTClient.cpython-310.pyc \
-	fluxpipe/fidoclients/__pycache__/__init__.cpython-310.pyc \
 	fluxpipe/helpers/__init__.py \
-	fluxpipe/helpers/__pycache__/__init__.cpython-310.pyc \
-	fluxpipe/helpers/__pycache__/__init__.cpython-311.pyc \
-	fluxpipe/helpers/__pycache__/pipe_helper.cpython-310.pyc \
-	fluxpipe/helpers/__pycache__/pipe_helper.cpython-311.pyc \
 	fluxpipe/helpers/perl_paths.pm \
 	fluxpipe/helpers/pipe_helper.pm \
 	fluxpipe/helpers/pipe_helper.py \
 	fluxpipe/plotting/__init__.py \
-	fluxpipe/plotting/__pycache__/__init__.cpython-310.pyc \
-	fluxpipe/plotting/__pycache__/plot_fieldmap.cpython-310.pyc \
 	fluxpipe/plotting/plot_bmag.py \
 	fluxpipe/plotting/plot_fieldmap.py \
 	fluxpipe/plotting/plot_fr.py \
@@ -976,28 +964,16 @@ pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	  'fluxpipe/_Inline/lib/auto/hilbert_c5c4/hilbert_c5c4.bundle' '$(INST_LIB)/fluxpipe/_Inline/lib/auto/hilbert_c5c4/hilbert_c5c4.bundle' \
 	  'fluxpipe/_Inline/lib/auto/hilbert_c5c4/hilbert_c5c4.inl' '$(INST_LIB)/fluxpipe/_Inline/lib/auto/hilbert_c5c4/hilbert_c5c4.inl' \
 	  'fluxpipe/__init__.py' '$(INST_LIB)/fluxpipe/__init__.py' \
-	  'fluxpipe/__pycache__/__init__.cpython-310.pyc' '$(INST_LIB)/fluxpipe/__pycache__/__init__.cpython-310.pyc' \
-	  'fluxpipe/__pycache__/__init__.cpython-311.pyc' '$(INST_LIB)/fluxpipe/__pycache__/__init__.cpython-311.pyc' \
-	  'fluxpipe/__pycache__/_version.cpython-310.pyc' '$(INST_LIB)/fluxpipe/__pycache__/_version.cpython-310.pyc' \
-	  'fluxpipe/__pycache__/_version.cpython-311.pyc' '$(INST_LIB)/fluxpipe/__pycache__/_version.cpython-311.pyc' \
 	  'fluxpipe/_version.py' '$(INST_LIB)/fluxpipe/_version.py' \
 	  'fluxpipe/config/__init__.py' '$(INST_LIB)/fluxpipe/config/__init__.py' \
 	  'fluxpipe/config/config.ini' '$(INST_LIB)/fluxpipe/config/config.ini' \
 	  'fluxpipe/fidoclients/ADAPTClient.py' '$(INST_LIB)/fluxpipe/fidoclients/ADAPTClient.py' \
 	  'fluxpipe/fidoclients/__init__.py' '$(INST_LIB)/fluxpipe/fidoclients/__init__.py' \
-	  'fluxpipe/fidoclients/__pycache__/ADAPTClient.cpython-310.pyc' '$(INST_LIB)/fluxpipe/fidoclients/__pycache__/ADAPTClient.cpython-310.pyc' \
-	  'fluxpipe/fidoclients/__pycache__/__init__.cpython-310.pyc' '$(INST_LIB)/fluxpipe/fidoclients/__pycache__/__init__.cpython-310.pyc' \
 	  'fluxpipe/helpers/__init__.py' '$(INST_LIB)/fluxpipe/helpers/__init__.py' \
-	  'fluxpipe/helpers/__pycache__/__init__.cpython-310.pyc' '$(INST_LIB)/fluxpipe/helpers/__pycache__/__init__.cpython-310.pyc' \
-	  'fluxpipe/helpers/__pycache__/__init__.cpython-311.pyc' '$(INST_LIB)/fluxpipe/helpers/__pycache__/__init__.cpython-311.pyc' \
-	  'fluxpipe/helpers/__pycache__/pipe_helper.cpython-310.pyc' '$(INST_LIB)/fluxpipe/helpers/__pycache__/pipe_helper.cpython-310.pyc' \
-	  'fluxpipe/helpers/__pycache__/pipe_helper.cpython-311.pyc' '$(INST_LIB)/fluxpipe/helpers/__pycache__/pipe_helper.cpython-311.pyc' \
 	  'fluxpipe/helpers/perl_paths.pm' '$(INST_LIB)/fluxpipe/helpers/perl_paths.pm' \
 	  'fluxpipe/helpers/pipe_helper.pm' '$(INST_LIB)/fluxpipe/helpers/pipe_helper.pm' \
 	  'fluxpipe/helpers/pipe_helper.py' '$(INST_LIB)/fluxpipe/helpers/pipe_helper.py' \
 	  'fluxpipe/plotting/__init__.py' '$(INST_LIB)/fluxpipe/plotting/__init__.py' \
-	  'fluxpipe/plotting/__pycache__/__init__.cpython-310.pyc' '$(INST_LIB)/fluxpipe/plotting/__pycache__/__init__.cpython-310.pyc' \
-	  'fluxpipe/plotting/__pycache__/plot_fieldmap.cpython-310.pyc' '$(INST_LIB)/fluxpipe/plotting/__pycache__/plot_fieldmap.cpython-310.pyc' \
 	  'fluxpipe/plotting/plot_bmag.py' '$(INST_LIB)/fluxpipe/plotting/plot_bmag.py' \
 	  'fluxpipe/plotting/plot_fieldmap.py' '$(INST_LIB)/fluxpipe/plotting/plot_fieldmap.py' \
 	  'fluxpipe/plotting/plot_fr.py' '$(INST_LIB)/fluxpipe/plotting/plot_fr.py' \
@@ -1053,13 +1029,13 @@ config ::
 everything: install_fluxpipe
 
 install_fluxpipe:
-	@./install-fluxpipe.sh;
+	./install-fluxpipe.sh;
 
 install_fp:
 	./install-fluxpipe.sh;
 
 uninstall_fluxpipe:
-	@./uninstall-fluxpipe.sh
+	./uninstall-fluxpipe.sh
 
 uninstall_fp:
 	./uninstall-fluxpipe.sh

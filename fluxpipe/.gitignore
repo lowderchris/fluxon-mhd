@@ -16,8 +16,9 @@ sandbox/
 
 #any Inline stuff
 _Inline/
-include/flux/
 
+include/flux/
+fluxpipe.egg-info
 blib/
 data/
 local/

@@ -20,13 +20,13 @@ sub MY::postamble {
 everything: install_fluxpipe
 
 install_fluxpipe:
-	./install-fluxpipe.sh;
+	@./install-fluxpipe.sh;
 
 install_fp:
 	./install-fluxpipe.sh;
 
 uninstall_fluxpipe:
-	./uninstall-fluxpipe.sh
+	@./uninstall-fluxpipe.sh
 
 uninstall_fp:
 	./uninstall-fluxpipe.sh

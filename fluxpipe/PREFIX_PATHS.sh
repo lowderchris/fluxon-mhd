@@ -1,10 +1,12 @@
 #!/bin/zsh
 
-# Definitions
+# Definitions: Adjust these values to your system configuration
 PL_PATH="/Users/cgilbert/perl5/perlbrew/perls/perl-5.32.0"
 FL_PATH="/Users/cgilbert/vscode/fluxons/fluxon-mhd"
 SHELL_RC="~/.zshrc"
 
+
+## Do not adjust this code --------------------------------
 # Check if PL_PREFIX is not set
 if [ -z "$PL_PREFIX" ]; then
     export PL_PREFIX=$PL_PATH
