@@ -187,7 +187,7 @@ def update_magdir_paths(the_config):
     #     print(f"\t{key}: \t", the_config.get(key, None))
     CR = the_config.get('cr', None)
     if not CR:
-        print("Preloaded Configs")
+        # print("Preloaded Configs")
         return
     CR = the_config['cr']
     adapt_select = the_config['adapt_select']
@@ -953,7 +953,7 @@ import os.path
 import sys
 # import ADAPTClient
 import matplotlib as mpl
-mpl.use('qt5agg')
+# mpl.use('qt5agg')
 import matplotlib.pyplot as plt # Import libraries
 # from sunpy.net.dataretriever import GenericClient
 

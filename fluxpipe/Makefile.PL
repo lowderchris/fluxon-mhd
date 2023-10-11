@@ -1,14 +1,34 @@
-use ExtUtils::MakeMaker;
 use strict;
 use warnings;
+use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    NAME => 'fluxpipe',
+    NAME      => 'fluxpipe',
+    VERSION   => '0.01',
+    PREREQ_PM => {},           # e.g., { 'Some::Module' => 0.01 },
+    dist      => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean     => { FILES    => 'fluxpipe-*' },
 
-    # VERSION_FROM => 100;    #'fluxpipe/fluxpipe/magnetogram2wind.pdl',
+    # EXE_FILES => ['uninstaller_script.sh'],
 
-    # PREREQ_PM    => {
-    #     Some::Dependency => 0.01,
-    #     Another::Dependency => 1.23,
-    # },
+    # Add other attributes as needed
 );
+
+sub MY::postamble {
+    return <<'MAKEFILE';
+
+everything: install_fluxpipe
+
+install_fluxpipe:
+	./install-fluxpipe.sh;
+
+install_fp:
+	./install-fluxpipe.sh;
+
+uninstall_fluxpipe:
+	./uninstall-fluxpipe.sh
+
+uninstall_fp:
+	./uninstall-fluxpipe.sh
+MAKEFILE
+}

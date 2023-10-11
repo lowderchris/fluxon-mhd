@@ -1,6 +1,9 @@
 README.md
+setup.cfg
 setup.py
+versioneer.py
 fluxpipe/__init__.py
+fluxpipe/_version.py
 fluxpipe.egg-info/PKG-INFO
 fluxpipe.egg-info/SOURCES.txt
 fluxpipe.egg-info/dependency_links.txt

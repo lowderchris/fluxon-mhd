@@ -303,7 +303,7 @@ def plot_wind_map_detailed(configs):
         nfluxon = arr.shape[1]
     except IndexError as e:
         print("IndexError: ", e)
-        print("Wind Calculation Failed, Rerun.")
+        print("Not enough open field lines. Increase Fluxon count.")
         exit()
 
     # Convert coords to correct coords
