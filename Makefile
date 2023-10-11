@@ -30,7 +30,6 @@ pdltest:
 pdlinstall:
 	/bin/sh -c 'cd pdl; make install;';
 
-# .PHONY: install_fluxpipe;
 install_fluxpipe:
 	cd fluxpipe/ && make install_fluxpipe;
 
