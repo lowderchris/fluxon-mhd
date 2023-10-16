@@ -6,7 +6,6 @@ use PDL::Constants qw/PI/;
 use File::Temp qw/tempfile/;
 
 use Test::More;
-# use Test::More tests=>37;
 
 BEGIN {use_ok('Flux');}
 
