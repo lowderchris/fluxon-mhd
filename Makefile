@@ -33,6 +33,7 @@ pdlinstall:
 
 clean:
 	rm -f *~ \#* ; \
+	rm -f pdl/*.png; \
 	cd lib; \
 	make clean; \
 	cd ..; \
