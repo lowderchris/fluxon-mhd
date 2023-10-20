@@ -38,6 +38,7 @@ uninstall_fluxpipe:
 
 clean:
 	rm -f *~ \#* ; \
+	rm -f pdl/*.png; \
 	cd lib; \
 	make clean; \
 	cd ..; \
