@@ -16,3 +16,10 @@ sandbox/
 
 #any Inline stuff
 _Inline/
+
+#fluxpipe related files
+include/flux/
+blib/
+data/
+local/
+perltidy.ERR
