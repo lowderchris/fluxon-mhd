@@ -12,17 +12,12 @@ Given a world and list of fluxons, generates a mapping of the solar wind flow al
 
 =cut
 
-
-
-sub map_fluxon_flow {
+sub map_fluxon_flow_single {
     my $before = clock_gettime();
 
     my $fn = shift;
     my $fluxons = shift;
     my @fluxons = @{$fluxons};
-
-
-
 
 # Generate some blank storage arrays
 my @fps = ();   # Fluxon array position
@@ -39,17 +34,12 @@ my @fre2 = ();
 # Loop through open fluxons and generate wind profiles
 for my $fid(0..scalar(@fluxons)-1){
 
-
-    # if ($fid>0){
-    # print "\r", '  Calculating fluxon:', $fid, '/', scalar(@fluxons);
-    # }
     my $me = $fluxons[$fid];
 
     # Check for open fieldlines
     my $st_open = ($me->{fc_start}->{label}==-1);
     my $en_open = ($me->{fc_end}->{label}==-2);
     if ($me->{plasmoid} || ($st_open + $en_open != 1)){
-
         next; 
     }
 
