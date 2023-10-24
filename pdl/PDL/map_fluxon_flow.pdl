@@ -1,88 +1,240 @@
-use strict;
-use warnings;
-use PDL::NiceSlice;
-use PDL::Options;
-use Time::HiRes qw(clock_gettime);
+=head1 NAME
 
-=head2 map_fluxon_flow
-
-=for ref
-
-Given a world and list of fluxons, generates a mapping of the solar wind flow along these fluxon structures.
+Fluxon Flow Mapper - Parallelized Solar Wind Flow Mapping Along Fluxon Structures
 
 =cut
 
+use strict;
+use warnings;
+use PDL;
+use PDL::NiceSlice;
+use PDL::Options;
+use Parallel::ForkManager;
+use PDL::IO::Storable;
+use File::Path qw(make_path);
+use Time::HiRes qw(clock_gettime);
+use Data::Dumper;
 
+# Control Flags
+$PDL::verbose = 0;
 
-sub map_fluxon_flow {
-    my $before = clock_gettime();
+=head1 DESCRIPTION
 
-    my $fn = shift;
+This Perl module provides functionality to map the solar wind flow along fluxon structures in a parallelized manner. It uses the Parallel::ForkManager library to manage concurrent processes and PDL (Perl Data Language) for numerical computations.
+
+=head1 AUTHOR
+
+Gilly <gilly@swri.org> and others!
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+=cut
+
+=head2 map_fluxon_flow_parallel_master
+
+=over
+
+=item B<Description>
+
+Given a world and list of fluxons, this function generates a mapping of the solar wind flow along these fluxon structures. It uses parallel processing to speed up the calculations.
+
+=item B<Parameters>
+
+=over
+
+=item C<$file_name>: The name of the output file where the results will be saved.
+
+=item C<$fluxons>: A reference to an array containing the fluxons to be mapped.
+
+=item C<$max_processes>: (Optional) The maximum number of parallel processes to use. Defaults to the value of C<$concurrency>.
+
+=back
+
+=item B<Returns>
+
+The function writes the results to disk and returns nothing.
+
+=back
+
+=cut
+
+my $concurrency = 11;
+my $temp_dir = "fluxpipe/windtemp";
+
+# Count the number of open and closed fluxons
+my $n_closed = 0;
+my @open_inds = ();
+my $n_open = 0;
+
+sub map_fluxon_flow_parallel_master {
+    my $file_name      = shift;
     my $fluxons = shift;
     my @fluxons = @{$fluxons};
+    make_path($temp_dir) unless -d $temp_dir;
+    my $max_processes = shift || $concurrency;    # Set the number of parallel processes
+    my $highest_fid_done = 0;
+    my $before = clock_gettime();
 
+    my $n_choke = 12;
+    my $choke = 0;
 
+    # Count the number of open and closed fluxons
+    for my $fid ( 0 .. scalar(@fluxons) - 1 ) {
+        ## Condition the Input ####
+        my $me = $fluxons[$fid];
 
-
-# Generate some blank storage arrays
-my @fps = ();   # Fluxon array position
-my @phb = ();   # Begining coordinates
-my @thb = ();
-my @phe = ();   # End coordinates
-my @the = ();
-my @vrb = ();   # Beginning and end wind velocity
-my @vre = ();
-my @frb = ();   # Beginning and end expansion factors
-my @fre = ();
-my @fre2 = ();
-
-# Loop through open fluxons and generate wind profiles
-for my $fid(0..scalar(@fluxons)-1){
-
-
-    # if ($fid>0){
-    # print "\r", '  Calculating fluxon:', $fid, '/', scalar(@fluxons);
-    # }
-    my $me = $fluxons[$fid];
-
-    # Check for open fieldlines
-    my $st_open = ($me->{fc_start}->{label}==-1);
-    my $en_open = ($me->{fc_end}->{label}==-2);
-    if ($me->{plasmoid} || ($st_open + $en_open != 1)){
-
-        next; 
+        # Check for open fieldline, and skip if not
+        my $st_open = ( $me->{fc_start}->{label} == -1 );
+        my $en_open = ( $me->{fc_end}->{label} == -2 );
+        if ( $me->{plasmoid} || ( $st_open + $en_open != 1 ) ) {
+            $n_closed = $n_closed + 1;
+        } else {
+            $n_open = $n_open + 1;
+            push(@open_inds, $fid);
+        }
     }
 
-    # Find the transonic wind solution
-    (my $farr, my $fr, my $bth, my $bph) = gen_fluxon_tflow($me);
+    my $itercount = -1;
+    my $fork_manager = Parallel::ForkManager->new( $max_processes, $temp_dir );
 
-    # Append any needed values and move along home
-    # Note to distinguish between fluxons ends...
-    push(@fps, $fid);
-    push(@phb, squeeze($bph(0,0)));
-    push(@thb, squeeze($bth(0,0)));
-    push(@phe, squeeze($bph(0,1)));
-    push(@the, squeeze($bth(0,1)));
-    push(@vrb, $farr(1,0));
-    push(@vre, $farr(1,-1));
-    push(@frb, $fr(1,1));
-    push(@fre, $fr(-2,1));
-    push(@fre2, $fr(-1,1));
+    # Generate a blank storage array
+    my @results = ();
+
+    # Set the finish callback to update $highest_fid_done and print it
+    $fork_manager->run_on_finish(sub {
+        $itercount = $itercount + 1;
+        my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $result) = @_;
+        if ($exit_code == 0) {
+            push(@results, $result);
+            my $this_fid = $result->{fps}+1;
+
+            if ($this_fid > $highest_fid_done) {
+                $highest_fid_done = $this_fid;
+
+                # Print timing information
+                my $after   = clock_gettime();
+                my $elapsed = $after - $before;
+                my $round_elapsed = rint($elapsed*10) / 10;
+                my $remaining = $n_open - $highest_fid_done;
+                my $time_each = $elapsed / $highest_fid_done;
+                my $time_remaining = $remaining * $time_each;
+                my $round_remain = rint($time_remaining*10) / 10;
+                my $round_minutes = rint($round_remain / 6)/10;
+
+                print "\r", "\t\t\tCalculated fluxons: ", $highest_fid_done, ' of ', $n_open, ", ", $round_elapsed, "(s) elapsed, ", $round_remain, "(s) [$round_minutes mins] remaining......";
+            }
+        }
+    });
+
+    my $n_tot = scalar(@fluxons);
+    my $n_act = 2*($n_tot - $n_open) + $n_open;
+    print "\n\t\tRunning with $max_processes Cores on $n_open open Fluxons out of $n_tot total Fluxons from $n_act footpoints!\n\n\t\tBeginning Calculation...\n\n";
+
+    $PDL::verbose = 0;
+    no warnings;
+
+    my $max_fid = scalar(@open_inds) - 1;
+    if ($choke){
+        if ($n_choke < $max_fid){
+            $max_fid = $n_choke;
+        }
+    }
+    for my $fid ( 0 .. $max_fid - 1 ) {
+        ## Inside the Loop ##################################################
+        # Start a new process and proceed to the next iteration
+        $fork_manager->start and next;
+
+        ## Condition the Input ####
+        my $me = $fluxons[$fid];
+
+        ## Run the Main Algorithm ####
+        # Find the transonic wind solution
+        (my $farr, my $fr, my $bth, my $bph) = gen_fluxon_tflow($me);
+
+
+        ## Report the Results ####
+        # Create a result hash
+        my $result = {
+            fps  => $fid,                       # Fluxon ID
+            phb  => squeeze( $bph ( 0, 0 ) ),   # Phi at the base
+            thb  => squeeze( $bth ( 0, 0 ) ),   # Theta at the base
+            phe  => squeeze( $bph ( 0, 1 ) ),   # Phi at the end
+            the  => squeeze( $bth ( 0, 1 ) ),   # Theta at the end
+            vrb  => $farr ( 1, 0 ),             # Radial velocity at the base
+            vre  => $farr ( 1, -1 ),            # Radial velocity at the end
+            frb  => $fr   ( 1,  1 ),            # flux expansion at the base
+            fre  => $fr   ( -2, 1 ),            # flux expansion at the end
+            fre2 => $fr   ( -1, 1 ),            # flux expansion at the middle
+        };
+
+        # Finish the process and return the result
+        $fork_manager->finish( 0, $result );
+    }
+
+    ## Outside of the Loop ## #############################################
+    $fork_manager->wait_all_children;    # Wait for all processes to finish
 
     my $after   = clock_gettime();
     my $elapsed = $after - $before;
     my $round_elapsed = rint($elapsed*10) / 10;
-    print "\r", '  Calculated fluxons:', $fid, '/', scalar(@fluxons), ", ", $round_elapsed, "(s) elapsed";
-    
+    print "\n\n\t\tWind Calculation Complete\n\n";
+    ## Output the Results ##
+    # Sort the results by fps
+    @results = sort { $a->{fps} <=> $b->{fps} } @results;
 
-    # Output this data to disk
-    wcols pdl(@fps), pdl(@phb), pdl(@thb), pdl(@phe), pdl(@the), squeeze(pdl(@vrb)), squeeze(pdl(@vre)), squeeze(pdl(@frb)), squeeze(pdl(@fre)), squeeze(pdl(@fre2)), $fn; 
+    # Write the results to disk
+    wcols pdl( map { $_->{fps} } @results ),
+        pdl( map { $_->{phb} } @results ),
+        pdl( map { $_->{thb} } @results ),
+        pdl( map { $_->{phe} } @results ),
+        pdl( map { $_->{the} } @results ),
+        squeeze( pdl( map { $_->{vrb} } @results ) ),
+        squeeze( pdl( map { $_->{vre} } @results ) ),
+        squeeze( pdl( map { $_->{frb} } @results ) ),
+        squeeze( pdl( map { $_->{fre} } @results ) ),
+        squeeze( pdl( map { $_->{fre2} } @results ) ),
+        $file_name;
 
+    # delete the temp_dir
+    rmtree($temp_dir);
 }
 
-# Output this data to disk
-wcols pdl(@fps), pdl(@phb), pdl(@thb), pdl(@phe), pdl(@the), squeeze(pdl(@vrb)), squeeze(pdl(@vre)), squeeze(pdl(@frb)), squeeze(pdl(@fre)), squeeze(pdl(@fre2)), $fn; 
 
+if ($0 eq __FILE__) {
+    use PDL::AutoLoader;
+    use PDL;
+    use PDL::Transform;
+    use PDL::NiceSlice;
+    use PDL::Options;
+    use Flux;
+    use PDL::IO::Misc;
+    use File::Path;
+    use Time::HiRes qw(clock_gettime);
+    use File::Basename qw(fileparse);
+    use pipe_helper qw(configurations);
+
+    use pipe_helper qw(configurations);
+
+    my %configs = configurations();
+    my $datdir = $configs{datdir};
+    my $cr = 2160;
+    my $batch_name = "fluxon_paperfigs";
+
+    # Pathing
+    my $world_out_dir = $datdir."$batch_name/cr".$cr.'/rlx/';
+    my $full_world_path = $world_out_dir . "cr2160_relaxed_s4000.flux";
+    my $wind_out_dir = $datdir."$batch_name/cr".$cr.'/wind';
+    my $wind_out_file = "$wind_out_dir/radial_wind.dat";
+
+    # Loading the world
+    my $this_world_relaxed = read_world($full_world_path);
+    $this_world_relaxed->update_force(0);
+    my @fluxons = $this_world_relaxed->fluxons;
+
+    map_fluxon_flow_parallel_master($wind_out_file, \@fluxons);
 }
 
+1;
 __END__
