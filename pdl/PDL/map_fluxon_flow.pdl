@@ -136,7 +136,7 @@ sub map_fluxon_flow {
             $max_fid = $n_choke;
         }
     }
-    for my $fid ( 0 .. $max_fid - 1 ) {
+    for my $fid ( 0 .. $max_fid ) {
         ## Inside the Loop ##################################################
         # Start a new process and proceed to the next iteration
         $fork_manager->start and next;
