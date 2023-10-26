@@ -33,7 +33,7 @@ This library is free software; you can redistribute it and/or modify it under th
 
 =cut
 
-=head2 map_fluxon_flow_parallel_master
+=head2 map_fluxon_flow
 
 =over
 
