@@ -3,7 +3,15 @@
 # Ensure the script stops on first error
 set -e
 
+[[ ! $(pwd) =~ fluxpipe ]] && cd fluxpipe
+
 echo "\n\nInstalling FluxPipe..."
+
+echo "Setting up PREFIX_PATHS.sh"
+# Source the PREFIX_PATHS.sh script
+chmod +x PREFIX_PATHS.sh
+./PREFIX_PATHS.sh
+
 
 # Check if Homebrew is installed
 if ! command -v brew &>/dev/null; then
@@ -50,13 +58,7 @@ if command -v conda &>/dev/null; then
         yes | conda create -n fluxenv
         conda activate fluxenv
     fi
-        (
-        yes | conda install pip
-        yes | pip install -e .
-        yes | pip install -r requirements-pip.txt
-        )
-        source ~/.zshrc
-        conda activate fluxenv
+
 else
     echo "\tConda is not installed. Falling back to virtualenv and pip."
 
@@ -77,16 +79,22 @@ else
     pip install -r requirements-conda.txt || true
 fi
 
-
+echo "Python Environment Creation:"
+# cd fluxpipe
+(
+conda activate fluxenv
+yes | conda install pip
+yes | pip install -e .
+yes | pip install -r requirements-pip.txt
+)
+source ~/.zshrc
+conda activate fluxenv
 
 # make it so zshenv calls zshrc
 grep -qF "source ~/.zshrc" ~/.zshenv || echo "source ~/.zshrc" >> ~/.zshenv
 
+# echo the current directory
 
-
-# Source the PREFIX_PATHS.sh script
-chmod +x PREFIX_PATHS.sh
-./PREFIX_PATHS.sh
 
 # Check and install PDL and other dependencies
 cd $PL_PREFIX
@@ -102,11 +110,15 @@ cpanm Math::RungeKutta
 # ... Add other dependencies as needed ...
 
 # Install FLUXpipe pdl and python
-cd $FL_PREFIX/fluxpipe
+(
+cd $FL_MHDLIB/fluxpipe
 cpanm --installdeps .
-cpanm --notest --local-lib=local/ .
-echo 'export PERL5LIB=$FL_PREFIX/fluxpipe/local/lib/perl5:$PERL5LIB' >> ~/.zshrc
-
+cpanm --notest --local-lib=$FL_PREFIX .
+if ! grep -q 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' ~/.zshrc_custom; then
+    echo 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' >> ~/.zshrc_custom
+fi
+rm -rf blib\
+)
 
 
 echo "\n\nFluxpipe installation complete!\n\n"
@@ -121,6 +133,7 @@ echo -n "Do you want to test the config_runner? ([yes]/no): "
 read response
 if [[ "$response" == "yes" || "$response" == "y" || "$response" == "" ]]; then
     echo "Running the file..."
-    cd $FL_PREFIX/fluxpipe/fluxpipe
+    cd $FL_MHDLIB/fluxpipe/fluxpipe
+    conda activate fluxenv
     python runners/config_runner.py
 fi

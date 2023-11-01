@@ -21,18 +21,18 @@ sed -i.bak2 '/eval "$$(perl -I$PL_PREFIX\/lib\/perl5\/lib\/perl5 -Mlocal::lib=$P
 conda deactivate
 conda deactivate
 conda deactivate
-conda env remove -n fluxenv
+# conda env remove -n fluxenv
 conda deactivate
 
 # Remove files and directories
-rm -rf "$FL_PREFIX/fluxpipe/local"
-rm -rf "$FL_PREFIX/fluxpipe/fluxpipe.egg-info"
-rm -rf "$FL_PREFIX/fluxpipe/blib"
-rm -rf "$FL_PREFIX/fluxpipe/_Inline"
-rm -rf "$FL_PREFIX/fluxpipe/__pycache__"
-rm -rf "$FL_PREFIX/fluxpipe/.pytest_cache"
-rm -rf "$FL_PREFIX/fluxpipe/pm_to_blib"
-
+rm -rf "$FL_MHDLIB/fluxpipe/local"
+rm -rf "$FL_MHDLIB/fluxpipe/fluxpipe.egg-info"
+rm -rf "$FL_MHDLIB/fluxpipe/blib"
+rm -rf "$FL_MHDLIB/fluxpipe/_Inline"
+rm -rf "$FL_MHDLIB/fluxpipe/__pycache__"
+rm -rf "$FL_MHDLIB/fluxpipe/.pytest_cache"
+rm -rf "$FL_MHDLIB/fluxpipe/pm_to_blib"
+rm -fr "$FL_PREFIX"
 
 
 # Optional sections are kept commented.

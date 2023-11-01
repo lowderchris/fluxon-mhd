@@ -110,8 +110,10 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
         dict: Configuration settings as key-value pairs.
     """
     config_obj = configparser.ConfigParser()
-    fl_prefix = os.environ.get("FL_PREFIX", "")
+    fl_prefix = os.environ.get("FL_MHDLIB", "")
     config_path = f"{fl_prefix}/fluxpipe/fluxpipe/config/{config_filename}"
+    # print(config_path)
+    # print(os.getcwd())
     config_path = os.path.abspath(config_path)
 
     # Search for the configuration file in the current directory and subdirectories
