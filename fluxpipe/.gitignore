@@ -18,7 +18,5 @@ sandbox/
 _Inline/
 
 include/flux/
-fluxpipe.egg-info
 blib/
 data/
-local/
