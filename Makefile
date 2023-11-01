@@ -31,10 +31,12 @@ pdlinstall:
 	/bin/sh -c 'cd pdl; make install;';
 
 install_fluxpipe:
-	@./fluxpipe/install-fluxpipe.sh;
+	cd fluxpipe/ && make install_fluxpipe;
+# @./fluxpipe/install-fluxpipe.sh;
 
 uninstall_fluxpipe:
-	@./fluxpipe/uninstall-fluxpipe.sh;
+	cd fluxpipe/ && make uninstall_fluxpipe;
+# @./fluxpipe/uninstall-fluxpipe.sh;
 
 clean:
 	rm -f *~ \#* ; \
@@ -45,7 +47,6 @@ clean:
 	cd pdl; \
 	make clean; \
 	cd .. ; \
-	rm -rf /Users/cgilbert/vscode/fluxons/fluxon-local;
 
 realclean: clean
 	rm -rf sandbox

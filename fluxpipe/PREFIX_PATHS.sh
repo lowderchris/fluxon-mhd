@@ -33,7 +33,10 @@ fi
 
 # Ensure that ~/.zshrc sources $SHELL_RC_CUSTOM
 if ! grep -q "source ${SHELL_RC_CUSTOM}" "${HOME}/.zshrc"; then
+  echo "echo 'Loading ${SHELL_RC_CUSTOM}'" >> "${HOME}/.zshrc"
+  # source ${SHELL_RC_CUSTOM}
   echo "source ${SHELL_RC_CUSTOM}" >> "${HOME}/.zshrc"
+  echo 'echo "\t\t Loaded ${SHELL_RC_CUSTOM}"' >> "${HOME}/.zshrc"
   echo "Added source command to ${HOME}/.zshrc."
 else
   echo "The RC File ${HOME}/.zshrc already sources ${SHELL_RC_CUSTOM}."
@@ -50,7 +53,7 @@ update_var() {
         # If the line doesn't exist, append it
         echo "export $var_name=\"$new_value\"" >> "$SHELL_RC_CUSTOM"
         echo "Added $var_name to $SHELL_RC_CUSTOM:: $new_value"
-        change_count += 1
+        ((change_count+=1))
     elif [ "$current_value" = "$new_value" ]; then
         # If the value is the same, indicate no change
         a=1
@@ -59,7 +62,7 @@ update_var() {
         # If the line exists but the value is different, replace it
         sed -i '' "s|^export $var_name=.*|export $var_name=\"$new_value\"|" "$SHELL_RC_CUSTOM"
         echo "Updated $var_name in $SHELL_RC_CUSTOM to $new_value"
-        change_count += 1
+        ((change_count+=1))
     fi
 
     # Export the new value
@@ -95,6 +98,7 @@ append_var() {
 
 # Update or set the extracted variables
 update_var "SHELL_RC_CUSTOM" "$SHELL_RC_CUSTOM"
+update_var "SHELL_RC" "$SHELL_RC"
 update_var "RUN_SCRIPT" "$RUN_SCRIPT"
 update_var "PYTHON_DIR" "$PYTHON_DIR"
 update_var "PL_PREFIX" "$PL_PREFIX"
