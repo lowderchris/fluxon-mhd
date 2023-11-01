@@ -30,5 +30,8 @@ uninstall_fluxpipe:
 
 uninstall_fp:
 	./uninstall-fluxpipe.sh
+
+.PHONY: install_fluxpipe install_fp uninstall_fluxpipe uninstall_fp
+
 MAKEFILE
 }

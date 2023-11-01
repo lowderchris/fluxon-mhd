@@ -110,16 +110,12 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
         dict: Configuration settings as key-value pairs.
     """
     config_obj = configparser.ConfigParser()
-    fl_prefix = os.environ.get("FL_MHDLIB", "")
-    config_path = f"{fl_prefix}/fluxpipe/fluxpipe/config/{config_filename}"
-    # print(config_path)
-    # print(os.getcwd())
-    config_path = os.path.abspath(config_path)
+    config_path = os.path.join(os.environ.get("FL_MHDLIB"), "fluxpipe", config_filename)
 
     # Search for the configuration file in the current directory and subdirectories
     if not os.path.exists(config_path):
         found = False
-        for root, dirs, files in os.walk(os.getcwd()):
+        for root, dirs, files in os.walk(os.path.join(os.getcwd())):
             if config_filename in files:
                 config_path = os.path.join(root, config_filename)
                 found = True
@@ -177,7 +173,7 @@ def assimilate_args(configs, args=None):
 
 def compute_configs(the_config):
     the_config['abs_rc_path']   = os.path.expanduser(the_config['rc_path'])
-    the_config["run_script"]    = os.path.join(the_config['fl_prefix'], the_config["run_script"])
+    the_config["run_script"]    = os.path.join(the_config['fl_mhdlib'], the_config["run_script"])
 
     the_config["rotations"]     = ast.literal_eval(the_config["rotations"])
     the_config["fluxon_count"]  = ast.literal_eval(the_config["fluxon_count"])
@@ -212,12 +208,12 @@ def update_magdir_paths(the_config):
 
 def calculate_directories(the_config):
     # Helper function to calculate directories
-    basedir = the_config['base_dir'].strip()
+    basedir = the_config['fl_mhdlib'].strip()
     batch_name = the_config['batch_name'].strip()
     dat_dir = the_config.get('data_dir', None)
 
-    the_config['pipe_dir'] = os.path.join(basedir, "fluxon-mhd", "fluxpipe", "fluxpipe")
-    the_config['pdl_dir'] = os.path.join(basedir, "fluxon-mhd", "pdl", "PDL")
+    the_config['pipe_dir'] = os.path.join(basedir, "fluxpipe", "fluxpipe")
+    the_config['pdl_dir'] = os.path.join(basedir, "pdl", "PDL")
     the_config['datdir'] = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
     the_config['mag_dir'] = os.path.join(the_config['datdir'], "magnetograms")
     the_config['batch_dir'] = os.path.join(the_config['datdir'], "batches", batch_name)

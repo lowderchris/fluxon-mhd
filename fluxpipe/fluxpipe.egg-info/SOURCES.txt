@@ -7,7 +7,6 @@ setup.cfg
 setup.py
 uninstall-fluxpipe.sh
 fluxpipe/__init__.py
-fluxpipe/config/__init__.py
 fluxpipe/fidoclients/ADAPTClient.py
 fluxpipe/fidoclients/__init__.py
 fluxpipe/helpers/__init__.py

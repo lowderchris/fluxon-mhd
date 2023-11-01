@@ -8,10 +8,13 @@ set -e
 echo "\n\nInstalling FluxPipe..."
 
 echo "Setting up PREFIX_PATHS.sh"
-# Source the PREFIX_PATHS.sh script
 chmod +x PREFIX_PATHS.sh
 ./PREFIX_PATHS.sh
 
+# Source the .zshrc_custom
+if [[ -f $SHELL_RC_CUSTOM ]]; then
+  source $SHELL_RC_CUSTOM
+fi
 
 # Check if Homebrew is installed
 if ! command -v brew &>/dev/null; then
@@ -25,7 +28,6 @@ else
 fi
 
 
-
 # Check if perlbrew is installed
 if ! command -v perlbrew &>/dev/null; then
     \curl -L https://install.perlbrew.pl | bash
@@ -35,7 +37,6 @@ if ! command -v perlbrew &>/dev/null; then
 else
     echo "\tperlbrew already installed!"
 fi
-
 
 
 # Check if conda command exists
@@ -103,22 +104,24 @@ if ! perl -MPDL -e 1 &>/dev/null; then
 fi
 export PERL_MM_OPT="INSTALL_BASE=$PL_PREFIX/lib/perl5"
 cpanm local::lib
-echo 'eval "$(perl -I$PL_PREFIX/lib/perl5/lib/perl5 -Mlocal::lib=$PL_PREFIX/lib/perl5)"' >> ~/.zshrc
+if ! grep -Fxq 'eval "$(perl -I$PL_PREFIX/lib/perl5/lib/perl5 -Mlocal::lib=$PL_PREFIX/lib/perl5)"' ~/.zshrc_custom; then
+    echo '\neval "$(perl -I$PL_PREFIX/lib/perl5/lib/perl5 -Mlocal::lib=$PL_PREFIX/lib/perl5)"' >> ~/.zshrc_custom
+fi
 cpanm File::ShareDir
 cpanm PDL::Graphics::Gnuplot
 cpanm Math::RungeKutta
 # ... Add other dependencies as needed ...
 
 # Install FLUXpipe pdl and python
-(
-cd $FL_MHDLIB/fluxpipe
-cpanm --installdeps .
-cpanm --notest --local-lib=$FL_PREFIX .
-if ! grep -q 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' ~/.zshrc_custom; then
-    echo 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' >> ~/.zshrc_custom
-fi
-rm -rf blib\
-)
+# (
+# cd $FL_MHDLIB/fluxpipe
+# cpanm --installdeps .
+# cpanm --notest --local-lib=$FL_PREFIX .
+# if ! grep -q 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' ~/.zshrc_custom; then
+#     echo 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' >> ~/.zshrc_custom
+# fi
+# rm -rf blib\
+# )
 
 
 echo "\n\nFluxpipe installation complete!\n\n"

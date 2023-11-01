@@ -135,11 +135,8 @@ sub configurations {
     use File::Temp qw/ tempfile tempdir /;
 
     # Define the path of the configuration file
-    my $config_path = catfile(
-        "fluxon-mhd", "fluxpipe", "fluxpipe", "config",
-
-        $config_filename
-    );
+    my $config_path =
+      catfile( $ENV{'FL_MHDLIB'}, "fluxpipe", $config_filename );
 
     # Check if the file exists at the defined path
     unless ( -e $config_path ) {
@@ -200,7 +197,7 @@ sub configurations {
     $the_config{'adapt'}       = $adapt;
     $the_config{'abs_rc_path'} = glob( $the_config{'rc_path'} );
     $the_config{"run_script"} =
-      catfile( $the_config{'fl_prefix'}, $the_config{"run_script"} );
+      catfile( $the_config{'fl_mhdlib'}, $the_config{"run_script"} );
 
     # Remove brackets from rotations and fluxon_count
     $the_config{'rotations'}    =~ s/[\[\]]//g;
@@ -398,13 +395,11 @@ Calculates various directories based on the base directory and batch name.
 sub calculate_directories {
     my ($config_ref) = @_;
 
-    # Trim whitespace from the beginning and end of the directory and batch name
-    my $basedir = $config_ref->{'base_dir'};
     my $data_dir =
       $config_ref->{'data_dir'};    # Assuming you have this in your config
     my $batch_name = $config_ref->{'batch_name'};
 
-    $basedir    =~ s/^\s+|\s+$//g;
+    # $basedir    =~ s/^\s+|\s+$//g;
     $batch_name =~ s/^\s+|\s+$//g;
     if ( $config_ref->{'adapt'} && index( $batch_name, "adapt" ) == -1 ) {
         $batch_name = $batch_name . "_adapt";
@@ -412,27 +407,27 @@ sub calculate_directories {
 
     use File::Spec::Functions;
 
-    my $fluxdir = catdir( $basedir, "fluxon-mhd" );
+    my $fluxdir = $config_ref->{'fl_mhdlib'};
     my $pipedir = catdir( $fluxdir, "fluxpipe", "fluxpipe" );
     my $pdldir  = catdir( $fluxdir, "pdl",      "PDL" );
 
-    # Use the provided data_dir if defined, otherwise calculate it
-    my $datdir =
-      defined($data_dir) ? $data_dir : catdir( $basedir, "fluxon-data" );
+    # # Use the provided data_dir if defined, otherwise calculate it
+    # my $datdir =
+    #   defined($data_dir) ? $data_dir : catdir( $basedir, "fluxon-data" );
 
-    my $magdir   = catdir( $datdir, "magnetograms" );
-    my $batchdir = catdir( $datdir, "batches", $batch_name );
+    my $magdir   = catdir( $data_dir, "magnetograms" );
+    my $batchdir = catdir( $data_dir, "batches", $batch_name );
     my $logfile  = catfile( $batchdir, "pipe_log.txt" );
 
     # Update the original config hash
     $config_ref->{'pipe_dir'}  = $pipedir;
     $config_ref->{'pdl_dir'}   = $pdldir;
-    $config_ref->{'datdir'}    = $datdir;
+    $config_ref->{'datdir'}    = $data_dir;
     $config_ref->{'mag_dir'}   = $magdir;
     $config_ref->{'batch_dir'} = $batchdir;
     $config_ref->{'logfile'}   = $logfile;
 
-    set_and_check_env_variable( 'DATAPATH', $datdir, 0 );
+    set_and_check_env_variable( 'DATAPATH', $data_dir, 0 );
 }
 
 =head2 set_python_path

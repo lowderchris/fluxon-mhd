@@ -1,12 +1,12 @@
 #!/bin/zsh
 
 # Ensure that FL_PREFIX and PL_PREFIX are defined or exit if they're not
-: "${FL_PREFIX:?Variable FL_PREFIX not set}"
+: "${FL_MHDLIB:?Variable FL_MHDLIB not set}"
 : "${PL_PREFIX:?Variable PL_PREFIX not set}"
 
 # Remove FLUXpipe installation and related PERL5LIB path
 echo "Uninstalling fluxpipe..."
-cd "$FL_PREFIX/fluxpipe"
+cd "$FL_MHDLIB/fluxpipe"
 perl -Mlocal::lib=local/ -e 'print "$$_\n" for @INC' | xargs -I {} rm -rf {}
 # Create a backup before using sed in-place editing
 cp ~/.zshrc ~/.zshrc.bak
@@ -26,12 +26,14 @@ conda deactivate
 
 # Remove files and directories
 rm -rf "$FL_MHDLIB/fluxpipe/local"
-rm -rf "$FL_MHDLIB/fluxpipe/fluxpipe.egg-info"
+# rm -rf "$FL_MHDLIB/fluxpipe/fluxpipe.egg-info"
 rm -rf "$FL_MHDLIB/fluxpipe/blib"
 rm -rf "$FL_MHDLIB/fluxpipe/_Inline"
 rm -rf "$FL_MHDLIB/fluxpipe/__pycache__"
 rm -rf "$FL_MHDLIB/fluxpipe/.pytest_cache"
 rm -rf "$FL_MHDLIB/fluxpipe/pm_to_blib"
+rm -rf "$FL_MHDLIB/fluxpipe/fluxpipe/__pycache__"
+rm -rf "$FL_MHDLIB/fluxpipe/fluxpipe/__Inline"
 rm -fr "$FL_PREFIX"
 
 

@@ -16,7 +16,5 @@ sandbox/
 
 #any Inline stuff
 _Inline/
+__pycache__
 
-include/flux/
-blib/
-data/

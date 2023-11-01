@@ -115,7 +115,6 @@ if ( !defined $ARGV[1] and $configs{verbose} ) {
       "Using first value ($n_fluxons_wanted) from config for fluxon count.\n\n";
 }
 
-my $basedir    = $configs{base_dir};
 my $reduction  = $configs{mag_reduce};
 my $recompute  = $configs{recompute};
 my $batch_name = $configs{batch_name};
