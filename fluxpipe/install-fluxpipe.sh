@@ -80,7 +80,7 @@ else
     pip install -r requirements-conda.txt || true
 fi
 
-echo "Python Environment Creation:"
+echo "\nPython Environment Creation:"
 # cd fluxpipe
 (
 conda activate fluxenv

@@ -172,6 +172,7 @@ add_subdirs_to_perl5lib() {
 
 export PERL5LIB=""
 add_subdirs_to_perl5lib "$FL_MHDLIB/fluxpipe/fluxpipe" "_Inline" "__pycache__"
-
+export PERL5LIB="$PERL5LIB:$PL_PREFIX"
+append_var "PERL5LIB" "$PL_PREFIX"
 
 echo "Path Script Completed Successfully!\n"
