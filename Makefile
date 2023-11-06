@@ -9,7 +9,7 @@ export FL_PREFIX
 
 everything: libbuild install
 
-install: libinstall pdlbuild pdltest pdlinstall install_fluxpipe
+install: libinstall pdlbuild pdltest pdlinstall #install_fluxpipe
 
 libbuild:
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make';
@@ -51,11 +51,8 @@ clean:
 realclean: clean
 	rm -rf sandbox
 
-uninstall:
+uninstall: #uninstall_fluxpipe
 	@echo "\nUninstalling FLUX...";
 	@-rm -rf $(FL_PREFIX)/lib/libflux.a || true;
 	@-rm -rf $(FL_PREFIX)/include/flux || true;
 	@echo "\tFlux uninstall complete.\n";
-
-	@cd fluxpipe/ && make uninstall_fluxpipe;
-

@@ -165,13 +165,8 @@ add_subdirs_to_perl5lib() {
   fi
 }
 
-# To use the function, call it like this:
-# add_subdirs_to_perl5lib "/path/to/directory" "exclusion1" "exclusion2"
-
-
-
 export PERL5LIB=""
-add_subdirs_to_perl5lib "$FL_MHDLIB/fluxpipe/fluxpipe" "_Inline" "__pycache__"
+# add_subdirs_to_perl5lib "$FL_MHDLIB/fluxpipe/fluxpipe" "_Inline" "__pycache__"
 export PERL5LIB="$PERL5LIB:$PL_PREFIX"
 append_var "PERL5LIB" "$PL_PREFIX"
 

@@ -14,7 +14,7 @@ WriteMakefile(
         # 'Another::Module' => 1.42,
         # Add your dependencies here
     },
-    ABSTRACT => 'Fluxpipe - a pipeline for flux analysis',
+    ABSTRACT => 'Fluxpipe - a pipeline for fluxon analysis',
     AUTHOR   => 'Gilly <gilly@swri.org>',
     LICENSE  => 'perl',
     dist     => { COMPRESS => 'gzip -9f', SUFFIX => 'gz' },

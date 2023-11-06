@@ -1,5 +1,5 @@
 ---
-abstract: 'Fluxpipe - a pipeline for flux analysis'
+abstract: 'Fluxpipe - a pipeline for fluxon analysis'
 author:
   - 'Gilly <gilly@swri.org>'
 build_requires:

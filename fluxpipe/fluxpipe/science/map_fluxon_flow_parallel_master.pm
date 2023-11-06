@@ -304,16 +304,6 @@ if ($0 eq __FILE__) {
     my %configs = configurations();
     my $datdir = $configs{datdir};
 
-    # my $datdir = "/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly/";
-    # push(@PDLLIB,"+".$datdir);
-    # push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/Fluxon-Scripts-Gilly");
-    # push(@PDLLIB,"+/Users/cgilbert/vscode/fluxons/fluxon-mhd/pdl/PDL");
-    # push(@INC, "+/Users/cgilbert/opt");
-    # push(@INC, "/Users/cgilbert/.cpan/build");
-
-
-
-
     my $cr = 2160;
     my $batch_name = "fluxon_paperfigs";
 

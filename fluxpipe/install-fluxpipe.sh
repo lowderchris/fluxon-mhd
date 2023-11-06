@@ -16,6 +16,16 @@ if [[ -f $SHELL_RC_CUSTOM ]]; then
   source $SHELL_RC_CUSTOM
 fi
 
+# Check if perlbrew is installed
+if ! command -v perlbrew &>/dev/null; then
+    \curl -L https://install.perlbrew.pl | bash
+    perlbrew --force install perl-5.32.0
+    perlbrew switch perl-5.32.0
+    curl -L https://cpanmin.us | perl - --sudo App::cpanminus || cpan App::cpanminus
+else
+    echo "\tperlbrew already installed!"
+fi
+
 # Check if Homebrew is installed
 if ! command -v brew &>/dev/null; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -26,18 +36,6 @@ if ! command -v brew &>/dev/null; then
 else
     echo "\tHomebrew already installed!"
 fi
-
-
-# Check if perlbrew is installed
-if ! command -v perlbrew &>/dev/null; then
-    \curl -L https://install.perlbrew.pl | bash
-    perlbrew install perl-5.36.1
-    perlbrew switch perl-5.36.1
-    curl -L https://cpanmin.us | perl - --sudo App::cpanminus || cpan App::cpanminus
-else
-    echo "\tperlbrew already installed!"
-fi
-
 
 # Check if conda command exists
 if command -v conda &>/dev/null; then
@@ -56,7 +54,7 @@ if command -v conda &>/dev/null; then
     if ! echo "$conda_envs" | grep -q "fluxenv"; then
         # Your code to create the fluxenv if it doesn't exist
         yes | conda create --name fluxenv --file requirements-conda.txt
-        yes | conda create -n fluxenv
+        # yes | conda create -n fluxenv
         conda activate fluxenv
     fi
 
