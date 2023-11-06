@@ -5,9 +5,10 @@
 : "${PL_PREFIX:?Variable PL_PREFIX not set}"
 
 # Remove FLUXpipe installation and related PERL5LIB path
-echo "Uninstalling fluxpipe..."
+echo "\nUninstalling fluxpipe..."
 cd "$FL_MHDLIB/fluxpipe"
-perl -Mlocal::lib=local/ -e 'print "$$_\n" for @INC' | xargs -I {} rm -rf {}
+# perl -Mlocal::lib=local/ -e 'print "$$_\n" for @INC' | xargs -I {} rm -rf {}
+
 # Create a backup before using sed in-place editing
 cp ~/.zshrc ~/.zshrc.bak
 sed -i.bak '/export PERL5LIB=$FL_PREFIX\/fluxpipe\/local\/lib\/perl5:$PERL5LIB/d' ~/.zshrc
@@ -16,6 +17,7 @@ sed -i.bak '/export PERL5LIB=$FL_PREFIX\/fluxpipe\/local\/lib\/perl5:$PERL5LIB/d
 # Create another backup for this sed operation
 cp ~/.zshrc ~/.zshrc.bak2
 sed -i.bak2 '/eval "$$(perl -I$PL_PREFIX\/lib\/perl5\/lib\/perl5 -Mlocal::lib=$PL_PREFIX\/lib\/perl5)"/d' ~/.zshrc
+
 
 # Deactivate and remove conda environment
 conda deactivate

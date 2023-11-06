@@ -6,6 +6,9 @@ WriteMakefile(
     NAME      => 'fluxpipe',
     VERSION   => '0.01',
     PREREQ_PM => {
+        'File::ShareDir',
+        'PDL::Graphics::Gnuplot',
+        'Math::RungeKutta',
 
         # 'Some::Module'    => 0.01,
         # 'Another::Module' => 1.42,
@@ -29,12 +32,12 @@ sub MY::postamble {
 all :: install_fluxpipe
 
 install_fluxpipe:
-	@echo "Installing fluxpipe..."
 	@./install-fluxpipe.sh
+# @echo "Installing fluxpipe..."
 
 uninstall_fluxpipe:
-	@echo "Uninstalling fluxpipe..."
 	@./uninstall-fluxpipe.sh
+# @echo "Uninstalling fluxpipe..."
 
 MAKEFILE
 }

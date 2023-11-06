@@ -114,16 +114,18 @@ cpanm Math::RungeKutta
 
 # Install FLUXpipe pdl and python
 # (
-# cd $FL_MHDLIB/fluxpipe
 # cpanm --installdeps .
 # cpanm --notest --local-lib=$FL_PREFIX .
 # if ! grep -q 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' ~/.zshrc_custom; then
 #     echo 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' >> ~/.zshrc_custom
 # fi
-# rm -rf blib\
 # )
 
+cd $FL_MHDLIB/fluxpipe
+rm -rf blib\
 
+cd $FL_MHDLIB
+ln -sf fluxpipe/fluxpipe/runners/config_runner.py config_runner.py
 echo "\n\nFluxpipe installation complete!\n\n"
 
 if command -v conda &>/dev/null; then
@@ -136,7 +138,7 @@ echo -n "Do you want to test the config_runner? ([yes]/no): "
 read response
 if [[ "$response" == "yes" || "$response" == "y" || "$response" == "" ]]; then
     echo "Running the file..."
-    cd $FL_MHDLIB/fluxpipe/fluxpipe
     conda activate fluxenv
-    python runners/config_runner.py
+    cd $FL_MHDLIB
+    python config_runner.py
 fi

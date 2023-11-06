@@ -78,7 +78,7 @@ The function writes the results to disk and returns nothing.
 
 
 my $concurrency = 11;
-my $temp_dir = "fluxons/fluxon-mhd/temp";
+my $temp_dir = "temp_dir";
 
 #TODO Make the gen_fluxon_flow and gen_fluxon_tflow functions get loaded only once.
 
