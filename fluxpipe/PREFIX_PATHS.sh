@@ -19,11 +19,11 @@ extract_path() {
 SHELL_RC=$(extract_path "rc_path")
 SHELL_RC_CUSTOM=$SHELL_RC"_custom"
 RUN_SCRIPT=$(extract_path "run_script")
-PYTHON_DIR=$(extract_path "python_dir")
-PL_PREFIX=$(extract_path "pl_prefix")
 FL_PREFIX=$(extract_path "fl_prefix")
 FL_MHDLIB=$(extract_path "fl_mhdlib")
 DATA_DIR=$(extract_path "data_dir")
+PYTHON_DIR=$(dirname $(which python3))
+PL_PREFIX=$(dirname $(which perl))
 
 # Create $SHELL_RC_CUSTOM file if it does not exist
 if [[ ! -f "${SHELL_RC_CUSTOM}" ]]; then
@@ -32,14 +32,15 @@ if [[ ! -f "${SHELL_RC_CUSTOM}" ]]; then
 fi
 
 # Ensure that ~/.zshrc sources $SHELL_RC_CUSTOM
-if ! grep -q "source ${SHELL_RC_CUSTOM}" "${HOME}/.zshrc"; then
-  echo "echo 'Loading ${SHELL_RC_CUSTOM}'" >> "${HOME}/.zshrc"
+if ! grep -q "source ${SHELL_RC_CUSTOM}" "${SHELL_RC}"; then
+  echo " " >> "${SHELL_RC}"
+  echo "echo 'Loading ${SHELL_RC_CUSTOM}'" >> "${SHELL_RC}"
   # source ${SHELL_RC_CUSTOM}
-  echo "source ${SHELL_RC_CUSTOM}" >> "${HOME}/.zshrc"
-  echo 'echo "\t\t Loaded ${SHELL_RC_CUSTOM}"' >> "${HOME}/.zshrc"
-  echo "Added source command to ${HOME}/.zshrc."
+  echo "source ${SHELL_RC_CUSTOM}" >> "${SHELL_RC}"
+  echo "echo '\t\t Loaded ${SHELL_RC_CUSTOM}'" >> "${SHELL_RC}"
+  echo "Added source command to ${SHELL_RC}"
 else
-  echo "The RC File ${HOME}/.zshrc already sources ${SHELL_RC_CUSTOM}."
+  echo "The RC File ${SHELL_RC} already sources ${SHELL_RC_CUSTOM}."
 fi
 
 # Function to update or set the environment variables
