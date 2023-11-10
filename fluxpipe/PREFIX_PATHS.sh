@@ -68,7 +68,13 @@ fi
 if ! grep -q "source ${SHELL_RC_CUSTOM}" "${SHELL_RC}"; then
   echo " " >> "${SHELL_RC}"
   echo "echo 'Loading ${SHELL_RC_CUSTOM}'" >> "${SHELL_RC}"
+if ! grep -q "source ${SHELL_RC_CUSTOM}" "${SHELL_RC}"; then
+  echo " " >> "${SHELL_RC}"
+  echo "echo 'Loading ${SHELL_RC_CUSTOM}'" >> "${SHELL_RC}"
   # source ${SHELL_RC_CUSTOM}
+  echo "source ${SHELL_RC_CUSTOM}" >> "${SHELL_RC}"
+  echo "echo '\t\t Loaded ${SHELL_RC_CUSTOM}'" >> "${SHELL_RC}"
+  echo "Added source command to ${SHELL_RC}"
   echo "source ${SHELL_RC_CUSTOM}" >> "${SHELL_RC}"
   echo "echo '\t\t Loaded ${SHELL_RC_CUSTOM}'" >> "${SHELL_RC}"
   echo "Added source command to ${SHELL_RC}"
