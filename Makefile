@@ -4,12 +4,15 @@
 # This would be much better implemented using automake but I'm too lazy
 # to figure it out -- CED 18-Aug-2004
 
-FL_PREFIX ?= /usr/local
-export FL_PREFIX
+# FL_PREFIX ?= $(FL_PREFIX)
+# export FL_PREFIX
 
-everything: libbuild install
+everything: paths libbuild install
 
 install: libinstall pdlbuild pdltest pdlinstall #install_fluxpipe
+
+paths:
+	@/bin/sh -c 'fluxpipe/PREFIX_PATHS.sh';
 
 libbuild:
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make';

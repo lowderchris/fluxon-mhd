@@ -174,7 +174,7 @@ def assimilate_args(configs, args=None):
 def compute_configs(the_config):
     the_config['abs_rc_path']   = os.path.expanduser(the_config['rc_path'])
     the_config["run_script"]    = os.path.join(the_config['fl_mhdlib'], the_config["run_script"])
-
+    # the_config["run_script"]    = the_config["run_script"]
     the_config["rotations"]     = ast.literal_eval(the_config["rotations"])
     the_config["fluxon_count"]  = ast.literal_eval(the_config["fluxon_count"])
     the_config["adapts"]        = ast.literal_eval(the_config["adapts"])

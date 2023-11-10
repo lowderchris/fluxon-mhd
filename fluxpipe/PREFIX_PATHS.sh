@@ -1,20 +1,52 @@
 #!/bin/zsh
 
-CONFIG_FILE="config.ini"
-echo "\nUpdating paths using $CONFIG_FILE..."
 
-# Check if the config.ini file exists
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  echo "The configuration file $CONFIG_FILE does not exist."
+# Define a function to check for the existence of CONFIG_FILE in specified directories
+find_config_file() {
+  local CONFIG_FILE="$1"
+  # echo -e "\nLocating $CONFIG_FILE..."
+
+  # Define an array of directories to search in
+  local DIRECTORIES=("." ".." "fluxpipe")
+
+  # Loop through the directories and check if the config.ini file exists
+  for dir in "${DIRECTORIES[@]}"; do
+    if [[ -f "$dir/$CONFIG_FILE" ]]; then
+      # echo -e "\tFound $CONFIG_FILE in $dir/"
+      # Output the path to the found file
+      echo -e "$dir/$CONFIG_FILE"
+      return  # Return without specifying a value
+    fi
+  done
+
+  # If the file was not found in any of the directories, return an empty string
+  return  # Return without specifying a value
+}
+
+
+
+CONFIG_FILE="config.ini"
+# Call the function with the CONFIG_FILE argument
+found_file_path=$(find_config_file $CONFIG_FILE)
+
+# Check if the file was found and display the path if it was
+if [[ -n "$found_file_path" ]]; then
+  echo -e "The configuration file was found at: $found_file_path"
+  # Continue with further actions here...
+  # echo "\nUpdating paths using $found_file_path..."
+else
+  echo -e "The configuration file $CONFIG_FILE was not found in any of the specified directories."
   exit 1
 fi
+
 # Function to read and extract the value from config.ini based on the key passed
 extract_path() {
   local key=$1
-  local value=$(awk -F'=' -v key="$key" '$1 ~ key {print $2}' $CONFIG_FILE | sed 's/^\s*//;s/\s*$//')
+  local value=$(awk -F'=' -v key="$key" '$1 ~ key {print $2}' $found_file_path | sed 's/^\s*//;s/\s*$//')
   echo $(eval echo $value)  # Use eval to expand the tilde to $HOME if necessary
 }
 
+echo "Extracting paths..."
 # Extract the paths from the config.ini file
 SHELL_RC=$(extract_path "rc_path")
 SHELL_RC_CUSTOM=$SHELL_RC"_custom"
@@ -25,6 +57,7 @@ DATA_DIR=$(extract_path "data_dir")
 PYTHON_DIR=$(dirname $(which python3))
 PL_PREFIX=$(dirname $(which perl))
 
+echo Adjusting shell rc scripts...
 # Create $SHELL_RC_CUSTOM file if it does not exist
 if [[ ! -f "${SHELL_RC_CUSTOM}" ]]; then
   touch "${SHELL_RC_CUSTOM}"
@@ -40,7 +73,7 @@ if ! grep -q "source ${SHELL_RC_CUSTOM}" "${SHELL_RC}"; then
   echo "echo '\t\t Loaded ${SHELL_RC_CUSTOM}'" >> "${SHELL_RC}"
   echo "Added source command to ${SHELL_RC}"
 else
-  echo "The RC File ${SHELL_RC} already sources ${SHELL_RC_CUSTOM}."
+  echo "\tThe RC File ${SHELL_RC} already sources ${SHELL_RC_CUSTOM}."
 fi
 
 # Function to update or set the environment variables
@@ -49,11 +82,16 @@ update_var() {
     local var_name=$1
     local new_value=$(eval echo $2)  # Use eval to expand the tilde to $HOME if necessary
     local current_value=$(grep "^export $var_name=" "$SHELL_RC_CUSTOM" | cut -d '=' -f2- | tr -d '"')
+
+    # touch "$SHELL_RC_CUSTOM"
+    # touch "$SHELL_RC"
+
     # Check and update the shell rc custom file
     if ! grep -q "^export $var_name=" "$SHELL_RC_CUSTOM"; then
         # If the line doesn't exist, append it
         echo "export $var_name=\"$new_value\"" >> "$SHELL_RC_CUSTOM"
         echo "Added $var_name to $SHELL_RC_CUSTOM:: $new_value"
+        export $var_name=$new_value
         ((change_count+=1))
     elif [ "$current_value" = "$new_value" ]; then
         # If the value is the same, indicate no change
@@ -61,8 +99,13 @@ update_var() {
         # echo "No change in $var_name in $SHELL_RC_CUSTOM:: $new_value"
     else
         # If the line exists but the value is different, replace it
-        sed -i '' "s|^export $var_name=.*|export $var_name=\"$new_value\"|" "$SHELL_RC_CUSTOM"
+        echo "$SHELL_RC_CUSTOM"
+        # sed -i '' "s|^export $var_name=.*|export $var_name=\"$new_value\"|" "$HOME/.zshrc_custom"
+        # sed -i '' "s|^export ${var_name}=.*|export ${var_name}=\"${new_value}\"|" "$HOME/.zshrc_custom"
+        sed -i '' "s|^export ${var_name}=.*|export ${var_name}=\"${new_value}\"|" "$HOME/.zshrc_custom"
+
         echo "Updated $var_name in $SHELL_RC_CUSTOM to $new_value"
+        export $var_name=$new_value
         ((change_count+=1))
     fi
 
@@ -96,6 +139,9 @@ append_var() {
         # echo "No change to $var_name in $SHELL_RC_CUSTOM: $new_value"
     fi
 }
+
+echo "Updating variables..."
+echo $SHELL_RC_CUSTOM
 
 # Update or set the extracted variables
 update_var "SHELL_RC_CUSTOM" "$SHELL_RC_CUSTOM"
