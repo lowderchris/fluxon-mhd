@@ -2,7 +2,6 @@ LICENSE
 MANIFEST.in
 PREFIX_PATHS.sh
 README.md
-install-fluxpipe.sh
 setup.cfg
 setup.py
 uninstall-fluxpipe.sh

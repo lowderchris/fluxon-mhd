@@ -17,10 +17,9 @@ WriteMakefile(
     ABSTRACT => 'Fluxpipe - a pipeline for fluxon analysis',
     AUTHOR   => 'Gilly <gilly@swri.org>',
     LICENSE  => 'perl',
+    INST_LIB => "$ENV{'FL_PREFIX'}",
     dist     => { COMPRESS => 'gzip -9f', SUFFIX => 'gz' },
     clean    => { FILES    => 'fluxpipe-*' },
-
-  # EXE_FILES => ['scripts/my_script.pl'],    # Add your executable scripts here
 );
 
 sub MY::postamble {
@@ -29,13 +28,24 @@ sub MY::postamble {
     return <<'MAKEFILE';
 .PHONY: install_fluxpipe uninstall_fluxpipe
 
-all :: install_fluxpipe
+# Define the target "all" as a dependency of other targets using ::
+all :: PREFIX_PATHS.sh install_fluxpipe
 
-install_fluxpipe:
-	@./install-fluxpipe.sh
-# @echo "Installing fluxpipe..."
+# This target runs the PREFIX_PATHS.sh script to set FL_PREFIX
+PREFIX_PATHS.sh ::
+	./PREFIX_PATHS.sh
 
-uninstall_fluxpipe:
+# Combine both Linux and macOS install into a single install_fluxpipe target
+install_fluxpipe ::
+	@if [ `uname -s` = "Linux" ]; then \
+		./install-fluxpipe-ubuntu.sh; \
+    elif [ `uname -s` = "Darwin" ]; then \
+		./install-fluxpipe-macos.sh; \
+    else \
+		echo "Unsupported operating system"; \
+	fi
+
+uninstall_fluxpipe ::
 	@./uninstall-fluxpipe.sh
 # @echo "Uninstalling fluxpipe..."
 
