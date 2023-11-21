@@ -7,7 +7,10 @@
 FL_PREFIX ?= /usr/local
 export FL_PREFIX
 
-everything: libbuild install
+everything: libbuild install done
+
+done:
+	@echo "\n\nFlux is now installed!\n\n";
 
 install: libinstall pdlbuild pdltest pdlinstall #install_fluxpipe
 

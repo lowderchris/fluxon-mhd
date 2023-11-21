@@ -37,6 +37,7 @@ else
     echo "\tHomebrew already installed!"
 fi
 
+echo "\nPython Environment Creation:"
 # Check if conda command exists
 if command -v conda &>/dev/null; then
     # Check if conda is initialized for zsh
@@ -55,7 +56,14 @@ if command -v conda &>/dev/null; then
         # Your code to create the fluxenv if it doesn't exist
         yes | conda create --name fluxenv --file requirements-conda.txt
         # yes | conda create -n fluxenv
+        (
         conda activate fluxenv
+        yes | conda install pip
+        yes | pip install -e .
+        yes | pip install -r requirements-pip.txt
+        )
+    else
+        echo "\tfluxenv environment already created!\n"
     fi
 
 else
@@ -78,23 +86,18 @@ else
     pip install -r requirements-conda.txt || true
 fi
 
-echo "\nPython Environment Creation:"
+
 # cd fluxpipe
-(
-conda activate fluxenv
-yes | conda install pip
-yes | pip install -e .
-yes | pip install -r requirements-pip.txt
-)
-source ~/.zshrc
-conda activate fluxenv
+
+# source ~/.zshrc
+# conda activate fluxenv
 
 # make it so zshenv calls zshrc
 grep -qF "source ~/.zshrc" ~/.zshenv || echo "source ~/.zshrc" >> ~/.zshenv
 
 # echo the current directory
 
-
+echo "STARTING"
 # Check and install PDL and other dependencies
 cd $PL_PREFIX
 if ! perl -MPDL -e 1 &>/dev/null; then
@@ -102,22 +105,29 @@ if ! perl -MPDL -e 1 &>/dev/null; then
 fi
 export PERL_MM_OPT="INSTALL_BASE=$PL_PREFIX/lib/perl5"
 cpanm local::lib
-if ! grep -Fxq 'eval "$(perl -I$PL_PREFIX/lib/perl5/lib/perl5 -Mlocal::lib=$PL_PREFIX/lib/perl5)"' ~/.zshrc_custom; then
-    echo '\neval "$(perl -I$PL_PREFIX/lib/perl5/lib/perl5 -Mlocal::lib=$PL_PREFIX/lib/perl5)"' >> ~/.zshrc_custom
+if ! grep -Fxq 'eval "$(perl -I$PL_PREFIX/lib/perl5/ -Mlocal::lib=$PL_PREFIX/lib/perl5)"' ~/.zshrc_custom; then
+        echo '\neval "$(perl -I$PL_PREFIX/lib/perl5/ -Mlocal::lib=$PL_PREFIX/lib/perl5)"' >> ~/.zshrc_custom
 fi
 cpanm File::ShareDir
+cpanm File::ShareDir::Install
 cpanm PDL::Graphics::Gnuplot
 cpanm Math::RungeKutta
+cpanm Moo::Role
+cpanm Chart::Gnuplot
+cpan install MY
+
 # ... Add other dependencies as needed ...
 
+echo "MIDDLE";
 # Install FLUXpipe pdl and python
-# (
-# cpanm --installdeps .
-# cpanm --notest --local-lib=$FL_PREFIX .
-# if ! grep -q 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' ~/.zshrc_custom; then
-#     echo 'export PERL5LIB=$FL_PREFIX/lib/perl5:$PERL5LIB' >> ~/.zshrc_custom
-# fi
-# )
+(
+cd $FL_MHDLIB/fluxpipe
+cpanm --installdeps .
+cpanm --notest --local-lib=$PL_PREFIX .
+if ! grep -q 'export PERL5LIB=$PL_PREFIX/lib/perl5:$PERL5LIB' ~/.zshrc_custom; then
+    echo 'export PERL5LIB=$PL_PREFIX/lib/perl5:$PERL5LIB' >> ~/.zshrc_custom
+fi
+)
 
 cd $FL_MHDLIB/fluxpipe
 rm -rf blib\

@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 use File::ShareDir::Install;
 
 
-# Find the pdlcore.h and pdl.h include files 
+# Find the pdlcore.h and pdl.h include files
 @inc = ();
 {
 

@@ -382,14 +382,15 @@ def plot_wind_map_detailed(configs):
     cbar_ax = fig.add_axes([0.88, 0.2, 0.03, 0.75])
 
     # Create a colorbar with a custom colormap including the green overlay
-    cmap = mpl.colormaps['autumn']
+    # cmap = mpl.colormaps['autumn']
+    cmap = mpl.cm.get_cmap("autumn").copy()
+    cmap.set_over('lime')
+    cmap.set_under('darkviolet')
 
     plotobjs = [scat1, cont1, hex1]
     for obj in plotobjs:
         cbar = plt.colorbar(obj, cax=cbar_ax, extend="both", cmap=cmap, extendfrac=0.1,
                             aspect=15)
-        cbar.cmap.set_over('lime')
-        cbar.cmap.set_under('darkviolet')
         # cbar.cmap.set_over('lightgreen')
         # cbar.cmap.set_under('lightblue')
 

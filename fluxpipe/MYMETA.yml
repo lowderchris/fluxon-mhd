@@ -19,6 +19,5 @@ no_index:
     - inc
 requires:
   File::ShareDir: '0'
-  Math::RungeKutta: '0'
-version: '0.01'
+version: '0.02'
 x_serialization_backend: 'CPAN::Meta::YAML version 0.018'

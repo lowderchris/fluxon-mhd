@@ -18,7 +18,7 @@ extract_path() {
 # Extract the paths from the config.ini file
 SHELL_RC=$(extract_path "rc_path")
 SHELL_RC_CUSTOM=$SHELL_RC"_custom"
-RUN_SCRIPT=$(extract_path "run_script")
+# RUN_SCRIPT=$(extract_path "run_script")
 PYTHON_DIR=$(extract_path "python_dir")
 PL_PREFIX=$(extract_path "pl_prefix")
 FL_PREFIX=$(extract_path "fl_prefix")
@@ -77,12 +77,12 @@ append_var() {
 
     # Check if the value is already part of the variable
     if [[ ":$current_value:" != *":$new_value:"* ]]; then
+        echo "Appended to $SHELL_RC_CUSTOM $var_name: $new_value"
         # If the value is not in current_value, append it
         new_value="${current_value:+$current_value:}$new_value"
         if ! grep -q "^export $var_name=" "$SHELL_RC_CUSTOM"; then
             # If the line doesn't exist, append it
             echo "export $var_name=\"$new_value\"" >> "$SHELL_RC_CUSTOM"
-            # echo "Appended $var_name to $SHELL_RC_CUSTOM: $new_value"
         else
             # If the line exists, replace it with the new appended value
             sed -i '' "s|^export $var_name=.*|export $var_name=\"$new_value\"|" "$SHELL_RC_CUSTOM"
@@ -90,38 +90,46 @@ append_var() {
         fi
         # Export the new appended value
         export $var_name="$new_value"
+        # export PERL5LIB="$PERL5LIB:$dir"
+        # echo $var_name="$new_value"
+
     else
         # If the value is the same, indicate no change
         # echo "No change to $var_name in $SHELL_RC_CUSTOM: $new_value"
     fi
 }
 
+# Function to append multiple values (colon-separated) to an environment variable
+append_vars() {
+    local var_name=$1
+    local values=$2
+    local oldIFS=$IFS  # Save the original IFS
+    IFS=':'            # Set IFS to colon for splitting
+
+    # Read the values into an array
+    local -a ADDR
+    ADDR=($values)     # Split the string into an array based on IFS
+
+    # Restore the original IFS
+    IFS=$oldIFS
+
+    # Iterate over each value and call append_var
+    for val in "${ADDR[@]}"; do
+        append_var "$var_name" "$val"
+    done
+}
+
 # Update or set the extracted variables
 update_var "SHELL_RC_CUSTOM" "$SHELL_RC_CUSTOM"
 update_var "SHELL_RC" "$SHELL_RC"
-update_var "RUN_SCRIPT" "$RUN_SCRIPT"
+# update_var "RUN_SCRIPT" "$RUN_SCRIPT"
 update_var "PYTHON_DIR" "$PYTHON_DIR"
 update_var "PL_PREFIX" "$PL_PREFIX"
 update_var "FL_PREFIX" "$FL_PREFIX"
 update_var "FL_MHDLIB" "$FL_MHDLIB"
 update_var "DATA_DIR" "$DATA_DIR"
 
-echo "Updated $change_count environment variables."
-
-add_subdirs_to_perl5lib_recursive() {
-  local root_dir=$1  # Pass the base directory as an argument to the function
-
-  if [[ -d "$root_dir" ]]; then  # Check if the directory exists
-    while IFS= read -r -d '' dir; do
-      append_var "PERL5LIB" $dir
-      export PERL5LIB="$PERL5LIB:$dir"
-    done < <(find "$root_dir" -type d -print0)
-
-    echo "Subdirectories of $root_dir have been added to PERL5LIB."
-  else
-    echo "The directory $root_dir does not exist."
-  fi
-}
+echo "Updated $change_count environment variables.\n"
 
 # Function to add immediate subdirectories of a given path to PERL5LIB, excluding certain directories
 add_subdirs_to_perl5lib() {
@@ -151,7 +159,7 @@ add_subdirs_to_perl5lib() {
 
     # If the item is a directory, not in exclusions, and not already in PERL5LIB, add it
     if [[ -d "$dir" && ":$PERL5LIB:" != *":$dir:"* && "$exclude_dir" == false ]]; then
-      export PERL5LIB="$PERL5LIB:$dir"
+      # export PERL5LIB="$PERL5LIB:$dir"
       append_var "PERL5LIB" "$dir"
       ((added_count++))
       # echo "Added $dir to PERL5LIB"
@@ -161,13 +169,22 @@ add_subdirs_to_perl5lib() {
   if [[ $added_count -eq 0 ]]; then
     echo "No new subdirectories were added to PERL5LIB."
   else
-    echo "Added $added_count new subdirectories to PERL5LIB."
+    echo "Added $added_count new subdirectories to PERL5LIB.\n"
   fi
 }
 
-export PERL5LIB=""
-# add_subdirs_to_perl5lib "$FL_MHDLIB/fluxpipe/fluxpipe" "_Inline" "__pycache__"
-export PERL5LIB="$PERL5LIB:$PL_PREFIX"
-append_var "PERL5LIB" "$PL_PREFIX"
+# export PERL5LIB_ORIG=$PERL5LIB
+# export PERL5LIB=""
+add_subdirs_to_perl5lib "$FL_MHDLIB/fluxpipe/fluxpipe" "_Inline" "__pycache__"
+# append_vars "PERL5LIB" $PERL5LIB_ORIG
+# echo "PERL5LIB: $PERL5LIB"
+# zsh
+# echo "$PERL5LIB" | tr ':' '\n'
+# echo "$PERL5LIB_ORIG" | tr ':' '\n'
+
+# export PERL5LIB_ORIG_2="$PERL5LIB:/Library/Perl/5.30/darwin-thread-multi-2level:/Library/Perl/5.30:/Network/Library/Perl/5.30/darwin-thread-multi-2level:/Network/Library/Perl/5.30:/Library/Perl/Updates/5.30.3:/System/Library/Perl/5.30/darwin-thread-multi-2level:/System/Library/Perl/5.30:/System/Library/Perl/Extras/5.30/darwin-thread-multi-2level:/System/Library/Perl/Extras/5.30:"
+# export PERL5LIB="$PERL5LIB:$PERL5LIB_ORIG:$PERL5LIB_ORIG_2"
+# append_var "PERL5LIB" "$PERL5LIB_ORIG_2"
+
 
 echo "Path Script Completed Successfully!\n"

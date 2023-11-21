@@ -62,9 +62,11 @@ use File::Basename qw(fileparse);
 
 # Ensure the current directory is always in the path
 use FindBin qw($RealBin);
-use lib $RealBin;
-use lib "$RealBin/..";
-use lib ".";
+# use lib $RealBin;
+# use lib "$RealBin/..";
+# use lib "$RealBin/../helpers";
+# use lib ".";
+# use lib ".";
 use pipe_helper qw(shorten_path set_paths configurations);
 use pipe_helper
   qw(print_banner search_files_in_directory configs_update_magdir);
@@ -174,8 +176,8 @@ if ( not $plot_only ) {
     use FindBin;
     my $this_dir     = $FindBin::RealBin;
     my $get_mag_path = "$this_dir/get_magnetograms.py";
-    my $command =
-"$configs{python_dir} $get_mag_path --cr $CR --reduce $reduction --datdir $datdir --do_download $do_download --adapt $adapt";
+    print "\n $get_mag_path\n\n";
+    my $command = "python3 $get_mag_path --cr $CR --reduce $reduction --datdir $datdir --do_download $do_download --adapt $adapt";
 
     system($command) == 0 or ( die "Python script returned error $?", exit );
 
@@ -200,8 +202,9 @@ if ( not $plot_only ) {
 # This lets us extend this into 3d space with real linking topology.
     my $get_pfss_path = "$this_dir/get_pfss.py";
 
-    my $pfss_command =
-"$configs{python_dir} $get_pfss_path --cr $CR --magpath $configs{magpath} --nwant $n_fluxons_wanted --adapt $adapt";
+    print $get_pfss_path . "\n\n";
+
+    my $pfss_command = "$configs{python_dir} $get_pfss_path --cr $CR --magpath $configs{magpath} --nwant $n_fluxons_wanted --adapt $adapt";
 
     # print $pfss_command;
     system($pfss_command) == 0

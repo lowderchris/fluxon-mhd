@@ -4,11 +4,11 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     NAME      => 'fluxpipe',
-    VERSION   => '0.01',
+    VERSION   => '0.02',
     PREREQ_PM => {
-        'File::ShareDir',
-        'PDL::Graphics::Gnuplot',
-        'Math::RungeKutta',
+        'File::ShareDir', => 0,
+        # 'PDL::Graphics::Gnuplot',
+        # 'Math::RungeKutta',
 
         # 'Some::Module'    => 0.01,
         # 'Another::Module' => 1.42,
