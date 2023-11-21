@@ -35,8 +35,7 @@ os, argparse, numpy, pfss_funcs, pipe_helper
 import os
 import argparse
 import numpy as np
-from fluxpipe.science.pfss_funcs import (trace_lines, load_pfss, compute_pfss,
-        load_and_condition_fits_file, get_fluxon_locations)
+from fluxpipe.science.pfss_funcs import trace_lines, load_pfss, compute_pfss, load_and_condition_fits_file, get_fluxon_locations
 from fluxpipe.helpers.pipe_helper import shorten_path, configurations
 
 def get_pfss(configs=None):
