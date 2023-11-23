@@ -75,6 +75,21 @@ L<pipe_helper>, L<map_fluxon_b>, L<map_fluxon_fr>, L<map_fluxon_flow_parallel_ma
 
 =cut
 
+sub file_has_content {
+    my ($filename) = @_;
+    if (-f $filename) {
+        open my $fh, '<', $filename or return 0; # Return false if file can't be opened
+        my $line_count = 0;
+        while (<$fh>) {
+            $line_count++;
+            last if $line_count >= 3; # Stop reading if we have 3 or more lines
+        }
+        close $fh;
+        return $line_count >= 3;
+    }
+    return 0; # Return false if file doesn't exist
+}
+
 sub get_wind {
 
     my ( $this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute,
@@ -103,10 +118,16 @@ sub get_wind {
           or die "Failed to create directory: $wind_out_dir $!\n";
     }
 
-    # Check if the files exist
-    if ( !-f $out_b or !-f $out_fr or !-f $out_wind or $recompute ) {
+    # # Check if the files exist
+    # if ( !-f $out_b or !-f $out_fr or !-f $out_wind or $recompute ) {
+    #     $do_wind_calc = 1;
+    # }
+
+    # Check if the files have at least 3 lines
+    if (!file_has_content($out_b) or !file_has_content($out_fr) or !file_has_content($out_wind) or $recompute) {
         $do_wind_calc = 1;
     }
+
 
     # Perform the calculation if necessary
     if ( $do_wind_calc || $recompute ) {
@@ -134,7 +155,7 @@ sub get_wind {
         print "\n\n\tRadial Wind Speed Calculation...\n";
         my $do_wind_map = 0 || $recompute;
 
-        # $do_wind_map=1; #OVERRIDE WIND MAP
+        $do_wind_map=1; #OVERRIDE WIND MAP
 
         if ( !-e $out_wind ) { $do_wind_map = 1; }
         if ($do_wind_map) {

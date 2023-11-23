@@ -85,8 +85,9 @@ use PDL;
 use PDL::NiceSlice;
 
 sub get_hilbert_footpoints {
-    my ( %configs, $process_magnetogram ) = @_;    # get the hash reference
+    my ( %configs ) = @_;    # get the hash reference
 
+    my $process_magnetogram = $configs{'force_process_magnetogram'};
     my $magfile          = $configs{'magfile'};
     my $magpath          = $configs{'magpath'};
     my $flocdir          = $configs{'flocdir'};
@@ -201,7 +202,7 @@ sub get_hilbert_footpoints {
         print "\n\t\tFound a $N_actual footpoint file on Disk:";
         my $flocpath_short = shorten_path( $flocpath, 5 );
 
-        # print "\n\t\t\t$flocpath_short\n";
+        print "\n\t\t\t$flocpath_short\n";
     }
     print "\n\t\t\t```````````````````````````````\n\n\n";
     return $floc, $N_actual;

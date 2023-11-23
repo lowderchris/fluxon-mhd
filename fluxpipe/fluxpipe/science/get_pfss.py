@@ -55,6 +55,9 @@ def get_pfss(configs=None):
 
     configs = configs or configurations()
 
+    from fluxpipe.helpers.pipe_helper import update_magdir_paths
+    configs = update_magdir_paths(configs)
+
     # Extract arguments or use defaults from configs
     cr =        configs.get("cr")
     nwant =     configs.get("nwant")
@@ -165,7 +168,7 @@ def get_pfss(configs=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate a fluxon mapping from a GONG-sourced PFSS coronal field solution.')
     # configs_t = configurations()
-    parser.add_argument('--cr', type=int, default=2270, help='Carrington Rotation')
+    parser.add_argument('--cr', type=int, default=None, help='Carrington Rotation')
     parser.add_argument('--nwant', type=int, default=100, help='Number of fluxons wanted')
     parser.add_argument('--magpath', type=str, default=None, help='Magnetogram file')
     parser.add_argument('--force', type=int, default=0, help='Force computation of PFSS mapping')

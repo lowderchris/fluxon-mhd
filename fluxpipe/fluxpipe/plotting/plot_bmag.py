@@ -82,23 +82,23 @@ def plot_bmag(configs):
             extent=(0,2*np.pi,-1,1), aspect='auto')
 
     sc00 = ax0.scatter(ph0, th0, c=br0, s = b0, cmap="winter",
-                    alpha=0.75, label=r'B(1.0R$_\{odot}$)')
+                    alpha=0.75, label=r"B(1.0Rs)")
     sc01 = ax0.scatter(ph1, th1, c=br1, s = b1, cmap="autumn",
-                    alpha=0.75, label=r'B(21.5R$_\{odot}$)', marker='s')
+                    alpha=0.75, label=r"B(21.5Rs)", marker='s')
     sc10 = ax1.scatter(ph0, th0, c=ar0, s = a0, cmap="winter",
-                    alpha=0.75, label=r'A(1.0R$_\{odot}$)')
+                    alpha=0.75, label=r"A(1.0Rs)")
     sc11 = ax1.scatter(ph1, th1, c=ar1, s = a1, cmap="autumn",
-                    alpha=0.75, label=r'A(21.5R$_\{odot}$)', marker='s')
+                    alpha=0.75, label=r"A(21.5Rs)", marker='s')
 
     cbar01 = fig.colorbar(sc01, ax=ax0)
     cbar00 = fig.colorbar(sc00, ax=ax0)
     cbar11 = fig.colorbar(sc11, ax=ax1)
     cbar10 = fig.colorbar(sc10, ax=ax1)
 
-    cbar00.set_label(r"B(1.0R$_\{odot}$)  [Gauss] ")
-    cbar01.set_label(r"B(21.5R$_\{odot}$) [Gauss]")
-    cbar10.set_label(r"A(1.0R$_\{odot}$)  [m$^2$]")
-    cbar11.set_label(r"A(21.5R$_\{odot}$) [m$^2$]")
+    cbar00.set_label(r"B(1.0Rs)  [Gauss]")
+    cbar01.set_label(r"B(21.5Rs) [Gauss]")
+    cbar10.set_label(r"A(1.0Rs)  [m$^2$]")
+    cbar11.set_label(r"A(21.5Rs) [m$^2$]")
 
     ax0.set_title(F"Fluxon Magnetic Field Strength for CR {args.cr}")
     ax1.set_title(F"Fluxon Area for CR {args.cr}")
@@ -114,7 +114,7 @@ def plot_bmag(configs):
         ax.legend(loc="lower right")
 
     fig.set_size_inches((8,8))
-    plt.tight_layout()
+    # plt.tight_layout()
 
     imagename = os.path.basename(filename.replace(".dat", ".png"))
     imagedir = os.path.dirname(os.path.dirname(os.path.dirname(filename)))

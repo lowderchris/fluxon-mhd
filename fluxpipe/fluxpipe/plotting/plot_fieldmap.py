@@ -45,7 +45,7 @@ from fluxpipe.helpers.pipe_helper import (configurations, load_fits_magnetogram,
                             shorten_path, get_ax)
 
 def magnet_plot(get_cr=None, datdir=None, _batch=None, open_f=None, closed_f=None, force=False, reduce_amt=0,
-                nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="pdf",
+                nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="png",
                 plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500, configs=None):
     """ The primary function for plotting the magnetogram with footpoints
 

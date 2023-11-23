@@ -189,10 +189,12 @@ if ( not $plot_only ) {
 # how to represent that with fluxons.
 
     configs_update_magdir( \%configs );
+    $configs{force_process_magnetogram} = $force_process_magnetogram;
 
     # Retrieve the Footpoints using the Hilbert method
     my $N_actual =
-      get_hilbert_footpoints( %configs, $force_process_magnetogram );
+      get_hilbert_footpoints( %configs );
+      # get_hilbert_footpoints( %configs, $force_process_magnetogram );
 
 #######################################################################################################
 ## Run the Python PFSS Code ## Trace the Footpoints into the Corona ###################################
@@ -202,15 +204,13 @@ if ( not $plot_only ) {
 # This lets us extend this into 3d space with real linking topology.
     my $get_pfss_path = "$this_dir/get_pfss.py";
 
-    print $get_pfss_path . "\n\n";
-
     my $pfss_command = "$configs{python_dir} $get_pfss_path --cr $CR --magpath $configs{magpath} --nwant $n_fluxons_wanted --adapt $adapt";
 
     # print $pfss_command;
     system($pfss_command) == 0
       or ( die "Python script returned error $?", exit );
 
-    print "3  " . $configs{'magpath'} . "\n\n";
+    # print "3  " . $configs{'magpath'} . "\n\n";
 
 #######################################################################################################
 ## Generate World from PFSS ###########################################################################
@@ -239,6 +239,7 @@ if ( not $plot_only ) {
     }
 
     my $world_out_dir = $datdir . "/batches/$batch_name/cr" . $CR . '/world/';
+    mkdir $world_out_dir unless -d $world_out_dir;
     my $full_world_path =
       $world_out_dir . 'cr' . $CR . "_f$n_fluxons_wanted\_$inst.flux";
     ( my $this_world_orig, $this_world_relaxed, my $stepnum ) =
@@ -253,13 +254,13 @@ if ( not $plot_only ) {
 ## Plot the world states  #############################################################################
 #######################################################################################################
 
-    plot_worlds(
-        $this_world_orig,  $this_world_relaxed, $do_interactive,
-        $do_png,           $full_world_path,    $datdir,
-        $batch_name,       $CR,                 $N_actual,
-        $n_fluxons_wanted, $lim,                $lim2,
-        $stepnum
-    );
+    # plot_worlds(
+    #     $this_world_orig,  $this_world_relaxed, $do_interactive,
+    #     $do_png,           $full_world_path,    $datdir,
+    #     $batch_name,       $CR,                 $N_actual,
+    #     $n_fluxons_wanted, $lim,                $lim2,
+    #     $stepnum
+    # );
 
 }
 

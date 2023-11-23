@@ -165,11 +165,12 @@ def load_pfss(pickle_path):
 
     print("\n\tGetting PFSS...", end="")
     try:
+        pickle_path = os.path.expanduser(pickle_path)
         with open(pickle_path, 'rb') as inp:
             output = pickle.load(inp)
             print(f"Success! Loaded: \n\t\t {shorten_path(pickle_path)}")
         return output
-    except FileNotFoundError:
+    except (FileNotFoundError, TypeError):
         print("File not found.")
         return None
 

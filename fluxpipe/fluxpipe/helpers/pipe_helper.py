@@ -182,6 +182,8 @@ def compute_configs(the_config):
     the_config["fluxon_count"]  = ast.literal_eval(the_config["fluxon_count"])
     the_config["adapts"]        = ast.literal_eval(the_config["adapts"])
 
+    the_config['cr'] = the_config['rotations'][0]
+    the_config['nwant'] = the_config['fluxon_count'][0]
     the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"])*len(the_config["adapts"]))
 import os
 
@@ -189,12 +191,10 @@ def update_magdir_paths(the_config):
     # for key, val in sorted(the_config.items()):
     #     print(f"\t{key}: \t", the_config.get(key, None))
     CR = the_config.get('cr', None)
-    if not CR:
-        # print("Preloaded Configs")
-        return
-    CR = the_config['cr']
+    n_fluxons_wanted = the_config.get('nwant', None)
+    if not CR or not n_fluxons_wanted:
+        raise ValueError("Instance Values not Found!")
     adapt_select = the_config['adapt_select']
-    n_fluxons_wanted = the_config['nwant']
     reduction = the_config['mag_reduce']
     batchdir = the_config['batch_dir']
 
@@ -208,6 +208,7 @@ def update_magdir_paths(the_config):
     the_config['flocdir'] = os.path.join(batchdir, f"cr{CR}/floc")
     the_config['magpath'] = os.path.join(the_config['mag_dir'], the_config['magfile'])
     the_config['flocpath'] = os.path.join(the_config['flocdir'], the_config['flocfile'])
+    return the_config
 
 def calculate_directories(the_config):
     # Helper function to calculate directories
@@ -215,18 +216,28 @@ def calculate_directories(the_config):
     batch_name = the_config['batch_name'].strip()
     dat_dir = the_config.get('data_dir', None)
 
-    the_config['pipe_dir'] = os.path.join(basedir, "fluxpipe", "fluxpipe")
-    the_config['pdl_dir'] = os.path.join(basedir, "pdl", "PDL")
-    the_config['datdir'] = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
-    the_config['mag_dir'] = os.path.join(the_config['datdir'], "magnetograms")
+    the_config['pipe_dir']  = os.path.join(basedir, "fluxpipe", "fluxpipe")
+    the_config['pdl_dir']   = os.path.join(basedir, "pdl", "PDL")
+    the_config['datdir']    = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
+    the_config['data_dir']  = the_config['datdir']
+    the_config['mag_dir']   = os.path.join(the_config['datdir'], "magnetograms")
     the_config['batch_dir'] = os.path.join(the_config['datdir'], "batches", batch_name)
-    the_config['logfile'] = os.path.join(the_config['batch_dir'], "pipe_log.txt")
+    the_config['logfile']   = os.path.join(the_config['batch_dir'], "pipe_log.txt")
+
+    the_config['pipe_dir']  = os.path.expanduser(the_config['pipe_dir'] )
+    the_config['pdl_dir']   = os.path.expanduser(the_config['pdl_dir']  )
+    the_config['datdir']    = os.path.expanduser(the_config['datdir']   )
+    the_config['data_dir']    = os.path.expanduser(the_config['data_dir']   )
+    the_config['mag_dir']   = os.path.expanduser(the_config['mag_dir']  )
+    the_config['batch_dir'] = os.path.expanduser(the_config['batch_dir'])
+    the_config['logfile']   = os.path.expanduser(the_config['logfile']  )
+
 
     # If 'adapt' isn't set in the_config, default to False
     the_config.setdefault('adapt', False)
 
-    # Update magdir paths
-    update_magdir_paths(the_config)
+    # # Update magdir paths
+    # update_magdir_paths(the_config)
 
 def convert_value(value):
     """ Convert a string to an int or float if possible, otherwise return the string.
@@ -414,7 +425,7 @@ def find_file_with_string(directory, search_string):
     return None
 
 
-def shorten_path(string):
+def shorten_path(string, do=False):
     """Removes the DATAPATH environment variable from a string.
     This makes it much more readable when printing paths.
 
@@ -429,8 +440,8 @@ def shorten_path(string):
         Shortened string
     """
     datapath = os.getenv("DATAPATH")
-    if datapath:
-        return string.replace(datapath, "$DATAPATH ")
+    if datapath and do:
+        return string.replace(datapath, "$DATAPATH")
     else:
         return string
 
@@ -1465,7 +1476,7 @@ def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fn
     configs = configs or configurations()
     cr = configs.get("cr", None)
     assert cr is not None, "Must specify a Carrington rotation number!"
-
+    update_magdir_paths(configs)
     fname = fname or configs["magpath"].format(cr)
     batch = batch or configs["batch_name"]
     datdir = datdir or configs["data_dir"]
@@ -1492,9 +1503,9 @@ def find_file_with_string(directory, search_string):
             return os.path.join(directory, file_name)
     return None
 
-def shorten_path(string, __=None):
+def shorten_path(string, __=None, do=False):
     datapath = os.getenv("DATAPATH")
-    if datapath:
+    if datapath and do:
         return string.replace(datapath, "$DATAPATH ")
     else:
         return string

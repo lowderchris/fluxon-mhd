@@ -246,9 +246,9 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
     median1 = np.median(vel1_clean)
     std1  =  np.std(vel1_clean)
     hist_ax.hist(vel1_clean[vel1_clean>=0], bins=n_bins, color='sandybrown')
-    hist_ax.axvline(mean1, color='k', linestyle='dashed', linewidth=1, label="Mean: {mean1:.0f} km/s")
-    hist_ax.axvline(median1, color='lightgrey', linestyle='-.', linewidth=1, label="Median: {median1:.0f} km/s")
-    hist_ax.axvline(mean1+std1, color='k', linestyle=':', linewidth=1, label="Std: {std1:.0f} km/s")
+    hist_ax.axvline(mean1, color='k', linestyle='dashed', linewidth=1, label=f"Mean: {mean1:.0f} km/s")
+    hist_ax.axvline(median1, color='lightgrey', linestyle='-.', linewidth=1, label=f"Median: {median1:.0f} km/s")
+    hist_ax.axvline(mean1+std1, color='k', linestyle=':', linewidth=1, label=f"Std: {std1:.0f} km/s")
     hist_ax.axvline(mean1-std1, color='k', linestyle=':', linewidth=1)
     hist_ax.legend()
     hist_ax.set_xlabel("Velocity (km/s)")
@@ -383,7 +383,8 @@ def plot_wind_map_detailed(configs):
 
     # Create a colorbar with a custom colormap including the green overlay
     # cmap = mpl.colormaps['autumn']
-    cmap = mpl.cm.get_cmap("autumn").copy()
+    # cmap = mpl.cm.get_cmap("autumn").copy()
+    cmap = mpl.colormaps["autumn"]
     cmap.set_over('lime')
     cmap.set_under('darkviolet')
 

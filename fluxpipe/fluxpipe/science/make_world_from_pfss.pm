@@ -237,6 +237,8 @@ sub make_world_from_pfss {
         my $narrow_dir = $world_out_dir ."narrow/";
         if (! -d $narrow_dir ) {mkpath($narrow_dir) or die "Failed to create directory: $narrow_dir $!\n";}
 
+        print "Directories made: $top_dir\n";
+
         my $ext = 'png';
         my $renderer = $ext.'cairo';
         # my $filename
@@ -250,7 +252,7 @@ sub make_world_from_pfss {
         $world->render( {'window'=>$window000, range=>$range_i});
         # my $window01 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path2);
         # $world->render( {'window'=>$window01, range=>$range_f2});
-        print "Done!\n";
+        print "\t\tDone!\n";
 
     } else {
         print "\n\n \tSkipped! World already exists:\n";

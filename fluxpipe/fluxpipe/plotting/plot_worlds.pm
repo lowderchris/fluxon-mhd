@@ -165,6 +165,8 @@ sub plot_worlds {
         my $top_filename_relaxed =
           $top_path . "cr" . $CR . "_f$nwant\_relaxed\_s$stepnum.png";
 
+
+
 # my $short_new_filename_initial = shorten_path($new_filename_initial);
 # print "\t\tRendering $short_new_filename_initial\n";
 # my $window25=   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_initial);
@@ -176,10 +178,21 @@ sub plot_worlds {
 # my $window3 =   gpwin('pngcairo',size=>[9,9],dashed=>0, output=> $new_filename_initial2);
 # $this_world_orig->render( {'window'=>$window3, range=>$range_f2});
 # $window3 = null;
+        # use File::Basename;
 
         my $short_new_filename_relaxed = shorten_path($new_filename_relaxed);
+        my $dir_name = dirname($new_filename_relaxed);
 
-        print "\t\tRendering $short_new_filename_relaxed\n";
+        print dirname($dir_name) . "\n\n\n";
+
+        if ( !-d $dir_name ) {
+            print "Making things";
+            mkpath(dirname($dir_name)) or die "Failed to create parent directory: " . dirname($dir_name) . " $!\n";
+            mkpath($dir_name) or die "Failed to create directory: $dir_name $!\n";
+        }
+
+
+        print "\t\tRendering $short_new_filename_relaxed!!!\n";
         my $window4 = gpwin(
             'pngcairo',
             size   => [ 9, 9 ],

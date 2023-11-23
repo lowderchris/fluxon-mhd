@@ -250,12 +250,17 @@ sub configurations {
     return %the_config;
 }
 
-sub shorten_path {
+sub shorten_path_real {
     my ($string) = @_;
     my $datapath = $ENV{'DATAPATH'};
     if ($datapath) {
-        $string =~ s/\Q$datapath\E/\$DATAPATH\ /g;
+        $string =~ s/\Q$datapath\E/\$DATAPATH/g;
     }
+    return $string;
+}
+
+sub shorten_path {
+    my ($string) = @_;
     return $string;
 }
 
@@ -407,6 +412,10 @@ sub calculate_directories {
 
     use File::Spec::Functions;
 
+
+
+
+
     my $fluxdir = $config_ref->{'fl_mhdlib'};
     my $pipedir = catdir( $fluxdir, "fluxpipe", "fluxpipe" );
     my $pdldir  = catdir( $fluxdir, "pdl",      "PDL" );
@@ -418,6 +427,18 @@ sub calculate_directories {
     my $magdir   = catdir( $data_dir, "magnetograms" );
     my $batchdir = catdir( $data_dir, "batches", $batch_name );
     my $logfile  = catfile( $batchdir, "pipe_log.txt" );
+
+
+    #Remove the tilde from the path
+    use File::HomeDir;
+    my $home_dir = $ENV{'HOME'};
+    $data_dir =~ s{^~}{$home_dir};
+    $fluxdir =~ s{^~}{$home_dir};
+    $pdldir =~ s{^~}{$home_dir};
+    $magdir =~ s{^~}{$home_dir};
+    $batchdir =~ s{^~}{$home_dir};
+    $logfile =~ s{^~}{$home_dir};
+
 
     # Update the original config hash
     $config_ref->{'pipe_dir'}  = $pipedir;
