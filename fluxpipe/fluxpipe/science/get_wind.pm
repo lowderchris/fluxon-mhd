@@ -118,10 +118,10 @@ sub get_wind {
           or die "Failed to create directory: $wind_out_dir $!\n";
     }
 
-    # # Check if the files exist
-    # if ( !-f $out_b or !-f $out_fr or !-f $out_wind or $recompute ) {
-    #     $do_wind_calc = 1;
-    # }
+    # Check if the files exist
+    if ( !-f $out_b or !-f $out_fr or !-f $out_wind or $recompute ) {
+        $do_wind_calc = 1;
+    }
 
     # Check if the files have at least 3 lines
     if (!file_has_content($out_b) or !file_has_content($out_fr) or !file_has_content($out_wind) or $recompute) {
@@ -137,6 +137,7 @@ sub get_wind {
         $this_world_relaxed->update_force(0);
         my @fluxons = $this_world_relaxed->fluxons;
         print "Done!\n";
+        print "Number of fluxons: " . scalar @fluxons . "\n";
 
         # Calculate the radial magnetic field
         print "\n\tRadial Magnetic Field (B) Calculation...";
@@ -151,26 +152,17 @@ sub get_wind {
         print "Done!";
 
         # Calculate the radial wind speed
-        no warnings 'misc';
+
         print "\n\n\tRadial Wind Speed Calculation...\n";
         my $do_wind_map = 0 || $recompute;
 
-        $do_wind_map=1; #OVERRIDE WIND MAP
+        # $do_wind_map=1; #OVERRIDE WIND MAP
 
-        if ( !-e $out_wind ) { $do_wind_map = 1; }
-        if ($do_wind_map) {
-            {
-                no warnings;    # Suppress warnings
-                eval {
-                    map_fluxon_flow_parallel_master( $out_wind, \@fluxons );
-                };
-            };
+        if ( !-e $out_wind || !file_has_content($out_wind)) { $do_wind_map = 1; }
 
-        }
-        else {
-            print $skipstring;
-        }
-        use warnings 'misc';
+        if ($do_wind_map) { map_fluxon_flow_parallel_master( $out_wind, \@fluxons ); }
+        else { print $skipstring;}
+
     }
     else {
         print $skipstring;

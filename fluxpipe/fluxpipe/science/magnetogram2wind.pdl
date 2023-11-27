@@ -78,7 +78,7 @@ use get_hilbert_footpoints qw(get_hilbert_footpoints);
 use make_world_from_pfss   qw(make_world_from_pfss);
 
 # use relax_ qw(shorten_path);
-use plot_worlds qw(plot_worlds);
+use plot_world qw(plot_world);
 
 use relax_pfss_world qw(relax_pfss_world);
 use get_wind         qw(get_wind);
@@ -253,6 +253,9 @@ if ( not $plot_only ) {
 #######################################################################################################
 ## Plot the world states  #############################################################################
 #######################################################################################################
+
+    plot_world($this_world_relaxed, $datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2, \%configs, "relaxed");
+
 
     # plot_worlds(
     #     $this_world_orig,  $this_world_relaxed, $do_interactive,

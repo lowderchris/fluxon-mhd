@@ -22,6 +22,8 @@ use Time::HiRes qw(clock_gettime);
 use File::Basename qw(fileparse);
 use File::Basename;
 use pipe_helper qw(shorten_path);
+use plot_world qw(plot_world);
+use Flux::World    qw(read_world);
 use Flux::World qw(str2world);
 use PDL::Graphics::Gnuplot qw(gpwin);
 use File::Path  qw(mkpath);
@@ -217,49 +219,26 @@ sub make_world_from_pfss {
         print "\n\t    Saved to $short_world_out_path\n";
 
 
-        ## Display ####################################################
-        print "\n \n\tPlotting the World...";
-        # Set Ranges of Plots
-        my $range_i = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
-        my $range_f = [-$lim, $lim, -$lim, $lim, -$lim, $lim];
-        my $range_f2 = [-$lim2, $lim2, -$lim2, $lim2, -$lim2, $lim2];
+        ## Plot the initial World State ################################
+        plot_world($world, $datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2, $configs, "initial");
 
-        # number of open fluxons, number of fluxons, number of fluxons requested
-        my $top_dir = $datdir."/batches/$batch_name/imgs/initial/";
-        # my $wide_dir = $datdir."/batches/$batch/imgs/world/wide/";
-        # my $narrow_dir = $datdir."/batches/$batch/imgs/world/narrow/";
-
-
-
-        if (! -d $top_dir ) {mkpath($top_dir) or die "Failed to create directory: $top_dir $!\n";}
-        my $wide_dir = $world_out_dir ."wide/";
-        if (! -d $wide_dir ) {mkpath($wide_dir) or die "Failed to create directory: $wide_dir $!\n";}
-        my $narrow_dir = $world_out_dir ."narrow/";
-        if (! -d $narrow_dir ) {mkpath($narrow_dir) or die "Failed to create directory: $narrow_dir $!\n";}
-
-        print "Directories made: $top_dir\n";
-
-        my $ext = 'png';
-        my $renderer = $ext.'cairo';
-        # my $filename
-        my $world_png_path = $narrow_dir."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss.$ext";
-        my $world_png_path2= $wide_dir."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss_wide.$ext";
-        my $world_png_path_top = $top_dir   ."cr$CR\_f". $n_fluxons_wanted. "_initial_pfss.$ext";
-
-        # my $window00 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path);
-        # $world->render( {'window'=>$window00, range=>$range_i});
-        my $window000 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path_top);
-        $world->render( {'window'=>$window000, range=>$range_i});
-        # my $window01 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path2);
-        # $world->render( {'window'=>$window01, range=>$range_f2});
-        print "\t\tDone!\n";
 
     } else {
         print "\n\n \tSkipped! World already exists:\n";
         my $short_world_out_path = shorten_path($world_out_path);
         print "\t    $short_world_out_path\n";
+
+        print "\t Plotting World!\n";
+        my $world = read_world($world_out_path);
+        plot_world($world, $datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2, $configs, "initial");
+
     }
+
+
+
         print "\n\t\t\t```````````````````````````````\n \n\n\n";
     return $open_file, $closed_file, $world_out_path;
 }
+
+
 1;
