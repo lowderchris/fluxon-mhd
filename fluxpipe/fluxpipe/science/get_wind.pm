@@ -11,10 +11,11 @@ get_wind - Calculate Solar Wind Plasma Parameters for a Given Carrington Rotatio
 =cut
 
 package get_wind;
-use strict;
+# use strict;
 use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(get_wind);
+use DB;
 use pipe_helper                     qw(shorten_path);
 use File::Path                      qw(mkpath);
 use map_fluxon_b                    qw(map_fluxon_b);
@@ -100,6 +101,7 @@ sub get_wind {
     print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 
+
     my $do_wind_calc = 0;
 
     my $wind_out_dir   = $datdir . "/batches/$batch_name/cr" . $CR . '/wind';
@@ -110,6 +112,8 @@ sub get_wind {
     my $short_out_wind = shorten_path($out_wind);
     my $skipstring =
       "\n\tWind Calculation Skipped! \n\t\tFound $short_out_wind\n\n";
+
+
 
     # Make the directory if necessary
     if ( !-d $wind_out_dir ) {
@@ -137,8 +141,13 @@ sub get_wind {
         $this_world_relaxed->update_force(0);
         my @fluxons = $this_world_relaxed->fluxons;
         print "Done!\n";
-        print "Number of fluxons: " . scalar @fluxons . "\n";
+        print "\t\tNumber of fluxons: " . scalar @fluxons . "\n";
 
+        if (scalar @fluxons == 0) {
+            die "\t\t\tNo fluxons found. Cannot proceed without data.";
+        }
+
+        # DB::single;
         # Calculate the radial magnetic field
         print "\n\tRadial Magnetic Field (B) Calculation...";
         map_fluxon_b( $out_b, \@fluxons );

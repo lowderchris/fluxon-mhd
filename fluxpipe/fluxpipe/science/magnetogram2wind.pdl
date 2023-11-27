@@ -167,8 +167,6 @@ my $very_beginning = clock_gettime();
 
 #### BEGIN ##################################################################
 
-if ( not $plot_only ) {
-
 #######################################################################################################
 ## Download the Magnetogram ###########################################################################
 #######################################################################################################
@@ -254,29 +252,22 @@ if ( not $plot_only ) {
 ## Plot the world states  #############################################################################
 #######################################################################################################
 
+
     plot_world($this_world_relaxed, $datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2, \%configs, "relaxed");
 
 
-    # plot_worlds(
-    #     $this_world_orig,  $this_world_relaxed, $do_interactive,
-    #     $do_png,           $full_world_path,    $datdir,
-    #     $batch_name,       $CR,                 $N_actual,
-    #     $n_fluxons_wanted, $lim,                $lim2,
-    #     $stepnum
-    # );
-
-}
-
-# Plot the field map
+# # Plot the field map
 my $fmap_command =
 "$configs{python_dir} $pipedir/plotting/plot_fieldmap.py --cr $CR --open $open_file"
   . " --closed $closed_file --nwant $n_fluxons_wanted --adapt $adapt";
 system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
 
+
 #######################################################################################################
 ## Begin solar wind computation  ######################################################################
 #######################################################################################################
 # our ( $out_b, $out_fr, $out_wind );
+
 
 my ( $out_b, $out_fr, $out_wind ) =
   get_wind( $this_world_relaxed, $datdir,
