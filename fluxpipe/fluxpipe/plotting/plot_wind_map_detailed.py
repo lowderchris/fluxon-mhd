@@ -547,7 +547,7 @@ def plot_wind_map_detailed(configs):
     bool
         True if the plot was successful, else False.
     """
-    print("\nPlotting Windmap...", end="\n" if __name__ == "__main__" else "")
+    print("\n\tPlotting Windmap...", end="\n" if __name__ == "__main__" else "")
     configs = configs or configurations()
 
     # Extract configuration settings

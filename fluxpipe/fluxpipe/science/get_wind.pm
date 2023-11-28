@@ -15,12 +15,15 @@ package get_wind;
 use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(get_wind);
-use DB;
-use pipe_helper                     qw(shorten_path);
+use pipe_helper                     qw(shorten_path configurations find_highest_numbered_file_with_string);
 use File::Path                      qw(mkpath);
 use map_fluxon_b                    qw(map_fluxon_b);
+use map_fluxon_b_all                qw(map_fluxon_b_all);
 use map_fluxon_fr                   qw(map_fluxon_fr);
 use map_fluxon_flow_parallel_master qw(map_fluxon_flow_parallel_master);
+use Flux::World    qw(read_world);
+
+
 
 =head1 DESCRIPTION
 
@@ -93,20 +96,32 @@ sub file_has_content {
 
 sub get_wind {
 
-    my ( $this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute,
-        $n_want, $pythondir )
-      = @_;
-
-    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-    print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
-    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+    my ( $this_world_relaxed, $CR, $n_want, $recompute) = @_;
 
 
-    my $do_wind_calc = 0;
+    # Read configurations from disk
+    # print "Reading configurations...\n";
+    my %configs = configurations();
+
+    $recompute = $recompute // 0;
+
+    $CR = $CR // ( $configs{rotations}->at(0) );
+    $configs{CR} = $CR;
+
+    my $n_fluxons_wanted = $n_want // ( $configs{fluxon_count}->at(0) );
+    $configs{n_fluxons_wanted} = $n_fluxons_wanted;
+
+
+    my $pythondir = $configs{pythondir};
+    my $datdir = $configs{datdir};
+    my $batch_name = $configs{batch_name};
+
+    my $do_wind_calc = 1;
 
     my $wind_out_dir   = $datdir . "/batches/$batch_name/cr" . $CR . '/wind';
-    my $prefix         = "$wind_out_dir/cr$CR\_f$n_want";
+    my $prefix         = "$wind_out_dir/cr$CR\_f$n_fluxons_wanted";
     my $out_b          = "$prefix\_radial_bmag.dat";
+    my $out_b_all      = "$prefix\_radial_bmag_all.dat";
     my $out_fr         = "$prefix\_radial_fr.dat";
     my $out_wind       = "$prefix\_radial_wind.dat";
     my $short_out_wind = shorten_path($out_wind);
@@ -123,18 +138,29 @@ sub get_wind {
     }
 
     # Check if the files exist
-    if ( !-f $out_b or !-f $out_fr or !-f $out_wind or $recompute ) {
+    if ( !-f $out_b
+        or !-f $out_fr
+        or !-f $out_wind
+        or !-f $out_b_all
+        or $recompute ) {
         $do_wind_calc = 1;
     }
 
     # Check if the files have at least 3 lines
-    if (!file_has_content($out_b) or !file_has_content($out_fr) or !file_has_content($out_wind) or $recompute) {
+    if (!file_has_content($out_b)
+        or !file_has_content($out_fr)
+        or !file_has_content($out_wind)
+        or !file_has_content($out_b_all)
+        or $recompute) {
         $do_wind_calc = 1;
     }
 
+    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+    print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
+    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 
     # Perform the calculation if necessary
-    if ( $do_wind_calc || $recompute ) {
+    if ( $do_wind_calc ) {
 
         #Initialize the world
         print "\n\tUpdating neighbors...";
@@ -151,6 +177,7 @@ sub get_wind {
         # Calculate the radial magnetic field
         print "\n\tRadial Magnetic Field (B) Calculation...";
         map_fluxon_b( $out_b, \@fluxons );
+        map_fluxon_b_all( $out_b_all, \@fluxons );
         print "Done!\n";
 
         # print "\t\t...done with radial B!";
@@ -179,6 +206,28 @@ sub get_wind {
 
     print "\t\t\t```````````````````````````````\n\n\n\n";
 
-    return $out_b, $out_fr, $out_wind;
+    return $out_b, $out_fr, $out_wind, $out_b_all;
 }
+
+if ($0 eq __FILE__) {
+    # This code block will run only if the script is executed directly
+    # and not when it's included as a module in another script.
+    # Place your code here.
+    my %configs = configurations();
+
+    my $n_want = $configs{fluxon_count}->at(0);
+    my $CR = $configs{rotations}->at(0);
+    my $world_dir = $configs{data_dir} . "/batches/" . $configs{batch_name} . "/cr" . $CR . "/world";
+
+    my $search_string = $n_want . "_hmi_relaxed_s";  # Modify this to your desired search string
+    my ($highest_file, $highest_number) = find_highest_numbered_file_with_string($world_dir, $search_string);
+
+    my $this_world_relaxed = read_world($highest_file);
+    get_wind($this_world_relaxed)
+
+}
+
+
+
+
 1;

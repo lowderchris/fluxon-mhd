@@ -269,10 +269,8 @@ system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
 # our ( $out_b, $out_fr, $out_wind );
 
 
-my ( $out_b, $out_fr, $out_wind ) =
-  get_wind( $this_world_relaxed, $datdir,
-    $batch_name, $CR, $N_actual, $recompute, $n_fluxons_wanted,
-    $configs{python_dir} );
+my ( $out_b, $out_fr, $out_wind, $out_b_all ) =
+  get_wind( $this_world_relaxed, $CR, $n_fluxons_wanted, $recompute );
 
 #######################################################################################################
 ## Plot the Solar wind Solutions  #####################################################################
@@ -283,15 +281,22 @@ print("(py) Plotting Solar Wind Maps for CR$CR\n");
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
 system(
-"$configs{python_dir} $pipedir/plotting/plot_bmag.py --cr $CR --file $out_b --nwant $n_fluxons_wanted --adapt $adapt"
+"$configs{python_dir} $pipedir/plotting/plot_bmag.py"
+      . " --cr $CR --file $out_b --nwant $n_fluxons_wanted --adapt $adapt"
 ) == 0 or ( die "Python script returned error $?", exit );
 
 system(
-"$configs{python_dir} $pipedir/plotting/plot_fr.py  --cr $CR --file $out_fr --nwant $n_fluxons_wanted --adapt $adapt"
+"$configs{python_dir} $pipedir/plotting/plot_bmag_all.py"
+      . " --cr $CR --file $out_b_all --nwant $n_fluxons_wanted --adapt $adapt"
 ) == 0 or ( die "Python script returned error $?", exit );
 
 system(
-        "$configs{python_dir} $pipedir/plotting/plot_wind_map_detailed.py"
+"$configs{python_dir} $pipedir/plotting/plot_fr.py"
+      . "  --cr $CR --file $out_fr --nwant $n_fluxons_wanted --adapt $adapt"
+) == 0 or ( die "Python script returned error $?", exit );
+
+system(
+"$configs{python_dir} $pipedir/plotting/plot_wind_map_detailed.py"
       . " --cr $CR --file $out_wind --nwant $n_fluxons_wanted --adapt $adapt"
 
       #    . " --open $open_file --closed $closed_file "

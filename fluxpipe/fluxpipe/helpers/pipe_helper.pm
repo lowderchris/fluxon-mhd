@@ -106,7 +106,7 @@ use strict;
 use warnings;
 use Exporter qw(import);
 our @EXPORT_OK =
-  qw(shorten_path find_highest_numbered_file set_env_variable get_env_variable check_env_variable configs_update_magdir
+  qw(shorten_path find_highest_numbered_file find_highest_numbered_file_with_string set_env_variable get_env_variable check_env_variable configs_update_magdir
   set_and_check_env_variable calculate_directories set_python_path set_paths print_banner search_files_in_directory check_second_file_presence configurations);
 use File::Basename qw(dirname basename);
 use PDL::AutoLoader;
@@ -331,6 +331,34 @@ sub find_highest_numbered_file {
       $highest_number;
 }
 
+sub find_highest_numbered_file_with_string {
+    my ($directory, $search_string) = @_;
+    opendir(my $dir_handle, $directory) or die "Cannot open directory: $!";
+    my @files = grep { !/^\.{1,2}$/ } readdir($dir_handle);
+    closedir $dir_handle;
+
+    my $highest_numbered_file;
+    my $highest_number = -1;
+    my $found = 0;
+    for my $file_name (@files) {
+
+        # Match file names containing the search string, a number, and ".flux"
+        if ( $file_name =~ /$search_string(\d+)\.flux/ ) {
+            my $number = $1;
+            if ( $number > $highest_number ) {
+                $highest_number        = $number;
+                $highest_numbered_file = $file_name;
+            }
+            $found = 1;
+        }
+    }
+    return $highest_numbered_file ? "$directory/$highest_numbered_file" : 0,
+      $highest_number;
+}
+
+
+
+
 =head2 set_env_variable
 
 Sets an environment variable to a given value.
@@ -439,11 +467,22 @@ sub calculate_directories {
     $batchdir =~ s{^~}{$home_dir};
     $logfile =~ s{^~}{$home_dir};
 
+    # use File::Glob ':glob';
+    # # Replace ~ with the home directory
+    # my $home_dir = bsd_glob("~");
+    # $data_dir = bsd_glob($data_dir);
+    # $fluxdir = bsd_glob($fluxdir);
+    # $pdldir = bsd_glob($pdldir);
+    # $magdir = bsd_glob($magdir);
+    # $batchdir = bsd_glob($batchdir);
+    # $logfile = bsd_glob($logfile);
+
 
     # Update the original config hash
     $config_ref->{'pipe_dir'}  = $pipedir;
     $config_ref->{'pdl_dir'}   = $pdldir;
     $config_ref->{'datdir'}    = $data_dir;
+    $config_ref->{'data_dir'}  = $data_dir;
     $config_ref->{'mag_dir'}   = $magdir;
     $config_ref->{'batch_dir'} = $batchdir;
     $config_ref->{'logfile'}   = $logfile;
