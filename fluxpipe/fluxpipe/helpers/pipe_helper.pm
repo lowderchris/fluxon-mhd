@@ -120,6 +120,20 @@ Shortens the given file path by replacing the DATAPATH environment variable.
 
 =cut
 
+
+sub pdl_range {
+    my ($start, $stop, $step) = @_;
+    $step //= 1;  # Default step is 1 if not provided
+
+    # Calculate the number of elements needed
+    my $size = int(($stop - $start) / $step);
+    $size++ if (($stop - $start) % $step) > 0;
+
+    # Create the sequence
+    return $start + $step * sequence($size);
+}
+
+
 sub configurations {
     my ( $adapt, $debug, $config_name, $config_filename ) = @_;
     $adapt           //= 0;
@@ -199,14 +213,29 @@ sub configurations {
     $the_config{"run_script"} =
       catfile( $the_config{'fl_mhdlib'}, $the_config{"run_script"} );
 
+    #if the first character of the rotations is a [ then it is a list of rotations
+    if ( substr( $the_config{'rotations'}, 0, 1 ) eq "[" ) {
+        $the_config{'rotations'}    =~ s/[\[\]]//g;
+        $the_config{'rotations'} = PDL->new( split( /\s*,\s*/, $the_config{'rotations'} ) );
+    } else {
+        #if the first character of the rotations is a ( then it is a start, stop, step
+        if ( substr( $the_config{'rotations'}, 0, 1 ) eq "(" ) {
+            $the_config{'rotations'} =~ s/[\(\)]//g;
+            my ($start, $stop, $step) = split( /\s*,\s*/, $the_config{'rotations'} );
+            # my $pdl = pdl_range(10, 20, 2);
+            $the_config{'rotations'} = pdl_range($start, $stop, $step);
+        } else {
+            #otherwise it is a single rotation
+            $the_config{'rotations'} = PDL->new( $the_config{'rotations'} );
+        }
+    }
+
     # Remove brackets from rotations and fluxon_count
-    $the_config{'rotations'}    =~ s/[\[\]]//g;
     $the_config{'fluxon_count'} =~ s/[\[\]]//g;
     $the_config{'adapts'}       =~ s/[\[\]]//g;
 
     # Create PDL objects
-    $the_config{'rotations'} =
-      PDL->new( split( /\s*,\s*/, $the_config{'rotations'} ) );
+
     $the_config{'fluxon_count'} =
       PDL->new( split( /\s*,\s*/, $the_config{'fluxon_count'} ) );
     $the_config{'adapts'} =
@@ -333,7 +362,7 @@ sub find_highest_numbered_file {
 
 sub find_highest_numbered_file_with_string {
     my ($directory, $search_string) = @_;
-    opendir(my $dir_handle, $directory) or die "Cannot open directory: $!";
+    opendir(my $dir_handle, $directory) or die "Cannot open directory $directory: $!";
     my @files = grep { !/^\.{1,2}$/ } readdir($dir_handle);
     closedir $dir_handle;
 

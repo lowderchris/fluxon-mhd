@@ -45,7 +45,7 @@ import sunpy.coordinates
 import cv2
 
 
-def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
+def plot_bmag_fill(args, r1=1, r2=-1, do_r2=False, maxlist=None):
     """
     Plots the expansion factor of the given `radial_bmag_all.dat` file based on the arguments provided.
 
@@ -57,9 +57,9 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
     """
     batch = args.batch
     filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_bmag_all.dat'
-    imagename = os.path.basename(filename.replace(".dat", f"_{r1:02d}.png"))
+    imagename = os.path.basename(filename.replace("all.dat", f"fill_{r1:02d}.png"))
     imagedir = os.path.dirname(os.path.dirname(os.path.dirname(filename)))
-    bmagdir = os.path.join(imagedir, "imgs", "bmag", "all", "sets", f"cr{args.cr}_all_f{args.nwant}")
+    bmagdir = os.path.join(imagedir, "imgs", "bmag", "fill", "sets", f"cr{args.cr}_fill_f{args.nwant}")
     if not os.path.exists(bmagdir):
         os.makedirs(bmagdir)
     bmagname = os.path.join(bmagdir, imagename)
@@ -146,17 +146,36 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
 
     # Using GridSpec for layout
     fig = plt.figure(figsize=(10, 8))  # Adjust the figure size as needed
-    gs = gridspec.GridSpec(3, 1, height_ratios=[4, 4, 1])  # Adjust the ratios as per your requirement
+    gs = gridspec.GridSpec(3, 3, height_ratios=[4, 4, 1])  # Adjust the ratios as per your requirement
 
-    # Magnetogram plot
-    ax0 = plt.subplot(gs[0])
+    # # Magnetogram plot
+    # ax0 = plt.subplot(gs[0])
 
-    # Magnetic Field Strength and Expansion Factor plot
-    ax1 = plt.subplot(gs[1])
-    ax2 = ax1.twinx()
+    # # Magnetic Field Strength and Expansion Factor plot
+    # ax1 = plt.subplot(gs[1])
+    # ax2 = ax1.twiny()
 
-    # Sunspot Number plot
-    ax3 = plt.subplot(gs[2])
+    # # Sunspot Number plot
+    # ax5 = plt.subplot(gs[2])
+
+
+
+
+    # Magnetogram plot (top row, spanning two columns)
+    ax0 = plt.subplot(gs[0, :])
+
+    # Magnetic Field Strength/Expansion plot (middle row, first column)
+    ax1 = plt.subplot(gs[1, 0])
+    ax2 = ax1.twiny()
+
+    # Lat/Lon plot (middle row, second column)
+    ax3 = plt.subplot(gs[1, 1], sharey=ax1)
+
+    # Lat/Lon plot (middle row, second column)
+    ax4 = plt.subplot(gs[1, 2], sharey=ax1)
+
+    # Sunspot Number plot (bottom row, spanning two columns)
+    ax5 = plt.subplot(gs[2, :])
 
 
 
@@ -204,25 +223,38 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
 
 
 
+    fig.suptitle(F"Fluxon Magnetic Field Properties for CR {args.cr}, with {nfluxon} Open Fields")
+    ax0.set_title(F"Field Strength and Origin at r = {r1:.2f} Rs")
 
+    ax3.set_title(F"Radial Field Characteristics")
 
+    ax0.set_xlabel('Longitude (Radians)')
+    ax0.set_ylabel('Sine latitude')
 
     ### SECOND PLOT ###
     alabel = r"Magnetic Field Strength [Gauss]"
     blabel = r"Expansion Factor"
-    tlabel = r"Latitude [Radians]"
+    latlabel = r"Latitude [Sine Radians]"
+    lonlabel = r"Longitude [Radians]"
 
 
-    ax1.set_xlabel(r'Heliocentric Radius [R$_\odot$]')
-    ax1.set_ylabel(alabel, color='r')
-    ax1.tick_params(axis='y', labelcolor='r')
+    ax1.set_ylabel(r'Heliocentric Radius [R$_\odot$]')
+    ax1.set_xlabel(alabel, color='r')
+    ax1.tick_params(axis='x', labelcolor='r')
     ax1.set_yscale('log')
     ax1.set_xscale('log')
 
     # Create a second y-axis for the expansion data
-    ax2.set_yscale('log')
-    ax2.set_ylabel(blabel, color='b')
-    ax2.tick_params(axis='y', labelcolor='b')
+    ax2.set_xscale('log')
+    ax2.set_xlabel(blabel, color='b')
+    ax2.tick_params(axis='x', labelcolor='b')
+
+
+    ax3.set_xlabel(lonlabel, color='purple')
+    ax3.tick_params(axis='x', labelcolor='purple')
+
+    ax4.set_xlabel(latlabel, color='green')
+    ax4.tick_params(axis='x', labelcolor='green')
 
 
     # Plot the Curves
@@ -239,21 +271,32 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
         field = arr[8,floc]
         field_2 = arr[9,floc]
 
-        ax1.plot(rr, field, c=plt.cm.Reds(i / nfluxon), label=blabel if i == 0 else "", alpha=0.8)
-        ax2.plot(rr, expansion, c=plt.cm.Blues(i / nfluxon), label=alabel if i == 0 else "", alpha=0.8)
-        # ax1.plot(rr, pphi, c=plt.cm.Purples(i / nfluxon), label=tlabel if i == 0 else "", alpha=0.8)
+        some = 0.1 * nfluxon
+        index = (i+some)/(nfluxon+some)
+
+        ax1.plot(field, rr, c=plt.cm.Reds(index), label=blabel if i == 0 else "", alpha=0.7, zorder=2000)
+        ax2.plot(expansion, rr, c=plt.cm.Blues(index), label=alabel if i == 0 else "", alpha=0.7, zorder= 1000)
+
+        ### THIRD PLOT ###
+        ax3.plot(np.unwrap(pphi),rr,  c=plt.cm.Purples(index), label=latlabel if i == 0 else "", alpha=0.6, zorder=3000)
+        ax3.set_xlim(-0.1, 2*np.pi)
+
+        ### Fourth PLOT ###
+        ax4.plot(np.sin(ttheta),rr,  c=plt.cm.brg((maxlist[i]+1)/2), label=lonlabel if i == 0 else "", alpha=0.6, zorder=3000)
 
     r1 = rad0
     r2 = rad1
-    ax1.axvline(r1, ls=":", c='k', zorder=1000000)
+    ax2.axhline(r1, ls=":", c='k', zorder=1000000)
+    ax3.axhline(r1, ls=":", c='k', zorder=1000000)
+    ax4.axhline(r1, ls=":", c='k', zorder=1000000)
     if do_r2:
-        ax1.axvline(r2, ls=":", c='k', zorder=1000)
+        ax1.ahvline(r2, ls=":", c='k', zorder=1000)
 
 
 
 
 
-    ### THIRD PLOT ###
+    ### Fourth PLOT ###
     # Plot the Sunspot Number
     carrington = np.loadtxt("/Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/SN_m_tot_V2.0.txt").T
     ## https://sidc.be/SILSO/datafiles#total ##
@@ -264,13 +307,13 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
     # CR = int(sunpy.coordinates.sun.carrington_rotation_number(date))
 
     # fig, ax = plt.subplots()
-    ax3.plot(date, sunspots, label="Sunspots")
-    ax3.axvline(this_date.decimalyear, ls=":", c='k', zorder=1000000)
-    ax3.set_xlabel("Year")
-    ax3.set_ylabel("Sunspots")
-    ax3.set_title("Solar Cycle")
-    ax3.set_xlim(2005, 2025)
-    ax3.set_ylim(0, 200)
+    ax5.plot(date, sunspots, label="Sunspots")
+    ax5.axvline(this_date.decimalyear, ls=":", c='k', zorder=1000000)
+    ax5.set_xlabel("Year")
+    ax5.set_ylabel("Sunspots")
+    ax5.set_title("Solar Cycle")
+    ax5.set_xlim(2005, 2025)
+    ax5.set_ylim(0, 200)
     # fig.close()
     # plt.show()
 
@@ -278,12 +321,6 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
 
 
 
-    fig.suptitle(F"Fluxon Magnetic Field Properties for CR {args.cr}, with {nfluxon} Open Fields")
-    ax0.set_title(F"Field Strength and Origin at r = {r1:.2f} Rs")
-    ax1.set_title(F"Magnetic Field Strength and Expansion Factor vs Height")
-
-    ax0.set_xlabel('Longitude (Radians)')
-    ax0.set_ylabel('Sine latitude')
 
     # Adjust layout
     fig.set_size_inches((8,8))
@@ -322,7 +359,7 @@ def create_video_from_images(image_folder, video_name, frame_rate=3.0, codec='XV
 
     height, width, layers = frame.shape
 
-    video_folder = os.path.join(os.path.dirname(image_folder), "expansion_videos")
+    video_folder = os.path.join(os.path.dirname(image_folder), "..", "expansion_videos")
     if not os.path.exists(video_folder):
         os.makedirs(video_folder)
 
@@ -341,7 +378,7 @@ def run_plots(args):
     maxlist = None
     for rr in np.arange(100):
         try:
-            bmagfull, maxlist = plot_bmag_all(args, rr, maxlist=maxlist)
+            bmagfull, maxlist = plot_bmag_fill(args, rr, maxlist=maxlist)
             bmagdir = os.path.dirname(bmagfull)
             bmagfile= os.path.basename(bmagfull)
             if rr == 0:
@@ -362,7 +399,7 @@ def run_plots(args):
 # Main Code
 if __name__ == "__main__":
     # Create the argument parser
-    print("\n\tPlotting Bmag_All...", end="")
+    print("\n\tPlotting Bmag_Fill...", end="")
     from fluxpipe.helpers.pipe_helper import configurations
     configs = configurations()
 

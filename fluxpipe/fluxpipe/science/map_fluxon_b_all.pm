@@ -25,6 +25,7 @@ sub map_fluxon_b_all {
 
     # Open an output file
     open(my $fh, '>', $output_filename) or die "Could not open file '$output_filename': $!";
+    printf $fh "# fnum \t\t x \t\t y \t\t z \t\t\t radius \t\t theta \t\t phi \t\t A \t\t\t b_mag \t\t b_mag2 \t\t\t b_x \t\t b_y \t\t b_z\n";
 
     # Loop through open fluxons and generate magnetic field profiles
     for my $fluxon_id (0..scalar(@fluxons)-1) {
@@ -38,44 +39,52 @@ sub map_fluxon_b_all {
         if ($fluxon->{plasmoid} || ($start_open + $end_open != 1)) {
             next;
         }
-        my $r0 = 696e6;
-        my $solar_radius = 696e6;
+        my $r0 = my $solar_radius = 1; #696e6;
         my $x, my $y, my $z;
         my $radius, my $radius_vec;
         my $theta, my $phi;
-        my $magnetic_magnitude;
-        my $A;
+        my $bmag, my $bmag_2;
+        my $magnetic_area;
 
         # Extract coordinates
         if ($end_open) {
             $x = squeeze($fluxon->dump_vecs->(0));
             $y = squeeze($fluxon->dump_vecs->(1));
             $z = squeeze($fluxon->dump_vecs->(2));
-            $A = pdl(map {$_->{A}} ($fluxon->vertices)) * $r0 * $r0;
-            $A(-1) .= $A(-2);
+            $magnetic_area = pdl(map {$_->{A}} ($fluxon->vertices)) * $r0 * $r0;
+            $magnetic_area(-1) .= $magnetic_area(-2);
         } else {
             $x = squeeze($fluxon->dump_vecs->(0,-1:0:-1));
             $y = squeeze($fluxon->dump_vecs->(1,-1:0:-1));
             $z = squeeze($fluxon->dump_vecs->(2,-1:0:-1));
-            $A = pdl(map { $_->{A}} ($fluxon->vertices))->(-1:0:-1) * $r0 * $r0;
-            $A(0) .= $A(1);
+            $magnetic_area = pdl(map { $_->{A}} ($fluxon->vertices))->(-1:0:-1) * $r0 * $r0;
+            $magnetic_area(0) .= $magnetic_area(1);
         }
         $radius_vec = ($x**2 + $y**2 + $z**2)->sqrt * $solar_radius;
         $radius = 0.5 * $radius_vec->range([[0],[1]],[$radius_vec->dim(0)],'e')->sumover;
         $theta = acos($z/$radius_vec*$solar_radius);
         $phi = atan2($y, $x);
 
+
         # Calculate magnetic field magnitude
-        my $magnetic_field_0 = $fluxon->bfield;
-        $magnetic_magnitude = squeeze(sqrt($magnetic_field_0(0,:)**2 + $magnetic_field_0(1,:)**2 + $magnetic_field_0(2,:)**2));
-        # if ($magnetic_magnitude(0,0) > $magnetic_magnitude(-1,0)) {
+        my $bfield = $fluxon->bfield;
+        $bmag = squeeze(sqrt($bfield(0,:)**2 + $bfield(1,:)**2 + $bfield(2,:)**2));
+        # $bmag = cat squeeze(sqrt($bfield(0,:)**2 + $bfield(1,:)**2 + $bfield(2,:)**2)),
+        $bmag_2 = squeeze(sqrt($bfield(3,:)**2 + $bfield(4,:)**2 + $bfield(5,:)**2));
+
+
         if ($end_open) {
-            $magnetic_magnitude = $magnetic_magnitude->(-1:0:-1,:);
+            $bmag = $bmag->(-1:0:-1,:);
+            $bmag_2 = $bmag_2->(-1:0:-1,:);
         }
 
         for my $i (0..$radius->getdim(0)-1) {
-            printf $fh "%05d %.8f %.8f %.8f %.8e %.8f %.8f %.8e %.8e\n", $fluxon_id, $x($i)->sclr,
-            $y($i)->sclr, $z($i)->sclr, $radius($i)->sclr, $theta($i)->sclr, $phi($i)->sclr, $magnetic_magnitude($i)->sclr, $A($i)->sclr;
+            printf $fh "%05d %.8f %.8f %.8f %.8e %.8f %.8f %.8e %.8e %.8e %.8e %.8e %.8e\n", $fluxon_id,
+            $x($i)->sclr, $y($i)->sclr, $z($i)->sclr,
+            $radius($i)->sclr, $theta($i)->sclr, $phi($i)->sclr,
+            $magnetic_area($i)->sclr, $bmag($i)->sclr, $bmag_2($i)->sclr,
+            $bfield(0,$i)->sclr, $bfield(1,$i)->sclr, $bfield(2,$i)->sclr;
+
         }
     }
 
@@ -83,8 +92,8 @@ sub map_fluxon_b_all {
     close $fh;
 
 
-    # Call a Python script
-    system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_all.py");
+    # # Call a Python script
+    # system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_all.py");
 
 
 }

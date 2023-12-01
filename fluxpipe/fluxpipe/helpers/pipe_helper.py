@@ -178,7 +178,13 @@ def compute_configs(the_config):
     if not the_config['abs_fl_mhdlib'] in the_config['run_script']:
         the_config["run_script"] = os.path.join(the_config['abs_fl_mhdlib'], the_config["run_script"])
     # the_config["run_script"]    = the_config["run_script"]
-    the_config["rotations"]     = ast.literal_eval(the_config["rotations"])
+
+    if the_config["rotations"][0] == "[":
+        the_config["rotations"]     = ast.literal_eval(the_config["rotations"])
+    elif the_config["rotations"][0] == "(":
+        (start, stop, step) = ast.literal_eval(the_config["rotations"])
+        the_config["rotations"] = list(np.arange(start, stop, step))
+
     the_config["fluxon_count"]  = ast.literal_eval(the_config["fluxon_count"])
     the_config["adapts"]        = ast.literal_eval(the_config["adapts"])
 
@@ -1510,6 +1516,9 @@ def shorten_path(string, __=None, do=False):
     else:
         return string
 
-def get_fixed_coords(phi0, theta0):
-    ph0, th0 = phi0+np.pi, np.sin(-(theta0-(np.pi/2)))
+def get_fixed_coords(phi0, theta0, do=True):
+    if do:
+        ph0, th0 = phi0+np.pi, np.sin(-(theta0-(np.pi/2)))
+    else:
+        ph0, th0 = phi0, theta0
     return ph0, th0

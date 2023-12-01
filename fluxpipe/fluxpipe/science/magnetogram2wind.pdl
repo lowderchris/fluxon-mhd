@@ -291,6 +291,11 @@ system(
 ) == 0 or ( die "Python script returned error $?", exit );
 
 system(
+"$configs{python_dir} $pipedir/plotting/plot_bmag_fill.py"
+      . " --cr $CR --file $out_b_all --nwant $n_fluxons_wanted --adapt $adapt"
+) == 0 or ( die "Python script returned error $?", exit );
+
+system(
 "$configs{python_dir} $pipedir/plotting/plot_fr.py"
       . "  --cr $CR --file $out_fr --nwant $n_fluxons_wanted --adapt $adapt"
 ) == 0 or ( die "Python script returned error $?", exit );

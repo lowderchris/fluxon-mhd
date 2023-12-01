@@ -178,6 +178,9 @@ sub get_wind {
         print "\n\tRadial Magnetic Field (B) Calculation...";
         map_fluxon_b( $out_b, \@fluxons );
         map_fluxon_b_all( $out_b_all, \@fluxons );
+        system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_fill.py");
+        system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_all.py");
+
         print "Done!\n";
 
         # print "\t\t...done with radial B!";
