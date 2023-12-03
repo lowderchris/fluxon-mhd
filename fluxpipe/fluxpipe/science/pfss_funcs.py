@@ -332,7 +332,7 @@ def plot_fluxon_locations(br_safe, cr, datdir, fits_path, reduce,
         Fluxon count
     """
 
-    floc_path = f"{datdir}/batches/{batch}/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
+    floc_path = f"{datdir}/batches/{batch}/data/cr{cr}/floc/floc_cr{cr}_r{reduce}_f{nwant}.dat"
     f_lat, f_lon, f_sgn, n_flux = get_fluxon_locations(floc_path, batch, cr)
     fluxon_location = np.genfromtxt(floc_path)
 

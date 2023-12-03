@@ -118,7 +118,7 @@ sub get_wind {
 
     my $do_wind_calc = 1;
 
-    my $wind_out_dir   = $datdir . "/batches/$batch_name/cr" . $CR . '/wind';
+    my $wind_out_dir   = $datdir . "/batches/$batch_name/data/cr" . $CR . '/wind';
     my $prefix         = "$wind_out_dir/cr$CR\_f$n_fluxons_wanted";
     my $out_b          = "$prefix\_radial_bmag.dat";
     my $out_b_all      = "$prefix\_radial_bmag_all.dat";
@@ -220,7 +220,7 @@ if ($0 eq __FILE__) {
 
     my $n_want = $configs{fluxon_count}->at(0);
     my $CR = $configs{rotations}->at(0);
-    my $world_dir = $configs{data_dir} . "/batches/" . $configs{batch_name} . "/cr" . $CR . "/world";
+    my $world_dir = $configs{data_dir} . "/batches/" . $configs{batch_name} . "/data/cr" . $CR . "/world";
 
     my $search_string = $n_want . "_hmi_relaxed_s";  # Modify this to your desired search string
     my ($highest_file, $highest_number) = find_highest_numbered_file_with_string($world_dir, $search_string);

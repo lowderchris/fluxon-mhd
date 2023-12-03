@@ -386,7 +386,7 @@ def plot_wind_map_detailed_orig(configs):
     dat_dir =   configs.get("data_dir")
     nwant =     configs.get("nwant")
     CR =        configs.get("cr")
-    dat_file =  configs.get("file", f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind.dat')
+    dat_file =  configs.get("file", f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind.dat')
 
     # Load the wind file
     arr = np.loadtxt(dat_file).T
@@ -474,7 +474,7 @@ def plot_wind_map_detailed_orig(configs):
     ## SAVING
     # Set the output file names
     filename = f"png_cr{CR}_f{nwant}_ou{n_open}_radial_wind.png"
-    main_file =  f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
+    main_file =  f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/{filename}'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
     if not path.exists(os.path.dirname(main_file)):
@@ -555,7 +555,7 @@ def plot_wind_map_detailed(configs):
     dat_dir = configs.get("data_dir")
     nwant = configs.get("nwant")
     CR = configs.get("cr")
-    dat_file = configs.get("file", f'{dat_dir}/batches/{batch}/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind.dat')
+    dat_file = configs.get("file", f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind.dat')
 
     all_vmin, all_vmax = configs.get("all_vmin", 450), configs.get("all_vmax", 700)
 
@@ -716,7 +716,7 @@ def plot_wind_map_detailed(configs):
 
     # Set the output file names
     filename = f"png_cr{CR}_f{nwant}_ou{n_open}_radial_wind.png"
-    main_file = f'{dat_dir}/batches/{batch}/cr{CR}/wind/{filename}'
+    main_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/{filename}'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
     if not path.exists(os.path.dirname(main_file)):

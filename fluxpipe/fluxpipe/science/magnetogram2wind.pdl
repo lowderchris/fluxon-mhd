@@ -236,7 +236,7 @@ my $very_beginning = clock_gettime();
         $inst = 'hmi';
     }
 
-    my $world_out_dir = $datdir . "/batches/$batch_name/cr" . $CR . '/world/';
+    my $world_out_dir = $datdir . "/batches/$batch_name/data/cr" . $CR . '/world/';
     mkdir $world_out_dir unless -d $world_out_dir;
     my $full_world_path =
       $world_out_dir . 'cr' . $CR . "_f$n_fluxons_wanted\_$inst.flux";

@@ -106,7 +106,7 @@ def get_pfss(configs=None):
     if not output:
         output, elapsed = compute_pfss(br_safe, pickle_path)  # , nrho, rss
 
-    floc_dir = f"{datdir}/batches/{batch}/cr{cr}/floc"
+    floc_dir = f"{datdir}/batches/{batch}/data/cr{cr}/floc"
     floc_path   = f"{floc_dir}/floc_cr{cr}_r{mag_reduce}_f{nwant}_{inst}.dat"
     open_path   = f"{floc_dir}/floc_open_cr{cr}_r{mag_reduce}_f{nwant}_{inst}.dat"
     closed_path = f"{floc_dir}/floc_closed_cr{cr}_r{mag_reduce}_f{nwant}_{inst}.dat"

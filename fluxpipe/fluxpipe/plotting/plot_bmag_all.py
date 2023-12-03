@@ -56,9 +56,9 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
         True
     """
     batch = args.batch
-    filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_bmag_all.dat'
+    filename = args.file or f'{args.dat_dir}/batches/{batch}/data/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_bmag_all.dat'
     imagename = os.path.basename(filename.replace(".dat", f"_{r1:02d}.png"))
-    imagedir = os.path.dirname(os.path.dirname(os.path.dirname(filename)))
+    imagedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filename))))
     bmagdir = os.path.join(imagedir, "imgs", "bmag", "all", "sets", f"cr{args.cr}_all_f{args.nwant}")
     if not os.path.exists(bmagdir):
         os.makedirs(bmagdir)

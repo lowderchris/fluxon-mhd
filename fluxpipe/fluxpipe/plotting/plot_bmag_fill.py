@@ -56,9 +56,9 @@ def plot_bmag_fill(args, r1=1, r2=-1, do_r2=False, maxlist=None):
         True
     """
     batch = args.batch
-    filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_bmag_all.dat'
+    filename = args.file or f'{args.dat_dir}/batches/{batch}/data/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_bmag_all.dat'
     imagename = os.path.basename(filename.replace("all.dat", f"fill_{r1:02d}.png"))
-    imagedir = os.path.dirname(os.path.dirname(os.path.dirname(filename)))
+    imagedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filename))))
     bmagdir = os.path.join(imagedir, "imgs", "bmag", "fill", "sets", f"cr{args.cr}_fill_f{args.nwant}")
     if not os.path.exists(bmagdir):
         os.makedirs(bmagdir)
@@ -118,7 +118,7 @@ def plot_bmag_fill(args, r1=1, r2=-1, do_r2=False, maxlist=None):
     th1 = np.sin(th1)
 
     if maxlist is None:
-        maxlist = th0
+        maxlist = th0, ph0
 
     # Do some data manipulation
     br0_max = np.nanmax(b0) or 0.25
@@ -147,17 +147,6 @@ def plot_bmag_fill(args, r1=1, r2=-1, do_r2=False, maxlist=None):
     # Using GridSpec for layout
     fig = plt.figure(figsize=(10, 8))  # Adjust the figure size as needed
     gs = gridspec.GridSpec(3, 3, height_ratios=[4, 4, 1])  # Adjust the ratios as per your requirement
-
-    # # Magnetogram plot
-    # ax0 = plt.subplot(gs[0])
-
-    # # Magnetic Field Strength and Expansion Factor plot
-    # ax1 = plt.subplot(gs[1])
-    # ax2 = ax1.twiny()
-
-    # # Sunspot Number plot
-    # ax5 = plt.subplot(gs[2])
-
 
 
 
@@ -208,7 +197,7 @@ def plot_bmag_fill(args, r1=1, r2=-1, do_r2=False, maxlist=None):
     # Plot Latitude of points
     do_lat = True
     if do_lat:
-        sc01 = ax0.scatter(ph0, th0, c=maxlist, s = 100, cmap="brg",
+        sc01 = ax0.scatter(ph0, th0, c=maxlist[0], s = 100, cmap="brg",
                     alpha=bb0, label=r"First Point Latitude", zorder = 99, marker='o', vmin=-1, vmax=1)
         cbar01 = fig.colorbar(sc01, ax=ax0)
         cbar01.set_label(f"First Point Sine Latitude")
@@ -230,6 +219,9 @@ def plot_bmag_fill(args, r1=1, r2=-1, do_r2=False, maxlist=None):
 
     ax0.set_xlabel('Longitude (Radians)')
     ax0.set_ylabel('Sine latitude')
+
+
+
 
     ### SECOND PLOT ###
     alabel = r"Magnetic Field Strength [Gauss]"
@@ -273,16 +265,18 @@ def plot_bmag_fill(args, r1=1, r2=-1, do_r2=False, maxlist=None):
 
         some = 0.1 * nfluxon
         index = (i+some)/(nfluxon+some)
+        first_index_longitude= (maxlist[0][i]+1)/2
+        first_index_latitude = (maxlist[1][i])/2/np.pi
 
         ax1.plot(field, rr, c=plt.cm.Reds(index), label=blabel if i == 0 else "", alpha=0.7, zorder=2000)
         ax2.plot(expansion, rr, c=plt.cm.Blues(index), label=alabel if i == 0 else "", alpha=0.7, zorder= 1000)
 
         ### THIRD PLOT ###
-        ax3.plot(np.unwrap(pphi),rr,  c=plt.cm.Purples(index), label=latlabel if i == 0 else "", alpha=0.6, zorder=3000)
+        ax3.plot(np.unwrap(pphi),rr,  c=plt.cm.gnuplot(first_index_latitude), label=latlabel if i == 0 else "", alpha=0.6, zorder=3000)
         ax3.set_xlim(-0.1, 2*np.pi)
 
         ### Fourth PLOT ###
-        ax4.plot(np.sin(ttheta),rr,  c=plt.cm.brg((maxlist[i]+1)/2), label=lonlabel if i == 0 else "", alpha=0.6, zorder=3000)
+        ax4.plot(np.sin(ttheta),rr,  c=plt.cm.brg(first_index_longitude), label=lonlabel if i == 0 else "", alpha=0.6, zorder=3000)
 
     r1 = rad0
     r2 = rad1

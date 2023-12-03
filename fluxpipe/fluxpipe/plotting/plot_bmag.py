@@ -47,7 +47,7 @@ def plot_bmag(configs):
     # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
     # CR = configs['cr'] #args.cr or configs["rotations"][0]
 
-    default_file =f"{configs['data_dir']}/batches/{configs['batch_name']}/cr{configs['cr']}/wind/cr{configs['cr']}_f{configs['nwant']}_radial_bmag.dat"
+    default_file =f"{configs['data_dir']}/batches/{configs['batch_name']}/data/cr{configs['cr']}/wind/cr{configs['cr']}_f{configs['nwant']}_radial_bmag.dat"
 
     filename = configs.get('file', default_file)
 

@@ -115,8 +115,8 @@ sub make_world_from_pfss {
     my ($datdir, $batch_name, $CR, $reduction, $n_fluxons_wanted, $adapt, $force_make_world, $lim, $lim2, $configs) = @_;
 
     # Define the output directory and floc path
-    my $world_out_dir = "$datdir/batches/$batch_name/cr$CR/world";
-    my $floc_path = "$datdir/batches/$batch_name/cr$CR/floc";
+    my $world_out_dir = "$datdir/batches/$batch_name/data/cr$CR/world";
+    my $floc_path = "$datdir/batches/$batch_name/data/cr$CR/floc";
     my $file_end;
 
     if ($adapt) {

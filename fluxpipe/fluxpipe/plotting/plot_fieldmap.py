@@ -122,7 +122,7 @@ def magnet_plot(get_cr=None, datdir=None, _batch=None, open_f=None, closed_f=Non
 
 
     # Define the directory paths for the files
-    floc_path = f"{datdir}/batches/{_batch}/cr{get_cr}/floc/"
+    floc_path = f"{datdir}/batches/{_batch}/data/cr{get_cr}/floc/"
     top_dir   = f"{datdir}/batches/{_batch}/imgs/footpoints/"
     if not path.exists(top_dir):
         os.makedirs(top_dir)
