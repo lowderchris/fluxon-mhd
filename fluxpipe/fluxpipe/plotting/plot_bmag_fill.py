@@ -59,7 +59,7 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     """
     configs = configurations(debug=False, args=args)
     batch = args.batch
-    ext = "svg"
+    ext = "png"
     filename = args.file or f'{args.dat_dir}/batches/{batch}/data/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_bmag_all.dat'
     imagename = os.path.basename(filename.replace("all.dat", f"fill_{r0:02d}.{ext}"))
     imagedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filename))))
@@ -147,6 +147,7 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
 
     RS = 696340000 #meters
 
+    fig2, ax_diff = plt.subplots()
 
     # Using GridSpec for layout
     fig = plt.figure()  # Adjust the figure size as needed
@@ -267,9 +268,11 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     ax_latt.set_xlabel(latlabel)#, color='green')
     # ax_latt.tick_params(axis='x', labelcolor='green')
 
+    radial_heights = []
 
     # Plot the Curves
     for i in reversed(np.arange(0, nfluxon)):
+        # Get data
         floc = np.where(arr[0,:] == i)[0]
         rr = arr[4, floc]
 
@@ -284,27 +287,82 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
 
         some = 0.1 * nfluxon
         index = (i+some)/(nfluxon+some)
-        first_index_longitude= (maxlist[0][i]+1)/2
-        first_index_latitude = (maxlist[1][i])/2/np.pi
+        first_index_lat= (maxlist[0][i]+1)/2
+        first_index_long = (maxlist[1][i])/2/np.pi
+        col = plt.cm.brg(first_index_lat)
 
+
+
+        ppphi = np.unwrap(pphi)
+        diff_ppphi = np.abs(np.diff(ppphi))
+        diff_rr = np.abs(np.diff(rr))
+        dphi_dr = np.abs(diff_ppphi / diff_rr)
+
+
+        straight_pt = 0.087  # 5 degrees in radians
+        #start at one end of the array and iterate until it stops being close to zero, then record that index and plot a line at that index
+        for ii in reversed(np.arange(len(dphi_dr))):
+            if dphi_dr[ii] > straight_pt:
+                break
+        ax_diff.scatter(-0.005, rr[ii], color=col, alpha=0.6, zorder=3000, marker="_")
+        ax_diff.plot(dphi_dr, rr[:-1], color=col, alpha=0.6, zorder=3000)
+
+        radial_heights.append(rr[ii])
+
+        ### SECOND PLOT ###
         magline, = ax_newexpand.plot(field, rr, c=plt.cm.Reds_r(index), label=fieldlabel if i == 0 else "", alpha=0.7, zorder=2000)
         expline, = ax_newexpand.plot(expansion, rr, c=plt.cm.Blues_r(index), label=expandlabel if i == 0 else "", alpha=0.7, zorder= 1000)
 
         ### THIRD PLOT ###
 
-        col = plt.cm.brg(first_index_longitude)
 
-        ppphi = np.unwrap(pphi)
-        ax_long.plot(ppphi,rr,  c=col, label=latlabel if i == 0 else "", alpha=0.6, zorder=3000-(2*i))
-        # ax_long.plot(ppphi,rr,  c=plt.cm.gnuplot(first_index_latitude), label=latlabel if i == 0 else "", alpha=0.6, zorder=3000)
+        ax_long.plot(ppphi,rr,  color=col, label=latlabel if i == 0 else "", alpha=0.6, zorder=3000-(2*i))
+        # ax_long.plot(ppphi,rr,  c=plt.cm.gnuplot(first_index_long), label=latlabel if i == 0 else "", alpha=0.6, zorder=3000)
         ax_long.set_xlim(-1, 2*np.pi+1)
 
         ### Fourth PLOT ###
         tttheta = np.sin(ttheta)
-        ax_latt.plot(tttheta,rr,  c=col, label=lonlabel if i == 0 else "", alpha=0.6, zorder=3000)
+        ax_latt.plot(tttheta,rr,  color=col, label=lonlabel if i == 0 else "", alpha=0.6, zorder=3000)
         ax_latt.set_xlim(1.1, -1.1)
+
         ax_allmag.scatter(ppphi[0], tttheta[0], color=col, s=20, linewidth=0, zorder=3000)
-        ax_allmag.plot(ppphi, tttheta, c=col, alpha=0.6, zorder=3000)
+        ax_allmag.plot(ppphi, tttheta, color=col, alpha=0.6, zorder=3000)
+
+
+
+    # do statistics on the radial heights
+    radial_heights = np.array(radial_heights)
+    radial_heights = radial_heights[~np.isnan(radial_heights)]
+    mean_radial_height = np.mean(radial_heights)
+    median_radial_height = np.median(radial_heights)
+    std_radial_height = np.std(radial_heights)
+    ax_diff.axhline(mean_radial_height, ls="--", c='k', zorder=1000000, label="Mean: {:.2f} R$_\odot$".format(mean_radial_height))
+    ax_diff.axhline(median_radial_height, ls=":", c='k', zorder=1000000, label="Median: {:.2f} R$_\odot$".format(median_radial_height))
+    ax_diff.axvline(straight_pt, ls=":", c='grey', zorder=1000000, label=f'"Straight": {straight_pt*180/np.pi:.2f} Degrees per R$_\odot$')
+    ax_diff.set_xlim(-0.01, 0.1)
+
+    # ax_diff.axhline(mean_radial_height+std_radial_height, ls=":", c='k', zorder=1000000)
+    # ax_diff.axhline(mean_radial_height-std_radial_height, ls=":", c='k', zorder=1000000)
+    # ax_diff.set_ylim(1, 5)
+    ax_diff.set_xlabel(r"$\frac{d\phi}{dr}$ [radians per R$_\odot$]")
+    ax_diff.set_ylabel(r"$r$ [R$_\odot$]")
+    ax_diff.set_title(f"Radial Expansion, {nfluxon} open fields, Mean: {mean_radial_height:.2f} R$_\odot$")
+    # ax_diff.legend()
+    # ax_diff.set_title(f"Median Height of Radial Expansion: {median_radial_height:.2f} R$_\odot$, {nfluxon} open fields")
+    # ax_diff.set_xlim(0, 1)
+    # ax_diff.set_xscale('linear')
+    # ax_diff.set_yscale('log')
+    # ax_diff.set_xticks([0, 0.5, 1])
+    # ax_diff.set_xticklabels([0, 0.5, 1])
+    # ax_diff.set_yticks([1, 2, 3, 4, 5])
+    # ax_diff.set_yticklabels([1, 2, 3, 4, 5])
+    # ax_diff.set_facecolor('grey')
+    # ax_diff.set_aspect('auto')
+    # ax_diff.tick_params(axis='both', which='both', direction='in', top=True, right=True)
+    # ax_diff.grid(True, which='both', axis='both', alpha=0.5, zorder=0)
+
+
+
 
     r0 = rad0
     r1 = rad1
@@ -370,10 +428,19 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     )
 
 
-    plt.savefig(bmagname)
-    if args.show or True:
+    fig.savefig(bmagname)
+
+    dr = os.path.dirname(os.path.dirname(os.path.dirname(bmagname))) + "/radial"
+    if not os.path.exists(dr):
+        os.makedirs(dr)
+    pathh = os.path.join(dr, os.path.basename(bmagname).replace(".png", "_radial.png"))
+    print(pathh)
+    fig2.savefig(pathh)
+
+    if args.show or False:
         plt.show()
     plt.close(fig)
+    plt.close(fig2)
     print(".", end="", flush=True)
     return bmagname, maxlist
 
