@@ -337,9 +337,10 @@ def create_video_from_images(image_folder, video_name, frame_rate=3.0, codec='XV
     video.release()
 
 
-def run_plots(args):
+def run_plots(args, times=0):
     maxlist = None
-    for rr in np.arange(100):
+    for rr in np.arange(times+1):
+        tried = True
         try:
             bmagfull, maxlist = plot_bmag_all(args, rr, maxlist=maxlist)
             bmagdir = os.path.dirname(bmagfull)
@@ -355,6 +356,7 @@ def run_plots(args):
                 os.makedirs(new_dir)
             shutil.copyfile(bmagfull, os.path.join(new_dir, bmagfile))
             break
+    assert tried, "Something went wrong with the plot_bmag_all function."
     print("Done!\n")
     return bmagdir
 
@@ -380,5 +382,5 @@ if __name__ == "__main__":
 
     bmagdir = run_plots(args)
     filename = "expansion_cr{}_f{}.avi".format(args.cr, args.nwant)
-    create_video_from_images(bmagdir, filename)
+    # create_video_from_images(bmagdir, filename)
 

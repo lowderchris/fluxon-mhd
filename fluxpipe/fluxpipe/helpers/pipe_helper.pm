@@ -300,7 +300,7 @@ sub configs_update_magdir {
     my $adapt_select     = $configs_ref->{'adapt_select'};
     my $CR               = $configs_ref->{'CR'};
     my $batchdir         = $configs_ref->{'batch_dir'};
-    my $flocdir          = "$batchdir/cr$CR/floc";
+    my $flocdir          = "$batchdir/data/cr$CR/floc";
     my $n_fluxons_wanted = $configs_ref->{'n_fluxons_wanted'};
     my $reduction        = $configs_ref->{'mag_reduce'};
     my $magfile;

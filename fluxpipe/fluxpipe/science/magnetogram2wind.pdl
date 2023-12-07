@@ -157,6 +157,17 @@ if ($recompute) {
     $do_png                    = 1;
 }
 
+
+# Select the World
+my $inst;
+if ($adapt) {
+    $inst = 'adapt';
+}
+else {
+    $inst = 'hmi';
+}
+
+
 my ( $pipedir, $pdldir, $datdir, $magdir, $batchdir, $logfile ) =
   @configs{qw/pipe_dir pdl_dir datdir mag_dir batch_dir logfile/};
 
@@ -164,6 +175,8 @@ print_banner( $batch_name, $CR, $reduction, $n_fluxons_wanted,
     $recompute_string, $adapt );
 
 my $very_beginning = clock_gettime();
+
+if (0){
 
 #### BEGIN ##################################################################
 
@@ -227,14 +240,6 @@ my $very_beginning = clock_gettime();
 # Then we take that initial guess from pfss.py and relax down using the fluxon code, which gets us realistic topology, and a near force-free state,
 # but allowing for currents (not a potential field any longer).
 
-    # Select the World
-    my $inst;
-    if ($adapt) {
-        $inst = 'adapt';
-    }
-    else {
-        $inst = 'hmi';
-    }
 
     my $world_out_dir = $datdir . "/batches/$batch_name/data/cr" . $CR . '/world/';
     mkdir $world_out_dir unless -d $world_out_dir;
@@ -263,10 +268,41 @@ my $fmap_command =
 system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
 
 
+}
+
 #######################################################################################################
 ## Begin solar wind computation  ######################################################################
 #######################################################################################################
 # our ( $out_b, $out_fr, $out_wind );
+
+if (!defined($this_world_relaxed)) {
+    my $world_out_dir = $datdir . "/batches/$batch_name/data/cr" . $CR . '/world/';
+    my $file_pattern = "cr${CR}_f${n_fluxons_wanted}_${inst}_relaxed_s(\\d+).flux";
+
+    opendir(my $dh, $world_out_dir) or die "Cannot open directory: $!";
+    my @files = readdir($dh);
+    closedir($dh);
+
+    my $max_d = -1;
+    my $selected_file = '';
+
+    foreach my $file (@files) {
+        if ($file =~ /$file_pattern/) {
+            my $d_value = $1;  # Captured number from the pattern
+            if ($d_value > $max_d) {
+                $max_d = $d_value;
+                $selected_file = $file;
+            }
+        }
+    }
+
+    if ($max_d != -1) {
+        my $full_world_path = $world_out_dir . $selected_file;
+        $this_world_relaxed = read_world($full_world_path);
+    } else {
+        print "No matching files found.\n";
+    }
+}
 
 
 my ( $out_b, $out_fr, $out_wind, $out_b_all ) =

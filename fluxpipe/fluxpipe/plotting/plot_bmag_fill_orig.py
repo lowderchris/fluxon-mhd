@@ -59,9 +59,8 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     """
     configs = configurations(debug=False, args=args)
     batch = args.batch
-    ext = "svg"
     filename = args.file or f'{args.dat_dir}/batches/{batch}/data/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_bmag_all.dat'
-    imagename = os.path.basename(filename.replace("all.dat", f"fill_{r0:02d}.{ext}"))
+    imagename = os.path.basename(filename.replace("all.dat", f"fill_{r0:02d}.png"))
     imagedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filename))))
     bmagdir = os.path.join(imagedir, "imgs", "bmag", "fill", "sets", f"cr{args.cr}_fill_f{args.nwant}")
     if not os.path.exists(bmagdir):
@@ -143,46 +142,50 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
 
 
 
-    # fig, (ax_lowmag, ax_newexpand) = plt.subplots(2)
+    # fig, (ax0, ax1) = plt.subplots(2)
 
     RS = 696340000 #meters
 
 
     # Using GridSpec for layout
     fig = plt.figure()  # Adjust the figure size as needed
-    gs = gridspec.GridSpec(3, 6, height_ratios=[2.5, 2.5, 1.5])  # Adjust the ratios as per your requirement
+    gs = gridspec.GridSpec(3, 4, height_ratios=[2.5, 2.5, 1])  # Adjust the ratios as per your requirement
 
-    fig.set_size_inches((12,8))
 
 
     # Magnetogram plot (top row, spanning two columns)
-    ax_lowmag = plt.subplot(gs[0, :3])
-    ax_highmag = plt.subplot(gs[0, 3:], sharex=ax_lowmag, sharey=ax_lowmag)
-    ax_newexpand = plt.subplot(gs[2, :3])
-    ax_cycle = plt.subplot(gs[2, 3:])
+    ax0 = plt.subplot(gs[0, 0:2])
+    ax05 = plt.subplot(gs[0, 2:4], sharex = ax0, sharey=ax0)
 
-    ax_allmag = plt.subplot(gs[1, :2], sharex=ax_lowmag, sharey=ax_lowmag)
-    ax_long = plt.subplot(gs[1, 2:4], sharex=ax_lowmag, sharey=ax_newexpand)
-    ax_latt = plt.subplot(gs[1, 4:], sharey=ax_newexpand,)
+    # Magnetic Field Strength/Expansion plot (middle row, first column)
+    ax1 = plt.subplot(gs[1, 0:2])
+    ax2 = ax1.twiny()
 
-    ax_highmag.tick_params(axis='y', labelleft=False)
-    ax_long.tick_params(axis='y', labelleft=False)
-    ax_latt.tick_params(axis='y', labelleft=False, labelright=True)
+    # Lat/Lon plot (middle row, second column)
+    ax3 = plt.subplot(gs[1, 2], sharey=ax1)
+
+    # Lat/Lon plot (middle row, second column)
+    ax4 = plt.subplot(gs[1, 3], sharey=ax1)
+
+    # Sunspot Number plot (bottom row, spanning two columns)
+    ax50 = plt.subplot(gs[2, :2], sharey=ax1)
+    ax5 = plt.subplot(gs[2, 2:])
+
+
+
+    ax05.tick_params(axis='y', labelleft=False)
+    ax3.tick_params(axis='y', labelleft=False)
+    ax4.tick_params(axis='y', labelleft=False)
 
 
 
     ### FIRST PLOT ###
     # Plot magnetogram
     magnet = load_fits_magnetogram(configs=configs, cr=args.cr)
-    ax_lowmag.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
+    ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
             extent=(0,2*np.pi,-1,1), aspect='auto', vmin=-500, vmax=500, alpha=0.5)
-    ax_highmag.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
+    ax05.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
             extent=(0,2*np.pi,-1,1), aspect='auto', vmin=-500, vmax=500, alpha=0.5)
-    ax_allmag.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
-            extent=(0,2*np.pi,-1,1), aspect='auto', vmin=-500, vmax=500, alpha=0.5)
-
-    import warnings
-    warnings.filterwarnings('ignore', 'divide by zero encountered in divide')
 
     #Plot Magnetic Field Strength
     try:
@@ -203,69 +206,59 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     # Plot Latitude of points
     do_lat = True
     if do_lat:
-        sc01 = ax_lowmag.scatter(ph0, th0, c=maxlist[0], s = 100, cmap="brg",
+        sc01 = ax0.scatter(ph0, th0, c=maxlist[0], s = 100, cmap="brg",
                     alpha=bb0, label=r"First Point Latitude", zorder = 99, marker='o', vmin=-1, vmax=1)
-        cbar01 = fig.colorbar(sc01, ax=ax_lowmag)
+        cbar01 = fig.colorbar(sc01, ax=ax0)
         # cbar01.set_label(f"Lowest Latitude")
 
 
     if True:
-        sc01 = ax_highmag.scatter(ph1, th1, c=maxlist[0], s = 100, cmap="brg",
+        sc01 = ax05.scatter(ph1, th1, c=maxlist[0], s = 100, cmap="brg",
                     alpha=bb1, label=r"First Point Latitude", marker='o', vmin=-1, vmax=1)
-        cbar01 = fig.colorbar(sc01, ax=ax_highmag)
+        cbar01 = fig.colorbar(sc01, ax=ax05)
         cbar01.set_label("Lowest Latitude")
 
 
 
 
     fig.suptitle(F"Fluxon Magnetic Field Properties for CR {args.cr}, with {nfluxon} Open Fields")
-    ax_lowmag.set_title(F"Field Strength and Origin at r = {rad0:.2f} Rs")
-    ax_highmag.set_title(F"Field Strength and Origin at r = {rad1:.2f} Rs")
-    ax_allmag.set_title(F"Transverse Displacement")
-    ax_latt.set_title(F"Lattitude Displacement")
-    ax_long.set_title(F"Longitude Displacement")
+    ax0.set_title(F"Field Strength and Origin at r = {rad0:.2f} Rs")
+    ax05.set_title(F"Field Strength and Origin at r = {rad1:.2f} Rs")
 
+    # ax3.set_title(F"Radial Field Characteristics")
 
-    # ax_long.set_title(F"Radial Field Characteristics")
-
-
-    for ax in [ax_lowmag, ax_highmag, ax_allmag]:
-        ax.set_xlabel('Longitude [Radians]', labelpad=0)
-        ax.set_ylabel('Sine latitude')
-        ax.set_aspect('auto')
-        ax.set_xlim(-1, 7)
-        ax.axvline(0)
-        ax.axvline(2*np.pi)
-        ax.set_facecolor('grey')
+    ax0.set_xlabel('Longitude (Radians)', labelpad=-2)
+    ax0.set_ylabel('Sine latitude')
 
 
 
-    ax_newexpand.set_title("Fluxon Properties")
 
     ### SECOND PLOT ###
-    fieldlabel = "Magnetic Field Strength"
+    fieldlabel = "Magnetic Field Strength [Gauss]        "
     expandlabel = r"Expansion Factor"
     latlabel = r"Latitude [Sine Radians]"
     lonlabel = r"Longitude [Radians]"
 
-    ax_latt.set_ylabel(r'Heliocentric Radius [R$_\odot$]')
-    ax_latt.set_yscale('log')
-    ax_latt.yaxis.set_label_position("right")
-    ax_latt.yaxis.set_ticks_position('both')
 
-    ax_newexpand.set_ylabel(r'Heliocentric Radius [R$_\odot$]')
-    ax_newexpand.set_yscale('log')
-    ax_newexpand.set_xscale('log')
+    ax1.set_ylabel(r'Heliocentric Radius [R$_\odot$]')
+    # ax1.set_xlabel(None, color='b')
+    ax1.set_xlabel(expandlabel, color='b', labelpad=0)
+    ax1.tick_params(axis='x', labelcolor='b')
+    ax1.set_yscale('log')
+    ax1.set_xscale('log')
 
     # Create a second y-axis for the expansion data
-    ax_newexpand.set_xscale('log')
+    ax2.set_xscale('log')
+    # ax2.set_xlabel(None, color='r')
+    ax2.set_xlabel(fieldlabel, color='r', labelpad=-8)
+    ax2.tick_params(axis='x', labelcolor='r')
 
 
-    ax_long.set_xlabel(lonlabel)#, color='purple')
-    # ax_long.tick_params(axis='x', labelcolor='purple')
+    ax3.set_xlabel(lonlabel, color='purple')
+    ax3.tick_params(axis='x', labelcolor='purple')
 
-    ax_latt.set_xlabel(latlabel)#, color='green')
-    # ax_latt.tick_params(axis='x', labelcolor='green')
+    ax4.set_xlabel(latlabel, color='green')
+    ax4.tick_params(axis='x', labelcolor='green')
 
 
     # Plot the Curves
@@ -287,43 +280,38 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
         first_index_longitude= (maxlist[0][i]+1)/2
         first_index_latitude = (maxlist[1][i])/2/np.pi
 
-        magline, = ax_newexpand.plot(field, rr, c=plt.cm.Reds_r(index), label=fieldlabel if i == 0 else "", alpha=0.7, zorder=2000)
-        expline, = ax_newexpand.plot(expansion, rr, c=plt.cm.Blues_r(index), label=expandlabel if i == 0 else "", alpha=0.7, zorder= 1000)
+        magline, = ax2.plot(field, rr, c=plt.cm.Reds_r(index), label=fieldlabel if i == 0 else "", alpha=0.7, zorder=2000)
+        expline, = ax1.plot(expansion, rr, c=plt.cm.Blues_r(index), label=expandlabel if i == 0 else "", alpha=0.7, zorder= 1000)
 
         ### THIRD PLOT ###
 
-        col = plt.cm.brg(first_index_longitude)
-
         ppphi = np.unwrap(pphi)
-        ax_long.plot(ppphi,rr,  c=col, label=latlabel if i == 0 else "", alpha=0.6, zorder=3000-(2*i))
-        # ax_long.plot(ppphi,rr,  c=plt.cm.gnuplot(first_index_latitude), label=latlabel if i == 0 else "", alpha=0.6, zorder=3000)
-        ax_long.set_xlim(-1, 2*np.pi+1)
+        ax3.plot(ppphi,rr,  c=plt.cm.brg(first_index_longitude), label=latlabel if i == 0 else "", alpha=0.6, zorder=3000-(2*i))
+        # ax3.plot(ppphi,rr,  c=plt.cm.gnuplot(first_index_latitude), label=latlabel if i == 0 else "", alpha=0.6, zorder=3000)
+        ax3.set_xlim(-1, 2*np.pi+1)
 
         ### Fourth PLOT ###
-        tttheta = np.sin(ttheta)
-        ax_latt.plot(tttheta,rr,  c=col, label=lonlabel if i == 0 else "", alpha=0.6, zorder=3000)
-        ax_latt.set_xlim(1.1, -1.1)
-        ax_allmag.scatter(ppphi[0], tttheta[0], color=col, s=20, linewidth=0, zorder=3000)
-        ax_allmag.plot(ppphi, tttheta, c=col, alpha=0.6, zorder=3000)
+        ax4.plot(np.sin(ttheta),rr,  c=plt.cm.brg(first_index_longitude), label=lonlabel if i == 0 else "", alpha=0.6, zorder=3000)
+        ax4.set_xlim(1.1, -1.1)
 
     r0 = rad0
     r1 = rad1
-    ax_newexpand.axhline(r0, ls=":", c='k', zorder=1000000)
-    ax_long.axhline(r0, ls=":", c='k', zorder=1000000)
-    ax_latt.axhline(r0, ls=":", c='k', zorder=1000000)
+    ax2.axhline(r0, ls=":", c='k', zorder=1000000)
+    ax3.axhline(r0, ls=":", c='k', zorder=1000000)
+    ax4.axhline(r0, ls=":", c='k', zorder=1000000)
     # if r1:
-        # ax_newexpand.axvline(r1, ls=":", c='k', zorder=1000)
+        # ax1.axvline(r1, ls=":", c='k', zorder=1000)
 
     # Create handles and labels
     handles, labels = [], []
-    for ax in [ax_newexpand]:
+    for ax in [ax1, ax2]:
         ax_handles, ax_labels = ax.get_legend_handles_labels()
         handles.extend(ax_handles)
         labels.extend(ax_labels)
 
     # Create a single legend
-    ax_newexpand.legend(handles, labels, frameon=False, loc='center left')
-    ax_newexpand.set_xlim((1* 10**(-6), 5* 10**2))
+    ax1.legend(handles, labels, frameon=False, loc='center left')
+    ax1.set_xlim((1* 10**(-6), 5* 10**2))
 
 
 
@@ -339,26 +327,26 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     # CR = int(sunpy.coordinates.sun.carrington_rotation_number(date))
 
     # fig, ax = plt.subplots()
-    ax_cycle.plot(date, sunspots, label="Sunspots")
-    ax_cycle.axvline(this_date.decimalyear, ls=":", c='k', zorder=1000000)
-    ax_cycle.set_xlabel("Year")
-    ax_cycle.set_ylabel("Sunspots")
-    ax_cycle.yaxis.set_label_position("right")
-    ax_cycle.yaxis.set_ticks_position('right')
+    ax5.plot(date, sunspots, label="Sunspots")
+    ax5.axvline(this_date.decimalyear, ls=":", c='k', zorder=1000000)
+    ax5.set_xlabel("Year")
+    ax5.set_ylabel("Sunspots")
+    ax5.yaxis.set_label_position("right")
+    ax5.yaxis.set_ticks_position('right')
 
-    ax_cycle.set_title("Solar Cycle")
-    ax_cycle.set_xlim(2005, 2025)
-    ax_cycle.set_ylim(0, 200)
+    ax5.set_title("Solar Cycle")
+    ax5.set_xlim(2005, 2025)
+    ax5.set_ylim(0, 200)
     # fig.close()
     # plt.show()
 
-    # ax_lowmag.set_xlim(0, 2*np.pi)
 
 
 
 
 
     # Adjust layout
+    fig.set_size_inches((12,8))
     plt.tight_layout()
     plt.subplots_adjust(
         top=0.92,

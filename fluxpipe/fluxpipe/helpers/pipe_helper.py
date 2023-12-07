@@ -1456,7 +1456,7 @@ def plot_raw_magnetogram(fits_path, data, small_image):
 #     else:
 #         return brdat
 
-def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fname=None, configs=None):
+def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fname=None, configs=None, cr=None):
     """Loads a magnetogram from a FITS file.
 
     Parameters
@@ -1480,7 +1480,12 @@ def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fn
         Magnetogram header object
     """
     configs = configs or configurations()
-    cr = configs.get("cr", None)
+    if cr is None:
+        cr = configs.get("cr", None)
+    else:
+        # TODO : This is a hack to get around the fact that the configs are not being updated
+        configs["cr"] = cr
+
     assert cr is not None, "Must specify a Carrington rotation number!"
     update_magdir_paths(configs)
     fname = fname or configs["magpath"].format(cr)
