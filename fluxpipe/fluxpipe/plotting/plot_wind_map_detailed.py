@@ -317,29 +317,34 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
         )
 
     if do_gaussian:
-        # Define the Gaussian (normal) distribution function
-        def gaussian(x, amplitude, mean, stddev, b):
-            return amplitude * np.exp(-((x - mean) / stddev) ** 2 / 2) + b
+        try:
+            # Define the Gaussian (normal) distribution function
+            def gaussian(x, amplitude, mean, stddev, b):
+                return amplitude * np.exp(-((x - mean) / stddev) ** 2 / 2) + b
 
-        # Fit the Gaussian curve to the histogram data
-        params, _ = curve_fit(gaussian, bin_centers, hist, p0=[1, np.median(vel_positive), np.std(vel_positive),0])
+            # Fit the Gaussian curve to the histogram data
+            params, _ = curve_fit(gaussian, bin_centers, hist, p0=[1, np.median(vel_positive), np.std(vel_positive),0])
 
-        # Extract the fitted parameters
-        amplitude, mean, stddev, b = params
+            # Extract the fitted parameters
+            amplitude, mean, stddev, b = params
 
-        # Generate the fitted curve
-        fitted_curve = gaussian(bin_centers, *params)
+            # Generate the fitted curve
+            fitted_curve = gaussian(bin_centers, *params)
 
-        plt.plot(bin_centers, fitted_curve, 'b-', label='Fitted Gaussian Curve')
+            plt.plot(bin_centers, fitted_curve, 'b-', label='Fitted Gaussian Curve')
 
-        mean1 = mean
-        std1 = np.abs(stddev)
+            mean1 = mean
+            std1 = np.abs(stddev)
 
-        mean_label = f"GaussMean: {mean1:.0f} km/s"
-        median_label = f"StatMedian: {median1:.0f} km/s"
-        std_label = f"GaussStd: {std1:.0f} km/s"
-        # b_label = f"GaussB: {b:.0f}"
-        # hist_ax.axhline(b, color='gray', linestyle='-', linewidth=1, label=b_label)
+            mean_label = f"GaussMean: {mean1:.0f} km/s"
+            median_label = f"StatMedian: {median1:.0f} km/s"
+            std_label = f"GaussStd: {std1:.0f} km/s"
+            # b_label = f"GaussB: {b:.0f}"
+            # hist_ax.axhline(b, color='gray', linestyle='-', linewidth=1, label=b_label)
+        except:
+            mean_label = f"StatMean: {mean1:.0f} km/s"
+            median_label = f"StatMedian: {median1:.0f} km/s"
+            std_label = f"StatStd: {std1:.0f} km/s"
     else:
         mean_label = f"StatMean: {mean1:.0f} km/s"
         median_label = f"StatMedian: {median1:.0f} km/s"
@@ -470,10 +475,10 @@ def plot_wind_map_detailed_orig(configs):
 
 
 
-
     ## SAVING
     # Set the output file names
-    filename = f"png_cr{CR}_f{nwant}_ou{n_open}_radial_wind.png"
+    method = configs.get("flow_method")
+    filename = f"png_cr{CR}_f{nwant}_op{n_open}_radial_wind_{method}.png"
     main_file =  f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/{filename}'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
@@ -518,8 +523,8 @@ def plot_wind_map_detailed_orig(configs):
     # Save the Figures
     print("\n\t\tSaving figures to disk...", end="")
     # print(main_file)
-    main_pdf = main_file.replace(".png", ".pdf")
-    outer_pdf = outer_file.replace("png", "pdf")
+    # main_pdf = main_file.replace(".png", ".pdf")
+    # outer_pdf = outer_file.replace("png", "pdf")
 
     plt.show()
     plt.savefig(outer_file, dpi=200)
@@ -715,7 +720,8 @@ def plot_wind_map_detailed(configs):
 
 
     # Set the output file names
-    filename = f"png_cr{CR}_f{nwant}_ou{n_open}_radial_wind.png"
+    method = configs.get("flow_method")
+    filename = f"png_cr{CR}_f{nwant}_op{n_open}_radial_wind_{method}.png"
     main_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/{filename}'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 

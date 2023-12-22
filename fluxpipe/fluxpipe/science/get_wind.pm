@@ -22,7 +22,7 @@ use map_fluxon_b_all                qw(map_fluxon_b_all);
 use map_fluxon_fr                   qw(map_fluxon_fr);
 use map_fluxon_flow_parallel_master qw(map_fluxon_flow_parallel_master);
 use Flux::World    qw(read_world);
-
+use PDL::IO::FITS;
 
 
 =head1 DESCRIPTION
@@ -124,6 +124,8 @@ sub get_wind {
     my $out_b_all      = "$prefix\_radial_bmag_all.dat";
     my $out_fr         = "$prefix\_radial_fr.dat";
     my $out_wind       = "$prefix\_radial_wind.dat";
+    my $ch_map_url     = "https://sun.njit.edu/coronal_holes/data/chs_synmap_cr$CR.fits";
+    my $ch_map_path    = $datdir . "/CHmaps/chs_synmap_cr$CR.fits";
     my $short_out_wind = shorten_path($out_wind);
     my $skipstring =
       "\n\tWind Calculation Skipped! \n\t\tFound $short_out_wind\n\n";
@@ -178,8 +180,8 @@ sub get_wind {
         print "\n\tRadial Magnetic Field (B) Calculation...";
         map_fluxon_b( $out_b, \@fluxons );
         map_fluxon_b_all( $out_b_all, \@fluxons );
-        system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_fill.py");
-        system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_all.py");
+        # system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_fill.py");
+        # system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_all.py");
 
         print "Done!\n";
 
@@ -195,11 +197,20 @@ sub get_wind {
         print "\n\n\tRadial Wind Speed Calculation...\n";
         my $do_wind_map = 0 || $recompute;
 
-        # $do_wind_map=1; #OVERRIDE WIND MAP
+        $do_wind_map=1; #OVERRIDE WIND MAP
 
         if ( !-e $out_wind || !file_has_content($out_wind)) { $do_wind_map = 1; }
 
-        if ($do_wind_map) { map_fluxon_flow_parallel_master( $out_wind, \@fluxons ); }
+        # if there is not a file at $ch_map_path, then download $ch_map_url to $ch_map_path
+        if ( !-e $ch_map_path ) {
+            print "\t\tDownloading CR$CR CH map...\n";
+            system("wget -nc $ch_map_url -P $datdir/CHmaps");
+}
+
+        # load the $ch_map_path file, which is an image array.
+        print "ch_map_path: $ch_map_path\n";
+
+        if ($do_wind_map) { map_fluxon_flow_parallel_master( $out_wind, \@fluxons, $ch_map_path); }
         else { print $skipstring;}
 
     }
@@ -215,7 +226,8 @@ sub get_wind {
 if ($0 eq __FILE__) {
     # This code block will run only if the script is executed directly
     # and not when it's included as a module in another script.
-    # Place your code here.
+
+    print("Running get_wind.pm directly\n");
     my %configs = configurations();
 
     my $n_want = $configs{fluxon_count}->at(0);

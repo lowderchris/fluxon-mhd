@@ -19,10 +19,15 @@ use Time::HiRes qw(clock_gettime);
 use Data::Dumper;
 use Chart::Gnuplot;
 use gen_fluxon_tflow qw(gen_fluxon_tflow);
+use gen_fluxon_wsaflow qw(gen_fluxon_wsaflow);
+use pipe_helper qw(configurations);
+
+
+my %configs = configurations();
 
 # Control Flags
 $PDL::verbose = 0;
-my $concurrency = 11;
+my $concurrency = $configs{concurrency} // 4;
 my $temp_dir = "temp_dir";
 
 
@@ -51,6 +56,7 @@ Given a world and list of fluxons, generates a mapping of the solar wind flow al
 sub map_fluxon_flow_parallel_master {
     my $output_file_name = shift;
     my $fluxon_list = shift;
+    my $ch_map_path = shift;
     my @fluxons = @{$fluxon_list};
     make_path($temp_dir) unless -d $temp_dir;
     my $max_processes = shift || $concurrency;    # Set the number of parallel processes
@@ -122,25 +128,63 @@ sub map_fluxon_flow_parallel_master {
         }
     }
 
+    my %configs = configurations();
+    my $flow_method = $configs{flow_method} || "parker";
+
+    print "\t\tThe flow method is ''$flow_method.''\n\n\n";
+
+
     for my $fluxon_id (0..$max_fluxon_id - 1) {
+    # for my $fluxon_id (12..13 - 1) {
         $fork_manager->start and next;
 
         my $fluxon = $fluxons[$fluxon_id];
+        my ($r_vr_scaled, $r_fr_scaled, $thetas, $phis);
 
-        (my $flow_array, my $flux_r, my $theta_base, my $phi_base) = gen_fluxon_tflow($fluxon);
+
+        # Which method should we use to calculate the flow?
+        if ($flow_method eq "wsa"){
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_wsaflow($fluxon, $ch_map_path);
+        } elsif ($flow_method eq "parker"){
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_tflow($fluxon);
+        } else {
+            die "Invalid flow method: $flow_method";
+        }
+
 
         my $result = {
-            fluxon_position  => $fluxon_id,
-            phi_base  => squeeze($phi_base(0, 0)),
-            theta_base  => squeeze($theta_base(0, 0)),
-            phi_end  => squeeze($phi_base(0, 1)),
-            theta_end  => squeeze($theta_base(0, 1)),
-            radial_velocity_base  => $flow_array(1, 0),
-            radial_velocity_end  => $flow_array(1, -1),
-            flux_expansion_base  => $flux_r(1, 1),
-            flux_expansion_end  => $flux_r(-2, 1),
-            flux_expansion_middle  => $flux_r(-1, 1),
+            fluxon_position  => pdl($fluxon_id),
+
+            phi_base    => squeeze(pdl($phis(0)    )),
+            theta_base  => squeeze(pdl($thetas(0)  )),
+            phi_end     => squeeze(pdl($phis(-1)   )),
+            theta_end   => squeeze(pdl($thetas(-1) )),
+
+            radial_velocity_base    => squeeze($r_vr_scaled(1, 0   )),
+            radial_velocity_end     => squeeze($r_vr_scaled(1, -1  )),
+
+            flux_expansion_base     => squeeze($r_fr_scaled(1, 1   )),
+            flux_expansion_end      => squeeze($r_fr_scaled(-2, 1  )),
+            flux_expansion_middle   => squeeze($r_fr_scaled(-1, 1  )),
+
         };
+
+
+
+        # print "\nNumber of keys in the result: " . scalar(keys %$result) . "\n";
+        # foreach my $key (keys %$result) {
+        #     print "Key: $key, ";
+
+        #     if (UNIVERSAL::isa($result->{$key}, 'PDL')) {
+        #         # It's a PDL object, so print the number of elements
+        #         print "Length: " . $result->{$key} . "\n";
+        #     } else {
+        #         # Not a PDL object, handle differently (e.g., just print the value)
+        #         print "Value: " . $result->{$key} . "\n";
+        #     }
+        # }
+        # print "\n\n\n\n";
+
 
         $fork_manager->finish(0, $result);
     }
@@ -155,16 +199,25 @@ sub map_fluxon_flow_parallel_master {
 
     @results = sort { $a->{fluxon_position} <=> $b->{fluxon_position} } @results;
 
-        wcols pdl(map { $_->{fluxon_position} } @results),
-        pdl(map { $_->{phi_base} } @results),
+        wcols
+        # print
+        pdl(map { $_->{fluxon_position} } @results),
+
+
+        # TODO I know these lines are what causes the problem, but I don't know why
+        pdl(map { $_->{phi_base}  } @results),
         pdl(map { $_->{theta_base} } @results),
-        pdl(map { $_->{phi_end} } @results),
-        pdl(map { $_->{theta_end} } @results),
+        pdl(map { $_->{phi_end}    } @results),
+        pdl(map { $_->{theta_end}  } @results),
+
+
+
         squeeze(pdl(map { $_->{radial_velocity_base} } @results)),
         squeeze(pdl(map { $_->{radial_velocity_end} } @results)),
+
         squeeze(pdl(map { $_->{flux_expansion_base} } @results)),
         squeeze(pdl(map { $_->{flux_expansion_end} } @results)),
-        squeeze(pdl(map { $_->{flux_expansion_middle} } @results)),
+        # squeeze(pdl(map { $_->{flux_expansion_middle} } @results)),
         $output_file_name;
 
     # Delete the temporary directory.

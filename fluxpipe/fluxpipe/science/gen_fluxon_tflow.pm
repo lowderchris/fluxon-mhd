@@ -32,7 +32,7 @@ If the fluxon is either doubly open, doubly closed, or labeled as a plasmoid, th
 =head1 USAGE
 
     use gen_fluxon_tflow;
-    my ($fluxon_array, $fluxon_radius, $magnetic_field_theta, $magnetic_field_phi) = gen_fluxon_tflow($fluxon, \%options);
+    my ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_tflow($fluxon, \%options);
 
 =head1 OPTIONS
 
@@ -89,7 +89,7 @@ Returns a list containing the final fluxon array, fluxon radius, and magnetic fi
 
 =head3 Example
 
-    my ($fluxon_array, $fluxon_radius, $magnetic_field_theta, $magnetic_field_phi) = gen_fluxon_tflow($fluxon);
+    my ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_tflow($fluxon);
 
 =cut
 
@@ -119,7 +119,7 @@ sub gen_fluxon_tflow {
     my $lower_velocity_bound = 10;
     my $upper_velocity_bound = 1000;
 
-    (my $fluxon_array, my $fluxon_radius, my $magnetic_field_theta, my $magnetic_field_phi) = gen_fluxon_flow($fluxon, {'v0'=>$lower_velocity_bound, 'cs'=>$sound_speed});
+    (my $fluxon_array, my $fluxon_radius, my $b_theta, my $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$lower_velocity_bound, 'cs'=>$sound_speed});
 
     if ($verbose) {print "\n\tInitial Lower Bound: $lower_velocity_bound\n";}
 
@@ -130,7 +130,7 @@ sub gen_fluxon_tflow {
     while ($search_for_transonic_velocity) {
         $lower_velocity_bound = $transonic_velocity_threshold;
         $transonic_velocity_threshold = $transonic_velocity_threshold + $velocity_increment;
-        ($fluxon_array, $fluxon_radius, $magnetic_field_theta, $magnetic_field_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_threshold, 'cs'=>$sound_speed});
+        ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_threshold, 'cs'=>$sound_speed});
         # print "Iteration $iterations: Transonic velocity threshold: $transonic_velocity_threshold\n";
         $iterations += 1;
         if ($fluxon_array(1,-1) == ($fluxon_array(1,:)->max())) {
@@ -149,7 +149,7 @@ sub gen_fluxon_tflow {
         # Test the mean velocity between the upper (transonic / misbehaved) and lower (breeze) bounds.
         # Define it as the new upper or lower bound accordingly.
         my $transonic_velocity_test = ($lower_velocity_bound + $upper_velocity_bound) / 2;
-        ($fluxon_array, $fluxon_radius, $magnetic_field_theta, $magnetic_field_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_test, 'cs'=>$sound_speed});
+        ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_test, 'cs'=>$sound_speed});
         if ($fluxon_array(1,-1) == ($fluxon_array(1,:)->max())) {
             # This was a successful try! Set the new upper bound to the test velocity.
             $upper_velocity_bound = $transonic_velocity_test;
@@ -170,10 +170,10 @@ sub gen_fluxon_tflow {
     }
 
     # Generate a wind solution with the final upper limit
-    ($fluxon_array, $fluxon_radius, $magnetic_field_theta, $magnetic_field_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity, 'cs'=>$sound_speed});
+    ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity, 'cs'=>$sound_speed});
 
     # Return the final fluxon array, fluxon radius, and magnetic field components
-    return ($fluxon_array, $fluxon_radius, $magnetic_field_theta, $magnetic_field_phi);
+    return ($fluxon_array, $fluxon_radius, $b_theta, $b_phi);
 }
 1;
 __END__

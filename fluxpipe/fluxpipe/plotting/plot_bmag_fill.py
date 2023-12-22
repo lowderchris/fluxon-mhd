@@ -45,6 +45,8 @@ import shutil
 from fluxpipe.helpers.pipe_helper import load_fits_magnetogram, get_fixed_coords
 import sunpy.coordinates
 import cv2
+from fluxpipe.helpers.pipe_helper import configurations
+
 
 
 def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
@@ -59,7 +61,7 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     """
     configs = configurations(debug=False, args=args)
     batch = args.batch
-    ext = "png"
+    ext = configs["plot_type"]
     filename = args.file or f'{args.dat_dir}/batches/{batch}/data/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_bmag_all.dat'
     imagename = os.path.basename(filename.replace("all.dat", f"fill_{r0:02d}.{ext}"))
     imagedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filename))))
@@ -124,34 +126,12 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     if maxlist is None:
         maxlist = th0, ph0
 
-    # # Do some data manipulation
-    # br0_max = np.nanmax(b0) or 0.25
-    # br0_max = np.nanmax(b1) or 0.25
-    # # ar0_max = np.nanmax(a0) or 0.25
-    # # ar0_max = np.nanmax(a1) or 0.25
-
-    # skew = 5**2
-    # power = 1
-    # br0 = skew*(6*b0/br0_max)**power
-    # br0 = skew*(4*b1/br0_max)**power
-    # ar0 = skew*(6*a0/ar0_max)**power
-    # ar0 = skew*(4*a1/ar0_max)**power
-
-
-
-
-
-
-
-    # fig, (ax_lowmag, ax_newexpand) = plt.subplots(2)
 
     RS = 696340000 #meters
 
-    fig2, ax_diff = plt.subplots()
-
     # Using GridSpec for layout
     fig = plt.figure()  # Adjust the figure size as needed
-    gs = gridspec.GridSpec(3, 6, height_ratios=[2.5, 2.5, 1.5])  # Adjust the ratios as per your requirement
+    gs = gridspec.GridSpec(3, 6, height_ratios=[3, 2.5, 2.0])  # Adjust the ratios as per your requirement
 
     fig.set_size_inches((12,8))
 
@@ -159,12 +139,12 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     # Magnetogram plot (top row, spanning two columns)
     ax_lowmag = plt.subplot(gs[0, :3])
     ax_highmag = plt.subplot(gs[0, 3:], sharex=ax_lowmag, sharey=ax_lowmag)
-    ax_newexpand = plt.subplot(gs[2, :3])
-    ax_cycle = plt.subplot(gs[2, 3:])
+    ax_diff = plt.subplot(gs[2, :2])
+    ax_cycle = plt.subplot(gs[2, 2:])
 
     ax_allmag = plt.subplot(gs[1, :2], sharex=ax_lowmag, sharey=ax_lowmag)
-    ax_long = plt.subplot(gs[1, 2:4], sharex=ax_lowmag, sharey=ax_newexpand)
-    ax_latt = plt.subplot(gs[1, 4:], sharey=ax_newexpand,)
+    ax_long = plt.subplot(gs[1, 2:4], sharex=ax_lowmag,  sharey=ax_diff)
+    ax_latt = plt.subplot(gs[1, 4:],  sharey=ax_diff,)
 
     ax_highmag.tick_params(axis='y', labelleft=False)
     ax_long.tick_params(axis='y', labelleft=False)
@@ -182,23 +162,20 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     ax_allmag.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
             extent=(0,2*np.pi,-1,1), aspect='auto', vmin=-500, vmax=500, alpha=0.5)
 
-    import warnings
-    warnings.filterwarnings('ignore', 'divide by zero encountered in divide')
+    def normalize_data(b):
+        # Check if the range is zero to avoid division by zero
+        try:
+            bb = (b - np.nanmin(b)) / (np.nanmax(b) - np.nanmin(b))
+            if np.isnan(bb).any():
+                # bb[np.isnan(bb)] = b[np.isnan(bb)] / np.nanmax(b)
+                bb = b / np.nanmax(b)
+        except (ValueError):
+            bb = b / np.nanmax(b)
+        return bb
 
-    #Plot Magnetic Field Strength
-    try:
-        bb0 = (b0 - np.nanmin(b0)) / (np.nanmax(b0) - np.nanmin(b0))
-        if np.isnan(bb0).any():
-            bb0[np.isnan(bb0)] = b0[np.isnan(bb0)] / np.nanmax(b0)
-    except (ValueError, RuntimeWarning):
-        bb0 = b0 / np.nanmax(b0)
-
-    try:
-        bb1 = (b1 - np.nanmin(b1)) / (np.nanmax(b1) - np.nanmin(b1))
-        if np.isnan(bb1).any():
-            bb1[np.isnan(bb1)] = b1[np.isnan(bb1)] / np.nanmax(b1)
-    except (ValueError, RuntimeWarning):
-        bb1 = b1 / np.nanmax(b1)
+    # Use the function to normalize b0 and b1
+    bb0 = normalize_data(b0)
+    bb1 = normalize_data(b1)
 
 
     # Plot Latitude of points
@@ -231,8 +208,8 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
 
 
     for ax in [ax_lowmag, ax_highmag, ax_allmag]:
-        ax.set_xlabel('Longitude [Radians]', labelpad=0)
-        ax.set_ylabel('Sine latitude')
+        ax.set_xlabel('Longitude [Radians]', labelpad=0, color='purple')
+        ax.set_ylabel('Sine latitude', color='green')
         ax.set_aspect('auto')
         ax.set_xlim(-1, 7)
         ax.axvline(0)
@@ -241,31 +218,32 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
 
 
 
-    ax_newexpand.set_title("Fluxon Properties")
+    # ax_newexpand.set_title("Fluxon Properties")
 
     ### SECOND PLOT ###
     fieldlabel = "Magnetic Field Strength"
     expandlabel = r"Expansion Factor"
-    latlabel = r"Latitude [Sine Radians]"
+    latlabel = r"Sine Lattitude"
     lonlabel = r"Longitude [Radians]"
 
-    ax_latt.set_ylabel(r'Heliocentric Radius [R$_\odot$]')
+    ax_latt.set_ylabel(r'Heliocentric Radius [R$_\odot$]', color='red')
     ax_latt.set_yscale('log')
     ax_latt.yaxis.set_label_position("right")
     ax_latt.yaxis.set_ticks_position('both')
+    ax_long.yaxis.set_ticks_position('both')
 
-    ax_newexpand.set_ylabel(r'Heliocentric Radius [R$_\odot$]')
-    ax_newexpand.set_yscale('log')
-    ax_newexpand.set_xscale('log')
+    # ax_newexpand.set_ylabel(r'Heliocentric Radius [R$_\odot$]')
+    # ax_newexpand.set_yscale('log')
+    # ax_newexpand.set_xscale('log')
 
     # Create a second y-axis for the expansion data
-    ax_newexpand.set_xscale('log')
+    # ax_newexpand.set_xscale('log')
 
 
-    ax_long.set_xlabel(lonlabel)#, color='purple')
+    ax_long.set_xlabel(lonlabel, color='purple')#, color='purple')
     # ax_long.tick_params(axis='x', labelcolor='purple')
 
-    ax_latt.set_xlabel(latlabel)#, color='green')
+    ax_latt.set_xlabel(latlabel, color='green')
     # ax_latt.tick_params(axis='x', labelcolor='green')
 
     radial_heights = []
@@ -309,9 +287,9 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
 
         radial_heights.append(rr[ii])
 
-        ### SECOND PLOT ###
-        magline, = ax_newexpand.plot(field, rr, c=plt.cm.Reds_r(index), label=fieldlabel if i == 0 else "", alpha=0.7, zorder=2000)
-        expline, = ax_newexpand.plot(expansion, rr, c=plt.cm.Blues_r(index), label=expandlabel if i == 0 else "", alpha=0.7, zorder= 1000)
+        # ### SECOND PLOT ###
+        # magline, = ax_newexpand.plot(field, rr, c=plt.cm.Reds_r(index), label=fieldlabel if i == 0 else "", alpha=0.7, zorder=2000)
+        # expline, = ax_newexpand.plot(expansion, rr, c=plt.cm.Blues_r(index), label=expandlabel if i == 0 else "", alpha=0.7, zorder= 1000)
 
         ### THIRD PLOT ###
 
@@ -338,15 +316,16 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     std_radial_height = np.std(radial_heights)
     ax_diff.axhline(mean_radial_height, ls="--", c='k', zorder=1000000, label="Mean: {:.2f} R$_\odot$".format(mean_radial_height))
     ax_diff.axhline(median_radial_height, ls=":", c='k', zorder=1000000, label="Median: {:.2f} R$_\odot$".format(median_radial_height))
+    ax_diff.axhline(mean_radial_height + 2*std_radial_height, ls="-.", c='k', zorder=1000000, label="2 Sigma: {:.2f} R$_\odot$".format(mean_radial_height+2*std_radial_height))
     ax_diff.axvline(straight_pt, ls=":", c='grey', zorder=1000000, label=f'"Straight": {straight_pt*180/np.pi:.2f} Degrees per R$_\odot$')
-    ax_diff.set_xlim(-0.01, 0.1)
+    ax_diff.set_xlim(-0.01, 0.11)
 
     # ax_diff.axhline(mean_radial_height+std_radial_height, ls=":", c='k', zorder=1000000)
     # ax_diff.axhline(mean_radial_height-std_radial_height, ls=":", c='k', zorder=1000000)
     # ax_diff.set_ylim(1, 5)
     ax_diff.set_xlabel(r"$\frac{d\phi}{dr}$ [radians per R$_\odot$]")
-    ax_diff.set_ylabel(r"$r$ [R$_\odot$]")
-    ax_diff.set_title(f"Radial Expansion, {nfluxon} open fields, Mean: {mean_radial_height:.2f} R$_\odot$")
+    ax_diff.set_ylabel(r"Heliocentric Radius [R$_\odot$]", color='red')
+    ax_diff.set_title(f"Fields become radial at... \nMean: {mean_radial_height:.2f} R$_\odot$, Median: {median_radial_height:.2f} R$_\odot$, Most: {mean_radial_height+2*std_radial_height:.2f} R$_\odot$", fontsize="medium")
     # ax_diff.legend()
     # ax_diff.set_title(f"Median Height of Radial Expansion: {median_radial_height:.2f} R$_\odot$, {nfluxon} open fields")
     # ax_diff.set_xlim(0, 1)
@@ -366,22 +345,22 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
 
     r0 = rad0
     r1 = rad1
-    ax_newexpand.axhline(r0, ls=":", c='k', zorder=1000000)
+    # ax_newexpand.axhline(r0, ls=":", c='k', zorder=1000000)
     ax_long.axhline(r0, ls=":", c='k', zorder=1000000)
     ax_latt.axhline(r0, ls=":", c='k', zorder=1000000)
     # if r1:
         # ax_newexpand.axvline(r1, ls=":", c='k', zorder=1000)
 
-    # Create handles and labels
-    handles, labels = [], []
-    for ax in [ax_newexpand]:
-        ax_handles, ax_labels = ax.get_legend_handles_labels()
-        handles.extend(ax_handles)
-        labels.extend(ax_labels)
+    # # Create handles and labels
+    # handles, labels = [], []
+    # for ax in [ax_newexpand]:
+    #     ax_handles, ax_labels = ax.get_legend_handles_labels()
+    #     handles.extend(ax_handles)
+    #     labels.extend(ax_labels)
 
-    # Create a single legend
-    ax_newexpand.legend(handles, labels, frameon=False, loc='center left')
-    ax_newexpand.set_xlim((1* 10**(-6), 5* 10**2))
+    # # Create a single legend
+    # ax_newexpand.legend(handles, labels, frameon=False, loc='center left')
+    # ax_newexpand.set_xlim((1* 10**(-6), 5* 10**2))
 
 
 
@@ -420,10 +399,10 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     plt.tight_layout()
     plt.subplots_adjust(
         top=0.92,
-        bottom=0.063,
+        bottom=0.068,
         left=0.063,
         right=0.95,
-        hspace=0.365,
+        hspace=0.420,
         wspace=0.1
     )
 
@@ -435,12 +414,12 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
         os.makedirs(dr)
     pathh = os.path.join(dr, os.path.basename(bmagname).replace(".png", "_radial.png"))
     print(pathh)
-    fig2.savefig(pathh)
+    # fig2.savefig(pathh)
 
     if args.show or False:
         plt.show()
     plt.close(fig)
-    plt.close(fig2)
+    # plt.close(fig2)
     print(".", end="", flush=True)
     return bmagname, maxlist
 
@@ -510,12 +489,9 @@ def run_plots(args, times=0):
     print("Done!\n")
     return bmagdir
 
-
-# Main Code
-if __name__ == "__main__":
+def run_all():
     # Create the argument parser
     print("\n\tPlotting Bmag_Fill...", end="")
-    from fluxpipe.helpers.pipe_helper import configurations
     configs = configurations()
 
     parser = argparse.ArgumentParser(description=
@@ -533,4 +509,8 @@ if __name__ == "__main__":
     bmagdir = run_plots(args)
     filename = "expansion_cr{}_f{}.avi".format(args.cr, args.nwant)
     create_video_from_images(bmagdir, filename)
+
+# Main Code
+if __name__ == "__main__":
+   run_all()
 
