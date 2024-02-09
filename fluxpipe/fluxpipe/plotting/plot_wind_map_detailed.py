@@ -676,7 +676,7 @@ def plot_wind_map_detailed(configs):
     ## Plot Formatting #####
     # Set Titles
     hist_ax.set_title("Histogram of Wind Speeds at r=21Rs")
-    mag_ax.set_title("Magnetogram at r=Rs, with Footpoints")
+    mag_ax.set_title("Magnetogram at R=Rs, with Footpoints")
     hex_ax.set_title("Wind Speed at R=21Rs")
     square_ax.set_title(f"Wind Speed at R=21Rs, with {percent_outliers:0.1f}% Outliers")
     dot_ax.set_title("Wind Speed at R=21Rs")

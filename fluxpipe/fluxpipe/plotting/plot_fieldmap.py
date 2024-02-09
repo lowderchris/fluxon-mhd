@@ -193,8 +193,8 @@ def magnet_plot(get_cr=None, datdir=None, _batch=None, open_f=None, closed_f=Non
     if do_plot or force or (ax is not None):
         # Plot the magnetogram
 
-        ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
-                extent=(0,2*np.pi,-1,1), aspect='auto', vmin=vmin, vmax=vmax, zorder=5, alpha=0.450)
+        # ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
+        #         extent=(0,2*np.pi,-1,1), aspect='auto', vmin=vmin, vmax=vmax, zorder=5, alpha=0.8)
         ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
                 extent=(0,2*np.pi,-1,1), aspect='auto', vmin=vmin, vmax=vmax, zorder=-5, alpha=1)
         # # Plot all the fluxons
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     # Create the argument parser
     parser = argparse.ArgumentParser(description=
             'This script plots the expansion factor of the given radial_fr.dat')
-    parser.add_argument('--cr', type=int, default=2200, help='Carrington Rotation')
+    parser.add_argument('--cr', type=int, default=2205, help='Carrington Rotation')
     parser.add_argument('--file', type=str, default=None, help='Data File Name')
     parser.add_argument('--nwant', type=int, default=None, help='Number of Fluxons')
     parser.add_argument('--open', type=str, default=None)

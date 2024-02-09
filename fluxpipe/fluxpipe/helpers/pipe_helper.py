@@ -84,7 +84,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from astropy.io import fits
-from astropy.nddata import block_reduce
+# from astropy.nddata import block_reduce
 
 import sunpy
 import sunpy.coordinates
