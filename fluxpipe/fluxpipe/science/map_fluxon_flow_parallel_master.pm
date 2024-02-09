@@ -19,7 +19,8 @@ use Time::HiRes qw(clock_gettime);
 use Data::Dumper;
 use Chart::Gnuplot;
 use gen_fluxon_tflow qw(gen_fluxon_tflow);
-use gen_fluxon_wsaflow qw(gen_fluxon_wsaflow);
+use gen_fluxon_schonflow qw(gen_fluxon_schonflow);
+use gen_fluxon_wsaflow qw(gen_fluxon_wsaflow do_image_plot);
 use pipe_helper qw(configurations);
 
 
@@ -56,7 +57,7 @@ Given a world and list of fluxons, generates a mapping of the solar wind flow al
 sub map_fluxon_flow_parallel_master {
     my $output_file_name = shift;
     my $fluxon_list = shift;
-    my $ch_map_path = shift;
+    my $distance_array_degrees = shift;
     my @fluxons = @{$fluxon_list};
     make_path($temp_dir) unless -d $temp_dir;
     my $max_processes = shift || $concurrency;    # Set the number of parallel processes
@@ -66,6 +67,40 @@ sub map_fluxon_flow_parallel_master {
     my $n_choke = 12;
     my $choke = 0;
     my $do_plot_charts = 0;
+
+
+    # # Create a simple plot window
+    # my $win = PDL::Graphics::Simple->new();
+
+    # # Plot the image
+    # $win->imag($distance_array_degrees);
+
+    # Save the image as img.png
+    # $win->close("img.png");
+
+
+
+    use PDL;
+    use PDL::Primitive;
+    use PDL::Func;
+
+
+    sub interpolate_2d_lonlat {
+        our ($image, $long_i, $latt_i) = @_;
+
+        $image = pdl($image);
+        # Define your image dimensions
+        my ($img_width, $img_height) = $image->dims; # 900 by 360
+
+        # Create grids for latitude and longitude
+        my $long_vals = pdl(sequence($img_width)/($img_width-1) * 2 * 3.14159265);  # 0 to 2*pi
+        my $latt_vals = pdl(sequence($img_height)/($img_height-1) * 2 - 1);  # -1 to 1
+
+        my ($ind_long) = minimum_ind(abs($long_vals - $long_i));
+        my ($ind_latt) = minimum_ind(abs($latt_vals - $latt_i));
+        my $imval = $image->at($ind_long, $ind_latt);
+        return $imval;
+    }
 
     # Count the number of open and closed fluxons
     my $num_closed_fluxons = 0;
@@ -141,12 +176,14 @@ sub map_fluxon_flow_parallel_master {
         my $fluxon = $fluxons[$fluxon_id];
         my ($r_vr_scaled, $r_fr_scaled, $thetas, $phis);
 
-
+        my $dist_interp;
         # Which method should we use to calculate the flow?
         if ($flow_method eq "wsa"){
-            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_wsaflow($fluxon, $ch_map_path);
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_wsaflow($fluxon, $distance_array_degrees, $fluxon_id);
         } elsif ($flow_method eq "parker"){
             ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_tflow($fluxon);
+        } elsif ($flow_method eq "schonfeld"){
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_schonflow($fluxon);
         } else {
             die "Invalid flow method: $flow_method";
         }
@@ -170,22 +207,6 @@ sub map_fluxon_flow_parallel_master {
         };
 
 
-
-        # print "\nNumber of keys in the result: " . scalar(keys %$result) . "\n";
-        # foreach my $key (keys %$result) {
-        #     print "Key: $key, ";
-
-        #     if (UNIVERSAL::isa($result->{$key}, 'PDL')) {
-        #         # It's a PDL object, so print the number of elements
-        #         print "Length: " . $result->{$key} . "\n";
-        #     } else {
-        #         # Not a PDL object, handle differently (e.g., just print the value)
-        #         print "Value: " . $result->{$key} . "\n";
-        #     }
-        # }
-        # print "\n\n\n\n";
-
-
         $fork_manager->finish(0, $result);
     }
 
@@ -197,6 +218,10 @@ sub map_fluxon_flow_parallel_master {
 
     print "\n\n\t\tWind Calculation Complete\n\n";
 
+    # if ($flow_method eq "wsa"){
+    #     do_image_plot();
+    # }
+
     @results = sort { $a->{fluxon_position} <=> $b->{fluxon_position} } @results;
 
         wcols
@@ -204,12 +229,10 @@ sub map_fluxon_flow_parallel_master {
         pdl(map { $_->{fluxon_position} } @results),
 
 
-        # TODO I know these lines are what causes the problem, but I don't know why
         pdl(map { $_->{phi_base}  } @results),
         pdl(map { $_->{theta_base} } @results),
         pdl(map { $_->{phi_end}    } @results),
         pdl(map { $_->{theta_end}  } @results),
-
 
 
         squeeze(pdl(map { $_->{radial_velocity_base} } @results)),

@@ -176,7 +176,7 @@ print_banner( $batch_name, $CR, $reduction, $n_fluxons_wanted,
 
 my $very_beginning = clock_gettime();
 
-if (0){
+if (1){
 
 #### BEGIN ##################################################################
 
@@ -318,34 +318,37 @@ print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 print("(py) Plotting Solar Wind Maps for CR$CR\n");
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
-system(
-"$configs{python_dir} $pipedir/plotting/plot_bmag.py"
-      . " --cr $CR --file $out_b --nwant $n_fluxons_wanted --adapt $adapt"
-) == 0 or ( die "Python script returned error $?", exit );
+# system(
+# "$configs{python_dir} $pipedir/plotting/plot_bmag.py"
+#       . " --cr $CR --file $out_b --nwant $n_fluxons_wanted --adapt $adapt"
+# ) == 0 or ( die "Python script returned error $?", exit );
+
+# system(
+# "$configs{python_dir} $pipedir/plotting/plot_bmag_all.py"
+#       . " --cr $CR --file $out_b_all --nwant $n_fluxons_wanted --adapt $adapt"
+# ) == 0 or ( die "Python script returned error $?", exit );
+
+# system(
+# "$configs{python_dir} $pipedir/plotting/plot_bmag_fill.py"
+#       . " --cr $CR --file $out_b_all --nwant $n_fluxons_wanted --adapt $adapt"
+# ) == 0 or ( die "Python script returned error $?", exit );
+
+# system(
+# "$configs{python_dir} $pipedir/plotting/plot_fr.py"
+#       . "  --cr $CR --file $out_fr --nwant $n_fluxons_wanted --adapt $adapt"
+# ) == 0 or ( die "Python script returned error $?", exit );
+
+# system(
+# "$configs{python_dir} $pipedir/plotting/plot_wind_map_detailed.py"
+#       . " --cr $CR --file $out_wind --nwant $n_fluxons_wanted --adapt $adapt"
+
+#       #    . " --open $open_file --closed $closed_file "
+# ) == 0 or ( die "Python script returned error $?", exit );
 
 system(
-"$configs{python_dir} $pipedir/plotting/plot_bmag_all.py"
-      . " --cr $CR --file $out_b_all --nwant $n_fluxons_wanted --adapt $adapt"
-) == 0 or ( die "Python script returned error $?", exit );
-
-system(
-"$configs{python_dir} $pipedir/plotting/plot_bmag_fill.py"
-      . " --cr $CR --file $out_b_all --nwant $n_fluxons_wanted --adapt $adapt"
-) == 0 or ( die "Python script returned error $?", exit );
-
-system(
-"$configs{python_dir} $pipedir/plotting/plot_fr.py"
-      . "  --cr $CR --file $out_fr --nwant $n_fluxons_wanted --adapt $adapt"
-) == 0 or ( die "Python script returned error $?", exit );
-
-system(
-"$configs{python_dir} $pipedir/plotting/plot_wind_map_detailed.py"
+"$configs{python_dir} $pipedir/plotting/plot_wind_map_latitude_cycle.py"
       . " --cr $CR --file $out_wind --nwant $n_fluxons_wanted --adapt $adapt"
-
-      #    . " --open $open_file --closed $closed_file "
 ) == 0 or ( die "Python script returned error $?", exit );
-
-
 
 
 } # End of the if (0) block

@@ -23,6 +23,10 @@ use map_fluxon_fr                   qw(map_fluxon_fr);
 use map_fluxon_flow_parallel_master qw(map_fluxon_flow_parallel_master);
 use Flux::World    qw(read_world);
 use PDL::IO::FITS;
+use Text::CSV;
+use PDL;
+use PDL::Graphics::Simple;
+use PDL::IO::Misc;
 
 
 =head1 DESCRIPTION
@@ -53,9 +57,9 @@ This subroutine calculates various solar wind plasma parameters such as the radi
 
 =head1 WORKFLOW
 
-1. Checks for the existence of output directories and files.
+1. Checks for the elong_xistence of output directories and files.
 2. If necessary, creates output directories.
-3. If the output files do not exist or if recompute is true, performs the following calculations:
+3. If the output files do not elong_xist or if recompute is true, performs the following calculations:
     - Updates neighbors in the relaxed world.
     - Calculates the radial magnetic field.
     - Calculates the radial expansion factor.
@@ -91,7 +95,7 @@ sub file_has_content {
         close $fh;
         return $line_count >= 3;
     }
-    return 0; # Return false if file doesn't exist
+    return 0; # Return false if file doesn't elong_xist
 }
 
 sub get_wind {
@@ -139,7 +143,7 @@ sub get_wind {
           or die "Failed to create directory: $wind_out_dir $!\n";
     }
 
-    # Check if the files exist
+    # Check if the files elong_xist
     if ( !-f $out_b
         or !-f $out_fr
         or !-f $out_wind
@@ -197,20 +201,40 @@ sub get_wind {
         print "\n\n\tRadial Wind Speed Calculation...\n";
         my $do_wind_map = 0 || $recompute;
 
-        $do_wind_map=1; #OVERRIDE WIND MAP
+        # $do_wind_map=1; #OVERRIDE WIND MAP
 
         if ( !-e $out_wind || !file_has_content($out_wind)) { $do_wind_map = 1; }
 
-        # if there is not a file at $ch_map_path, then download $ch_map_url to $ch_map_path
-        if ( !-e $ch_map_path ) {
-            print "\t\tDownloading CR$CR CH map...\n";
-            system("wget -nc $ch_map_url -P $datdir/CHmaps");
-}
+#         # if there is not a file at $ch_map_path, then download $ch_map_url to $ch_map_path
+#         if ( !-e $ch_map_path ) {
+#             print "\t\tDownloading CR$CR CH map...\n";
+#             system("wget -nc $ch_map_url -P $datdir/CHmaps");
+# }
 
         # load the $ch_map_path file, which is an image array.
-        print "ch_map_path: $ch_map_path\n";
+        # print "ch_map_path: $ch_map_path\n";
 
-        if ($do_wind_map) { map_fluxon_flow_parallel_master( $out_wind, \@fluxons, $ch_map_path); }
+        # run the python file footpoint_distances.py
+        system("python3 fluxon-mhd/fluxpipe/fluxpipe/science/footpoint_distances.py --cr $CR");
+
+
+        my %configs = configurations();
+        my $distance_file = $configs{data_dir} . "/batches/" . $configs{batch_name} . "/data/cr" . $CR . "/floc/distances.csv";
+        open my $fh, '<', $distance_file or die "Could not open '$distance_file': $!";
+        # Read the file line by line and split each line
+        my @rows;
+        while (my $line = <$fh>) {
+            chomp $line;  # Remove newline character
+            my @values = split /, /, $line;  # Split the line into values
+            push @rows, pdl(@values);  # Convert the list of values into a PDL piddle and store it
+        }
+        close $fh;
+
+        # Combine all rows into a 2D PDL array
+        our $distance_array_degrees = cat(@rows);
+
+        # Pass the image into the main function
+        if ($do_wind_map) { map_fluxon_flow_parallel_master( $out_wind, \@fluxons, $distance_array_degrees); }
         else { print $skipstring;}
 
     }

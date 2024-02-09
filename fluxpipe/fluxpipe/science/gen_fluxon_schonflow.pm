@@ -4,11 +4,11 @@ gen_fluxon_wsaflow - Comprehensive Module for Solar Wind Solution and Fluxon Flo
 
 =cut
 
-package gen_fluxon_wsaflow;
+package gen_fluxon_schonflow;
 use strict;
 use warnings;
 use Exporter qw(import);
-our @EXPORT_OK = qw(gen_fluxon_wsaflow do_image_plot);
+our @EXPORT_OK = qw(gen_fluxon_schonflow do_image_plot);
 
 use PDL;
 use PDL::NiceSlice;
@@ -90,7 +90,7 @@ my $verbose = 0;
 
 
 
-sub gen_fluxon_wsaflow {
+sub gen_fluxon_schonflow {
     my $fluxon = shift;
     my $distance_array_degrees = shift;
     my $fluxon_id = shift;
@@ -105,27 +105,10 @@ sub gen_fluxon_wsaflow {
 
 
     (my $r_vr_scaled, my $r_fr_scaled, my $theta, my $phi) =
-            gen_fluxon_wsaflow_phys($fluxon, $distance_array_degrees, $fluxon_id);
+            gen_fluxon_schonflow_phys($fluxon, $distance_array_degrees, $fluxon_id);
 
     # Return the final fluxon array, fluxon radius, and magnetic field components
     return ($r_vr_scaled, $r_fr_scaled, $theta, $phi);
-}
-
-sub interpolate_2d_lonlat {
-    our ($image, $long_i, $latt_i) = @_;
-
-    $image = pdl($image);
-    # Define your image dimensions
-    my ($img_width, $img_height) = $image->dims; # 900 by 360
-
-    # Create grids for latitude and longitude
-    my $long_vals = pdl(sequence($img_width)/($img_width-1) * 2 * 3.14159265);  # 0 to 2*pi
-    my $latt_vals = pdl(sequence($img_height)/($img_height-1) * 2 - 1);  # -1 to 1
-
-    my ($ind_long) = minimum_ind(abs($long_vals - $long_i));
-    my ($ind_latt) = minimum_ind(abs($latt_vals - $latt_i));
-    my $imval = $image->at($ind_long, $ind_latt);
-    return $imval;
 }
 
 sub gen_fluxon_wsaflow_phys {

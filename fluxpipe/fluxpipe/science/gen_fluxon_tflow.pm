@@ -116,10 +116,10 @@ sub gen_fluxon_tflow {
     my $velocity_increment = 25;
 
     # Define an initial lower bound with a breeze solution
-    my $lower_velocity_bound = 10;
-    my $upper_velocity_bound = 1000;
+    my $lower_velocity_bound = 400;
+    my $upper_velocity_bound = 800;
 
-    (my $fluxon_array, my $fluxon_radius, my $b_theta, my $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$lower_velocity_bound, 'cs'=>$sound_speed});
+    (our $fluxon_array, my $fluxon_radius, my $b_theta, my $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$lower_velocity_bound, 'cs'=>$sound_speed});
 
     if ($verbose) {print "\n\tInitial Lower Bound: $lower_velocity_bound\n";}
 
@@ -127,30 +127,59 @@ sub gen_fluxon_tflow {
     my $search_for_transonic_velocity = 1;
     my $transonic_velocity_threshold = $lower_velocity_bound;
     my $iterations = 0;
-    while ($search_for_transonic_velocity) {
+    while ($search_for_transonic_velocity && $iterations < 20) {
         $lower_velocity_bound = $transonic_velocity_threshold;
         $transonic_velocity_threshold = $transonic_velocity_threshold + $velocity_increment;
         ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_threshold, 'cs'=>$sound_speed});
         # print "Iteration $iterations: Transonic velocity threshold: $transonic_velocity_threshold\n";
         $iterations += 1;
-        if ($fluxon_array(1,-1) == ($fluxon_array(1,:)->max())) {
+
+        # Check for pseudo-discontinuities in the fluxon_array
+        my $has_pseudo_discontinuities = 0;
+        my $n_array = $fluxon_array->dim(1);  # Assuming $fluxon_array is a 2D piddle
+        for (my $i = 0; $i < $n_array - 1; $i++) {
+            my $current_value = $fluxon_array->slice("1,($i)")->sclr;
+            my $next_value = $fluxon_array->slice("1,($i+1)")->sclr;
+            if ($next_value > 1.25 * $current_value) {
+                $has_pseudo_discontinuities = 1;
+                last;
+            }
+        }
+
+        if (($has_pseudo_discontinuities == 0) && ($fluxon_array(1,-1) == ($fluxon_array(1,:)->max()))) {
             $search_for_transonic_velocity = 0;
             $upper_velocity_bound = $transonic_velocity_threshold;
             if ($verbose) {print "\t\tTransonic velocity found! Range: $lower_velocity_bound to $upper_velocity_bound\n";}
         }
-        # Break statement to cutoff wind velocities of unusual size
-        if ($transonic_velocity_threshold > 1000) {last;}
-
-    }
+   }
 
     # Hone in on the ideal transonic solution
     my $iteration_count = 0;
-    while ($iteration_count < 10) {
+    while ($iteration_count < 20) {
         # Test the mean velocity between the upper (transonic / misbehaved) and lower (breeze) bounds.
         # Define it as the new upper or lower bound accordingly.
         my $transonic_velocity_test = ($lower_velocity_bound + $upper_velocity_bound) / 2;
+        # Cutoff wind velocities of unusual size
+        if ($transonic_velocity_test > 800) {$upper_velocity_bound = 800;}
+        if ($transonic_velocity_test < 400) {$lower_velocity_bound = 400;}
+        $transonic_velocity_test = ($lower_velocity_bound + $upper_velocity_bound) / 2;
+
+        # Generate a wind solution with the test velocity
         ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_test, 'cs'=>$sound_speed});
-        if ($fluxon_array(1,-1) == ($fluxon_array(1,:)->max())) {
+
+        # Check for pseudo-discontinuities in the fluxon_array
+        my $has_pseudo_discontinuities = 0;
+        my $n_array = $fluxon_array->dim(1);
+        for (my $i = 0; $i < $n_array - 1; $i++) {
+            my $current_value = $fluxon_array->slice("1,($i)")->sclr;
+            my $next_value = $fluxon_array->slice("1,($i+1)")->sclr;
+            if ($next_value > 1.25 * $current_value) {
+                $has_pseudo_discontinuities = 1;
+                last;
+            }
+        }
+
+        if (($has_pseudo_discontinuities == 0) && ($fluxon_array(1,-1) == ($fluxon_array(1,:)->max()))) {
             # This was a successful try! Set the new upper bound to the test velocity.
             $upper_velocity_bound = $transonic_velocity_test;
 
@@ -164,6 +193,8 @@ sub gen_fluxon_tflow {
             # This was an unsuccessful try. Set the new lower bound to the test velocity.
             $lower_velocity_bound = $transonic_velocity_test;
         }
+
+
 
         $iteration_count += 1;
         # print "\t\tIteration $iteration_count: $lower_velocity_bound, $transonic_velocity_test, $upper_velocity_bound\n";
