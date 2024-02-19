@@ -67,7 +67,7 @@ use FindBin qw($RealBin);
 # use lib "$RealBin/../helpers";
 # use lib ".";
 # use lib ".";
-use pipe_helper qw(shorten_path set_paths configurations);
+use pipe_helper qw(shorten_path set_paths configurations load_highest_numbered_world);
 use pipe_helper
   qw(print_banner search_files_in_directory configs_update_magdir);
 
@@ -275,35 +275,9 @@ system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
 #######################################################################################################
 # our ( $out_b, $out_fr, $out_wind );
 
-if (!defined($this_world_relaxed)) {
-    my $world_out_dir = $datdir . "/batches/$batch_name/data/cr" . $CR . '/world/';
-    my $file_pattern = "cr${CR}_f${n_fluxons_wanted}_${inst}_relaxed_s(\\d+).flux";
 
-    opendir(my $dh, $world_out_dir) or die "Cannot open directory: $!";
-    my @files = readdir($dh);
-    closedir($dh);
 
-    my $max_d = -1;
-    my $selected_file = '';
-
-    foreach my $file (@files) {
-        if ($file =~ /$file_pattern/) {
-            my $d_value = $1;  # Captured number from the pattern
-            if ($d_value > $max_d) {
-                $max_d = $d_value;
-                $selected_file = $file;
-            }
-        }
-    }
-
-    if ($max_d != -1) {
-        my $full_world_path = $world_out_dir . $selected_file;
-        $this_world_relaxed = read_world($full_world_path);
-    } else {
-        print "No matching files found.\n";
-    }
-}
-
+$this_world_relaxed = load_highest_numbered_world($datdir, $batch_name, $CR, $n_fluxons_wanted, $inst);
 
 my ( $out_b, $out_fr, $out_wind, $out_b_all ) =
   get_wind( $this_world_relaxed, $CR, $n_fluxons_wanted, $recompute );

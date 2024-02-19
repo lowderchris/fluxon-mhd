@@ -33,35 +33,40 @@ from fluxpipe.helpers.pipe_helper import configurations
 import timeout_decorator
 
 configs = configurations(debug=False)
+
+# Initialize timeout_num
+timeout_num = 0
+
+@timeout_decorator.timeout(1000)  # Set a timeout for each subprocess call
+def run_pdl_script(rot, nflux, adapt):
+    """
+    Executes the PDL script with a timeout.
+
+    Parameters:
+    - rot: Carrington Rotation
+    - nflux: Fluxon count
+    - adapt: Adaptation parameter
+    """
+    subprocess.run(["perl", configs["run_script"], str(rot), str(nflux), str(adapt)], check=False)
+
 def run():
-    # Initialize a progress bar with the total number of jobs to run
+    global timeout_num
     with tqdm(total=int(configs["n_jobs"]), unit="runs") as pbar:
-
         for adapt in configs["adapts"]:
-            # Loop through specified Carrington Rotations
             for rot in configs["rotations"]:
-
-                # Loop through specified fluxon counts
                 for nflux in configs["fluxon_count"]:
-
-                    # Update the progress bar description
                     pbar.set_description(f"Rotation {rot}, n_fluxon {nflux}")
                     try:
-                        # Execute the PDL script with the current parameters
-                        result = subprocess.run(["perl", configs["run_script"],
-                                                str(rot), str(nflux), str(adapt)], check=False)
-
+                        run_pdl_script(rot, nflux, adapt)
                     except timeout_decorator.TimeoutError:
+                        print(f"Timeout for Rotation {rot}, n_fluxon {nflux}")
                         timeout_num += 1
-                    # Update the progress bar
+                    except Exception as e:
+                        print(f"Error for Rotation {rot}, n_fluxon {nflux}: {e}")
                     pbar.update(1)
 
+    print(f"Total timeouts: {timeout_num}")
+
 if __name__ == "__main__":
-
-    # import os
-    # import sys
-    # sys.exec(open(os.path.expanduser('~/.zshrc')).read())
-    # print(os.environ.get('PERL5LIB'))
-
-
     run()
+
