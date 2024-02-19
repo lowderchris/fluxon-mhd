@@ -105,9 +105,10 @@ package pipe_helper;
 use strict;
 use warnings;
 use Exporter qw(import);
+use Flux::World    qw(read_world);
 our @EXPORT_OK =
   qw(shorten_path find_highest_numbered_file find_highest_numbered_file_with_string set_env_variable get_env_variable check_env_variable configs_update_magdir
-  set_and_check_env_variable calculate_directories set_python_path set_paths print_banner search_files_in_directory check_second_file_presence configurations);
+  set_and_check_env_variable calculate_directories set_python_path set_paths print_banner search_files_in_directory check_second_file_presence configurations load_highest_numbered_world);
 use File::Basename qw(dirname basename);
 use PDL::AutoLoader;
 use PDL;
@@ -675,6 +676,46 @@ sub set_paths {
         print "\n\n";
     }
     return;
+}
+
+use File::Spec;
+use List::Util qw(max);
+
+
+sub load_highest_numbered_world {
+    my ($datdir, $batch_name, $CR, $n_fluxons_wanted, $inst) = @_;
+
+    my $world_out_dir = File::Spec->catdir($datdir, "batches", $batch_name, "data", "cr${CR}", "world");
+    my $file_pattern = qr/cr${CR}_f${n_fluxons_wanted}_${inst}_relaxed_s(\d+)\.flux$/;
+
+    my $max_d = -1;
+    my $selected_file_path;
+
+    opendir(my $dh, $world_out_dir) or die "Cannot open directory: $!";
+    while (my $file = readdir($dh)) {
+        if ($file =~ /$file_pattern/) {
+            my $d_value = $1;
+            if ($d_value > $max_d) {
+                $max_d = $d_value;
+                $selected_file_path = File::Spec->catfile($world_out_dir, $file);
+            }
+        }
+    }
+    closedir($dh);
+
+    if (defined $selected_file_path) {
+        my $this_world_relaxed = read_world($selected_file_path);
+        my @fluxons = $this_world_relaxed->fluxons;
+
+        if (scalar @fluxons == 0) {
+            # Consider logging a warning or handling this case differently as needed
+            return "World loaded, but contains no fluxons.";
+        }
+
+        return $this_world_relaxed; # Successful load
+    } else {
+        return "No matching files found."; # No file found
+    }
 }
 
 1;

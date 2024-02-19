@@ -37,6 +37,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 from fluxpipe.helpers.pipe_helper import (configurations, load_fits_magnetogram,
                          load_magnetogram_params, get_fixed_coords, get_ax)
+from fluxpipe.science.pfss_funcs import get_fluxon_locations
 
 from fluxpipe.plotting.plot_fieldmap import magnet_plot
 
@@ -317,6 +318,34 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
 
     return mean1, std1
 
+def plot_closed_footpoints(ax, closed_f):
+    """
+    Scatter plots closed magnetic footpoints on the given pyplot axis.
+
+    Parameters:
+    - ax: Matplotlib axis object where footpoints will be plotted.
+    - closed_f: Filepath to the data for closed magnetic footpoints.
+    """
+
+    all_file    = closed_f.replace("closed_", "")
+    f_lat, f_lon, f_sgn, _fnum = get_fluxon_locations(all_file, None, configs=None)
+
+    # Filter positive and negative cases
+    positive_indices = [i for i, s in enumerate(f_sgn) if s > 0]
+    negative_indices = [i for i, s in enumerate(f_sgn) if s <= 0]
+
+    # Data for positive and negative cases
+    f_lon_positive = [f_lon[i] for i in positive_indices]
+    f_lat_positive = [f_lat[i] for i in positive_indices]
+    f_lon_negative = [f_lon[i] for i in negative_indices]
+    f_lat_negative = [f_lat[i] for i in negative_indices]
+
+    # Plot positive cases with labels
+    ax.scatter(f_lon_positive, f_lat_positive, s=3**2, c='lightcyan', alpha=0.4, label='Positive', edgecolors='none')
+
+    # Plot negative cases with labels
+    ax.scatter(f_lon_negative, f_lat_negative, s=3**2, c='bisque', alpha=0.4, label='Negative', edgecolors='none')
+
 def plot_wind_map_latitude(configs):
     """
     Plot the detailed solar wind map.
@@ -331,7 +360,6 @@ def plot_wind_map_latitude(configs):
     bool
         True if the plot was successful, else False.
     """
-    print("\n\tPlotting Windmap...", end="\n" if __name__ == "__main__" else "")
     configs = configs or configurations()
 
     # Extract configuration settings
@@ -342,6 +370,7 @@ def plot_wind_map_latitude(configs):
     CR = configs.get("cr")
     dat_file = configs.get("file", f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind.dat')
     all_vmin, all_vmax = configs.get("all_vmin", 450), configs.get("all_vmax", 700)
+    print(f"\n\tPlotting Windmap {CR} Lat Cycle...", end="\n" if __name__ == "__main__" else "")
 
     # Load the wind file
     arr = np.loadtxt(dat_file).T
@@ -380,8 +409,6 @@ def plot_wind_map_latitude(configs):
     percent_outliers = 100 * n_outliers / n_total
 
 
-
-
     pole_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/floc/floc_open_cr{CR}_r{reduce}_f{nwant}_hmi.dat'
     arr2 = np.loadtxt(pole_file).T
     ffid, pol, _, _, _ = arr2
@@ -397,15 +424,16 @@ def plot_wind_map_latitude(configs):
 
 
 
+
     import matplotlib.gridspec as gridspec
     # Create a 6x1 grid with custom height ratios
     fig = plt.figure(figsize=(6, 8))
-    height_ratios = [0.4, 1, 1, 1, 1, 1]  # Adjust the height ratios as needed
+    height_ratios = [ 1, 1, 0.4, 1, 1, 1]  # Adjust the height ratios as needed
     gs = gridspec.GridSpec(6, 1, height_ratios=height_ratios)
     # Create subplots using gridspec
-    carr_ax =       plt.subplot(gs[0])
-    low_lat_ax =    plt.subplot(gs[1])
-    high_lat_ax =   plt.subplot(gs[2])
+    carr_ax =       plt.subplot(gs[2])
+    low_lat_ax =    plt.subplot(gs[0])
+    high_lat_ax =   plt.subplot(gs[1])
     square_wind_ax =plt.subplot(gs[3])
     dot_wind_ax =   plt.subplot(gs[4])
     hist_ax =       plt.subplot(gs[5])
@@ -414,7 +442,7 @@ def plot_wind_map_latitude(configs):
 
 
 
-    ### THIRD PLOT ###
+
     # Plot the Sunspot Number
     carrington = np.loadtxt("/Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/SN_m_tot_V2.0.txt").T
     ## https://sidc.be/SILSO/datafiles#total ##
@@ -461,28 +489,38 @@ def plot_wind_map_latitude(configs):
 
     the_cmap = "Spectral"
 
-    sc01 = low_lat_ax.scatter(ph0, th0, c=th0, s = 30, cmap=the_cmap,
-                alpha=0.8, zorder = None, marker='o', vmin=-1, vmax=1)
+    sc01 = low_lat_ax.scatter(ph0, th0, c=th0, s = 60, cmap=the_cmap, edgecolors='k', linewidths=0.25,
+                alpha=0.75, zorder = 100, marker='o', vmin=-1, vmax=1)
 
 
     # Add a colorbar
-    cbar_ax_lat1 = fig.add_axes([0.9, 0.725, 0.03, 0.123])
+    cbar_ax_lat1 = fig.add_axes([0.9, 0.815, 0.03, 0.123])
     cbar01 = plt.colorbar(sc01, cax=cbar_ax_lat1, cmap=the_cmap, aspect=15)
     cbar01.set_label(f"Base Latitude", labelpad=-58)
 
 
 
-    sc02 = high_lat_ax.scatter(ph1, th1, c=th0, s = 30, cmap=the_cmap,
-                alpha=0.8, label=r"First Point Latitude", marker='o', vmin=-1, vmax=1)
+    sc02 = high_lat_ax.scatter(ph1, th1, c=th0, s = 60, cmap=the_cmap, zorder=100, edgecolors='k', linewidths=0.25,
+                alpha=0.75, label="First Point Latitude", marker='o', vmin=-1, vmax=1)
 
     # Add a colorbar
-    cbar_ax_lat2 = fig.add_axes([0.9, 0.561, 0.03, 0.123])
+    cbar_ax_lat2 = fig.add_axes([0.9, 0.651, 0.03, 0.123])
     cbar02 = plt.colorbar(sc02, cax=cbar_ax_lat2, cmap=the_cmap, aspect=15)
     cbar02.set_label(f"Base Latitude", labelpad=-58)
 
 
 
+    nwant = configs.get("nwant", None)
+    reduce_amt = configs.get("mag_reduce", None)
+    if configs['adapt']:
+        inst = "adapt"
+        reduce_amt = "f" + str(configs.get("adapt_select"))
+    else:
+        inst = "hmi"
 
+    floc_path = f"{dat_dir}/batches/{batch}/data/cr{CR}/floc/"
+    closed_file = f"{floc_path}floc_closed_cr{CR}_r{reduce_amt}_f{nwant}_{inst}.dat"
+    plot_closed_footpoints(low_lat_ax, closed_file)
 
 
 
@@ -596,7 +634,7 @@ def plot_wind_map_latitude(configs):
         # You can adjust the x, y coordinates and other properties as needed
 
         yy = 0.8 if ii > 0 else 0.6
-        this_ax.text(0.02, yy, label, transform=this_ax.transAxes, fontsize=12, va='bottom', ha='left')
+        this_ax.text(0.02, yy, label, transform=this_ax.transAxes, fontsize=12, va='bottom', ha='left', zorder=1000)
 
 
 
@@ -630,6 +668,7 @@ def plot_wind_map_latitude(configs):
     filename = f"png_cr{CR}_f{nwant}_op{n_open}_radial_wind_{method}.png"
     main_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/{filename}'
     wind_file = f'{dat_dir}/batches/{batch}/data/wind/cr{CR}_f{nwant}_op{n_open}_radial_wind_{method}.npy'
+    label_file = f'{dat_dir}/batches/{batch}/data/wind/np_labels.txt'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
     if not path.exists(os.path.dirname(main_file)):
@@ -670,7 +709,12 @@ def plot_wind_map_latitude(configs):
                ph1_clean, th1_clean, fr1_clean, vel1_clean, polarity_clean]
 
     np.save(wind_file, np.vstack(to_save))
+
+    with open(label_file, 'w') as file:
+        file.write("""ph0_clean, th0_clean, fr0_clean, vel0_clean, ph1_clean, th1_clean, fr1_clean, vel1_clean, polarity_clean\n
+                   <------------ Solar Surface --------------> <----------- Outer Boundary ---------------->""")
     # np.save(wind_file.replace(".npy", "_interp.npy"), grid_z1)
+
 
 
 
@@ -682,7 +726,7 @@ def plot_wind_map_latitude(configs):
 if __name__ == "__main__":
     # Create the argument parser
     configs = configurations()
-    do_one = False
+    do_one = True
     for rotation in configs["rotations"]:
         parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
         parser.add_argument('--cr',     type=int, default=rotation, help='Carrington Rotation')
@@ -696,7 +740,10 @@ if __name__ == "__main__":
         args = parser.parse_args()
         configs = configurations(args=args)
 
-
-        plot_wind_map_latitude(configs)
+        try:
+            plot_wind_map_latitude(configs)
+        except FileNotFoundError as e:
+            print(e, f"{rotation} failed!")
+            pass
         if do_one:
             break
