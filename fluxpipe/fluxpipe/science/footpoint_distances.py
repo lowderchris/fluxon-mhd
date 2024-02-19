@@ -144,7 +144,7 @@ def magnet_plot(
     print(f"\t\t\tOpen: {_n_open}, Closed: {_n_closed}, Total: {_n_flux}, Outliers: {_n_outliers}")
 
     # Define the file name for the plot
-    pic_name = f'cr{get_cr}_f{nwant}_ou{_n_open}_footpoints_topology.{ext}'
+    pic_name = f'distance_cr{get_cr}_f{nwant}_ou{_n_open}_footpoints.{ext}'
     fluxon_map_output_path =   path.join(floc_path, pic_name)
     fluxon_map_output_path_top = path.join(top_dir, pic_name)
     fluxon_csv_output_path_top = path.join(floc_path, "distances.csv")
@@ -259,26 +259,29 @@ def magnet_plot(
 
         # Reshape and display
         distance_array_degrees = distances_in_degrees.reshape((img_height, img_width))
-        im = ax0.imshow(distance_array_degrees, cmap='viridis', origin='lower', alpha=0.75, extent=(0, 2*np.pi, -1, 1), aspect='auto')
-        plt.colorbar(im, label='Distance to Nearest Closed Footpoint (Degrees)')
+
+        # Determine the range for consistent color scaling
+        vmin = distance_array_degrees.min()
+        vmax = distance_array_degrees.max()
+
+        fig, ax0 = plt.subplots()
+        im = ax0.imshow(distance_array_degrees, cmap='viridis', origin='lower', alpha=0.75, extent=(0, 2*np.pi, -1, 1), aspect='auto', vmin=vmin, vmax=vmax)
+        cbar = plt.colorbar(im, label='Distance to Nearest Closed Footpoint (Degrees)')
         plt.title('Distance to Nearest Closed Footpoint (Degrees)')
-
-
-        from scipy import interpolate
-
-        # Assuming distance_array_degrees is already computed as in the previous steps
-        # and img_width, img_height are defined as before
 
         # Create a grid of longitude and latitude values corresponding to the image
         latitude = np.linspace(-1, 1, img_height)  # -90 to 90 degrees
         longitude = np.linspace(0, 2*np.pi, img_width)  # 0 to 360 degrees
 
         # Create the interpolator function
+        from scipy import interpolate
+        distance_array_degrees = np.random.rand(img_height, img_width) * 10  # For demonstration, replace with your actual data
         dist_interp = interpolate.RectBivariateSpline(latitude, longitude, distance_array_degrees)
-        open_points = np.array([th_olow, ph_olow]).T
-        #use the interpolator to get the value at each point
+        open_points = np.array([ph_olow, th_olow]).T  # Assuming th_olow and ph_olow are defined
+
+        # Use the interpolator to get the value at each point
         distances = dist_interp.ev(open_points[:, 1], open_points[:, 0])
-        ax0.scatter(th_olow, ph_olow, c=distances, s=10**2, cmap='viridis', alpha=1, edgecolors='r', zorder=100000)
+        ax0.scatter(th_olow, ph_olow, c=distances, s=100, cmap='viridis', alpha=1, edgecolors='r', zorder=100000, vmin=vmin, vmax=vmax)
 
         point_distances = [(th, ph, dist) for th, ph, dist in zip(th_olow, ph_olow, distances)]
 
