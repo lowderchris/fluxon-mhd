@@ -468,14 +468,15 @@ def trace_lines(output, f_vars, open_path, closed_path, adapt):
     flnum_closed = 0
 
     r0 = 1.01 * const.R_sun
+    tracer = tracing.PythonTracer()
+    # tracer = tracing.FortranTracer(max_steps=3000)
 
     skip_num = 0
     timeout_num = 0
-    tracer = tracing.PythonTracer()
     for i, coords in enumerate(tqdm(zip(f_lon, f_lat),
                             desc="Tracing Field Lines", total=len(f_lat))):
         try:
-            output, fl_open, fl_closed, flnum_open, flnum_closed, tracer = trace_each(
+            output, fl_open, fl_closed, flnum_open, flnum_closed, tracer = trace_each_single(
                 coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn, adapt)
         except timeout_decorator.TimeoutError:
             timeout_num += 1
@@ -503,9 +504,8 @@ def trace_lines(output, f_vars, open_path, closed_path, adapt):
     return fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed
 
 
-
 @timeout_decorator.timeout(5)
-def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn, adapt):
+def trace_each_single(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn, adapt):
     # import pdb; pdb.set_trace()
     """Fieldline tracer for each fieldline
 
@@ -550,9 +550,8 @@ def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, 
 
     (this_flon, this_flat) = coords
     if adapt:
-        # this_flon = np.deg2rad(this_flon)
         this_flat = np.deg2rad(this_flat)
-    # import pdb; pdb.set_trace()
+
     coord_frame = output.coordinate_frame
     # THE ARCSIN IS A TEST
     x0 = SkyCoord(this_flon * u.rad, np.arcsin(this_flat)
@@ -596,3 +595,165 @@ def trace_each(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, 
                     prev_rad = fl_rads[j]
         flnum_closed += 1
     return output, fl_open, fl_closed, flnum_open, flnum_closed, tracer
+
+
+
+import numpy as np
+from tqdm import tqdm
+from multiprocessing import Pool
+import timeout_decorator
+from functools import partial
+
+# @timeout_decorator.timeout(5)
+def trace_each(coords, r0, adapt, output):
+    i, this_flon, this_flat, f_sgn = coords
+    fl_open = []
+    fl_closed = []
+    flnum_closed = 0
+    flnum_open = 0
+    if adapt:
+        this_flat = np.deg2rad(this_flat)
+    coord_frame = output.coordinate_frame
+    x0 = SkyCoord(this_flon * u.rad, np.arcsin(this_flat) * u.rad, r0, frame=coord_frame)
+    tracer = tracing.PythonTracer()
+
+    fl = output.trace(tracer, x0)
+    fl = fl.field_lines[0]
+    if fl.is_open:
+        fl_pol = fl.polarity
+        fl = fl.coords.spherical
+        fl_lats = fl.lat.value
+        fl_lons = fl.lon.value
+        fl_rads = (fl.distance / const.R_sun).value
+
+        if fl_pol == -1:
+            fl_lats, fl_lons, fl_rads = fl_lats[::-1], fl_lons[::-1], fl_rads[::-1]
+
+        fl_lats = np.concatenate((fl_lats, fl_lats[-1]*np.ones(10)), axis=0)
+        fl_lons = np.concatenate((fl_lons, fl_lons[-1]*np.ones(10)), axis=0)
+        fl_rads = np.concatenate((fl_rads, np.linspace(2.5, 22, 10)), axis=0)
+        prev_rad = 0.
+        for j in np.arange(0, len(fl_lats)):
+            if np.abs(fl_rads[j] - prev_rad) > 0.1:
+                fl_open = np.append(
+                    fl_open, [[flnum_open, f_sgn, fl_lats[j], fl_lons[j], fl_rads[j]]], axis=0)
+                prev_rad = fl_rads[j]
+        flnum_open += 1
+    else:
+        fl = fl.coords.spherical
+        fl_rads = (fl.distance / const.R_sun).value
+        # fl_pol = fl.polarity
+
+        max_rad = fl_rads.max()
+        rad_thresh = np.max([((max_rad - 1.) / 5.), 0.01])
+        prev_rad = 0.
+        if np.mod(flnum_closed, 2) == 0:
+            for j in np.arange(0, len(fl.lat)):
+                if (np.abs(fl_rads[j] - prev_rad) > rad_thresh) or (fl_rads[j] == max_rad):
+                    fl_closed = np.append(fl_closed, [[flnum_closed, f_sgn, fl.lat[j].value,
+                                                        fl.lon[j].value, (fl.distance[j] / const.R_sun).value]], axis=0)
+                    prev_rad = fl_rads[j]
+        flnum_closed += 1
+    return fl_open, fl_closed, flnum_open, flnum_closed
+
+def trace_all(field_lines):
+    # i, this_flon, this_flat, f_sgn = coords
+    fl_open = []
+    fl_closed = []
+    flnum_closed = 0
+    flnum_open = 0
+    # if adapt:
+    #     this_flat = np.deg2rad(this_flat)
+    # coord_frame = output.coordinate_frame
+    # x0 = SkyCoord(this_flon * u.rad, np.arcsin(this_flat) * u.rad, r0, frame=coord_frame)
+    # tracer = tracing.PythonTracer()
+
+    for fl in field_lines:
+        if fl.is_open:
+            fl_pol = fl.polarity
+            fl = fl.coords.spherical
+            fl_lats = fl.lat.value
+            fl_lons = fl.lon.value
+            fl_rads = (fl.distance / const.R_sun).value
+
+            if fl_pol == -1:
+                fl_lats, fl_lons, fl_rads = fl_lats[::-1], fl_lons[::-1], fl_rads[::-1]
+
+            fl_lats = np.concatenate((fl_lats, fl_lats[-1]*np.ones(10)), axis=0)
+            fl_lons = np.concatenate((fl_lons, fl_lons[-1]*np.ones(10)), axis=0)
+            fl_rads = np.concatenate((fl_rads, np.linspace(2.5, 22, 10)), axis=0)
+            prev_rad = 0.
+            for j in np.arange(0, len(fl_lats)):
+                if np.abs(fl_rads[j] - prev_rad) > 0.1:
+                    fl_open = np.append(
+                        fl_open, [[flnum_open, fl_pol, fl_lats[j], fl_lons[j], fl_rads[j]]], axis=0)
+                    prev_rad = fl_rads[j]
+            flnum_open += 1
+        else:
+            fl = fl.coords.spherical
+            fl_pol = 0
+            fl_rads = (fl.distance / const.R_sun).value
+            # fl_pol = fl.polarity
+
+            max_rad = fl_rads.max()
+            rad_thresh = np.max([((max_rad - 1.) / 5.), 0.01])
+            prev_rad = 0.
+            if np.mod(flnum_closed, 2) == 0:
+                for j in np.arange(0, len(fl.lat)):
+                    if (np.abs(fl_rads[j] - prev_rad) > rad_thresh) or (fl_rads[j] == max_rad):
+                        fl_closed = np.append(fl_closed, [[flnum_closed, fl_pol, fl.lat[j].value,
+                                                            fl.lon[j].value, (fl.distance[j] / const.R_sun).value]], axis=0)
+                        prev_rad = fl_rads[j]
+            flnum_closed += 1
+    return fl_open, fl_closed, flnum_open, flnum_closed
+
+
+def trace_lines_parallel(pfss_output, f_vars, open_path, closed_path, adapt):
+    (f_lon, f_lat, f_sgn) = f_vars
+
+    fl_open = []
+    fl_closed = []
+    flnum_open = 0
+    flnum_closed = 0
+    r0 = 1.01 * const.R_sun
+    skip_num = 0
+    timeout_num = 0
+
+
+    seeds = SkyCoord(f_lon.ravel(), f_lat.ravel(), r0, frame=pfss_output.coordinate_frame)
+
+    print('Tracing field lines...')
+    tracer = tracing.FortranTracer(max_steps=3000)
+    field_lines = tracer.trace(seeds, pfss_output)
+    print('Finished tracing field lines')
+
+    results = trace_all(field_lines)
+    # trace_each_partial = partial(trace_each, r0=r0, adapt=adapt, output=output)
+    # ii = np.arange(len(f_lat))
+    # with Pool() as pool:
+    #     results = list(tqdm(pool.imap(trace_each_partial, zip(ii, f_lon, f_lat, f_sgn)),
+    #                         desc="Tracing Field Lines", total=len(f_lat)))
+
+    for result in results:
+        fl_open.extend(result[0])
+        fl_closed.extend(result[1])
+        flnum_open += result[2]
+        flnum_closed += result[3]
+
+    if skip_num > 0 or timeout_num > 0:
+        t_perc = 100 * timeout_num / len(f_lon)
+        s_perc = 100 * skip_num / len(f_lon)
+        print(f"\n\t\tSome iterations failed. Timed-out: {timeout_num} \
+                ({t_perc:0.2f}%), ValueError: {skip_num} ({s_perc:0.2f}%)\n")
+
+    print(f"\nOpen Lines: {flnum_open}, Closed Lines: {flnum_closed}, \
+          Failures: {skip_num+timeout_num}, Total Good: {flnum_open+flnum_closed}")
+
+    # Save these coordinates to file
+    print("\n\tSaving Fluxons...", end="")
+    np.savetxt(open_path, np.concatenate(fl_open))
+    np.savetxt(closed_path, np.concatenate(fl_closed))
+    print("Success!")
+
+    return fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed
+
