@@ -79,6 +79,7 @@ import ast
 from pathlib import PosixPath, Path
 
 import pandas as pd
+import re
 # from pipe_helper import convert_value
 import numpy as np
 import matplotlib.pyplot as plt
@@ -1527,3 +1528,144 @@ def get_fixed_coords(phi0, theta0, do=True):
     else:
         ph0, th0 = phi0, theta0
     return ph0, th0
+
+
+fields = ['ph0', 'th0', 'fr0', 'vel0', 'ph1', 'th1', 'fr1', 'vel1', 'polarity']
+
+def load_wind_files(directory):
+    """
+    Load wind files into a nested dictionary based on CR and data fields.
+
+    Parameters:
+    - directory: Path to the directory containing the files.
+
+    Returns:
+    A nested dictionary {CR: {field: data, ...}, ...}.
+    """
+    # Define the fields based on the order in the saved array
+    big_dict = {}
+
+    # Regex to extract details from filename
+    pattern = re.compile(r"cr(\d+)_f(\d+)_op(\d+)_radial_wind_(\w+).npy")
+
+    for filename in os.listdir(directory):
+        match = pattern.match(filename)
+        if match:
+            CR, nwant, n_open, method = match.groups()
+            CR = int(CR)  # Convert CR to integer for use as a dictionary key
+
+            # Ensure the CR key exists in the dictionary
+            if CR not in big_dict:
+                big_dict[CR] = {}
+
+            file_path = os.path.join(directory, filename)
+            data = np.load(file_path)
+
+            # Assume data is saved in the order specified above
+            for i, field in enumerate(fields):
+                big_dict[CR][field] = data[i]
+
+    return big_dict
+
+from datetime import datetime, timedelta
+
+
+def decimal_years_to_datetimes(decimal_years):
+    def convert(decimal_year):
+        year = int(decimal_year)
+        remainder = decimal_year - year
+        start_of_year = datetime(year, 1, 1)
+        # Check if it's a leap year
+        if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
+            days_in_year = 366
+        else:
+            days_in_year = 365
+        days = remainder * days_in_year
+        return start_of_year + timedelta(days=days)
+
+    return [convert(year) for year in decimal_years]
+
+
+def sunspotplot(carr_ax, cr=None, use_years=False):
+# Plot the Sunspot Number
+    carrington = np.loadtxt("/Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/SN_m_tot_V2.0.txt").T
+    ## https://sidc.be/SILSO/datafiles#total ##
+    from sunpy.coordinates.sun import carrington_rotation_time as crt, carrington_rotation_number as crn
+    # import pdb; pdb.set_trace()
+    date = carrington[2]
+    sunspots = carrington[3]
+
+    if cr is not None:
+        this_date = crt(cr)
+        if use_years:
+            carr_ax.axvline(this_date.decimalyear, ls=":", c='k', zorder=1000000)
+        else:
+            carr_ax.axvline(cr, ls=":", c='k', zorder=1000000)
+    # fig, ax = plt.subplots()
+    if use_years:
+        carr_ax.plot(date, sunspots, label="Sunspots", color="b", lw=2)
+        carr_ax.set_xlim(crt(2095).decimalyear, crt(2282).decimalyear)
+
+    else:
+        datetimes = decimal_years_to_datetimes(date)
+        CR = crn(datetimes)
+        carr_ax.plot(CR, sunspots, label="Sunspots", color="b", lw=2)
+        carr_ax.set_xlim(2095, 2282)
+    # carr_ax.set_xlabel("Year")
+    carr_ax.set_ylabel("Sunspots")
+    carr_ax.set_title("Solar Cycle Phase")
+    # carr_ax.axhline(100, c='k', ls="--")
+    # set the major tick formatter to display integers
+    from matplotlib.ticker import MaxNLocator
+    carr_ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    # carr_ax.set_ylim(0, 200)
+
+VMIN, VMAX = 450, 700
+def parse_big_dict(big_dict, field="vel1", vmin=VMIN, vmax=VMAX):
+    # Prepare data for interpolation and plotting
+    all_phi = []
+    all_theta = []
+    all_vel = []
+    all_hist = []
+    all_cr = []
+    all_mean = []
+    all_std = []
+    all_count = []
+    the_phi = "ph1" if "1" in field else "ph0"
+    the_theta = "th1" if "1" in field else "th0"
+
+    # Collect data from all CRs
+    for ii, CR in enumerate(sorted(big_dict.keys())):
+
+        phi1 = big_dict[CR][the_phi]/(2*np.pi) + ((CR-0.5))
+        theta1 = big_dict[CR][the_theta]
+        vel1_data = big_dict[CR][field]
+        hist, bins = np.histogram(vel1_data, range=(vmin, vmax), bins=20, density=True)
+
+        all_phi.extend(phi1)
+        all_theta.extend(theta1)
+        all_vel.extend(vel1_data)
+
+        all_hist.append(hist)
+        all_mean.append(np.mean(vel1_data))
+        all_std.append(np.std(vel1_data))
+        all_cr.append(CR)
+        all_count.append(len(vel1_data))
+
+
+    # Convert lists to numpy arrays for griddata
+    all_phi = np.array(all_phi)
+    all_theta = np.array(all_theta)
+    all_vel = np.array(all_vel)
+    all_hist = np.array(all_hist)
+    all_cr = np.array(all_cr)
+    all_mean = np.array(all_mean)
+    all_std = np.array(all_std)
+
+    total_mean = np.mean(all_mean)
+    total_std = np.mean(all_std)
+    all_count = np.array(all_count)
+
+    clip = (total_mean + 2*total_std)
+    all_hist[all_hist > clip] = clip
+    return all_phi, all_theta, all_vel, all_hist, all_cr, all_mean, all_std, total_mean, total_std, all_count

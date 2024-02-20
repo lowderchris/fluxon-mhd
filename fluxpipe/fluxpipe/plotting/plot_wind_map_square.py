@@ -30,7 +30,9 @@ mpl.use("qt5agg")
 import matplotlib.pyplot as plt
 import argparse
 import os
-
+import cv2
+import os
+from tqdm import tqdm
 import os.path as path
 from scipy.interpolate import griddata
 from scipy.stats import norm
@@ -38,6 +40,7 @@ from scipy.optimize import curve_fit
 from fluxpipe.helpers.pipe_helper import (configurations, load_fits_magnetogram,
                          load_magnetogram_params, get_fixed_coords, get_ax)
 from fluxpipe.science.pfss_funcs import get_fluxon_locations
+from fluxpipe.helpers.pipe_helper import (sunspotplot, parse_big_dict, load_wind_files)
 
 from fluxpipe.plotting.plot_fieldmap import magnet_plot
 
@@ -308,7 +311,7 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
 
     hist_ax.legend(fontsize="small", loc = "center left")
     hist_ax.set_xlabel("Wind Speed [km/s]")
-    hist_ax.set_ylabel("Number of Fluxons")
+    hist_ax.set_ylabel("Count")
     fig.suptitle(f'CR{CR}, {len(vel1_clean)} Open Fields, {configs.get("flow_method").title()} wind')
 
     hist_ax.set_xlim((vmin-25, vmax+25))
@@ -427,46 +430,45 @@ def plot_wind_map_latitude(configs):
 
     import matplotlib.gridspec as gridspec
     # Create a 6x1 grid with custom height ratios
-    fig = plt.figure(figsize=(6, 8))
-    # height_ratios = [ 1, 1, 1, 1, 1, 1]  # Adjust the height ratios as needed
-    gs = gridspec.GridSpec(3, 2)
+    fig = plt.figure()
+    height_ratios = [ 2, 2, 1]  # Adjust the height ratios as needed
+    gs = gridspec.GridSpec(3, 2, height_ratios=height_ratios)
     # Create subplots using gridspec
-    carr_ax =       plt.subplot(gs[2])
-    low_lat_ax =    plt.subplot(gs[0])
-    high_lat_ax =   plt.subplot(gs[1])
-    square_wind_ax =plt.subplot(gs[3])
-    dot_wind_ax =   plt.subplot(gs[4])
-    hist_ax =       plt.subplot(gs[5])
+    carr_ax =       plt.subplot(gs[2,0])
+    low_lat_ax =    plt.subplot(gs[0,0])
+    high_lat_ax =   plt.subplot(gs[1,0])
+    square_wind_ax =plt.subplot(gs[0, 1])
+    dot_wind_ax =   plt.subplot(gs[1, 1])
+    hist_ax =       plt.subplot(gs[2, 1])
 
 
 
 
 
-
-    # Plot the Sunspot Number
-    carrington = np.loadtxt("/Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/SN_m_tot_V2.0.txt").T
-    ## https://sidc.be/SILSO/datafiles#total ##
-    import sunpy.coordinates
-    date = carrington[2]
-    sunspots = carrington[3]
-    this_date = sunpy.coordinates.sun.carrington_rotation_time(args.cr)
-    # CR = int(sunpy.coordinates.sun.carrington_rotation_number(date))
-
-    # fig, ax = plt.subplots()
-    carr_ax.plot(date, sunspots, label="Sunspots")
-    carr_ax.axvline(this_date.decimalyear, ls=":", c='k', zorder=1000000)
-    # carr_ax.set_xlabel("Year")
-    carr_ax.set_ylabel("Sunspots")
-    carr_ax.set_title("Solar Cycle Phase")
-    carr_ax.set_xlim(2005, 2025)
-    # set the major tick formatter to display integers
-    from matplotlib.ticker import MaxNLocator
-    carr_ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    carr_ax.set_ylim(0, 200)
+    sunspotplot(carr_ax, args.cr, False)
 
 
 
 
+
+    directory_path = '/Users/cgilbert/vscode/fluxons/fluxon-data/batches/sequential/data/wind'  # Change this to your directory's path
+    big_dict = load_wind_files(directory_path)
+    all_phi, all_theta, all_vel, all_hist, all_cr, all_mean, \
+    all_std, total_mean, total_std, all_count = parse_big_dict(big_dict)
+
+    carr_ax.set_ylim(0,180)
+    carr_ax.set_ylabel("Sunspots", color='b')
+    carr_ax.tick_params(axis='y', colors='b')
+    carr_ax.spines['left'].set_color('b')
+    carr_ax.set_title("Count of Sunspots and Open Fields")
+
+    carr_ax2 = carr_ax.twinx()
+    carr_ax2.set_ylabel("Open Fields", color='r')
+    carr_ax2.tick_params(axis='y', colors='r')
+    carr_ax2.spines['right'].set_color('r')
+
+    carr_ax2.plot(all_cr, all_count, c='r', lw=2)
+    carr_ax2.set_xlabel("Carrington Rotation")
 
 
 
@@ -489,24 +491,24 @@ def plot_wind_map_latitude(configs):
 
     the_cmap = "Spectral"
 
-    sc01 = low_lat_ax.scatter(ph0, th0, c=th0, s = 60, cmap=the_cmap, edgecolors='k', linewidths=0.25,
-                alpha=0.75, zorder = 100, marker='o', vmin=-1, vmax=1)
+    sc01 = low_lat_ax.scatter(ph0, th0, c=th0, s = 70, cmap=the_cmap, edgecolors='k', linewidths=0.25,
+                alpha=0.9, zorder = 100, marker='o', vmin=-1, vmax=1)
 
 
     # Add a colorbar
-    cbar_ax_lat1 = fig.add_axes([0.9, 0.815, 0.03, 0.123])
+    cbar_ax_lat1 = fig.add_axes([0.435, 0.66, 0.025, 0.24])
     cbar01 = plt.colorbar(sc01, cax=cbar_ax_lat1, cmap=the_cmap, aspect=15)
-    cbar01.set_label(f"Base Latitude", labelpad=-58)
+    cbar01.set_label(f"Base Latitude", labelpad=-62)
 
 
 
-    sc02 = high_lat_ax.scatter(ph1, th1, c=th0, s = 60, cmap=the_cmap, zorder=100, edgecolors='k', linewidths=0.25,
-                alpha=0.75, label="First Point Latitude", marker='o', vmin=-1, vmax=1)
+    sc02 = high_lat_ax.scatter(ph1, th1, c=th0, s = 70, cmap=the_cmap, zorder=100, edgecolors='k', linewidths=0.25,
+                alpha=0.9, label="First Point Latitude", marker='o', vmin=-1, vmax=1)
 
     # Add a colorbar
-    cbar_ax_lat2 = fig.add_axes([0.9, 0.651, 0.03, 0.123])
+    cbar_ax_lat2 = fig.add_axes([0.435, 0.305, 0.025, 0.24])
     cbar02 = plt.colorbar(sc02, cax=cbar_ax_lat2, cmap=the_cmap, aspect=15)
-    cbar02.set_label(f"Base Latitude", labelpad=-58)
+    cbar02.set_label(f"Base Latitude", labelpad=-62)
 
 
 
@@ -546,9 +548,9 @@ def plot_wind_map_latitude(configs):
     sc11 = square_wind_ax.scatter(ph1, th1, c=clr, s = (4*fr1/fr0)**1/2, cmap="YlGnBu", alpha=0.75, label=r"A(21.5Rs)", marker='s', vmin=-1, vmax=3)
 
     # Add a colorbar
-    cbar_ax_lat3 = fig.add_axes([0.91, 0.395, 0.03, 0.137])
+    cbar_ax_lat3 = fig.add_axes([0.95, 0.65, 0.025, 0.25])
     cbar03 = plt.colorbar(sc11, cax=cbar_ax_lat3, aspect=15, extend="max", extendfrac=0.1)
-    cbar03.set_label(f"log(Expansion Ratio)", labelpad=-49)
+    cbar03.set_label(f"log(Expansion Ratio)", labelpad=-54)
     # # Scatter plot of wind speed [Squares]
     # scat1 = square_wind_ax.scatter(
     #     ph1_clean,
@@ -622,7 +624,7 @@ def plot_wind_map_latitude(configs):
         this_ax.set_xlim((0, 2 * np.pi))
         this_ax.grid(True)
 
-    ax_list = [carr_ax, low_lat_ax, high_lat_ax, square_wind_ax, dot_wind_ax, hist_ax]
+    ax_list = [low_lat_ax, high_lat_ax, carr_ax, square_wind_ax, dot_wind_ax, hist_ax]
 
     import string
     # Iterate over the axes objects and their indices
@@ -638,29 +640,30 @@ def plot_wind_map_latitude(configs):
 
 
 
-    for jj in [1,2,3]:
-        ax_list[jj].set_xticklabels([])
+    # for jj in [1,2,3]:
+    #     ax_list[jj].set_xticklabels([])
 
-    # Add a colorbar
-    cbar_ax = fig.add_axes([0.91, 0.05, 0.03, 0.32])
+    if True:
+        # Add a colorbar       [0.95, 0.65, 0.025, 0.25]
+        cbar_ax = fig.add_axes([0.94, 0.05, 0.025, 0.5])
 
-    # plotobjs = []
-    plotobjs = [ cont1]
-    # # plotobjs = [scat1, cont1]
-    for obj in plotobjs:
-        cbar = plt.colorbar(obj, cax=cbar_ax, extend='both', cmap=cmap, extendfrac=0.1, aspect=15)
+        # plotobjs = []
+        plotobjs = [ cont1]
+        # # plotobjs = [scat1, cont1]
+        for obj in plotobjs:
+            cbar = plt.colorbar(obj, cax=cbar_ax, extend='both', cmap=cmap, extendfrac=0.1, aspect=15)
 
-    cbar.set_label("Wind Speed [km/s]", labelpad=-53)
+        cbar.set_label("Wind Speed [km/s]", labelpad=-58)
 
-    fig.set_size_inches((6.5, 12.5))
-
+    fig.set_size_inches((12,6))
+    # plt.tight_layout()
     plt.subplots_adjust(
-        top=0.940,
-        bottom=0.065,
-        left=0.12,
-        right=0.865,
-        hspace=0.360,
-        wspace=0)
+        top=0.94,
+        bottom=0.073,
+        left=0.055,
+        right=0.92,
+        hspace=0.150,
+        wspace=0.381)
 
 
     # Set the output file names
@@ -711,11 +714,37 @@ def plot_wind_map_latitude(configs):
     np.save(wind_file, np.vstack(to_save))
 
     with open(label_file, 'w') as file:
-        file.write("""ph0_clean, th0_clean, fr0_clean, vel0_clean, ph1_clean, th1_clean, fr1_clean, vel1_clean, polarity_clean\n
-                   <------------ Solar Surface --------------> <----------- Outer Boundary ---------------->""")
+        file.write("""ph0, th0, fr0, vel0, ph1, th1, fr1, vel1, polarity\n<- Solar Surface ->  <-Outer Boundary ->""")
     # np.save(wind_file.replace(".npy", "_interp.npy"), grid_z1)
 
+def images_to_video(input_dir, output_file, fps):
+    # Get all PNG files in the input directory
+    image_files = [f for f in os.listdir(input_dir) if f.endswith('.png')]
+    image_files.sort()  # Ensure the files are in sorted order
 
+    # Check if there are any PNG files in the directory
+    if len(image_files) == 0:
+        print("No PNG files found in the directory.")
+        return
+
+    # Determine the size of the first image
+    sample_image = cv2.imread(os.path.join(input_dir, image_files[0]))
+    height, width, _ = sample_image.shape
+
+    # Initialize video writer
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
+
+    # Iterate through each image and write it to the video
+    for image_file in tqdm(image_files):
+        image_path = os.path.join(input_dir, image_file)
+        frame = cv2.imread(image_path)
+        out.write(frame)
+
+    # Release resources
+    out.release()
+
+    print(f"Video created successfully: {output_file}")
 
 
 
@@ -726,8 +755,8 @@ def plot_wind_map_latitude(configs):
 if __name__ == "__main__":
     # Create the argument parser
     configs = configurations()
-    do_one = True
-    for rotation in configs["rotations"]:
+    do_one = False
+    for rotation in tqdm(configs["rotations"]):
         parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
         parser.add_argument('--cr',     type=int, default=rotation, help='Carrington Rotation')
         parser.add_argument('--interp', type=str, default="linear")
@@ -740,6 +769,10 @@ if __name__ == "__main__":
         args = parser.parse_args()
         configs = configurations(args=args)
 
+        import warnings
+        from erfa import ErfaWarning
+        warnings.filterwarnings("ignore", category=ErfaWarning)
+
         try:
             plot_wind_map_latitude(configs)
         except FileNotFoundError as e:
@@ -747,3 +780,7 @@ if __name__ == "__main__":
             pass
         if do_one:
             break
+    if not do_one:
+        wind_path = '/Users/cgilbert/vscode/fluxons/fluxon-data/batches/sequential/imgs/windmap'  # Change this to your directory's path
+        images_to_video(wind_path, os.path.join(wind_path,"wind_video.mp4"), 10)
+    print("All Done!")
