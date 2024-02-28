@@ -1,0 +1,16 @@
+include README.md
+include LICENSE
+include setup.py
+include install-fluxpipe.sh
+include uninstall-fluxpipe.sh
+include PREFIX_PATHS.sh
+include requirements_pip.txt
+include requirements_conda.txt
+recursive-include fluxpipe *.py
+
+prune _Inline/
+prune fluxpipe.egg-info
+prune __pycache__
+prune blib/
+prune data/
+prune local/

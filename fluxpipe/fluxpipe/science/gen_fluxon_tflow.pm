@@ -6,10 +6,18 @@ gen_fluxon_tflow - Generate Transonic Solar Wind Solution for a Given Fluxon
 
 # package gen_fluxon_flow;
 
+
+package gen_fluxon_tflow;
+use strict;
+use warnings;
+use Exporter qw(import);
+our @EXPORT_OK = qw(gen_fluxon_tflow);
+use gen_fluxon_flow qw(gen_fluxon_flow);
+
+use PDL::NiceSlice;
 use PDL::Options;
 $PDL::verbose = 0;
-use PDL::NiceSlice;
-use warnings;
+
 
 =head1 SYNOPSIS
 

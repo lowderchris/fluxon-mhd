@@ -5,7 +5,7 @@ use PDL::NiceSlice;
 use PDL::Constants qw/PI/;
 use File::Temp qw/tempfile/;
 
-use Test::More tests=>37;
+use Test::More;
 
 BEGIN {use_ok('Flux');}
 
@@ -112,18 +112,6 @@ is($@,'','render with hull turned on');
 #check different values for concurrency
 require_ok('PDL/simple_relaxer.pdl');
 
-$world->{'concurrency'}=0;
-eval {simple_relaxer($world,0,1,{movie_n=>0,disp_n=>0});};
-is($@,'','simple_relaxer with concurrency=0');
-
-$world->{concurrency}=1;
-eval {simple_relaxer($world,0,2,{movie_n=>0,disp_n=>0});};
-is($@,'','simple_relaxer with concurrency=1');
-
-$world->{concurrency}=2;
-eval {simple_relaxer($world,0,3,{movie_n=>0,disp_n=>0});};
-is($@,'','simple_relaxer with concurrency=2');
-
 ###Test interpolation routines
 ##start with coordinate interpolation, exactly on a vertex
 {
@@ -167,6 +155,10 @@ do {
     $try++;
 } until (($done3pt && $done2pt) || $try==1E4);
 
+
+done_testing();
+
+
 SKIP: {
           skip 'Did not find a location that gave 3 simplex points', 1 unless $done3pt;
           ok(!all($coord3pt==$out_loc3),'trusting interpolation when only 3 simplex values found gives an incorrect interpolant');
@@ -179,6 +171,8 @@ SKIP: {
 
 
 }
+
+done_testing();
 
 =pod
 

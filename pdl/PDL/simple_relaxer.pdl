@@ -139,13 +139,12 @@ sub simple_relaxer {
     my $final_step=$n;
     $final_step = $step + $n if $final_step <= $step;
 
-#    $w = read_world($w)
-#      unless(ref $w) ;
+	if ($disp_n != 0) {
+		my ($display_term, $png_term) = gnuplot_terms();
 
-    my ($display_term,$png_term) = gnuplot_terms();
-
-    PDL::Graphics::Gnuplot::options(terminal=>$display_term);
-    $w->render_lines() unless($disp_n==0);
+		PDL::Graphics::Gnuplot::options(terminal=>$display_term);
+		$w->render_lines() unless($disp_n==0);
+	}
 
     my $dt = $w->{dtau} || 0.1;
 
@@ -167,7 +166,7 @@ sub simple_relaxer {
 		# $step % $disp_n 
 	if($w->{concurrency}) {
 	    if ($w->{rel_step} == 0){
-		printf("computing inital fast neighbor search...\n");
+		printf("\tComputing initial fast neighbor search...\n");
 		$w->update_neighbors(-1);
 	    }
 
@@ -210,16 +209,15 @@ sub simple_relaxer {
 	    $w->render_lines($opt->{render_opt} || {label=>0}); #{hull=>1,neighbors=>1,nscale=>1});
 	    if($movie_n) { #DAL: this doesn't agree with the description of movie_n in the POD.
 	      my $fname = sprintf($movie_f,$step);
-	      $w->render_lines($opt->{movie_opt} // $opt->{render_opt}, my $gpw=gpwin($png_term, output=>$fname));
+	      $w->render_lines($opt->{movie_opt} // $opt->{render_opt}, my $gpw=gpwin(my $png_term, output=>$fname));
 	      $gpw->close;
 	      print "wrote $fname...\n";
 	    }
 	}
 
 if($auto) {
-	   my $dt0 = $dt unless(defined my $dt0);
 	   my $ratio = $h->{f_av}/$h->{fs_av};
-	   my $dt = $dt0 * $ratio;
+	   my $dt = $dt * $ratio;
 	   print "\t\tratio=$ratio; new dt=$dt\n";
 	}
 
@@ -271,7 +269,7 @@ sub gnuplot_terms{
     shift @terminfo_lines until $terminfo_lines[0] =~ /FILE TERMINALS/;
     shift @terminfo_lines;
     foreach (@terminfo_lines){if($_ =~ /^\s*(png\w*):/) {push @png_terms,$1;}}
-    foreach my $iterm('qt','wxt','x11','aqua','windows'){ #in order of preference
+    foreach my $iterm('qt','x11','aqua','windows'){ #in order of preference
 	if (grep {$_ eq $iterm} @display_terms){
 	    $display_term = $iterm;
 	    last;

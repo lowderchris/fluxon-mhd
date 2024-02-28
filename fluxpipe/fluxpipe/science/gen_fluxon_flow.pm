@@ -6,13 +6,18 @@ gen_fluxon_flow - Calculate Flow and Density in a Fluxon
 
 =cut
 
-# package gen_fluxon_flow;
+package gen_fluxon_flow;
+use strict;
+use warnings;
+
+use Exporter qw(import);
+our @EXPORT_OK = qw(gen_fluxon_flow);
 
 use PDL::Options;  ## This is where the 'parse' function comes from
 use PDL::ImageND;  ## This is where the ConvolveND comes from
 use Math::RungeKutta; ## This requires extra package: cpan install Math::RungeKutta
 use PDL::GSL::INTEG; ## This requires extra package: cpan install PDL::GSL::INTEG, and ALSO you have to install GSL to the machine, first.
-use warnings;
+use PDL qw(squeeze);
 
 =head1 SYNOPSIS
 

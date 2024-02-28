@@ -17,9 +17,8 @@ sandbox/
 #any Inline stuff
 _Inline/
 
-#fluxpipe related files
 include/flux/
+fluxpipe.egg-info
 blib/
 data/
 local/
-perltidy.ERR

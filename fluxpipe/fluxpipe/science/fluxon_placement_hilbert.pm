@@ -32,70 +32,83 @@ and also generates an Inline PP subroutine to do the heavy lifting of the
 error diffusion.
 
 =cut
-
+package fluxon_placement_hilbert;
 use strict;
 use warnings;
+use Exporter qw(import);
+our @EXPORT_OK = qw(fluxon_placement_hilbert);
+use PDL;
 use PDL::NiceSlice;
 use PDL::ImageND;
+use POSIX qw(isfinite);
+use hilbert qw(hilbert);
 
 sub fluxon_placement_hilbert {
-    my $bgram = shift;
+    my $bgram        = shift;
     my $fluxon_count = shift;
-    my $verb = 0 || shift;
+    my $verb         = shift || 0;
 
+    print $bgram;
     $bgram = $bgram->copy;
-    $bgram->where(!isfinite($bgram)) .= 0;
+        # $bgram->where(!isfinite($bgram)) .= 0;
 
-    my $smooth = $bgram->convolveND(ones(3,3)/9,{b=>'m'});
+
+    my $smooth = $bgram->convolveND(ones(3, 3) / 9, { b => 'm' });
     my $sm_max = $smooth->abs->max;
     my $sm_us_sum = $smooth->abs->sum;
 
-    unless($fluxon_count) {
-	print "Warning - no fluxon count specified; using 250\n";
-	$fluxon_count = 250;;
+    unless ($fluxon_count) {
+        print "Warning - no fluxon count specified; using 250\n";
+        $fluxon_count = 250;
     }
 
     my $flux;
 
-    if($fluxon_count < 0) {
-	$flux = -$fluxon_count;
-	$fluxon_count = $sm_us_sum / $flux;
-    } else{
-	$flux = $sm_us_sum / $fluxon_count;
+    if ($fluxon_count < 0) {
+        $fluxon_count = abs($fluxon_count);
+        $flux = -$fluxon_count;
+    }
+    else {
+        $flux = $sm_us_sum / $fluxon_count;
     }
 
-    $fluxon_count= $smooth->abs->sum / $flux;
+    $fluxon_count = $smooth->abs->sum / $flux;
 
     my $siz = pdl($bgram->dims)->(0:1)->maximum;
 
-    my $density_mult = 2 * ($sm_max / ($sm_us_sum/$smooth->nelem)) * ($fluxon_count / $smooth->nelem);
-    $density_mult = 1 unless($density_mult > 1);
+    my $density_mult =
+      2 *
+      ( $sm_max / ( $sm_us_sum / $smooth->nelem ) ) *
+      ( $fluxon_count / $smooth->nelem );
+    $density_mult = 1 unless ( $density_mult > 1 );
     $density_mult = sqrt($density_mult);
 
+    $siz = 2**( ( log( $siz * $density_mult ) / log(2) )->ceil->at(0) );
 
-    $siz = 2 ** (( log($siz * $density_mult)/log(2) )->ceil->at(0)) ;
+    my $path = double( hilbert( $siz, $siz ) );
+    $path->( (0) ) *= $bgram->dim(0) / $siz;
+    $path->( (1) ) *= $bgram->dim(1) / $siz;
 
-    my $path = double(hilbert($siz,$siz));
-    $path->((0)) *= $bgram->dim(0)/$siz;
-    $path->((1)) *= $bgram->dim(1)/$siz;
-
-    my $bg2 = $bgram * $fluxon_count / $sm_us_sum * $bgram->dim(0) * $bgram->dim(1) / $siz / $siz;
+    my $bg2 = $bgram * $fluxon_count / $sm_us_sum *
+      $bgram->dim(0) * $bgram->dim(1) / $siz / $siz;
     my $bgseries = $bg2->interpND($path)->sever;
 
-    if ($verb){
-    print "density_mult is $density_mult\n";
-	print "siz is $siz\n";
-    print "sm_us_sum is ".$sm_us_sum."\n";
-    print "Calling helper...\n";
+    if ($verb) {
+        print "density_mult is $density_mult\n";
+        print "siz is $siz\n";
+        print "sm_us_sum is " . $sm_us_sum . "\n";
+        print "Calling helper...\n";
     }
 
     my $plist = [];
-    PDL::fl_hi_helper($bgseries,$plist);
+    PDL::fl_hi_helper( $bgseries, $plist );
     my $points = pdl($plist);
-    my $pl = $plist;
-    $points = ($path->(:,$points->abs))->glue(0, (1 - 2*($points->(*1) < 0)));
+    my $pl     = $plist;
+    $points = ( $path->( :, $points->abs ) )->glue( 0, ( 1 - 2 * ( $points->(*1) < 0 ) ) );
     return $points;
 }
+1;
+
 
 no PDL::NiceSlice;
 use Inline Config => CLEAN_AFTER_BUILD => 0;
