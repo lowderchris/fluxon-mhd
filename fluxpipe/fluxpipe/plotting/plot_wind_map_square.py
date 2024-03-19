@@ -371,7 +371,9 @@ def plot_wind_map_latitude(configs):
     nwant = configs.get("nwant")
     reduce = configs.get("mag_reduce")
     CR = configs.get("cr")
-    dat_file = configs.get("file", f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind.dat')
+    method = configs.get("flow_method")
+    method = ['' if "parker" in method else f"_{method}"][0]
+    dat_file = configs.get("file", f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind{method}.dat')
     all_vmin, all_vmax = configs.get("all_vmin", 450), configs.get("all_vmax", 700)
     print(f"\n\tPlotting Windmap {CR} Lat Cycle...", end="\n" if __name__ == "__main__" else "")
 
@@ -528,29 +530,34 @@ def plot_wind_map_latitude(configs):
 
 
 
-    # Interpolated plot of wind speed [Hexagons]
-    hex_n = np.max((n_open // 40, 3))
-    hex1, grid_z1 = hex_plot(
-        ph1_clean,
-        th1_clean,
-        vel1_clean,
-        do_hex=False,
-        ax=dot_wind_ax,
-        nx=hex_n,
-        vmin=all_vmin,
-        vmax=all_vmax,
-        configs=configs,
-        cmap=cmap
-    )
+    # # Interpolated plot of wind speed [Hexagons]
+    # hex_n = np.max((n_open // 40, 3))
+    # hex1, grid_z1 = hex_plot(
+    #     ph1_clean,
+    #     th1_clean,
+    #     vel1_clean,
+    #     do_hex=False,
+    #     ax=dot_wind_ax,
+    #     nx=hex_n,
+    #     # vmin=all_vmin,
+    #     # vmax=all_vmax,
+    #     configs=configs,
+    #     # cmap=cmap
+    # )
 
-    clr = np.log(2*fr1/fr0)**1/2
-    clr = np.log(fr1/fr0)
-    sc11 = square_wind_ax.scatter(ph1, th1, c=clr, s = (4*fr1/fr0)**1/2, cmap="YlGnBu", alpha=0.75, label=r"A(21.5Rs)", marker='s', vmin=-1, vmax=3)
+    # clr = np.log(2*fr1/fr0)**1/2
+    clr = np.log10(fr1/fr0)
+    sc11 = square_wind_ax.scatter(ph1, th1, c=clr, s = 7**2, cmap="YlGnBu", alpha=1,
+                                  label=r"A(21.5Rs)", marker='s')#, vmin=-1, vmax=3)
 
     # Add a colorbar
-    cbar_ax_lat3 = fig.add_axes([0.95, 0.65, 0.025, 0.25])
+    cbar_ax_lat3 = fig.add_axes([0.93, 0.65, 0.025, 0.25])
     cbar03 = plt.colorbar(sc11, cax=cbar_ax_lat3, aspect=15, extend="max", extendfrac=0.1)
     cbar03.set_label(f"log(Expansion Ratio)", labelpad=-54)
+
+    sc = square_wind_ax.scatter(ph1, th1, c=clr, s = 7**2+20, cmap="grey", alpha=1,
+                                  label=r"A(21.5Rs)", marker='s', zorder=0, vmin=-1, vmax=3)
+
     # # Scatter plot of wind speed [Squares]
     # scat1 = square_wind_ax.scatter(
     #     ph1_clean,
@@ -572,7 +579,7 @@ def plot_wind_map_latitude(configs):
         c=vel1_clean,
         s=4**2,
         lw = 0.1,
-        alpha=0.6,
+        alpha=1.,
         marker='o',
         vmin=all_vmin,
         vmax=all_vmax,
@@ -580,6 +587,23 @@ def plot_wind_map_latitude(configs):
         edgecolors='gray',
         # edgewidth=0.5
     )
+
+    cont2 = dot_wind_ax.scatter(
+        ph1_clean,
+        th1_clean,
+        c=vel1_clean,
+        s=5**2,
+        zorder=0,
+        lw = 0.1,
+        alpha=1,
+        marker='o',
+        # vmin=all_vmin,
+        # vmax=all_vmax,
+        cmap='grey',
+        edgecolors='gray',
+        # edgewidth=0.5
+    )
+
     # cont1 = None
     # Plot the Outliers
     # square_wind_ax.scatter   (ph1b, th1b, color='lightgrey', s=3**2, alpha=1, marker='+')
@@ -700,7 +724,7 @@ def plot_wind_map_latitude(configs):
 
 
     ###################################
-
+    inds_good = np.array(inds_good if inds_good else range(len(vel1_clean)))
     vel0_clean = vel0[inds_good]
     ph0_clean = ph0[inds_good]
     th0_clean = th0[inds_good]
@@ -717,9 +741,9 @@ def plot_wind_map_latitude(configs):
         file.write("""ph0, th0, fr0, vel0, ph1, th1, fr1, vel1, polarity\n<- Solar Surface ->  <-Outer Boundary ->""")
     # np.save(wind_file.replace(".npy", "_interp.npy"), grid_z1)
 
-def images_to_video(input_dir, output_file, fps):
+def images_to_video(input_dir, output_file, fps, method="parker"):
     # Get all PNG files in the input directory
-    image_files = [f for f in os.listdir(input_dir) if f.endswith('.png')]
+    image_files = [f for f in os.listdir(input_dir) if f.endswith('.png') and method in f]
     image_files.sort()  # Ensure the files are in sorted order
 
     # Check if there are any PNG files in the directory
@@ -755,7 +779,7 @@ def images_to_video(input_dir, output_file, fps):
 if __name__ == "__main__":
     # Create the argument parser
     configs = configurations()
-    do_one = False
+    do_one = True
     for rotation in tqdm(configs["rotations"]):
         parser = argparse.ArgumentParser(description='This script plots the expansion factor of the given radial_fr.dat')
         parser.add_argument('--cr',     type=int, default=rotation, help='Carrington Rotation')
@@ -780,7 +804,8 @@ if __name__ == "__main__":
             pass
         if do_one:
             break
-    if not do_one:
+    if not do_one and False:
         wind_path = '/Users/cgilbert/vscode/fluxons/fluxon-data/batches/sequential/imgs/windmap'  # Change this to your directory's path
-        images_to_video(wind_path, os.path.join(wind_path,"wind_video.mp4"), 10)
+        images_to_video(wind_path, os.path.join(
+            wind_path,f"wind_video_{configs['flow_method']}.mp4"), 10, configs["flow_method"])
     print("All Done!")

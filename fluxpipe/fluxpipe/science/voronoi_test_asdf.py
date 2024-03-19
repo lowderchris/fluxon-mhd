@@ -31,5 +31,5 @@ distance_array = distances.reshape(image.shape)
 # Display the image
 plt.imshow(distance_array, cmap='viridis')
 plt.colorbar(label='Distance to Nearest Point')
-plt.title('Distance to Nearest Random Point')
+plt.title('Distance to Nearest Random Point adsf')
 plt.show()
