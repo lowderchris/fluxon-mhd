@@ -8,7 +8,6 @@ aioftp
 asdf
 net
 semantic-version
-fluxpipe
 astropy-healpix
 asdf-coordinates-schemas
 cdflib

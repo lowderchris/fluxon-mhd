@@ -51,14 +51,15 @@ def plot_fr(args):
         True
     """
     batch = args.batch
-    filename = args.file or f'{args.dat_dir}/batches/{batch}/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_fr.dat'
+    filename = args.file or f'{args.dat_dir}/batches/{batch}/data/cr{args.cr}/wind/cr{args.cr}_f{args.nwant}_radial_fr.dat'
     imagename = os.path.basename(filename.replace(".dat", ".png"))
-    imagedir = os.path.dirname(os.path.dirname(os.path.dirname(filename)))
+    imagedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filename))))
     frdir = os.path.join(imagedir, "imgs", "fr")
     if not os.path.exists(frdir):
         os.makedirs(frdir)
     frname = os.path.join(frdir, imagename)
 
+    # import pdb; pdb.set_trace()
     # Load the dat file
     arr = np.loadtxt(filename).T
     nfluxon = int(arr[0,:].max())

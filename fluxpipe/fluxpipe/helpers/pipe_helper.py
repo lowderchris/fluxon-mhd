@@ -79,12 +79,13 @@ import ast
 from pathlib import PosixPath, Path
 
 import pandas as pd
+import re
 # from pipe_helper import convert_value
 import numpy as np
 import matplotlib.pyplot as plt
 
 from astropy.io import fits
-from astropy.nddata import block_reduce
+# from astropy.nddata import block_reduce
 
 import sunpy
 import sunpy.coordinates
@@ -110,14 +111,12 @@ def configurations(config_name=None, config_filename="config.ini", args=None, de
         dict: Configuration settings as key-value pairs.
     """
     config_obj = configparser.ConfigParser()
-    fl_prefix = os.environ.get("FL_PREFIX", "")
-    config_path = f"{fl_prefix}/fluxpipe/fluxpipe/config/{config_filename}"
-    config_path = os.path.abspath(config_path)
+    config_path = os.path.join(os.environ.get("FL_MHDLIB"), "fluxpipe", config_filename)
 
     # Search for the configuration file in the current directory and subdirectories
     if not os.path.exists(config_path):
         found = False
-        for root, dirs, files in os.walk(os.getcwd()):
+        for root, dirs, files in os.walk(os.path.join(os.getcwd())):
             if config_filename in files:
                 config_path = os.path.join(root, config_filename)
                 found = True
@@ -175,12 +174,23 @@ def assimilate_args(configs, args=None):
 
 def compute_configs(the_config):
     the_config['abs_rc_path']   = os.path.expanduser(the_config['rc_path'])
-    the_config["run_script"]    = os.path.join(the_config['fl_prefix'], the_config["run_script"])
+    the_config['abs_fl_mhdlib']   = os.path.expanduser(the_config['fl_mhdlib'])
 
-    the_config["rotations"]     = ast.literal_eval(the_config["rotations"])
+    if not the_config['abs_fl_mhdlib'] in the_config['run_script']:
+        the_config["run_script"] = os.path.join(the_config['abs_fl_mhdlib'], the_config["run_script"])
+    # the_config["run_script"]    = the_config["run_script"]
+
+    if the_config["rotations"][0] == "[":
+        the_config["rotations"]     = ast.literal_eval(the_config["rotations"])
+    elif the_config["rotations"][0] == "(":
+        (start, stop, step) = ast.literal_eval(the_config["rotations"])
+        the_config["rotations"] = list(np.arange(start, stop, step))
+
     the_config["fluxon_count"]  = ast.literal_eval(the_config["fluxon_count"])
     the_config["adapts"]        = ast.literal_eval(the_config["adapts"])
 
+    the_config['cr'] = the_config['rotations'][0]
+    the_config['nwant'] = the_config['fluxon_count'][0]
     the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"])*len(the_config["adapts"]))
 import os
 
@@ -188,12 +198,10 @@ def update_magdir_paths(the_config):
     # for key, val in sorted(the_config.items()):
     #     print(f"\t{key}: \t", the_config.get(key, None))
     CR = the_config.get('cr', None)
-    if not CR:
-        # print("Preloaded Configs")
-        return
-    CR = the_config['cr']
+    n_fluxons_wanted = the_config.get('nwant', None)
+    if not CR or not n_fluxons_wanted:
+        raise ValueError("Instance Values not Found!")
     adapt_select = the_config['adapt_select']
-    n_fluxons_wanted = the_config['nwant']
     reduction = the_config['mag_reduce']
     batchdir = the_config['batch_dir']
 
@@ -207,25 +215,36 @@ def update_magdir_paths(the_config):
     the_config['flocdir'] = os.path.join(batchdir, f"cr{CR}/floc")
     the_config['magpath'] = os.path.join(the_config['mag_dir'], the_config['magfile'])
     the_config['flocpath'] = os.path.join(the_config['flocdir'], the_config['flocfile'])
+    return the_config
 
 def calculate_directories(the_config):
     # Helper function to calculate directories
-    basedir = the_config['base_dir'].strip()
+    basedir = the_config['fl_mhdlib'].strip()
     batch_name = the_config['batch_name'].strip()
     dat_dir = the_config.get('data_dir', None)
 
-    the_config['pipe_dir'] = os.path.join(basedir, "fluxon-mhd", "fluxpipe", "fluxpipe")
-    the_config['pdl_dir'] = os.path.join(basedir, "fluxon-mhd", "pdl", "PDL")
-    the_config['datdir'] = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
-    the_config['mag_dir'] = os.path.join(the_config['datdir'], "magnetograms")
+    the_config['pipe_dir']  = os.path.join(basedir, "fluxpipe", "fluxpipe")
+    the_config['pdl_dir']   = os.path.join(basedir, "pdl", "PDL")
+    the_config['datdir']    = dat_dir if dat_dir else os.path.join(basedir, "fluxon-data")
+    the_config['data_dir']  = the_config['datdir']
+    the_config['mag_dir']   = os.path.join(the_config['datdir'], "magnetograms")
     the_config['batch_dir'] = os.path.join(the_config['datdir'], "batches", batch_name)
-    the_config['logfile'] = os.path.join(the_config['batch_dir'], "pipe_log.txt")
+    the_config['logfile']   = os.path.join(the_config['batch_dir'], "pipe_log.txt")
+
+    the_config['pipe_dir']  = os.path.expanduser(the_config['pipe_dir'] )
+    the_config['pdl_dir']   = os.path.expanduser(the_config['pdl_dir']  )
+    the_config['datdir']    = os.path.expanduser(the_config['datdir']   )
+    the_config['data_dir']    = os.path.expanduser(the_config['data_dir']   )
+    the_config['mag_dir']   = os.path.expanduser(the_config['mag_dir']  )
+    the_config['batch_dir'] = os.path.expanduser(the_config['batch_dir'])
+    the_config['logfile']   = os.path.expanduser(the_config['logfile']  )
+
 
     # If 'adapt' isn't set in the_config, default to False
     the_config.setdefault('adapt', False)
 
-    # Update magdir paths
-    update_magdir_paths(the_config)
+    # # Update magdir paths
+    # update_magdir_paths(the_config)
 
 def convert_value(value):
     """ Convert a string to an int or float if possible, otherwise return the string.
@@ -413,7 +432,7 @@ def find_file_with_string(directory, search_string):
     return None
 
 
-def shorten_path(string):
+def shorten_path(string, do=False):
     """Removes the DATAPATH environment variable from a string.
     This makes it much more readable when printing paths.
 
@@ -428,8 +447,8 @@ def shorten_path(string):
         Shortened string
     """
     datapath = os.getenv("DATAPATH")
-    if datapath:
-        return string.replace(datapath, "$DATAPATH ")
+    if datapath and do:
+        return string.replace(datapath, "$DATAPATH")
     else:
         return string
 
@@ -1438,7 +1457,7 @@ def plot_raw_magnetogram(fits_path, data, small_image):
 #     else:
 #         return brdat
 
-def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fname=None, configs=None):
+def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fname=None, configs=None, cr=None):
     """Loads a magnetogram from a FITS file.
 
     Parameters
@@ -1462,9 +1481,14 @@ def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fn
         Magnetogram header object
     """
     configs = configs or configurations()
-    cr = configs.get("cr", None)
-    assert cr is not None, "Must specify a Carrington rotation number!"
+    if cr is None:
+        cr = configs.get("cr", None)
+    else:
+        # TODO : This is a hack to get around the fact that the configs are not being updated
+        configs["cr"] = cr
 
+    assert cr is not None, "Must specify a Carrington rotation number!"
+    update_magdir_paths(configs)
     fname = fname or configs["magpath"].format(cr)
     batch = batch or configs["batch_name"]
     datdir = datdir or configs["data_dir"]
@@ -1491,13 +1515,157 @@ def find_file_with_string(directory, search_string):
             return os.path.join(directory, file_name)
     return None
 
-def shorten_path(string, __=None):
+def shorten_path(string, __=None, do=False):
     datapath = os.getenv("DATAPATH")
-    if datapath:
+    if datapath and do:
         return string.replace(datapath, "$DATAPATH ")
     else:
         return string
 
-def get_fixed_coords(phi0, theta0):
-    ph0, th0 = phi0+np.pi, np.sin(-(theta0-(np.pi/2)))
+def get_fixed_coords(phi0, theta0, do=True):
+    if do:
+        ph0, th0 = phi0+np.pi, np.sin(-(theta0-(np.pi/2)))
+    else:
+        ph0, th0 = phi0, theta0
     return ph0, th0
+
+
+fields = ['ph0', 'th0', 'fr0', 'vel0', 'ph1', 'th1', 'fr1', 'vel1', 'polarity']
+
+def load_wind_files(directory):
+    """
+    Load wind files into a nested dictionary based on CR and data fields.
+
+    Parameters:
+    - directory: Path to the directory containing the files.
+
+    Returns:
+    A nested dictionary {CR: {field: data, ...}, ...}.
+    """
+    # Define the fields based on the order in the saved array
+    big_dict = {}
+
+    # Regex to extract details from filename
+    pattern = re.compile(r"cr(\d+)_f(\d+)_op(\d+)_radial_wind_(\w+).npy")
+
+    for filename in os.listdir(directory):
+        match = pattern.match(filename)
+        if match:
+            CR, nwant, n_open, method = match.groups()
+            CR = int(CR)  # Convert CR to integer for use as a dictionary key
+
+            # Ensure the CR key exists in the dictionary
+            if CR not in big_dict:
+                big_dict[CR] = {}
+
+            file_path = os.path.join(directory, filename)
+            data = np.load(file_path)
+
+            # Assume data is saved in the order specified above
+            for i, field in enumerate(fields):
+                big_dict[CR][field] = data[i]
+
+    return big_dict
+
+from datetime import datetime, timedelta
+
+
+def decimal_years_to_datetimes(decimal_years):
+    def convert(decimal_year):
+        year = int(decimal_year)
+        remainder = decimal_year - year
+        start_of_year = datetime(year, 1, 1)
+        # Check if it's a leap year
+        if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
+            days_in_year = 366
+        else:
+            days_in_year = 365
+        days = remainder * days_in_year
+        return start_of_year + timedelta(days=days)
+
+    return [convert(year) for year in decimal_years]
+
+
+def sunspotplot(carr_ax, cr=None, use_years=False):
+# Plot the Sunspot Number
+    carrington = np.loadtxt("/Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/SN_m_tot_V2.0.txt").T
+    ## https://sidc.be/SILSO/datafiles#total ##
+    from sunpy.coordinates.sun import carrington_rotation_time as crt, carrington_rotation_number as crn
+    # import pdb; pdb.set_trace()
+    date = carrington[2]
+    sunspots = carrington[3]
+
+    if cr is not None:
+        this_date = crt(cr)
+        if use_years:
+            carr_ax.axvline(this_date.decimalyear, ls=":", c='k', zorder=1000000)
+        else:
+            carr_ax.axvline(cr, ls=":", c='k', zorder=1000000)
+    # fig, ax = plt.subplots()
+    if use_years:
+        carr_ax.plot(date, sunspots, label="Sunspots", color="b", lw=2)
+        carr_ax.set_xlim(crt(2095).decimalyear, crt(2282).decimalyear)
+
+    else:
+        datetimes = decimal_years_to_datetimes(date)
+        CR = crn(datetimes)
+        carr_ax.plot(CR, sunspots, label="Sunspots", color="b", lw=2)
+        carr_ax.set_xlim(2095, 2282)
+    # carr_ax.set_xlabel("Year")
+    carr_ax.set_ylabel("Sunspots")
+    carr_ax.set_title("Solar Cycle Phase")
+    # carr_ax.axhline(100, c='k', ls="--")
+    # set the major tick formatter to display integers
+    from matplotlib.ticker import MaxNLocator
+    carr_ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    # carr_ax.set_ylim(0, 200)
+
+VMIN, VMAX = 450, 700
+def parse_big_dict(big_dict, field="vel1", vmin=VMIN, vmax=VMAX):
+    # Prepare data for interpolation and plotting
+    all_phi = []
+    all_theta = []
+    all_vel = []
+    all_hist = []
+    all_cr = []
+    all_mean = []
+    all_std = []
+    all_count = []
+    the_phi = "ph1" if "1" in field else "ph0"
+    the_theta = "th1" if "1" in field else "th0"
+
+    # Collect data from all CRs
+    for ii, CR in enumerate(sorted(big_dict.keys())):
+
+        phi1 = big_dict[CR][the_phi]/(2*np.pi) + ((CR-0.5))
+        theta1 = big_dict[CR][the_theta]
+        vel1_data = big_dict[CR][field]
+        hist, bins = np.histogram(vel1_data, range=(vmin, vmax), bins=20, density=True)
+
+        all_phi.extend(phi1)
+        all_theta.extend(theta1)
+        all_vel.extend(vel1_data)
+
+        all_hist.append(hist)
+        all_mean.append(np.mean(vel1_data))
+        all_std.append(np.std(vel1_data))
+        all_cr.append(CR)
+        all_count.append(len(vel1_data))
+
+
+    # Convert lists to numpy arrays for griddata
+    all_phi = np.array(all_phi)
+    all_theta = np.array(all_theta)
+    all_vel = np.array(all_vel)
+    all_hist = np.array(all_hist)
+    all_cr = np.array(all_cr)
+    all_mean = np.array(all_mean)
+    all_std = np.array(all_std)
+
+    total_mean = np.mean(all_mean)
+    total_std = np.mean(all_std)
+    all_count = np.array(all_count)
+
+    clip = (total_mean + 2*total_std)
+    all_hist[all_hist > clip] = clip
+    return all_phi, all_theta, all_vel, all_hist, all_cr, all_mean, all_std, total_mean, total_std, all_count

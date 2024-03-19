@@ -75,7 +75,7 @@ class ADAPTClient(GenericClient):
 
     baseurl = r'https://gong.nso.edu/adapt/maps/gong/%Y/adapt(\d){5}_(\d){2}(\w){1}(\d){3}_(\d){12}_(\w){1}(\d){8}(\w){1}(\d){1}\.fts\.gz'
     pattern = '{}adapt{ADAPTFileType:1d}{ADAPTLngType:1d}{ADAPTInputSource:1d}{ADAPTDataAssimilation:1d}{ADAPTResolution:1d}_{ADAPTVersionYear:2d}{ADAPTVersionMonth:1l}{ADAPTRealizations:3d}_{year:4d}{month:2d}{day:2d}{hour:2d}{minute:2d}_{ADAPTEvolutionMode:1l}{days_since_last_obs:2d}{hours_since_last_obs:2d}{minutes_since_last_obs:2d}{seconds_since_last_obs:2d}{ADAPTHelioData:1l}{ADAPTMagData:1d}.fts.gz'
-    
+
 
 
     @classmethod
@@ -98,13 +98,13 @@ class ADAPTClient(GenericClient):
                 ADAPTMagData: [('0', 'Not added or no data'), ('1', 'Mag-los'), ('2', 'Mag-vector'), ('3', 'Mag- both los & vector'), ('4', 'Mag- polar avg obs'), ('5', 'Mag- los & polar'), ('6', 'Mag- vector & polar'), ('7', 'Mag- both los and vector & polar')]
                 }
         return adict
-    
+
     @classmethod
     def _can_handle_query(cls, *query):
         required = {attrs.Instrument, attrs.Time}
 
-        optional = {ADAPTFileType, ADAPTLngType, ADAPTInputSource, ADAPTDataAssimilation, 
-                    ADAPTResolution, ADAPTVersionYear, ADAPTVersionMonth, ADAPTEvolutionMode, 
+        optional = {ADAPTFileType, ADAPTLngType, ADAPTInputSource, ADAPTDataAssimilation,
+                    ADAPTResolution, ADAPTVersionYear, ADAPTVersionMonth, ADAPTEvolutionMode,
                     ADAPTHelioData, ADAPTMagData}
 
         all_attrs = {type(x) for x in query}

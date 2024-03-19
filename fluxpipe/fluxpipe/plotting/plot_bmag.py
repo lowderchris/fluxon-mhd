@@ -38,7 +38,7 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from fluxpipe.helpers.pipe_helper import (configurations, get_fixed_coords, load_fits_magnetogram,
-                         load_magnetogram_params, shorten_path)
+                         load_magnetogram_params, shorten_path, configurations)
 
 
 def plot_bmag(configs):
@@ -47,8 +47,9 @@ def plot_bmag(configs):
     # (hdr, cr, fname, adapt, doplot, reduce) = load_magnetogram_params(args.dat_dir)
     # CR = configs['cr'] #args.cr or configs["rotations"][0]
 
+    default_file =f"{configs['data_dir']}/batches/{configs['batch_name']}/data/cr{configs['cr']}/wind/cr{configs['cr']}_f{configs['nwant']}_radial_bmag.dat"
 
-    filename = configs.get('file', f"{configs['data_dir']}/batches/{configs['batch_name']}/cr{configs['cr']}/wind/cr{configs['cr']}_f{configs['nwant']}_radial_bmag.dat")
+    filename = configs.get('file', default_file)
 
     # Load the dat file
     arr = np.loadtxt(filename).T
@@ -81,24 +82,24 @@ def plot_bmag(configs):
     ax1.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
             extent=(0,2*np.pi,-1,1), aspect='auto')
 
-    sc00 = ax0.scatter(ph0, th0, c=br0, s = b0, cmap="winter",
-                    alpha=0.75, label=r'B(1.0R$_\{odot}$)')
-    sc01 = ax0.scatter(ph1, th1, c=br1, s = b1, cmap="autumn",
-                    alpha=0.75, label=r'B(21.5R$_\{odot}$)', marker='s')
+    sc00 = ax0.scatter(ph0, th0, c=np.abs(br0), s = np.abs(b0), cmap="winter",
+                    alpha=0.75, label=r"B(1.0Rs)")
+    sc01 = ax0.scatter(ph1, th1, c=np.abs(br1), s = np.abs(b1), cmap="autumn",
+                    alpha=0.75, label=r"B(21.5Rs)", marker='s')
     sc10 = ax1.scatter(ph0, th0, c=ar0, s = a0, cmap="winter",
-                    alpha=0.75, label=r'A(1.0R$_\{odot}$)')
+                    alpha=0.75, label=r"A(1.0Rs)")
     sc11 = ax1.scatter(ph1, th1, c=ar1, s = a1, cmap="autumn",
-                    alpha=0.75, label=r'A(21.5R$_\{odot}$)', marker='s')
+                    alpha=0.75, label=r"A(21.5Rs)", marker='s')
 
     cbar01 = fig.colorbar(sc01, ax=ax0)
     cbar00 = fig.colorbar(sc00, ax=ax0)
     cbar11 = fig.colorbar(sc11, ax=ax1)
     cbar10 = fig.colorbar(sc10, ax=ax1)
 
-    cbar00.set_label(r"B(1.0R$_\{odot}$)  [Gauss] ")
-    cbar01.set_label(r"B(21.5R$_\{odot}$) [Gauss]")
-    cbar10.set_label(r"A(1.0R$_\{odot}$)  [m$^2$]")
-    cbar11.set_label(r"A(21.5R$_\{odot}$) [m$^2$]")
+    cbar00.set_label(r"B(1.0Rs)  [Gauss]")
+    cbar01.set_label(r"B(21.5Rs) [Gauss]")
+    cbar10.set_label(r"A(1.0Rs)  [m$^2$]")
+    cbar11.set_label(r"A(21.5Rs) [m$^2$]")
 
     ax0.set_title(F"Fluxon Magnetic Field Strength for CR {args.cr}")
     ax1.set_title(F"Fluxon Area for CR {args.cr}")
@@ -114,11 +115,11 @@ def plot_bmag(configs):
         ax.legend(loc="lower right")
 
     fig.set_size_inches((8,8))
-    plt.tight_layout()
+    # plt.tight_layout()
 
     imagename = os.path.basename(filename.replace(".dat", ".png"))
-    imagedir = os.path.dirname(os.path.dirname(os.path.dirname(filename)))
-    bdir = os.path.join(imagedir, "imgs", "bmag")
+    imagedir =os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(filename))))
+    bdir = os.path.join(imagedir, "imgs", "bmag", "bmag")
     if not os.path.exists(bdir):
         os.makedirs(bdir)
     pngname = os.path.join(bdir, imagename)
@@ -137,16 +138,19 @@ def plot_bmag(configs):
 # Main Code
 # ----------------------------------------------------------------------
 #
+import argparse
+
 if __name__ == "__main__":
     # Create the argument parser
     print("\n\tPlotting Bmag...", end="")
-    parser = argparse.ArgumentParser(description=
-                                    'This script plots the radial magnetic field')
-    parser.add_argument('--cr', type=int, default=2219, help='Carrington Rotation')
+    configs = configurations(debug=False)
+    parser = argparse.ArgumentParser(description='This script plots the radial magnetic field')
+    parser.add_argument('--cr', type=int, default=configs["rotations"][0], help='Carrington Rotation')
     parser.add_argument('--file', type=str, default=None, help='Data File Name')
-    parser.add_argument('--nwant', type=int, default=100, help='Number of Fluxons')
+    parser.add_argument('--nwant', type=int, default=configs["fluxon_count"][0], help='Number of Fluxons')
     parser.add_argument('--adapt', type=int, default=0, help='Use ADAPT magnetograms')
     args = parser.parse_args()
     configs = configurations(debug=False, args=args)
     # a=[print(x) for x in configs.items()]
     plot_bmag(configs)
+

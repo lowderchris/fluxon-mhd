@@ -105,9 +105,10 @@ package pipe_helper;
 use strict;
 use warnings;
 use Exporter qw(import);
+use Flux::World    qw(read_world);
 our @EXPORT_OK =
-  qw(shorten_path find_highest_numbered_file set_env_variable get_env_variable check_env_variable configs_update_magdir
-  set_and_check_env_variable calculate_directories set_python_path set_paths print_banner search_files_in_directory check_second_file_presence configurations);
+  qw(shorten_path find_highest_numbered_file find_highest_numbered_file_with_string set_env_variable get_env_variable check_env_variable configs_update_magdir
+  set_and_check_env_variable calculate_directories set_python_path set_paths print_banner search_files_in_directory check_second_file_presence configurations load_highest_numbered_world);
 use File::Basename qw(dirname basename);
 use PDL::AutoLoader;
 use PDL;
@@ -119,6 +120,20 @@ no warnings 'redefine';
 Shortens the given file path by replacing the DATAPATH environment variable.
 
 =cut
+
+
+sub pdl_range {
+    my ($start, $stop, $step) = @_;
+    $step //= 1;  # Default step is 1 if not provided
+
+    # Calculate the number of elements needed
+    my $size = int(($stop - $start) / $step);
+    $size++ if (($stop - $start) % $step) > 0;
+
+    # Create the sequence
+    return $start + $step * sequence($size);
+}
+
 
 sub configurations {
     my ( $adapt, $debug, $config_name, $config_filename ) = @_;
@@ -135,11 +150,8 @@ sub configurations {
     use File::Temp qw/ tempfile tempdir /;
 
     # Define the path of the configuration file
-    my $config_path = catfile(
-        "fluxon-mhd", "fluxpipe", "fluxpipe", "config",
-
-        $config_filename
-    );
+    my $config_path =
+      catfile( $ENV{'FL_MHDLIB'}, "fluxpipe", $config_filename );
 
     # Check if the file exists at the defined path
     unless ( -e $config_path ) {
@@ -200,16 +212,31 @@ sub configurations {
     $the_config{'adapt'}       = $adapt;
     $the_config{'abs_rc_path'} = glob( $the_config{'rc_path'} );
     $the_config{"run_script"} =
-      catfile( $the_config{'fl_prefix'}, $the_config{"run_script"} );
+      catfile( $the_config{'fl_mhdlib'}, $the_config{"run_script"} );
+
+    #if the first character of the rotations is a [ then it is a list of rotations
+    if ( substr( $the_config{'rotations'}, 0, 1 ) eq "[" ) {
+        $the_config{'rotations'}    =~ s/[\[\]]//g;
+        $the_config{'rotations'} = PDL->new( split( /\s*,\s*/, $the_config{'rotations'} ) );
+    } else {
+        #if the first character of the rotations is a ( then it is a start, stop, step
+        if ( substr( $the_config{'rotations'}, 0, 1 ) eq "(" ) {
+            $the_config{'rotations'} =~ s/[\(\)]//g;
+            my ($start, $stop, $step) = split( /\s*,\s*/, $the_config{'rotations'} );
+            # my $pdl = pdl_range(10, 20, 2);
+            $the_config{'rotations'} = pdl_range($start, $stop, $step);
+        } else {
+            #otherwise it is a single rotation
+            $the_config{'rotations'} = PDL->new( $the_config{'rotations'} );
+        }
+    }
 
     # Remove brackets from rotations and fluxon_count
-    $the_config{'rotations'}    =~ s/[\[\]]//g;
     $the_config{'fluxon_count'} =~ s/[\[\]]//g;
     $the_config{'adapts'}       =~ s/[\[\]]//g;
 
     # Create PDL objects
-    $the_config{'rotations'} =
-      PDL->new( split( /\s*,\s*/, $the_config{'rotations'} ) );
+
     $the_config{'fluxon_count'} =
       PDL->new( split( /\s*,\s*/, $the_config{'fluxon_count'} ) );
     $the_config{'adapts'} =
@@ -253,12 +280,17 @@ sub configurations {
     return %the_config;
 }
 
-sub shorten_path {
+sub shorten_path_real {
     my ($string) = @_;
     my $datapath = $ENV{'DATAPATH'};
     if ($datapath) {
-        $string =~ s/\Q$datapath\E/\$DATAPATH\ /g;
+        $string =~ s/\Q$datapath\E/\$DATAPATH/g;
     }
+    return $string;
+}
+
+sub shorten_path {
+    my ($string) = @_;
     return $string;
 }
 
@@ -269,7 +301,7 @@ sub configs_update_magdir {
     my $adapt_select     = $configs_ref->{'adapt_select'};
     my $CR               = $configs_ref->{'CR'};
     my $batchdir         = $configs_ref->{'batch_dir'};
-    my $flocdir          = "$batchdir/cr$CR/floc";
+    my $flocdir          = "$batchdir/data/cr$CR/floc";
     my $n_fluxons_wanted = $configs_ref->{'n_fluxons_wanted'};
     my $reduction        = $configs_ref->{'mag_reduce'};
     my $magfile;
@@ -328,6 +360,34 @@ sub find_highest_numbered_file {
     return $highest_numbered_file ? "$directory$highest_numbered_file" : 0,
       $highest_number;
 }
+
+sub find_highest_numbered_file_with_string {
+    my ($directory, $search_string) = @_;
+    opendir(my $dir_handle, $directory) or die "Cannot open directory $directory: $!";
+    my @files = grep { !/^\.{1,2}$/ } readdir($dir_handle);
+    closedir $dir_handle;
+
+    my $highest_numbered_file;
+    my $highest_number = -1;
+    my $found = 0;
+    for my $file_name (@files) {
+
+        # Match file names containing the search string, a number, and ".flux"
+        if ( $file_name =~ /$search_string(\d+)\.flux/ ) {
+            my $number = $1;
+            if ( $number > $highest_number ) {
+                $highest_number        = $number;
+                $highest_numbered_file = $file_name;
+            }
+            $found = 1;
+        }
+    }
+    return $highest_numbered_file ? "$directory/$highest_numbered_file" : 0,
+      $highest_number;
+}
+
+
+
 
 =head2 set_env_variable
 
@@ -398,13 +458,11 @@ Calculates various directories based on the base directory and batch name.
 sub calculate_directories {
     my ($config_ref) = @_;
 
-    # Trim whitespace from the beginning and end of the directory and batch name
-    my $basedir = $config_ref->{'base_dir'};
     my $data_dir =
       $config_ref->{'data_dir'};    # Assuming you have this in your config
     my $batch_name = $config_ref->{'batch_name'};
 
-    $basedir    =~ s/^\s+|\s+$//g;
+    # $basedir    =~ s/^\s+|\s+$//g;
     $batch_name =~ s/^\s+|\s+$//g;
     if ( $config_ref->{'adapt'} && index( $batch_name, "adapt" ) == -1 ) {
         $batch_name = $batch_name . "_adapt";
@@ -412,27 +470,54 @@ sub calculate_directories {
 
     use File::Spec::Functions;
 
-    my $fluxdir = catdir( $basedir, "fluxon-mhd" );
+
+
+
+
+    my $fluxdir = $config_ref->{'fl_mhdlib'};
     my $pipedir = catdir( $fluxdir, "fluxpipe", "fluxpipe" );
     my $pdldir  = catdir( $fluxdir, "pdl",      "PDL" );
 
-    # Use the provided data_dir if defined, otherwise calculate it
-    my $datdir =
-      defined($data_dir) ? $data_dir : catdir( $basedir, "fluxon-data" );
+    # # Use the provided data_dir if defined, otherwise calculate it
+    # my $datdir =
+    #   defined($data_dir) ? $data_dir : catdir( $basedir, "fluxon-data" );
 
-    my $magdir   = catdir( $datdir, "magnetograms" );
-    my $batchdir = catdir( $datdir, "batches", $batch_name );
+    my $magdir   = catdir( $data_dir, "magnetograms" );
+    my $batchdir = catdir( $data_dir, "batches", $batch_name );
     my $logfile  = catfile( $batchdir, "pipe_log.txt" );
+
+
+    #Remove the tilde from the path
+    use File::HomeDir;
+    my $home_dir = $ENV{'HOME'};
+    $data_dir =~ s{^~}{$home_dir};
+    $fluxdir =~ s{^~}{$home_dir};
+    $pdldir =~ s{^~}{$home_dir};
+    $magdir =~ s{^~}{$home_dir};
+    $batchdir =~ s{^~}{$home_dir};
+    $logfile =~ s{^~}{$home_dir};
+
+    # use File::Glob ':glob';
+    # # Replace ~ with the home directory
+    # my $home_dir = bsd_glob("~");
+    # $data_dir = bsd_glob($data_dir);
+    # $fluxdir = bsd_glob($fluxdir);
+    # $pdldir = bsd_glob($pdldir);
+    # $magdir = bsd_glob($magdir);
+    # $batchdir = bsd_glob($batchdir);
+    # $logfile = bsd_glob($logfile);
+
 
     # Update the original config hash
     $config_ref->{'pipe_dir'}  = $pipedir;
     $config_ref->{'pdl_dir'}   = $pdldir;
-    $config_ref->{'datdir'}    = $datdir;
+    $config_ref->{'datdir'}    = $data_dir;
+    $config_ref->{'data_dir'}  = $data_dir;
     $config_ref->{'mag_dir'}   = $magdir;
     $config_ref->{'batch_dir'} = $batchdir;
     $config_ref->{'logfile'}   = $logfile;
 
-    set_and_check_env_variable( 'DATAPATH', $datdir, 0 );
+    set_and_check_env_variable( 'DATAPATH', $data_dir, 0 );
 }
 
 =head2 set_python_path
@@ -591,6 +676,46 @@ sub set_paths {
         print "\n\n";
     }
     return;
+}
+
+use File::Spec;
+use List::Util qw(max);
+
+
+sub load_highest_numbered_world {
+    my ($datdir, $batch_name, $CR, $n_fluxons_wanted, $inst) = @_;
+
+    my $world_out_dir = File::Spec->catdir($datdir, "batches", $batch_name, "data", "cr${CR}", "world");
+    my $file_pattern = qr/cr${CR}_f${n_fluxons_wanted}_${inst}_relaxed_s(\d+)\.flux$/;
+
+    my $max_d = -1;
+    my $selected_file_path;
+
+    opendir(my $dh, $world_out_dir) or die "Cannot open directory: $!";
+    while (my $file = readdir($dh)) {
+        if ($file =~ /$file_pattern/) {
+            my $d_value = $1;
+            if ($d_value > $max_d) {
+                $max_d = $d_value;
+                $selected_file_path = File::Spec->catfile($world_out_dir, $file);
+            }
+        }
+    }
+    closedir($dh);
+
+    if (defined $selected_file_path) {
+        my $this_world_relaxed = read_world($selected_file_path);
+        my @fluxons = $this_world_relaxed->fluxons;
+
+        if (scalar @fluxons == 0) {
+            # Consider logging a warning or handling this case differently as needed
+            return "World loaded, but contains no fluxons.";
+        }
+
+        return $this_world_relaxed; # Successful load
+    } else {
+        return "No matching files found."; # No file found
+    }
 }
 
 1;

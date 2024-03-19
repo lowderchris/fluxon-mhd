@@ -1,0 +1,51 @@
+use File::ShareDir::Install;
+use File::ShareDir 'dist_dir';  # Import the dist_dir function
+use Flux;
+
+# Perl functions for custom actions
+sub write_fluxdir {
+    my $fluxdir = File::ShareDir::dist_dir('Flux');
+    open my $fh, '>', '.fluxdir.tmp' or die "Could not open file '.fluxdir.tmp': $!";
+    print $fh $fluxdir;
+    close $fh;
+}
+
+# Update shell configuration file
+sub update_shell_rc {
+    my $shell_rc = $ENV{SHELL_RC_CUSTOM};
+    return unless -e $shell_rc;
+
+    my $fluxdir = `cat .fluxdir.tmp`;
+    chomp $fluxdir;
+    my $export_line = "export PERL5LIB=$fluxdir:\$PERL5LIB";
+
+    system("grep -Fxq '$export_line' $shell_rc") == 0 or do {
+        open my $fh, '>>', $shell_rc or die "Could not open file '$shell_rc': $!";
+        print $fh "$export_line\n";
+        close $fh;
+        print "Updated $shell_rc with Perl library path\n";
+    };
+    return '';
+}
+
+# Update .perldlrc
+sub update_perldlrc {
+    my $perldlrc = "$ENV{HOME}/.perldlrc";
+    return unless -e $perldlrc;
+
+    my $line = "require(q|PDL/default.perldlrc|);";
+    system("grep -Fxq '$line' $perldlrc") == 0 or do {
+        open my $fh, '>>', $perldlrc or die "Could not open file '$perldlrc': $!";
+        print $fh "\n$line\nuse PDL::AutoLoader;\n\$PDL::AutoLoader::Rescan=1;\n1;\n";
+        close $fh;
+        print "Added missing lines to $perldlrc\n";
+    };
+    return '';
+}
+
+
+write_fluxdir();
+# update_shell_rc();
+# update_perldlrc();
+
+1;

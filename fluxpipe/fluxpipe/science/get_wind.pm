@@ -11,15 +11,23 @@ get_wind - Calculate Solar Wind Plasma Parameters for a Given Carrington Rotatio
 =cut
 
 package get_wind;
-use strict;
+# use strict;
 use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(get_wind);
-use pipe_helper                     qw(shorten_path);
+use pipe_helper                     qw(shorten_path configurations find_highest_numbered_file_with_string);
 use File::Path                      qw(mkpath);
 use map_fluxon_b                    qw(map_fluxon_b);
+use map_fluxon_b_all                qw(map_fluxon_b_all);
 use map_fluxon_fr                   qw(map_fluxon_fr);
 use map_fluxon_flow_parallel_master qw(map_fluxon_flow_parallel_master);
+use Flux::World    qw(read_world);
+use PDL::IO::FITS;
+use Text::CSV;
+use PDL;
+use PDL::Graphics::Simple;
+use PDL::IO::Misc;
+
 
 =head1 DESCRIPTION
 
@@ -49,9 +57,9 @@ This subroutine calculates various solar wind plasma parameters such as the radi
 
 =head1 WORKFLOW
 
-1. Checks for the existence of output directories and files.
+1. Checks for the elong_xistence of output directories and files.
 2. If necessary, creates output directories.
-3. If the output files do not exist or if recompute is true, performs the following calculations:
+3. If the output files do not elong_xist or if recompute is true, performs the following calculations:
     - Updates neighbors in the relaxed world.
     - Calculates the radial magnetic field.
     - Calculates the radial expansion factor.
@@ -75,26 +83,64 @@ L<pipe_helper>, L<map_fluxon_b>, L<map_fluxon_fr>, L<map_fluxon_flow_parallel_ma
 
 =cut
 
+sub file_has_content {
+    my ($filename) = @_;
+    if (-f $filename) {
+        open my $fh, '<', $filename or return 0; # Return false if file can't be opened
+        my $line_count = 0;
+        while (<$fh>) {
+            $line_count++;
+            last if $line_count >= 3; # Stop reading if we have 3 or more lines
+        }
+        close $fh;
+        return $line_count >= 3;
+    }
+    return 0; # Return false if file doesn't elong_xist
+}
+
 sub get_wind {
 
-    my ( $this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute,
-        $n_want, $pythondir )
-      = @_;
+    my ( $this_world_relaxed, $CR, $n_want, $recompute) = @_;
 
-    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-    print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
-    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 
-    my $do_wind_calc = 0;
+    # Read configurations from disk
+    # print "Reading configurations...\n";
+    my %configs = configurations();
 
-    my $wind_out_dir   = $datdir . "/batches/$batch_name/cr" . $CR . '/wind';
-    my $prefix         = "$wind_out_dir/cr$CR\_f$n_want";
+    $recompute = $recompute // 0;
+
+    $CR = $CR // ( $configs{rotations}->at(0) );
+    $configs{CR} = $CR;
+
+    my $n_fluxons_wanted = $n_want // ( $configs{fluxon_count}->at(0) );
+    $configs{n_fluxons_wanted} = $n_fluxons_wanted;
+
+
+    my $pythondir = $configs{pythondir};
+    my $datdir = $configs{datdir};
+    my $batch_name = $configs{batch_name};
+    my $flow_method = $configs{flow_method};
+    if ($flow_method eq "parker") {
+        $flow_method = "";
+    }
+    else {
+        $flow_method = "_$flow_method";
+    }
+    my $do_wind_calc = 1;
+
+    my $wind_out_dir   = $datdir . "/batches/$batch_name/data/cr" . $CR . '/wind';
+    my $prefix         = "$wind_out_dir/cr$CR\_f$n_fluxons_wanted";
     my $out_b          = "$prefix\_radial_bmag.dat";
+    my $out_b_all      = "$prefix\_radial_bmag_all.dat";
     my $out_fr         = "$prefix\_radial_fr.dat";
-    my $out_wind       = "$prefix\_radial_wind.dat";
+    my $out_wind       = "$prefix\_radial_wind$flow_method.dat";
+    my $ch_map_url     = "https://sun.njit.edu/coronal_holes/data/chs_synmap_cr$CR.fits";
+    my $ch_map_path    = $datdir . "/CHmaps/chs_synmap_cr$CR.fits";
     my $short_out_wind = shorten_path($out_wind);
     my $skipstring =
       "\n\tWind Calculation Skipped! \n\t\tFound $short_out_wind\n\n";
+
+
 
     # Make the directory if necessary
     if ( !-d $wind_out_dir ) {
@@ -104,52 +150,103 @@ sub get_wind {
     }
 
     # Check if the files exist
-    if ( !-f $out_b or !-f $out_fr or !-f $out_wind or $recompute ) {
+    if ( !-f $out_b
+        or !-f $out_fr
+        or !-f $out_wind
+        or !-f $out_b_all
+        or $recompute ) {
         $do_wind_calc = 1;
     }
 
+    # Check if the files have at least 3 lines
+    if (!file_has_content($out_b)
+        or !file_has_content($out_fr)
+        or !file_has_content($out_wind)
+        or !file_has_content($out_b_all)
+        or $recompute) {
+        $do_wind_calc = 1;
+    }
+
+    print "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+    print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
+    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+
     # Perform the calculation if necessary
-    if ( $do_wind_calc || $recompute ) {
+    if ( $do_wind_calc ) {
 
         #Initialize the world
         print "\n\tUpdating neighbors...";
         $this_world_relaxed->update_force(0);
         my @fluxons = $this_world_relaxed->fluxons;
         print "Done!\n";
+        print "\t\tNumber of fluxons: " . scalar @fluxons . "\n";
 
+        if (scalar @fluxons == 0) {
+            die "\t\t\tNo fluxons found. Cannot proceed without data.";
+        }
+
+        # DB::single;
         # Calculate the radial magnetic field
-        print "\n\tRadial Magnetic Field (B) Calculation...";
-        map_fluxon_b( $out_b, \@fluxons );
-        print "Done!\n";
+        # print "\n\tRadial Magnetic Field (B) Calculation...";
+        # map_fluxon_b( $out_b, \@fluxons );
+        # map_fluxon_b_all( $out_b_all, \@fluxons );
+        # system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_fill.py");
+        # system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_all.py");
+
+        # print "Done!\n";
 
         # print "\t\t...done with radial B!";
 
         # Calculate the radial expansion factor
-        print "\n\tRadial Expansion Factor (Fr) Calculation...";
-        map_fluxon_fr( $out_fr, \@fluxons );
-        print "Done!";
+        # print "\n\tRadial Expansion Factor (Fr) Calculation...";
+        # map_fluxon_fr( $out_fr, \@fluxons );
+        # print "Done!";
 
         # Calculate the radial wind speed
-        no warnings 'misc';
+
         print "\n\n\tRadial Wind Speed Calculation...\n";
         my $do_wind_map = 0 || $recompute;
 
-        # $do_wind_map=1; #OVERRIDE WIND MAP
+        $do_wind_map=1; #OVERRIDE WIND MAP
 
-        if ( !-e $out_wind ) { $do_wind_map = 1; }
-        if ($do_wind_map) {
-            {
-                no warnings;    # Suppress warnings
-                eval {
-                    map_fluxon_flow_parallel_master( $out_wind, \@fluxons );
-                };
-            };
+        if ( !-e $out_wind || !file_has_content($out_wind)) { $do_wind_map = 1; }
 
+#         # if there is not a file at $ch_map_path, then download $ch_map_url to $ch_map_path
+#         if ( !-e $ch_map_path ) {
+#             print "\t\tDownloading CR$CR CH map...\n";
+#             system("wget -nc $ch_map_url -P $datdir/CHmaps");
+# }
+
+        # load the $ch_map_path file, which is an image array.
+        # print "ch_map_path: $ch_map_path\n";
+
+        # run the python file footpoint_distances.py
+        system("python3 fluxon-mhd/fluxpipe/fluxpipe/science/footpoint_distances_2.py --cr $CR");
+
+
+        my %configs = configurations();
+        my $distance_file = $configs{data_dir} . "/batches/" . $configs{batch_name} . "/data/cr" . $CR . "/floc/distances.csv";
+        open my $fh, '<', $distance_file or die "Could not open '$distance_file': $!";
+        # Read the file line by line and split each line
+        my @rows;
+        while (my $line = <$fh>) {
+            chomp $line;  # Remove newline character
+            my @values = split /, /, $line;  # Split the line into values
+            push @rows, pdl(@values);  # Convert the list of values into a PDL piddle and store it
         }
-        else {
-            print $skipstring;
-        }
-        use warnings 'misc';
+        close $fh;
+
+        # Combine all rows into a 2D PDL array
+        our $distance_array_degrees = cat(@rows);
+
+        # Pass the image into the main function
+        if ($do_wind_map) { map_fluxon_flow_parallel_master( $out_wind, \@fluxons, $distance_array_degrees); }
+        else { print $skipstring;}
+
+        # #run the python script to plot the angles
+        # system("python3 fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_angles.py");
+
+
     }
     else {
         print $skipstring;
@@ -157,6 +254,29 @@ sub get_wind {
 
     print "\t\t\t```````````````````````````````\n\n\n\n";
 
-    return $out_b, $out_fr, $out_wind;
+    return $out_b, $out_fr, $out_wind, $out_b_all;
 }
+
+if ($0 eq __FILE__) {
+    # This code block will run only if the script is executed directly
+    # and not when it's included as a module in another script.
+
+    print("Running get_wind.pm directly\n");
+    my %configs = configurations();
+
+    my $n_want = $configs{fluxon_count}->at(0);
+    my $CR = $configs{rotations}->at(0);
+    my $world_dir = $configs{data_dir} . "/batches/" . $configs{batch_name} . "/data/cr" . $CR . "/world";
+
+    my $search_string = $n_want . "_hmi_relaxed_s";  # Modify this to your desired search string
+    my ($highest_file, $highest_number) = find_highest_numbered_file_with_string($world_dir, $search_string);
+
+    my $this_world_relaxed = read_world($highest_file);
+    get_wind($this_world_relaxed)
+
+}
+
+
+
+
 1;

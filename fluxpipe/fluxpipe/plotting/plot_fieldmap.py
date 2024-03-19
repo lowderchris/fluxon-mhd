@@ -45,8 +45,8 @@ from fluxpipe.helpers.pipe_helper import (configurations, load_fits_magnetogram,
                             shorten_path, get_ax)
 
 def magnet_plot(get_cr=None, datdir=None, _batch=None, open_f=None, closed_f=None, force=False, reduce_amt=0,
-                nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="pdf",
-                plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500, configs=None):
+                nact=0, nwant=None, do_print_top=False, ax=None, verb=True, ext="png",
+                plot_all=True, plot_open=True, do_print=False, vmin=-500, vmax=500, configs=None, legend=False):
     """ The primary function for plotting the magnetogram with footpoints
 
     Parameters
@@ -122,7 +122,7 @@ def magnet_plot(get_cr=None, datdir=None, _batch=None, open_f=None, closed_f=Non
 
 
     # Define the directory paths for the files
-    floc_path = f"{datdir}/batches/{_batch}/cr{get_cr}/floc/"
+    floc_path = f"{datdir}/batches/{_batch}/data/cr{get_cr}/floc/"
     top_dir   = f"{datdir}/batches/{_batch}/imgs/footpoints/"
     if not path.exists(top_dir):
         os.makedirs(top_dir)
@@ -193,19 +193,44 @@ def magnet_plot(get_cr=None, datdir=None, _batch=None, open_f=None, closed_f=Non
     if do_plot or force or (ax is not None):
         # Plot the magnetogram
 
+        # ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
+        #         extent=(0,2*np.pi,-1,1), aspect='auto', vmin=vmin, vmax=vmax, zorder=5, alpha=0.8)
         ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
-                extent=(0,2*np.pi,-1,1), aspect='auto', vmin=vmin, vmax=vmax)
+                extent=(0,2*np.pi,-1,1), aspect='auto', vmin=vmin, vmax=vmax, zorder=-5, alpha=1)
+        # # Plot all the fluxons
+        # Filter positive and negative cases
+        positive_indices = [i for i, s in enumerate(f_sgn) if s > 0]
+        negative_indices = [i for i, s in enumerate(f_sgn) if s <= 0]
 
-        # Plot all the fluxons
+        # Data for positive and negative cases
+        f_lon_positive = [f_lon[i] for i in positive_indices]
+        f_lat_positive = [f_lat[i] for i in positive_indices]
+        f_lon_negative = [f_lon[i] for i in negative_indices]
+        f_lat_negative = [f_lat[i] for i in negative_indices]
+
         if plot_all:
-            colors_all = ['orange' if s > 0 else 'teal' for s in f_sgn]
-            ax0.scatter(f_lon, f_lat, s=3**2, c=colors_all, alpha=0.6)
+            # Plot positive cases with labels
+            ax0.scatter(f_lon_positive, f_lat_positive, s=3**2, c='orange', alpha=0.6, label='Positive')
 
-        # Plot the open fluxons
+            # Plot negative cases with labels
+            ax0.scatter(f_lon_negative, f_lat_negative, s=3**2, c='teal', alpha=0.6, label='Negative')
+
+        # Filter positive and negative cases for open fluxons
+        positive_indices = [i for i, s in enumerate(oflx_low) if s > 0]
+        negative_indices = [i for i, s in enumerate(oflx_low) if s <= 0]
+
+        # Data for positive and negative cases
+        th_olow_positive = [th_olow[i] for i in positive_indices]
+        ph_olow_positive = [ph_olow[i] for i in positive_indices]
+        th_olow_negative = [th_olow[i] for i in negative_indices]
+        ph_olow_negative = [ph_olow[i] for i in negative_indices]
+
         if plot_open:
-            colors_open = ['red' if s > 0 else 'blue' for s in oflx_low]
-            ax0.scatter(th_olow, ph_olow, s=5**2, c=colors_open,
-                               alpha=1.0, label='Open Fields', edgecolors='k')
+            ax0.scatter(th_olow_positive, ph_olow_positive, s=5**2, c='red', alpha=1.0, label='Positive (Open)', edgecolors='k')
+            ax0.scatter(th_olow_negative, ph_olow_negative, s=5**2, c='blue', alpha=1.0, label='Negative (Open)', edgecolors='k')
+
+        if legend:
+            ax0.legend(fontsize="small", loc="upper left", framealpha=0.75)
 
         if ax is None:
             shp = magnet.shape #pixels
@@ -246,7 +271,7 @@ if __name__ == "__main__":
     # Create the argument parser
     parser = argparse.ArgumentParser(description=
             'This script plots the expansion factor of the given radial_fr.dat')
-    parser.add_argument('--cr', type=int, default=2200, help='Carrington Rotation')
+    parser.add_argument('--cr', type=int, default=2205, help='Carrington Rotation')
     parser.add_argument('--file', type=str, default=None, help='Data File Name')
     parser.add_argument('--nwant', type=int, default=None, help='Number of Fluxons')
     parser.add_argument('--open', type=str, default=None)

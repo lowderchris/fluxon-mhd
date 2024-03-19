@@ -135,8 +135,11 @@ sub relax_pfss_world {
         our $this_world_relaxed = dclone($this_world_orig);
 
         # our $this_world_relaxed = $this_world_orig;
-        $this_world_relaxed->forces( 'f_pressure_equi2b', 'f_curvature',
-            'f_vertex4', 'b_eqa' );    # NEW
+        $this_world_relaxed->forces( 'f_pressure_equi2b', 'f_curvature', 'f_vertex4', 'b_eqa' );    # OLD
+
+        # $this_world_relaxed->forces('b_eqa', 'f_p_eqa_perp', 'f_curv_hm', 'f_vert4'); # NEW
+        # $this_world_relaxed->{scale_b_power} = -1.0; ## Default 0
+
         $this_world_relaxed->{concurrency} = 12;
 
         # print();

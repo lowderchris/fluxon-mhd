@@ -23,3 +23,5 @@ blib/
 data/
 local/
 perltidy.ERR
+fluxpipe/Makefile
+fluxpipe/Makefile.old

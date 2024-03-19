@@ -85,8 +85,9 @@ use PDL;
 use PDL::NiceSlice;
 
 sub get_hilbert_footpoints {
-    my ( %configs, $process_magnetogram ) = @_;    # get the hash reference
+    my ( %configs ) = @_;    # get the hash reference
 
+    my $process_magnetogram = $configs{'force_process_magnetogram'};
     my $magfile          = $configs{'magfile'};
     my $magpath          = $configs{'magpath'};
     my $flocdir          = $configs{'flocdir'};
@@ -155,18 +156,16 @@ sub get_hilbert_footpoints {
         while ( $iterate && $count < $maxreps ) {
             $try_fluxons = int($try_fluxons);
             $floc        = fluxon_placement_hilbert( $smag, $try_fluxons );
-            $N_actual    = $floc->nelem / 3
-              ; # The number of fluxons placed is 1/3 the number of elements in the floc array
+            # The number of fluxons placed is 1/3 the number of elements in the floc array
+            $N_actual    = $floc->nelem / 3;
             $count++;
 
-            print(
-"\t\t    Placing footpoints:: iter: $count/$maxreps. Wanted: $n_fluxons_wanted, Tried: $try_fluxons, Placed: $N_actual..."
-            );
+            print("\t\t    Placing footpoints:: iter: $count/$maxreps. Wanted: $n_fluxons_wanted, Tried: $try_fluxons, Placed: $N_actual...");
 
             my $distance = $N_actual - $n_fluxons_wanted;
             if ( abs($distance) > $tolerance ) {
 
-     # Adjust step size based on the distance from the desired number of fluxons
+            # Adjust step size based on the distance from the desired number of fluxons
                 my $factor = 1 + abs($distance) / ( $n_fluxons_wanted * 2 );
                 $step *= $factor;
                 $step *= 0.9;
@@ -201,7 +200,7 @@ sub get_hilbert_footpoints {
         print "\n\t\tFound a $N_actual footpoint file on Disk:";
         my $flocpath_short = shorten_path( $flocpath, 5 );
 
-        # print "\n\t\t\t$flocpath_short\n";
+        print "\n\t\t\t$flocpath_short\n";
     }
     print "\n\t\t\t```````````````````````````````\n\n\n";
     return $floc, $N_actual;

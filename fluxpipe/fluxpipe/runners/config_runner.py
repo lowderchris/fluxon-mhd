@@ -30,6 +30,7 @@ Gilly <gilly@swri.org> (and others!)
 import subprocess
 from tqdm import tqdm
 from fluxpipe.helpers.pipe_helper import configurations
+import timeout_decorator
 
 configs = configurations(debug=False)
 def run():
@@ -45,11 +46,13 @@ def run():
 
                     # Update the progress bar description
                     pbar.set_description(f"Rotation {rot}, n_fluxon {nflux}")
+                    try:
+                        # Execute the PDL script with the current parameters
+                        result = subprocess.run(["perl", configs["run_script"],
+                                                str(rot), str(nflux), str(adapt)], check=False)
 
-                    # Execute the PDL script with the current parameters
-                    result = subprocess.run(["perl", configs["run_script"],
-                                            str(rot), str(nflux), str(adapt)], check=False)
-
+                    except timeout_decorator.TimeoutError:
+                        timeout_num += 1
                     # Update the progress bar
                     pbar.update(1)
 

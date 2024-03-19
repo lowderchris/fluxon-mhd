@@ -4,12 +4,18 @@
 # This would be much better implemented using automake but I'm too lazy
 # to figure it out -- CED 18-Aug-2004
 
-FL_PREFIX ?= /usr/local
-export FL_PREFIX
+# FL_PREFIX ?= $(FL_PREFIX)
+# export FL_PREFIX
 
-everything: libbuild install
+everything: paths libbuild install done
 
-install: libinstall pdlbuild pdltest pdlinstall install_fluxpipe
+done:
+	@echo "\n\nFlux is now installed!\n\n";
+
+install: libinstall pdlbuild pdltest pdlinstall #install_fluxpipe
+
+paths:
+	@/bin/sh -c 'fluxpipe/PREFIX_PATHS.sh';
 
 libbuild:
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make';
@@ -31,10 +37,12 @@ pdlinstall:
 	/bin/sh -c 'cd pdl; make install;';
 
 install_fluxpipe:
-	@cd fluxpipe/ && make install_fluxpipe;
+	cd fluxpipe/ && make install_fluxpipe;
+# @./fluxpipe/install-fluxpipe.sh;
 
 uninstall_fluxpipe:
-	@cd fluxpipe/ && make uninstall_fluxpipe;
+	cd fluxpipe/ && make uninstall_fluxpipe;
+# @./fluxpipe/uninstall-fluxpipe.sh;
 
 clean:
 	rm -f *~ \#* ; \
@@ -44,16 +52,13 @@ clean:
 	cd ..; \
 	cd pdl; \
 	make clean; \
-	cd .. ;
+	cd .. ; \
 
 realclean: clean
 	rm -rf sandbox
 
-uninstall:
+uninstall: #uninstall_fluxpipe
 	@echo "\nUninstalling FLUX...";
 	@-rm -rf $(FL_PREFIX)/lib/libflux.a || true;
 	@-rm -rf $(FL_PREFIX)/include/flux || true;
 	@echo "\tFlux uninstall complete.\n";
-
-	@cd fluxpipe/ && make uninstall_fluxpipe;
-
