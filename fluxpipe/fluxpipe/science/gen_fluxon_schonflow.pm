@@ -88,7 +88,22 @@ Other relevant modules and documentation.
 
 my $verbose = 0;
 
+sub interpolate_2d_lonlat {
+    our ($image, $long_i, $latt_i) = @_;
 
+    $image = pdl($image);
+    # Define your image dimensions
+    my ($img_width, $img_height) = $image->dims; # 900 by 360
+
+    # Create grids for latitude and longitude
+    my $long_vals = pdl(sequence($img_width)/($img_width-1) * 2 * 3.14159265);  # 0 to 2*pi
+    my $latt_vals = pdl(sequence($img_height)/($img_height-1) * 2 - 1);  # -1 to 1
+
+    my ($ind_long) = minimum_ind(abs($long_vals - $long_i));
+    my ($ind_latt) = minimum_ind(abs($latt_vals - $latt_i));
+    my $imval = $image->at($ind_long, $ind_latt);
+    return $imval;
+}
 
 sub gen_fluxon_schonflow {
     my $fluxon = shift;
@@ -107,11 +122,11 @@ sub gen_fluxon_schonflow {
     (my $r_vr_scaled, my $r_fr_scaled, my $theta, my $phi) =
             gen_fluxon_schonflow_phys($fluxon, $distance_array_degrees, $fluxon_id);
 
-    # Return the final fluxon array, fluxon radius, and magnetic field components
+    # Return the final radial velocity and flux expansion
     return ($r_vr_scaled, $r_fr_scaled, $theta, $phi);
 }
 
-sub gen_fluxon_wsaflow_phys {
+sub gen_fluxon_schonflow_phys {
     my $me = shift;
     my $distance_array_degrees = shift;
     my $fluxon_id = shift;

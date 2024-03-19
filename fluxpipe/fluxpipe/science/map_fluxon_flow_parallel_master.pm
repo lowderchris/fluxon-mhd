@@ -21,6 +21,7 @@ use Chart::Gnuplot;
 use gen_fluxon_tflow qw(gen_fluxon_tflow);
 use gen_fluxon_schonflow qw(gen_fluxon_schonflow);
 use gen_fluxon_wsaflow qw(gen_fluxon_wsaflow do_image_plot);
+use gen_fluxon_cranmerflow qw(gen_fluxon_cranmerflow);
 use pipe_helper qw(configurations);
 
 
@@ -184,6 +185,12 @@ sub map_fluxon_flow_parallel_master {
             ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_tflow($fluxon);
         } elsif ($flow_method eq "schonfeld"){
             ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_schonflow($fluxon);
+        } elsif ($flow_method eq "psw"){
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_pswflow($fluxon);
+        } elsif ($flow_method eq "tempest"){
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_tempestflow($fluxon);
+        } elsif ($flow_method eq "cranmer"){
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_cranmerflow($fluxon);
         } else {
             die "Invalid flow method: $flow_method";
         }
@@ -200,10 +207,12 @@ sub map_fluxon_flow_parallel_master {
             radial_velocity_base    => squeeze($r_vr_scaled(1, 0   )),
             radial_velocity_end     => squeeze($r_vr_scaled(1, -1  )),
 
-            flux_expansion_base     => squeeze($r_fr_scaled(1, 1   )),
-            flux_expansion_end      => squeeze($r_fr_scaled(-2, 1  )),
-            flux_expansion_middle   => squeeze($r_fr_scaled(-1, 1  )),
-
+            # flux_expansion_base     => squeeze($r_fr_scaled(1, 1   )),
+            # flux_expansion_end      => squeeze($r_fr_scaled(-2, 1  )),
+            # flux_expansion_middle   => squeeze($r_fr_scaled(-1, 1  )),
+            flux_expansion_base     => squeeze($r_fr_scaled(1, 0   )),
+            flux_expansion_end      => squeeze($r_fr_scaled(1, -1  )),
+            # flux_expansion_middle   => squeeze($r_fr_scaled(1, 1  )),
         };
 
 

@@ -119,7 +119,13 @@ sub get_wind {
     my $pythondir = $configs{pythondir};
     my $datdir = $configs{datdir};
     my $batch_name = $configs{batch_name};
-
+    my $flow_method = $configs{flow_method};
+    if ($flow_method eq "parker") {
+        $flow_method = "";
+    }
+    else {
+        $flow_method = "_$flow_method";
+    }
     my $do_wind_calc = 1;
 
     my $wind_out_dir   = $datdir . "/batches/$batch_name/data/cr" . $CR . '/wind';
@@ -127,7 +133,7 @@ sub get_wind {
     my $out_b          = "$prefix\_radial_bmag.dat";
     my $out_b_all      = "$prefix\_radial_bmag_all.dat";
     my $out_fr         = "$prefix\_radial_fr.dat";
-    my $out_wind       = "$prefix\_radial_wind.dat";
+    my $out_wind       = "$prefix\_radial_wind$flow_method.dat";
     my $ch_map_url     = "https://sun.njit.edu/coronal_holes/data/chs_synmap_cr$CR.fits";
     my $ch_map_path    = $datdir . "/CHmaps/chs_synmap_cr$CR.fits";
     my $short_out_wind = shorten_path($out_wind);
@@ -143,7 +149,7 @@ sub get_wind {
           or die "Failed to create directory: $wind_out_dir $!\n";
     }
 
-    # Check if the files elong_xist
+    # Check if the files exist
     if ( !-f $out_b
         or !-f $out_fr
         or !-f $out_wind
@@ -161,7 +167,7 @@ sub get_wind {
         $do_wind_calc = 1;
     }
 
-    print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+    print "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
     print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 
@@ -181,27 +187,27 @@ sub get_wind {
 
         # DB::single;
         # Calculate the radial magnetic field
-        print "\n\tRadial Magnetic Field (B) Calculation...";
-        map_fluxon_b( $out_b, \@fluxons );
-        map_fluxon_b_all( $out_b_all, \@fluxons );
+        # print "\n\tRadial Magnetic Field (B) Calculation...";
+        # map_fluxon_b( $out_b, \@fluxons );
+        # map_fluxon_b_all( $out_b_all, \@fluxons );
         # system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_fill.py");
         # system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_all.py");
 
-        print "Done!\n";
+        # print "Done!\n";
 
         # print "\t\t...done with radial B!";
 
         # Calculate the radial expansion factor
-        print "\n\tRadial Expansion Factor (Fr) Calculation...";
-        map_fluxon_fr( $out_fr, \@fluxons );
-        print "Done!";
+        # print "\n\tRadial Expansion Factor (Fr) Calculation...";
+        # map_fluxon_fr( $out_fr, \@fluxons );
+        # print "Done!";
 
         # Calculate the radial wind speed
 
         print "\n\n\tRadial Wind Speed Calculation...\n";
         my $do_wind_map = 0 || $recompute;
 
-        # $do_wind_map=1; #OVERRIDE WIND MAP
+        $do_wind_map=1; #OVERRIDE WIND MAP
 
         if ( !-e $out_wind || !file_has_content($out_wind)) { $do_wind_map = 1; }
 
@@ -215,7 +221,7 @@ sub get_wind {
         # print "ch_map_path: $ch_map_path\n";
 
         # run the python file footpoint_distances.py
-        system("python3 fluxon-mhd/fluxpipe/fluxpipe/science/footpoint_distances.py --cr $CR");
+        system("python3 fluxon-mhd/fluxpipe/fluxpipe/science/footpoint_distances_2.py --cr $CR");
 
 
         my %configs = configurations();
@@ -236,6 +242,10 @@ sub get_wind {
         # Pass the image into the main function
         if ($do_wind_map) { map_fluxon_flow_parallel_master( $out_wind, \@fluxons, $distance_array_degrees); }
         else { print $skipstring;}
+
+        # #run the python script to plot the angles
+        # system("python3 fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_angles.py");
+
 
     }
     else {

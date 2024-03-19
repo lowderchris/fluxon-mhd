@@ -61,8 +61,9 @@ def magnet_plot(
     -------
 
     """
-
+    figbox = []
     fig, ax0 = get_ax(ax)
+    figbox.append(fig)
 
     if True:
         print("\t\t(py) Determining Footpoint Distances")
@@ -141,25 +142,25 @@ def magnet_plot(
     _n_closed = int(np.max(cflnum_low))
     _n_flux = _n_open + _n_closed
     _n_outliers = np.abs(_fnum-_n_flux)
-    print(f"\t\t\tOpen: {_n_open}, Closed: {_n_closed}, Total: {_n_flux}, Outliers: {_n_outliers}")
+    print(f"\t\t\tOpen: {_n_open}, Closed: {_n_closed}, Total: {_n_flux}, outliers: {_n_outliers}")
 
     # Define the file name for the plot
     pic_name = f'distance_cr{get_cr}_f{nwant}_ou{_n_open}_footpoints.{ext}'
-    fluxon_map_output_path =   path.join(floc_path, pic_name)
-    fluxon_map_output_path_top = path.join(top_dir, pic_name)
-    fluxon_csv_output_path_top = path.join(floc_path, "distances.csv")
+    fluxon_map_histput_path =   path.join(floc_path, pic_name)
+    fluxon_map_histput_path_top = path.join(top_dir, pic_name)
+    fluxon_csv_histput_path_top = path.join(floc_path, "distances.csv")
 
 
     # Check if the plot already exists
     do_plot = False
-    pic_paths = [fluxon_map_output_path, fluxon_map_output_path_top]
-    # pic_paths = [fluxon_map_output_path_top]
+    pic_paths = [fluxon_map_histput_path, fluxon_map_histput_path_top]
+    # pic_paths = [fluxon_map_histput_path_top]
     for testpath in pic_paths:
         if not path.exists(testpath):
             do_plot = True
             break
 
-    force=False
+    force=True
 
     if do_print:
         print("\tPlotting...", end="")
@@ -170,7 +171,6 @@ def magnet_plot(
         #         extent=(0,2*np.pi,-1,1), aspect='auto', vmin=vmin, vmax=vmax, zorder=5, alpha=0.8)
         ax0.imshow(magnet, cmap='gray', interpolation=None, origin="lower",
                 extent=(0,2*np.pi,-1,1), aspect='auto', vmin=vmin, vmax=vmax, zorder=-5, alpha=1)
-
 
 
         # # Plot all the fluxons
@@ -205,7 +205,7 @@ def magnet_plot(
             ax0.scatter(f_lon_positive_open, f_lat_positive_open, s=5**2, c='red', alpha=1.0, label='Positive (Open)', edgecolors='k')
             ax0.scatter(f_lon_negative_open, f_lat_negative_open, s=5**2, c='blue', alpha=1.0, label='Negative (Open)', edgecolors='k')
 
-
+        # plt.show()
 
 
 
@@ -215,11 +215,12 @@ def magnet_plot(
         ph_clow, th_clow = np.sin(np.deg2rad(clat_low)), np.deg2rad(clon_low)
 
         fig, new_ax = plt.subplots()
+        figbox.append(fig)
 
         # plt.scatter(th_olow, ph_olow, c='r', s=5, label='Open')
         # plt.scatter(th_clow, ph_clow, c='b', s=5, label='Closed')
 
-        if False:
+        if True:
             # # Provided points (longitude, latitude)
             points = np.array([th_olow, ph_olow]).T #These are in radians and sin(radians)
             kind = "open"
@@ -230,30 +231,38 @@ def magnet_plot(
         # # Image dimensions
         img_width, img_height = magnet.T.shape
 
+        # Plotting the histogram
+        fig, ax = plt.subplots()
+        figbox.append(fig)
 
+        hist, xedges, yedges = np.histogram2d(th_olow, ph_olow, bins=(36, 18))
+        hist = hist.T  # Transpose for correct orientation
+        ax.imshow(hist, cmap='viridis', origin='lower', interpolation='none',
+                extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], aspect=2)
 
-        # plt.show()
+        # Original scatter plot
+        ax.scatter(th_olow, ph_olow, c='orange', s=50)
+
+        # Find non-zero bins in the histogram
+        open_points_inds = np.where(hist > 0)
+
+        # Calculate the midpoints of bins for correct plotting
+        # Note: Convert bin indices to the midpoint values in the original data space
+        open_points_lons = xedges[open_points_inds[1]] + np.mean(np.diff(xedges))/2
+        open_points_lats = yedges[open_points_inds[0]] + np.mean(np.diff(yedges))/2
+
+        # Scatter plot on non-zero bins
+        ax.scatter(open_points_lons, open_points_lats, c='red', s=50, alpha=0.6)
 
 
 
         from scipy.spatial import cKDTree
-
-
         # # Normalize and scale points to image dimensions
         # Longitude: 0 to 2pi maps to 0 to img_width
         # Latitude: -1 to 1 maps to 0 to img_height
         scaled_points = np.empty_like(points)
         scaled_points[:, 0] = (points[:, 0] / (2 * np.pi)) * img_width
         scaled_points[:, 1] = ((points[:, 1] + 1) / 2) * img_height
-
-        # [plt.scatter(th, ph, c='orange', s=5) for th, ph in scaled_points]
-
-        # plt.show()
-
-        # #These are now in pixel units.
-
-        # # Create an array with the same shape as the image
-        # distance_array = np.zeros((img_height, img_width), dtype=float)
 
         # Generate grid points based on the image shape
         y_indices, x_indices = np.indices((img_height, img_width))
@@ -321,51 +330,72 @@ def magnet_plot(
                     alpha=1, edgecolors='k', zorder=100000, vmin=vmin, vmax=vmax)
 
 
-        contour = plt.contour(longitude, latitude, img_distances, levels=[40], cmap='plasma')  # Adjust levels for more/fewer lines
+        CS = new_ax.contour(longitude, latitude, img_distances, levels=[10], cmap='plasma')  # Adjust levels for more/fewer lines
 
+        # Prepare a new figure
+        # fig, ax = plt.subplots()
 
+        # Loop over contour levels and paths
+        # Extract contour paths
+        contour_paths = []
+        for collection in CS.collections:
+            for pth in collection.get_paths():
+                contour_paths.append(pth.vertices)
+
+        fig, ax = plt.subplots()
+        figbox.append(fig)
+
+        for pth in contour_paths:
+            ax.plot(pth[:, 0], pth[:, 1], 'r.', lw=0)  # Plotting contour lines in red
         # plt.show()
 
 
 
+        points = np.array([pth[:, 0], pth[:, 1]]).T #These are in radians and sin(radians)
+
+        # # Normalize and scale points to image dimensions
+        # Longitude: 0 to 2pi maps to 0 to img_width
+        # Latitude: -1 to 1 maps to 0 to img_height
+        scaled_points = np.empty_like(points)
+        scaled_points[:, 0] = (points[:, 0] / (2 * np.pi)) * img_width
+        scaled_points[:, 1] = ((points[:, 1] + 1) / 2) * img_height
+
+        # Generate grid points based on the image shape
+        y_indices, x_indices = np.indices((img_height, img_width))
+        grid_points = np.column_stack((x_indices.ravel(), y_indices.ravel()))
+
+        # # Build a KDTree for efficient nearest-neighbor query
+        tree = cKDTree(scaled_points)
+
+        # # Calculate degrees per pixel
+        deg_per_pixel_x = 360 / img_width  # For longitude
+        deg_per_pixel_y = 180 / img_height  # For latitude
+
+        # # Query the nearest distance for each grid point, requesting separate x and y components
+        distances, _ = tree.query(grid_points, k=1, p=2, workers=-1, eps=0)
+
+        # Calculate the distance in degrees directly from pixel distances
+        distances_in_degrees = distances * np.sqrt(deg_per_pixel_x**2 + deg_per_pixel_y**2)
+
+        # # Reshape and display
+        distance_array_degrees = distances_in_degrees.reshape((img_height, img_width))
+
+        im = ax.imshow(distance_array_degrees, cmap='viridis', origin='lower', interpolation='none',
+                        alpha=1, extent=(0, 2*np.pi, -1, 1), aspect='auto', vmin=vmin, vmax=vmax)
+        plt.colorbar(im, label=f'Distance to Nearest {kind} Footpoint (Degrees)')
+        plt.title(f'Distance to Nearest {kind} Footpoint (Degrees)')
 
 
-        # # fig, ax0 = plt.subplots()
-        # im = ax0.imshow(distance_array_degrees, cmap='viridis', origin='lower', interpolation='none',
-        #                 alpha=0.75, extent=(0, 2*np.pi, -1, 1), aspect='auto', vmin=vmin, vmax=vmax)
-        # cbar = plt.colorbar(im, label='Distance to Nearest Open Footpoint (Degrees)')
-        # plt.title('Distance to Nearest Open Footpoint (Degrees)')
-        # # plt.show()
-        # # # Create a grid of longitude and latitude values corresponding to the image
-        # latitude = np.linspace(-1, 1, img_height)  # -90 to 90 degrees
-        # # print(latitude)
-        # longitude = np.linspace(0, 2*np.pi, img_width)  # 0 to 360 degrees
 
-        # # # Create the interpolator function
-        # from scipy import interpolate
-        # dist_interp = interpolate.RectBivariateSpline(latitude, longitude, distance_array_degrees)
-        # distances = dist_interp.ev(latitude, longitude)
-        # # print(lat, lon, dist)
-        # ax0.scatter(latitude, longitude, c=distances, s=200, cmap='viridis', alpha=1, edgecolors='r',
-        #             zorder=100000, vmin=vmin, vmax=vmax)
+
+        # Create the interpolator function
+        dist_interp_2 = interpolate.RectBivariateSpline(latitude, longitude, distance_array_degrees)
+        distances_points = dist_interp_2.ev(ph_olow.ravel(), th_olow.ravel())
+        ax.scatter(th_olow, ph_olow, c=distances_points, s=100, cmap='viridis',
+                    alpha=1, edgecolors='k', zorder=100000, vmin=vmin, vmax=vmax)
+
         # plt.show()
-        # test_dists = dist_interp.ev(ph_olow_deg, th_olow_deg)
-
-        # # point_distances = [(th, ph, dist) for th, ph, dist in zip(th_olow, ph_olow, distances)]
-
-        # # Assuming th_olow and ph_olow need to be converted from radians to degrees
-        # # and ph_olow scaled from sin(latitude) to actual latitude in degrees
-        # ph_olow_deg = np.arcsin(ph_olow) * (180 / np.pi)  # Convert from sin(lat) to degrees
-        # th_olow_deg = np.degrees(th_olow)  # Convert from radians to degrees
-
-        # # Adjust for longitude to be in [0, 360] range if necessary
-        # th_olow_deg = np.mod(th_olow_deg, 360)
-
-        # # Now use these for interpolation and plotting
-        # distances = dist_interp.ev(ph_olow_deg, th_olow_deg)
-        # ax0.scatter(th_olow_deg, ph_olow_deg, c=distances, s=200, cmap='viridis', alpha=1, edgecolors='r', zorder=100000, vmin=vmin, vmax=vmax)
-
-        np.savetxt(fluxon_csv_output_path_top, distance_array_degrees, delimiter=", ")
+        np.savetxt(fluxon_csv_histput_path_top, distance_array_degrees, delimiter=", ")
 
         do_legend=False
 
@@ -380,15 +410,16 @@ def magnet_plot(
             sz1=sz0*ratio #inches
             DPI = shp[1] / sz1 #pixels/inch
             fig.set_size_inches((sz1, sz0))
-            plt.tight_layout()
-            plt.savefig(fluxon_map_output_path_top, bbox_inches='tight', dpi=4*DPI)
+            plt.tight_layhist()
+            plt.savefig(fluxon_map_histput_path_top, bbox_inches='tight', dpi=4*DPI)
             # plt.show()
             plt.close(fig)
+
     else:
         if do_print:
             print("\tSkipped! Files already exist:")
-            print(f"\t\t{shorten_path(fluxon_map_output_path)}")
-            print(f"\t\t{shorten_path(fluxon_map_output_path_top)}")
+            print(f"\t\t{shorten_path(fluxon_map_histput_path)}")
+            print(f"\t\t{shorten_path(fluxon_map_histput_path_top)}")
     if do_print:
         print(f"\n\t    n_open: {_n_open}, n_closed: {_n_closed}, \
                 n_total: {_n_flux}, n_all: {_fnum}, n_outliers: {_n_outliers}")
@@ -396,6 +427,10 @@ def magnet_plot(
     if do_print_top:
         print("\t\t    Success!")
         print("\t\t\t```````````````````````````````\n\n")
+
+    # plt.show()
+    for fig in figbox:
+        plt.close(fig)
     return _n_open, _n_closed, _n_flux, _fnum, _n_outliers
 
 

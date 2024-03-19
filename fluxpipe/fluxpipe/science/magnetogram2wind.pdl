@@ -176,7 +176,7 @@ print_banner( $batch_name, $CR, $reduction, $n_fluxons_wanted,
 
 my $very_beginning = clock_gettime();
 
-if (1){
+if (0){
 
 #### BEGIN ##################################################################
 
@@ -320,7 +320,7 @@ print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 # ) == 0 or ( die "Python script returned error $?", exit );
 
 system(
-"$configs{python_dir} $pipedir/plotting/plot_wind_map_latitude_cycle.py"
+"$configs{python_dir} $pipedir/plotting/plot_wind_map_square.py"
       . " --cr $CR --file $out_wind --nwant $n_fluxons_wanted --adapt $adapt"
 ) == 0 or ( die "Python script returned error $?", exit );
 

@@ -8,7 +8,7 @@ package gen_fluxon_wsaflow;
 use strict;
 use warnings;
 use Exporter qw(import);
-our @EXPORT_OK = qw(gen_fluxon_wsaflow do_image_plot);
+our @EXPORT_OK = qw(gen_fluxon_cranmerflow);
 
 use PDL::Graphics::Gnuplot;
 use PDL;
@@ -24,53 +24,16 @@ $PDL::verbose = 0;
 
 =head1 SYNOPSIS
 
-The module provides two primary functionalities:
-1. gen_fluxon_wsaflow: Iteratively generates a transonic solar wind solution for a given fluxon.
-2. gen_fluxon_wsaflow_phys: Calculates the flow and density in a fluxon, depending on its open or closed status.
-
 =head1 DESCRIPTION
-
-gen_fluxon_wsaflow - Takes a fluxon and optional user-defined settings as input, returning PDL arrays representing the final fluxon array, fluxon radius, and magnetic field components. Handles special cases like doubly open, doubly closed, or plasmoids.
-
-gen_fluxon_wsaflow_phys - Provides detailed flow and density calculations in a fluxon, returning a 2xN PDL containing (r, vr), and updates these fields in the fluxon. Also returns theta and phi values for the fluxon, handling special cases similarly.
 
 =head1 USAGE
 
-For gen_fluxon_wsaflow:
-    use gen_fluxon_wsaflow;
-    my ($r_vr_scaled, $r_fr_scaled, $theta, $phi) = gen_fluxon_wsaflow($fluxon, \%options);
-
-For gen_fluxon_wsaflow_phys:
-    use gen_fluxon_wsaflow_phys;
-    my $result = gen_fluxon_wsaflow_phys($fluxon, \%options);
-
-=head1 OPTIONS
-
-gen_fluxon_wsaflow options:
-=over 4
-=item * initial_temperature: Initial temperature in Kelvin. Default is 1e6.
-=item * sound_speed: Speed of sound based on the initial temperature. Calculated internally.
-=item * velocity_increment: Incremental step for velocity search. Default is 25 km/s.
-=back
-
-gen_fluxon_wsaflow_phys options:
-=over 4
-=item * steps: Number of steps for calculation. Default is 500.
-=item * g0: Gravitational acceleration in m/s^2. Default is 280.
-=item * r0: Radius in meters. Default is 696e6.
-=item * v0: Velocity in km/sec. Default is a random number between 10 and 20.
-=item * cs: Sound speed in km/sec at 2e6K and fully ionized protons. Default is 180.
-=back
 
 =head1 DEPENDENCIES
 
 This module depends on the following Perl modules:
 =over 4
-=item * PDL::NiceSlice
-=item * PDL::Options
-=item * PDL::ImageND
-=item * Math::RungeKutta
-=item * PDL::GSL::INTEG
+
 =back
 
 =head1 DIAGNOSTICS
@@ -93,22 +56,19 @@ my $verbose = 0;
 
 
 
-sub gen_fluxon_wsaflow {
+sub gen_fluxon_cranmerflow {
     my $fluxon = shift;
-    my $distance_array_degrees = shift;
-    my $fluxon_id = shift;
 
     # Check if the start and end    points of the fluxon are open
     my $is_start_open = ($fluxon->{fc_start}->{label} == -1);
     my $is_end_open = ($fluxon->{fc_end}->{label} == -2);
-    my $transonic_velocity = 0;
 
     # If the fluxon is labeled as a plasmoid, or if both ends are open, return undefined
     return undef if($fluxon->{plasmoid} || ($is_start_open + $is_end_open != 1));
 
 
     (my $r_vr_scaled, my $r_fr_scaled, my $theta, my $phi) =
-            gen_fluxon_wsaflow_phys($fluxon, $distance_array_degrees, $fluxon_id);
+            gen_fluxon_cranmerflow_phys($fluxon, $distance_array_degrees, $fluxon_id);
 
     # Return the final fluxon array, fluxon radius, and magnetic field components
     return ($r_vr_scaled, $r_fr_scaled, $theta, $phi);
@@ -131,7 +91,7 @@ sub interpolate_2d_lonlat {
     return $imval;
 }
 
-sub gen_fluxon_wsaflow_phys {
+sub gen_fluxon_cranmerflow_phys {
     my $me = shift;
     my $distance_array_degrees = shift;
     my $fluxon_id = shift;
