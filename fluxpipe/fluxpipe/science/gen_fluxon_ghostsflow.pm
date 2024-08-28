@@ -4,11 +4,11 @@ gen_fluxon_wsaflow - Comprehensive Module for Solar Wind Solution and Fluxon Flo
 
 =cut
 
-package gen_fluxon_cranmerflow;
+package gen_fluxon_ghostsflow;
 use strict;
 use warnings;
 use Exporter qw(import);
-our @EXPORT_OK = qw(gen_fluxon_cranmerflow);
+our @EXPORT_OK = qw(gen_fluxon_ghostsflow);
 
 use PDL::Graphics::Gnuplot;
 use PDL;
@@ -53,7 +53,7 @@ Other relevant modules and documentation.
 =cut
 
 
-
+our $FIRST = 1;
 my $verbose = 0;
 
 # Interpolate an array given X and Y values along with a test point
@@ -76,7 +76,7 @@ sub interpolate_1d {
     return $y0;
 }
 
-sub gen_fluxon_cranmerflow {
+sub gen_fluxon_ghostsflow {
     my $fluxon = shift;
     my $fid = shift;
 
@@ -89,7 +89,7 @@ sub gen_fluxon_cranmerflow {
 
 
     (my $r_vr_scaled, my $r_fr_scaled, my $theta, my $phis) =
-            gen_fluxon_cranmerflow_physics($fluxon, $fid);
+            gen_fluxon_ghostsflow_physics($fluxon, $fid);
 
     # Return the final fluxon array, fluxon radius, and magnetic field components
     return ($r_vr_scaled, $r_fr_scaled, $theta, $phis);
@@ -169,7 +169,7 @@ sub interpolate_1d_array {
     return $y_new;
 }
 
-sub gen_fluxon_cranmerflow_physics {
+sub gen_fluxon_ghostsflow_physics {
     my $me = shift;
     my $fid = shift;
     my $u_opt = shift // {};
@@ -267,8 +267,10 @@ sub gen_fluxon_cranmerflow_physics {
     my $ierr;
 
     my $filename = "fluxon-data/gilly_background_cvb07.dat";
+    # my $filename = '/Users/cgilbert/vscode/fluxons/fluxon-data/gilly_background_cvb07.dat';
 
     my ($r_zeph, $rho_zeph, $u_zeph, $v_alph_zeph, $T_zeph) = read_data($filename);
+
 
     # my $rho_interp  = $rho_zeph->   interpolate($rn, $r_zeph);
     my ($rho_interp , $err1) =  interpolate($rn, $r_zeph, $rho_zeph);
@@ -324,7 +326,7 @@ sub gen_fluxon_cranmerflow_physics {
 
     my $densfac = densfac_func($B_sun, $zn);
     my $sqrt_densfac = $densfac**(0.5);
-    my $u_scaled = 2.5 * $u_interp / $sqrt_densfac;
+    my $u_scaled = 2.5*$u_interp/ $sqrt_densfac;
 
     my $u_top = $u_scaled(-1);
     # print("Densfac = $sqrt_densfac\n");
@@ -355,7 +357,11 @@ sub gen_fluxon_cranmerflow_physics {
 
     # Sample data
     my $ones = ones($r->dims);
+    # print "\nghostsflow bmag:\n";
+    # print $bmag;
+    # print "\n\n";
 
+    # <STDIN>;
 
     if (0) {
         # # Plot the data with labels

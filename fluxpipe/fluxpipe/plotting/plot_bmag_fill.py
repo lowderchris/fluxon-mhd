@@ -73,7 +73,7 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
 
     ### GET TOP AND BOTTOM DATA
     # Load the dat file
-    arr = np.loadtxt(filename).T
+    arr = np.loadtxt(filename, skiprows=1).T
     nfluxon = int(arr[0,:].max())
 
     # Initialize Empty Arrays
@@ -181,14 +181,14 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
     # Plot Latitude of points
     do_lat = True
     if do_lat:
-        sc01 = ax_lowmag.scatter(ph0, th0, c=maxlist[0], s = 100, cmap="brg",
+        sc01 = ax_lowmag.scatter(ph0, th0, c=maxlist[0], s = 100, cmap="Spectral",
                     alpha=bb0, label=r"First Point Latitude", zorder = 99, marker='o', vmin=-1, vmax=1)
         cbar01 = fig.colorbar(sc01, ax=ax_lowmag)
         # cbar01.set_label(f"Lowest Latitude")
 
 
     if True:
-        sc01 = ax_highmag.scatter(ph1, th1, c=maxlist[0], s = 100, cmap="brg",
+        sc01 = ax_highmag.scatter(ph1, th1, c=maxlist[0], s = 100, cmap="Spectral",
                     alpha=bb1, label=r"First Point Latitude", marker='o', vmin=-1, vmax=1)
         cbar01 = fig.colorbar(sc01, ax=ax_highmag)
         cbar01.set_label("Lowest Latitude")
@@ -267,7 +267,7 @@ def plot_bmag_fill(args, r0=0, r1=-1, maxlist=None):
         index = (i+some)/(nfluxon+some)
         first_index_lat= (maxlist[0][i]+1)/2
         first_index_long = (maxlist[1][i])/2/np.pi
-        col = plt.cm.brg(first_index_lat)
+        col = plt.cm.Spectral(first_index_lat)
 
 
 

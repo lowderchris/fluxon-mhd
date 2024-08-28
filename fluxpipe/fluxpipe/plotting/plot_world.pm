@@ -113,13 +113,13 @@ sub plot_world {
         my $world_png_path_wide   = $wide_dir.  "cr$CR\_f". $n_fluxons_wanted. "_$which\_wide.$ext";
 
         my $window00 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path_narrow);
-        $world->render( {'window'=>$window00, range=>$range_inner});
+        $world->render( {'window'=>$window00, range=>$range_inner, view=>[0,0]});
 
         my $window000 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path_top);
-        $world->render( {'window'=>$window000, range=>$range_middle});
+        $world->render( {'window'=>$window000, range=>$range_middle, view=>[0,0]});
 
         my $window01 = gpwin($renderer,size=>[9,9], dashed=>0, output=> $world_png_path_wide);
-        $world->render( {'window'=>$window01, range=>$range_wide});
+        $world->render( {'window'=>$window01, range=>$range_wide, view=>[0,0]});
         print "\t\tDone!\n";
         }
 

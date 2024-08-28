@@ -32,7 +32,7 @@ If the fluxon is either doubly open, doubly closed, or labeled as a plasmoid, th
 =head1 USAGE
 
     use gen_fluxon_tflow;
-    my ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_tflow($fluxon, \%options);
+    my ($r_vr_scaled, $r_fr_scaled, $b_theta, $b_phi) = gen_fluxon_tflow($fluxon, \%options);
 
 =head1 OPTIONS
 
@@ -89,7 +89,7 @@ Returns a list containing the final fluxon array, fluxon radius, and magnetic fi
 
 =head3 Example
 
-    my ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_tflow($fluxon);
+    my ($r_vr_scaled, $r_fr_scaled, $b_theta, $b_phi) = gen_fluxon_tflow($fluxon);
 
 =cut
 
@@ -119,7 +119,7 @@ sub gen_fluxon_tflow {
     my $lower_velocity_bound = 400;
     my $upper_velocity_bound = 800;
 
-    (our $fluxon_array, my $fluxon_radius, my $b_theta, my $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$lower_velocity_bound, 'cs'=>$sound_speed});
+    (our $r_vr_scaled, my $r_fr_scaled, my $b_theta, my $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$lower_velocity_bound, 'cs'=>$sound_speed});
 
     if ($verbose) {print "\n\tInitial Lower Bound: $lower_velocity_bound\n";}
 
@@ -130,23 +130,23 @@ sub gen_fluxon_tflow {
     while ($search_for_transonic_velocity && $iterations < 20) {
         $lower_velocity_bound = $transonic_velocity_threshold;
         $transonic_velocity_threshold = $transonic_velocity_threshold + $velocity_increment;
-        ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_threshold, 'cs'=>$sound_speed});
+        ($r_vr_scaled, $r_fr_scaled, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_threshold, 'cs'=>$sound_speed});
         # print "Iteration $iterations: Transonic velocity threshold: $transonic_velocity_threshold\n";
         $iterations += 1;
 
-        # Check for pseudo-discontinuities in the fluxon_array
+        # Check for pseudo-discontinuities in the r_vr_scaled
         my $has_pseudo_discontinuities = 0;
-        my $n_array = $fluxon_array->dim(1);  # Assuming $fluxon_array is a 2D piddle
+        my $n_array = $r_vr_scaled->dim(1);  # Assuming $r_vr_scaled is a 2D piddle
         for (my $i = 0; $i < $n_array - 1; $i++) {
-            my $current_value = $fluxon_array->slice("1,($i)")->sclr;
-            my $next_value = $fluxon_array->slice("1,($i+1)")->sclr;
+            my $current_value = $r_vr_scaled->slice("1,($i)")->sclr;
+            my $next_value = $r_vr_scaled->slice("1,($i+1)")->sclr;
             if ($next_value > 1.25 * $current_value) {
                 $has_pseudo_discontinuities = 1;
                 last;
             }
         }
 
-        if (($has_pseudo_discontinuities == 0) && ($fluxon_array(1,-1) == ($fluxon_array(1,:)->max()))) {
+        if (($has_pseudo_discontinuities == 0) && ($r_vr_scaled(1,-1) == ($r_vr_scaled(1,:)->max()))) {
             $search_for_transonic_velocity = 0;
             $upper_velocity_bound = $transonic_velocity_threshold;
             if ($verbose) {print "\t\tTransonic velocity found! Range: $lower_velocity_bound to $upper_velocity_bound\n";}
@@ -165,21 +165,21 @@ sub gen_fluxon_tflow {
         $transonic_velocity_test = ($lower_velocity_bound + $upper_velocity_bound) / 2;
 
         # Generate a wind solution with the test velocity
-        ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_test, 'cs'=>$sound_speed});
+        ($r_vr_scaled, $r_fr_scaled, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity_test, 'cs'=>$sound_speed});
 
-        # Check for pseudo-discontinuities in the fluxon_array
+        # Check for pseudo-discontinuities in the r_vr_scaled
         my $has_pseudo_discontinuities = 0;
-        my $n_array = $fluxon_array->dim(1);
+        my $n_array = $r_vr_scaled->dim(1);
         for (my $i = 0; $i < $n_array - 1; $i++) {
-            my $current_value = $fluxon_array->slice("1,($i)")->sclr;
-            my $next_value = $fluxon_array->slice("1,($i+1)")->sclr;
+            my $current_value = $r_vr_scaled->slice("1,($i)")->sclr;
+            my $next_value = $r_vr_scaled->slice("1,($i+1)")->sclr;
             if ($next_value > 1.25 * $current_value) {
                 $has_pseudo_discontinuities = 1;
                 last;
             }
         }
 
-        if (($has_pseudo_discontinuities == 0) && ($fluxon_array(1,-1) == ($fluxon_array(1,:)->max()))) {
+        if (($has_pseudo_discontinuities == 0) && ($r_vr_scaled(1,-1) == ($r_vr_scaled(1,:)->max()))) {
             # This was a successful try! Set the new upper bound to the test velocity.
             $upper_velocity_bound = $transonic_velocity_test;
 
@@ -201,10 +201,10 @@ sub gen_fluxon_tflow {
     }
 
     # Generate a wind solution with the final upper limit
-    ($fluxon_array, $fluxon_radius, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity, 'cs'=>$sound_speed});
+    ($r_vr_scaled, $r_fr_scaled, $b_theta, $b_phi) = gen_fluxon_flow($fluxon, {'v0'=>$transonic_velocity, 'cs'=>$sound_speed});
 
-    # Return the final fluxon array, fluxon radius, and magnetic field components
-    return ($fluxon_array, $fluxon_radius, $b_theta, $b_phi);
+    # Return the final fluxon array, fluxon radius, and theta and phi
+    return ($r_vr_scaled, $r_fr_scaled, $b_theta, $b_phi);
 }
 1;
 __END__

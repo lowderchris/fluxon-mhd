@@ -35,7 +35,7 @@ os, argparse, numpy, pfss_funcs, pipe_helper
 import os
 import argparse
 import numpy as np
-from fluxpipe.science.pfss_funcs import trace_lines, trace_lines_parallel, load_pfss, compute_pfss, load_and_condition_fits_file, get_fluxon_locations
+from fluxpipe.science.pfss_funcs import trace_lines, load_pfss, compute_pfss, load_and_condition_fits_file, get_fluxon_locations
 from fluxpipe.helpers.pipe_helper import shorten_path, configurations
 import astropy.constants as const
 import astropy.units as u
@@ -69,7 +69,7 @@ def get_pfss(configs=None):
     cr =        configs.get("cr")
     nwant =     configs.get("nwant")
     magpath =   configs.get("magpath").format(cr)
-    force_trace=configs.get("force", 0)
+    force_trace=configs.get("force", 1)
     datdir =    configs.get("data_dir")
     mag_reduce =configs.get("mag_reduce")
     adapt_select =configs.get("adapt_select")
@@ -148,16 +148,16 @@ def get_pfss(configs=None):
                                     pfss_output, (f_lon, f_lat, f_sgn), open_path, closed_path, adapt)
 
 
-    # Record stats in the pfss_output file
-    shp = br_safe.data.shape
-    pix = shp[0]*shp[1]
-    timefile = f'{datdir}/batches/{batch}/pipe_log.txt'
-    with open(timefile, 'a+', encoding="utf-8") as f:
-        elap = f"\ncr: {cr}, r: {mag_reduce}, rx: {shp[0]}, ry: {shp[1]}, \
-                pf_elp: {elapsed:0>3.3f}, t_kpix: {1000*elapsed/pix:0.3f}"
-        nlines = f"TrOpen: {flnum_open}, TrClosed: {flnum_closed}, TrGood: \
-                {flnum_open+flnum_closed}, TrFail: {skip_num+timeout_num}, "
-        f.write(f"{elap}, {nlines}")
+    # # Record stats in the pfss_output file
+    # shp = br_safe.data.shape
+    # pix = shp[0]*shp[1]
+    # timefile = f'{datdir}/batches/{batch}/pipe_log.txt'
+    # with open(timefile, 'a+', encoding="utf-8") as f:
+    #     elap = f"\ncr: {cr}, r: {mag_reduce}, rx: {shp[0]}, ry: {shp[1]}, \
+    #             pf_elp: {elapsed:0>3.3f}, t_kpix: {1000*elapsed/pix:0.3f}"
+    #     nlines = f"TrOpen: {flnum_open}, TrClosed: {flnum_closed}, TrGood: \
+    #             {flnum_open+flnum_closed}, TrFail: {skip_num+timeout_num}, "
+    #     f.write(f"{elap}, {nlines}")
 
     print("\n\t\t\t```````````````````````````````\n \n")
     return True

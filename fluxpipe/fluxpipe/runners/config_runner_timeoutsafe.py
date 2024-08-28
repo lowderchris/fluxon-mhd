@@ -38,7 +38,7 @@ configs = configurations(debug=False)
 timeout_num = 0
 
 @timeout_decorator.timeout(1000)  # Set a timeout for each subprocess call
-def run_pdl_script(rot, nflux, adapt):
+def run_pdl_script(rot, nflux, adapt, method):
     """
     Executes the PDL script with a timeout.
 
@@ -47,7 +47,7 @@ def run_pdl_script(rot, nflux, adapt):
     - nflux: Fluxon count
     - adapt: Adaptation parameter
     """
-    subprocess.run(["perl", configs["run_script"], str(rot), str(nflux), str(adapt)], check=False)
+    subprocess.run(["perl", configs["run_script"], str(rot), str(nflux), str(adapt), str(method)], check=False)
 
 def run():
     global timeout_num
@@ -55,15 +55,16 @@ def run():
         for adapt in configs["adapts"]:
             for rot in configs["rotations"]:
                 for nflux in configs["fluxon_count"]:
-                    pbar.set_description(f"Rotation {rot}, n_fluxon {nflux}")
-                    try:
-                        run_pdl_script(rot, nflux, adapt)
-                    except timeout_decorator.TimeoutError:
-                        print(f"Timeout for Rotation {rot}, n_fluxon {nflux}")
-                        timeout_num += 1
-                    except Exception as e:
-                        print(f"Error for Rotation {rot}, n_fluxon {nflux}: {e}")
-                    pbar.update(1)
+                    for method in configs["flow_method"]:
+                        pbar.set_description(f"Job:: Rotation {rot}, n_fluxon {nflux}, flow_method {method}")
+                        try:
+                            run_pdl_script(rot, nflux, adapt, method)
+                        except timeout_decorator.TimeoutError:
+                            print(f"Timeout for Rotation {rot}, n_fluxon {nflux}, flow_method {method}")
+                            timeout_num += 1
+                        except Exception as e:
+                            print(f"Error for Rotation {rot}, n_fluxon {nflux}, flow_method {method}: {e}")
+                        pbar.update(1)
 
     print(f"Total timeouts: {timeout_num}")
 

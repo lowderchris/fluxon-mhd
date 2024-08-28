@@ -6,7 +6,7 @@ get_wind - Calculate Solar Wind Plasma Parameters for a Given Carrington Rotatio
 =head1 SYNOPSIS
 
     use pipe_helper;
-    my ($out_b, $out_fr, $out_wind) = get_wind($this_world_relaxed, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_want, $pythondir);
+    my ($out_b, $out_fr, $out_wind) = get_wind($this_world, $datdir, $batch_name, $CR, $N_actual, $recompute, $n_want, $pythondir);
 
 =cut
 
@@ -37,7 +37,7 @@ This subroutine calculates various solar wind plasma parameters such as the radi
 
 =over 4
 
-=item * C<$this_world_relaxed> - The relaxed world object containing fluxons.
+=item * C<$this_world> - The relaxed world object containing fluxons.
 
 =item * C<$datdir> - Data directory path.
 
@@ -100,7 +100,7 @@ sub file_has_content {
 
 sub get_wind {
 
-    my ( $this_world_relaxed, $CR, $n_want, $recompute) = @_;
+    my ( $this_world, $CR, $n_want, $recompute, $flow_method_in, $do_stiff) = @_;
 
 
     # Read configurations from disk
@@ -119,21 +119,27 @@ sub get_wind {
     my $pythondir = $configs{pythondir};
     my $datdir = $configs{datdir};
     my $batch_name = $configs{batch_name};
-    my $flow_method = $configs{flow_method};
-    if ($flow_method eq "parker") {
-        $flow_method = "";
+    my $flow_method = $flow_method_in;
+    my $flow_method_str = $flow_method;
+    $flow_method_str = "_$flow_method_str";
+
+    if ($do_stiff) {
+        $stiffness = "\_stiff";
     }
     else {
-        $flow_method = "_$flow_method";
+        $stiffness = "";
     }
+
+
+
     my $do_wind_calc = 1;
 
     my $wind_out_dir   = $datdir . "/batches/$batch_name/data/cr" . $CR . '/wind';
     my $prefix         = "$wind_out_dir/cr$CR\_f$n_fluxons_wanted";
     my $out_b          = "$prefix\_radial_bmag.dat";
-    my $out_b_all      = "$prefix\_radial_bmag_all.dat";
+    my $out_b_all      = "$prefix$stiffness\_radial_bmag_all.dat";
     my $out_fr         = "$prefix\_radial_fr.dat";
-    my $out_wind       = "$prefix\_radial_wind$flow_method.dat";
+    my $out_wind       = "$prefix\_radial_wind$flow_method_str.dat";
     my $ch_map_url     = "https://sun.njit.edu/coronal_holes/data/chs_synmap_cr$CR.fits";
     my $ch_map_path    = $datdir . "/CHmaps/chs_synmap_cr$CR.fits";
     my $short_out_wind = shorten_path($out_wind);
@@ -168,16 +174,17 @@ sub get_wind {
     }
 
     print "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-    print "(pdl) Calculating Solar Wind Plasma Parameters for CR$CR\n";
+    print "(pdl) Calculating Coronal Plasma Parameters for CR$CR\n";
     print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 
     # Perform the calculation if necessary
-    if ( $do_wind_calc ) {
+    if ($do_wind_calc ) {
 
         #Initialize the world
         print "\n\tUpdating neighbors...";
-        $this_world_relaxed->update_force(0);
-        my @fluxons = $this_world_relaxed->fluxons;
+        $this_world->update_force(0);
+        my @fluxons = $this_world->fluxons;
+
         print "Done!\n";
         print "\t\tNumber of fluxons: " . scalar @fluxons . "\n";
 
@@ -188,8 +195,8 @@ sub get_wind {
         # DB::single;
         # Calculate the radial magnetic field
         # print "\n\tRadial Magnetic Field (B) Calculation...";
-        # map_fluxon_b( $out_b, \@fluxons );
-        # map_fluxon_b_all( $out_b_all, \@fluxons );
+        map_fluxon_b( $out_b, \@fluxons );
+        map_fluxon_b_all( $out_b_all, \@fluxons );
         # system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_fill.py");
         # system("/opt/homebrew/anaconda3/envs/fluxenv/bin/python /Users/cgilbert/vscode/fluxons/fluxon-mhd/fluxpipe/fluxpipe/plotting/plot_bmag_all.py");
 
@@ -198,16 +205,16 @@ sub get_wind {
         # print "\t\t...done with radial B!";
 
         # Calculate the radial expansion factor
-        # print "\n\tRadial Expansion Factor (Fr) Calculation...";
-        # map_fluxon_fr( $out_fr, \@fluxons );
-        # print "Done!";
+        print "\n\tRadial Expansion Factor (Fr) Calculation...";
+        map_fluxon_fr( $out_fr, \@fluxons );
+        print "Done! Saved to $out_fr\n";
 
         # Calculate the radial wind speed
 
         print "\n\n\tRadial Wind Speed Calculation...\n";
-        my $do_wind_map = 0 || $recompute;
+        my $do_wind_map = 0 || $recompute || $configs{recompute_wind};
 
-        $do_wind_map=1; #OVERRIDE WIND MAP
+        # $do_wind_map=1; #OVERRIDE WIND MAP
 
         if ( !-e $out_wind || !file_has_content($out_wind)) { $do_wind_map = 1; }
 
@@ -220,27 +227,10 @@ sub get_wind {
         # load the $ch_map_path file, which is an image array.
         # print "ch_map_path: $ch_map_path\n";
 
-        # run the python file footpoint_distances.py
-        system("python3 fluxon-mhd/fluxpipe/fluxpipe/science/footpoint_distances_2.py --cr $CR");
 
-
-        my %configs = configurations();
-        my $distance_file = $configs{data_dir} . "/batches/" . $configs{batch_name} . "/data/cr" . $CR . "/floc/distances.csv";
-        open my $fh, '<', $distance_file or die "Could not open '$distance_file': $!";
-        # Read the file line by line and split each line
-        my @rows;
-        while (my $line = <$fh>) {
-            chomp $line;  # Remove newline character
-            my @values = split /, /, $line;  # Split the line into values
-            push @rows, pdl(@values);  # Convert the list of values into a PDL piddle and store it
-        }
-        close $fh;
-
-        # Combine all rows into a 2D PDL array
-        our $distance_array_degrees = cat(@rows);
 
         # Pass the image into the main function
-        if ($do_wind_map) { map_fluxon_flow_parallel_master( $out_wind, \@fluxons, $distance_array_degrees); }
+        if ($do_wind_map) { map_fluxon_flow_parallel_master( $out_wind, \@fluxons, $flow_method, $CR, $n_want); }
         else { print $skipstring;}
 
         # #run the python script to plot the angles
@@ -271,8 +261,8 @@ if ($0 eq __FILE__) {
     my $search_string = $n_want . "_hmi_relaxed_s";  # Modify this to your desired search string
     my ($highest_file, $highest_number) = find_highest_numbered_file_with_string($world_dir, $search_string);
 
-    my $this_world_relaxed = read_world($highest_file);
-    get_wind($this_world_relaxed)
+    my $this_world = read_world($highest_file);
+    get_wind($this_world)
 
 }
 

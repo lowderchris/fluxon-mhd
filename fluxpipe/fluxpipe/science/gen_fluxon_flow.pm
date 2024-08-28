@@ -134,9 +134,11 @@ sub gen_fluxon_flow {
         $A(0:-2) .= $A(1:-1);
     }
 
+
     ## Declare Variables
     our $A;
     our $r;
+    our $r1;
     our $th;
     our $ph;
     # our $vu;
@@ -150,6 +152,8 @@ sub gen_fluxon_flow {
     my $vint;
     my $abserr;
     my $ierr;
+    my $rn = $r1/$opt{r0};
+
 
     # Get rid of end anomalies
     $A->((0)) .= $A->((1));
@@ -220,7 +224,7 @@ sub gen_fluxon_flow {
     my $r_v_scaled = pdl(@rv) * pdl(1.0 / $opt{r0}, 1e-3);
 
     # This array is (r, fr) in units of (r_sun, unitless)
-    my $r_fr_scaled = pdl($r / $opt{r0}, $fr);
+    my $r_fr_scaled = pdl($rn, $fr);
 
     # Return the constructed arrays
     return ($r_v_scaled, $r_fr_scaled, $th, $ph);

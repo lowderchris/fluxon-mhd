@@ -45,7 +45,7 @@ import sunpy.coordinates
 import cv2
 
 
-def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
+def plot_bmag_all(args, r1=1, r2=-2, do_r2=False, maxlist=None):
     """
     Plots the expansion factor of the given `radial_bmag_all.dat` file based on the arguments provided.
 
@@ -67,7 +67,7 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
 
     ### GET TOP AND BOTTOM DATA
     # Load the dat file
-    arr = np.loadtxt(filename).T
+    arr = np.loadtxt(filename, skiprows=1).T
     nfluxon = int(arr[0,:].max())
 
     # Initialize Empty Arrays
@@ -239,15 +239,15 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
         field = arr[8,floc]
         field_2 = arr[9,floc]
 
-        ax1.plot(rr, field, c=plt.cm.Reds(i / nfluxon), label=blabel if i == 0 else "", alpha=0.8)
-        ax2.plot(rr, expansion, c=plt.cm.Blues(i / nfluxon), label=alabel if i == 0 else "", alpha=0.8)
+        ax1.plot(rr-1, field, c=plt.cm.Reds(i / nfluxon), label=blabel if i == 0 else "", alpha=0.8)
+        ax2.plot(rr-1, expansion, c=plt.cm.Blues(i / nfluxon), label=alabel if i == 0 else "", alpha=0.8)
         # ax1.plot(rr, pphi, c=plt.cm.Purples(i / nfluxon), label=tlabel if i == 0 else "", alpha=0.8)
 
     r1 = rad0
     r2 = rad1
-    ax1.axvline(r1, ls=":", c='k', zorder=1000000)
+    ax1.axvline(r1-1, ls=":", c='k', zorder=1000000)
     if do_r2:
-        ax1.axvline(r2, ls=":", c='k', zorder=1000)
+        ax1.axvline(r2-1, ls=":", c='k', zorder=1000)
 
 
 
@@ -289,7 +289,7 @@ def plot_bmag_all(args, r1=1, r2=-1, do_r2=False, maxlist=None):
     fig.set_size_inches((8,8))
     plt.tight_layout()
     plt.savefig(bmagname)
-    if args.show or False:
+    if args.show or True:
         plt.show()
     plt.close(fig)
     print(".", end="", flush=True)

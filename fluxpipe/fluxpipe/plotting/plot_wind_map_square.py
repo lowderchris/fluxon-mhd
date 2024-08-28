@@ -289,9 +289,9 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
             mean1 = mean
             std1 = np.abs(stddev)
 
-            mean_label = f"GaussMean: {mean1:.0f} km/s"
+            mean_label = fr"$\mu$: {mean1:.0f} km/s"
             # median_label = f"StatMedian: {median1:.0f} km/s"
-            std_label = f"GaussStd: {std1:.0f} km/s"
+            std_label = fr"$\sigma$: {std1:.0f} km/s"
             # b_label = f"GaussB: {b:.0f}"
             # hist_ax.axhline(b, color='gray', linestyle='-', linewidth=1, label=b_label)
         except:
@@ -312,7 +312,7 @@ def hist_plot(vel1_clean, ax=None, vmin=400, vmax=800, n_bins=20, do_print_top=T
     hist_ax.legend(fontsize="small", loc = "center left")
     hist_ax.set_xlabel("Wind Speed [km/s]")
     hist_ax.set_ylabel("Count")
-    fig.suptitle(f'CR{CR}, {len(vel1_clean)} Open Fields, {configs.get("flow_method").title()} wind')
+    fig.suptitle(f'CR{CR}, {len(vel1_clean)} Open Fields, {configs.get("wind_method").title()} wind')
 
     hist_ax.set_xlim((vmin-25, vmax+25))
 
@@ -371,11 +371,12 @@ def plot_wind_map_latitude(configs):
     nwant = configs.get("nwant")
     reduce = configs.get("mag_reduce")
     CR = configs.get("cr")
-    method = configs.get("flow_method")
-    method = ['' if "parker" in method else f"_{method}"][0]
-    dat_file = configs.get("file", f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind{method}.dat')
+    method = configs.get("wind_method")
+
+    method_str = ['' if "parker" in method else f"_{method}"][0]
+    dat_file = configs.get("file", f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind{method_str}.dat')
     all_vmin, all_vmax = configs.get("all_vmin", 450), configs.get("all_vmax", 700)
-    print(f"\n\tPlotting Windmap {CR} Lat Cycle...", end="\n" if __name__ == "__main__" else "")
+    print(f"\n\tPlotting Windmap {CR} Lat Cycle, {method} method...", end="\n" if __name__ == "__main__" else "")
 
     # Load the wind file
     arr = np.loadtxt(dat_file).T
@@ -444,16 +445,10 @@ def plot_wind_map_latitude(configs):
     hist_ax =       plt.subplot(gs[2, 1])
 
 
-
-
-
     sunspotplot(carr_ax, args.cr, False)
 
-
-
-
-
-    directory_path = '/Users/cgilbert/vscode/fluxons/fluxon-data/batches/sequential/data/wind'  # Change this to your directory's path
+    directory_path = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind'  # Change this to your directory's path
+    directory_path = "/Users/cgilbert/vscode/fluxons/flux-extra/batches/sequential/data/wind"
     big_dict = load_wind_files(directory_path)
     all_phi, all_theta, all_vel, all_hist, all_cr, all_mean, \
     all_std, total_mean, total_std, all_count = parse_big_dict(big_dict)
@@ -500,7 +495,7 @@ def plot_wind_map_latitude(configs):
     # Add a colorbar
     cbar_ax_lat1 = fig.add_axes([0.435, 0.66, 0.025, 0.24])
     cbar01 = plt.colorbar(sc01, cax=cbar_ax_lat1, cmap=the_cmap, aspect=15)
-    cbar01.set_label(f"Base Latitude", labelpad=-62)
+    cbar01.set_label(f"Base Latitude", labelpad=-64)
 
 
 
@@ -510,7 +505,7 @@ def plot_wind_map_latitude(configs):
     # Add a colorbar
     cbar_ax_lat2 = fig.add_axes([0.435, 0.305, 0.025, 0.24])
     cbar02 = plt.colorbar(sc02, cax=cbar_ax_lat2, cmap=the_cmap, aspect=15)
-    cbar02.set_label(f"Base Latitude", labelpad=-62)
+    cbar02.set_label(f"Base Latitude", labelpad=-64)
 
 
 
@@ -530,33 +525,46 @@ def plot_wind_map_latitude(configs):
 
 
 
-    # # Interpolated plot of wind speed [Hexagons]
-    # hex_n = np.max((n_open // 40, 3))
-    # hex1, grid_z1 = hex_plot(
-    #     ph1_clean,
-    #     th1_clean,
-    #     vel1_clean,
-    #     do_hex=False,
-    #     ax=dot_wind_ax,
-    #     nx=hex_n,
-    #     # vmin=all_vmin,
-    #     # vmax=all_vmax,
-    #     configs=configs,
-    #     # cmap=cmap
-    # )
+    # Interpolated plot of wind speed [Hexagons]
+    hex_n = np.max((n_open // 40, 3))
+    hex1, grid_z1 = hex_plot(
+        ph1_clean,
+        th1_clean,
+        vel1_clean,
+        do_hex=False,
+        ax=dot_wind_ax,
+        nx=hex_n,
+        vmin=all_vmin,
+        vmax=all_vmax,
+        configs=configs,
+        # cmap=cmap
+    )
 
     # clr = np.log(2*fr1/fr0)**1/2
-    clr = np.log10(fr1/fr0)
-    sc11 = square_wind_ax.scatter(ph1, th1, c=clr, s = 7**2, cmap="YlGnBu", alpha=1,
-                                  label=r"A(21.5Rs)", marker='s')#, vmin=-1, vmax=3)
 
+    # fig, theax = plt.subplots()
+    # theax.scatter(fr0, fr1)
+    # plt.show()
+    # print(fr0)
+    # print(fr1)
+
+    clr = np.log10(np.abs(fr1))
+    cmean = np.mean(clr)
+    cstd = np.std(clr)
+    cvmin = cmean - 2*cstd
+    cvmax = cmean + 2*cstd
+
+    sc11 = square_wind_ax.scatter(ph1, th1, c=clr, s = 5**2, cmap="YlGnBu_r", alpha=1,
+                                  label=r"A(21.5Rs)", marker='s',
+                                  vmin=cvmin, vmax=cvmax
+    )
     # Add a colorbar
     cbar_ax_lat3 = fig.add_axes([0.93, 0.65, 0.025, 0.25])
-    cbar03 = plt.colorbar(sc11, cax=cbar_ax_lat3, aspect=15, extend="max", extendfrac=0.1)
-    cbar03.set_label(f"log(Expansion Ratio)", labelpad=-54)
+    cbar03 = plt.colorbar(sc11, cax=cbar_ax_lat3, aspect=15, extend="neither", extendfrac=0.1)
+    # cbar03.set_label(f"Expansion Ratio")
 
-    sc = square_wind_ax.scatter(ph1, th1, c=clr, s = 7**2+20, cmap="grey", alpha=1,
-                                  label=r"A(21.5Rs)", marker='s', zorder=0, vmin=-1, vmax=3)
+    # sc = square_wind_ax.scatter(ph1, th1, c=clr, s = 7**2+20, cmap="grey", alpha=1,
+    #                               label=r"A(21.5Rs)", marker='s', zorder=0, vmin=-1, vmax=3)
 
     # # Scatter plot of wind speed [Squares]
     # scat1 = square_wind_ax.scatter(
@@ -572,6 +580,7 @@ def plot_wind_map_latitude(configs):
     #     edgecolors='none'
     # )
 #
+
     # Scatter plot of wind speed [Circles]
     cont1 = dot_wind_ax.scatter(
         ph1_clean,
@@ -584,9 +593,14 @@ def plot_wind_map_latitude(configs):
         vmin=all_vmin,
         vmax=all_vmax,
         cmap=cmap,
-        edgecolors='gray',
+        edgecolors='none',
         # edgewidth=0.5
     )
+
+    vmean = np.mean(vel1_clean)
+    vstd = np.std(vel1_clean)
+    vvmin = vmean - 2*vstd
+    vvmax = vmean + 2*vstd
 
     cont2 = dot_wind_ax.scatter(
         ph1_clean,
@@ -597,10 +611,10 @@ def plot_wind_map_latitude(configs):
         lw = 0.1,
         alpha=1,
         marker='o',
-        # vmin=all_vmin,
-        # vmax=all_vmax,
+        vmin=vvmin,
+        vmax=vvmax,
         cmap='grey',
-        edgecolors='gray',
+        edgecolors='none',
         # edgewidth=0.5
     )
 
@@ -677,7 +691,7 @@ def plot_wind_map_latitude(configs):
         for obj in plotobjs:
             cbar = plt.colorbar(obj, cax=cbar_ax, extend='both', cmap=cmap, extendfrac=0.1, aspect=15)
 
-        cbar.set_label("Wind Speed [km/s]", labelpad=-58)
+        cbar.set_label("Wind Speed [km/s]", labelpad=-60)
 
     fig.set_size_inches((12,6))
     # plt.tight_layout()
@@ -691,11 +705,11 @@ def plot_wind_map_latitude(configs):
 
 
     # Set the output file names
-    method = configs.get("flow_method")
+    method = configs.get("wind_method")
     filename = f"png_cr{CR}_f{nwant}_op{n_open}_radial_wind_{method}.png"
     main_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/{filename}'
-    wind_file = f'{dat_dir}/batches/{batch}/data/wind/cr{CR}_f{nwant}_op{n_open}_radial_wind_{method}.npy'
-    label_file = f'{dat_dir}/batches/{batch}/data/wind/np_labels.txt'
+    wind_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind_{method}.npy'
+    label_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/np_labels.txt'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
     if not path.exists(os.path.dirname(main_file)):
@@ -714,7 +728,7 @@ def plot_wind_map_latitude(configs):
     # plt.show()
     # plt.show()
     plt.savefig(outer_file, dpi=200)
-    plt.savefig(outer_pdf, format="pdf", dpi=200)
+    # plt.savefig(outer_pdf, format="pdf", dpi=200)
 
     plt.close(fig)
     print("Success!")
@@ -790,6 +804,7 @@ if __name__ == "__main__":
         parser.add_argument('--nwant',  type=int, default=configs["fluxon_count"][0], help='number of fluxons')
         parser.add_argument('--batch',  type=str, default=configs["batch_name"], help='select the batch name')
         parser.add_argument('--adapt',  type=int, default=configs["adapt"], help='Use ADAPT magnetograms')
+        parser.add_argument('--wind_method', type=str, default=configs["flow_method"][0], help='select the flow method')
         args = parser.parse_args()
         configs = configurations(args=args)
 

@@ -231,6 +231,13 @@ sub configurations {
         }
     }
 
+    if ( substr( $the_config{'flow_method'}, 0, 1 ) eq "[" ) {
+        $the_config{'flow_method'}    =~ s/[\[\]]//g;
+        $the_config{'flow_method'} = [split( /\s*,\s*/, $the_config{'flow_method'} )] ;
+    } else {
+        $the_config{'flow_method'} = [$the_config{'flow_method'}];
+    }
+
     # Remove brackets from rotations and fluxon_count
     $the_config{'fluxon_count'} =~ s/[\[\]]//g;
     $the_config{'adapts'}       =~ s/[\[\]]//g;
@@ -540,7 +547,7 @@ Prints a banner with various details.
 
 sub print_banner {
     my ( $batch_name, $CR, $reduction, $n_fluxons_wanted, $recompute_string,
-        $adapt )
+        $adapt, $flow_method)
       = @_;
     print "\n\n\n\n\n\n|\n|\n|\n|\n|\n|\n|\n|\n|\n|";
     print "\n\n";
@@ -554,7 +561,7 @@ sub print_banner {
 
     check_env_variable( 'DATAPATH', 1 );
     print
-"\nBatch: $batch_name, CR: $CR, Reduction: $reduction, Fluxons: $n_fluxons_wanted, Adapt: $adapt\n";
+"\nBatch: $batch_name, CR: $CR, Reduction: $reduction, Fluxons: $n_fluxons_wanted, Adapt: $adapt, Wind: $flow_method\n";
 
     my $time  = localtime;
     my $ftime = $time->strftime('%m-%d-%Y %H:%M:%S');
@@ -687,12 +694,19 @@ sub load_highest_numbered_world {
 
     my $world_out_dir = File::Spec->catdir($datdir, "batches", $batch_name, "data", "cr${CR}", "world");
     my $file_pattern = qr/cr${CR}_f${n_fluxons_wanted}_${inst}_relaxed_s(\d+)\.flux$/;
+    my $original_pattern = qr/cr${CR}_f${n_fluxons_wanted}_${inst}\.flux$/;
 
     my $max_d = -1;
     my $selected_file_path;
+    my $original_file_path;
+    print "Searching for files in $world_out_dir\n";
+    print "File pattern: $file_pattern\n";
+    print "Original pattern: $original_pattern\n";
+
 
     opendir(my $dh, $world_out_dir) or die "Cannot open directory: $!";
     while (my $file = readdir($dh)) {
+        print $file . "\n";
         if ($file =~ /$file_pattern/) {
             my $d_value = $1;
             if ($d_value > $max_d) {
@@ -700,21 +714,28 @@ sub load_highest_numbered_world {
                 $selected_file_path = File::Spec->catfile($world_out_dir, $file);
             }
         }
+        if ($file =~ /$original_pattern/) {
+            $original_file_path = File::Spec->catfile($world_out_dir, $file);
+        }
     }
     closedir($dh);
 
-    if (defined $selected_file_path) {
+    print "Selected file: $selected_file_path\n";
+    print "Original file: $original_file_path\n";
+
+    if (defined $selected_file_path & defined $original_file_path) {
         my $this_world_relaxed = read_world($selected_file_path);
+        my $this_world_original = read_world($original_file_path);
         my @fluxons = $this_world_relaxed->fluxons;
 
         if (scalar @fluxons == 0) {
             # Consider logging a warning or handling this case differently as needed
-            return "World loaded, but contains no fluxons.";
+            return die "World loaded, but contains no fluxons.";
         }
 
-        return $this_world_relaxed; # Successful load
+        return $this_world_relaxed, $this_world_original; # Successful load
     } else {
-        return "No matching files found."; # No file found
+            die "No matching files found."; # No file found
     }
 }
 

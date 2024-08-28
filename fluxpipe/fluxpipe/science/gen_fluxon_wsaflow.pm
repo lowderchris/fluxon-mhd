@@ -190,22 +190,29 @@ sub gen_fluxon_wsaflow_phys {
 
     }
 
-    # Get rid of end anomalies
     our $A;
-    # $A(0:-2) .= $A(1:-1);
-    # $A->((0)) .= $A->((1));
-    # $A->((-1)) .= $A->((-2));
-
-    # Calculate magnetic field magnitude
     our $bfield;
     our $bmag;
-
     our $r1;
     our $r;
+
+
     our $th;
     our $ph;
     our $T;
     our $rho;
+
+    my $rn = $r1/$opt{r0};
+    my $zn = $rn - 1;
+    my $len = $rn->nelem - 1;
+
+    # Get rid of end anomalies
+    # $A(0:-2) .= $A(1:-1);
+    # $A->((0)) .= $A->((1));
+    # $A->((-1)) .= $A->((-2));
+
+    # Fix the bottom magnetic field vertex
+    $bmag->((1)) .= $bmag->((2)) * $A->((2)) / $A->((1));
 
     ## Declare Variables
     my $vnow;
@@ -222,7 +229,7 @@ sub gen_fluxon_wsaflow_phys {
     sub wind_speed {
         my ($fss, $theta_b) = @_;
 
-        if (1){
+        if (0){
             # Define constants (From Schonfeld 2022)
             my $c1 = 2/9;
             my $c2 = 0.8;
@@ -230,11 +237,11 @@ sub gen_fluxon_wsaflow_phys {
             my $c4 = 2.0;
             my $c5 = 3.0;
 
-            my $v0 = 285; #km/s
-            my $vm = 910 - $v0; #km/s
+            my $v0 = 285+50; #km/s
+            my $vm = 700 - $v0; #km/s
             our $speed = $v0 + ($vm / (1 + $fss)**$c1) * (1 - $c2 * exp(-($theta_b / $c3)**$c4))**$c5;
 
-        } else {
+        } elsif (0){
 
             # Define constants (From Wiengarten 2014)
             my $c1 = 2/9;
@@ -245,6 +252,17 @@ sub gen_fluxon_wsaflow_phys {
 
             my $v0 = 200; #km/s
             my $vm = 675; #km/s
+            our $speed = $v0 + ($vm / (1 + $fss)**$c1) * (1 - $c2 * exp(-($theta_b / $c3)**$c4))**$c5;
+        } else {
+            # Define constants (From McGregor 2011)
+            my $c1 = 2/9;
+            my $c2 = 0.8;
+            my $c3 = 3.8; # phi
+            my $c4 = 3.6; # beta
+            my $c5 = 3.0;
+
+            my $v0 = 200; #km/s
+            my $vm = 750; #km/s
             our $speed = $v0 + ($vm / (1 + $fss)**$c1) * (1 - $c2 * exp(-($theta_b / $c3)**$c4))**$c5;
         }
         our $speed;
@@ -272,76 +290,49 @@ sub gen_fluxon_wsaflow_phys {
         }
         return $y0;
     }
-    my $rn = $r1/$opt{r0};
 
+    # FIND THE SUN SURFACE
+    my $first_ind = 1;
+    my $r_sun = $rn->(($first_ind));
+    my $B_sun = $bmag->(($first_ind));
+    my $A_sun = $A->(($first_ind));
 
-    # print("The height is $height" . "\n");
+    my $phi0 = $ph->(($first_ind));
+    my $sin_theta0 = sin($th)->(($first_ind));
+    my $r00 = $rn->(($first_ind));
 
-    # die;
+    # FIND THE SOURCE SURFACE
+    my $r_ss = 2.5; # Solar radii
+    my $B_ss = interpolate_1d($rn, $bmag, $r_ss);
+    my $A_ss = interpolate_1d($rn, $A, $r_ss);
+    my $f_ss = abs($A_ss / $A_sun) * ($r_sun * $r_sun) / ($r_ss * $r_ss);
 
-    # Find the index of the value closest to 2.5 Rs
-    my $target = 2.5;
-    my $differences = abs($rn - $target);
-    my ($ss_ind) = $differences->minimum_ind;
+    my $f_all= abs($A / $A_sun) * ($r_sun * $r_sun) /   ($rn * $rn);
 
-    # print("Difference = $differences\n");
-    # print("ss_ind = $ss_ind\n");
+    # FIND THE TOP OF THE DOMAIN
+    my $last_ind = $ph->nelem - 1;
+    my $phi1        = $ph->(($last_ind));
+    my $r11         = $rn->(($last_ind));
+    my $sin_theta1  = sin($th)->(($last_ind));
 
-    # Find the expansion factor at that index
-    # my $rss = interpolate_1d($rn, $rn, $target);
-
-
-    my $lowind = 2;
-    my $r_s = $rn->(($lowind));
-    my $b_s = $bmag->(($lowind));
-    my $a_s = $A->(($lowind));
-    my $An = $A/$a_s;
-
-    # my $rss = $r1->(($ss_ind));
-    # my $bss = $bmag->(($ss_ind));
-    # my $ass = $A->(($ss_ind));
-
-    my $rss = $target;
-    my $bss = interpolate_1d($rn, $bmag, $target);
-    my $ass = interpolate_1d($rn, $An, $target);
-    my $fss =   abs($b_s / $bss) * ($r_s * $r_s) / ($rss * $rss);
-    my $fr_all= abs($b_s / $bmag)* ($r_s * $r_s) /  ($rn * $rn);
-
-    my $len = $fr_all->nelem;
-    # $fr_all->index(0) .= $fr_all->index(2);
-    # $fr_all->index(1) .= $fr_all->index(2);
-    # $fr_all->index($len-1) .= $fr_all->index($len-2);
-    # $fr_all->index($len-2) .= $fr_all->index($len-3);
-
-    # Find the distance from the coronal hole boundary at that index
-
-    # my $phi0 = $ph->(($lowind));
-    $len = $ph->nelem - 1;
-    my $phi0 = pdl($ph->at($lowind));
-    my $phi1 = pdl($ph->at($len));
-    my $r00 = pdl($rn->at($lowind));
-    my $r11 = pdl($rn->at($len));
-    my $sin_theta0 = pdl(sin($th)->at($lowind));
-    my $sin_theta1 = pdl(sin($th)->at($len));
     if ($phi0 < 0) {$phi0 += 2 * 3.1415926;}
     if ($phi1 < 0) {$phi1 += 2 * 3.1415926;}
 
+
+    # Find the distance from the coronal hole boundary at that index
     my $distance_degrees = interpolate_2d_lonlat($distance_array_degrees, $phi0, $sin_theta0);
+
 
     # Calculate the wind speed at the given location
     # my $flow_field = wind_speed($An, $distance_degrees);
     # my $speed = interpolate_1d($rn, $flow_field, 5.0);
 
-    my $speed = wind_speed($ass, $distance_degrees);
+    my $speed = wind_speed($f_ss, $distance_degrees);
 
     # write the $fid, $fss, and $distance_degrees to a file
-    open my $fh, '>>', 'seq_ass_theta.csv' or die "Cannot open data.csv: $!";
-    print $fh "$fluxon_id, $ass, $distance_degrees, $speed\n";
-    close $fh;
-
-    # print "\nfss = $fss\n";
-    # print "Distance = $distance_degrees\n";
-    # print "Flow Field = $flow_field\n\n";
+    # open my $fh, '>>', 'fluxon-data/seq_fss_theta_mcg2011.csv' or die "Cannot open data.csv: $!";
+    # print $fh "$fluxon_id, $f_ss, $distance_degrees, $speed\n";
+    # close $fh;
 
     use strict;
     use warnings;
@@ -384,6 +375,8 @@ sub gen_fluxon_wsaflow_phys {
 
     ## Calculate Return Values ##
     my $speed_tall = $ones * $speed;
+    # my $speed_tall = $speed;
+
     # This array is (r, v) in units of (r_sun, km/s)
                                             #To consider plotting:
                                                 # $phi0, $sin_theta0, $distance_degrees, $flow_field
@@ -398,7 +391,7 @@ sub gen_fluxon_wsaflow_phys {
 
     # our $r_v_scaled;
     # This array is (r, fr) in units of (r_sun, unitless)
-    my $r_fr_scaled = pdl($rn, $A);
+    my $r_fr_scaled = pdl($rn, $f_all);
     # print $fr_all;
 
     # Return the constructed arrays

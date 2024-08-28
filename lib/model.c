@@ -100,16 +100,18 @@ static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
    * delete the first of the two.
    */
   for(v=fl->start; v && v->next && v != fl->end; v=v->next) {
-    if( sqrt(cart2_3d(v->x, v->next->x) / (norm2_3d(v->x)+norm2_3d(v->next->x))) < EPSILON ) {
+    // if( sqrt(cart2_3d(v->x, v->next->x) / (norm2_3d(v->x)+norm2_3d(v->next->x))) < EPSILON ) {
+    if( 1 ) {
 
       if(!v->prev && !v->next->next) {
-	fprintf(stderr,"world_check ERROR: fluxon %ld has only two verts (%ld & %ld) and they are at the same location!\n\tCan't delete either without invalidating the fluxon.\n",fl->label, v->label, v->next->label);
-	world_check_code = -1;
-	return 0;
+        fprintf(stderr,"world_check ERROR: a fluxon %ld has only two verts (%ld & %ld) and they are at the same location!\n\tCan't delete either without invalidating the fluxon.\n",fl->label, v->label, v->next->label);
+        world_check_code = -1;
+        return 0;
       }
 
-      fprintf(stderr,"world_check WARNING: fluxon %4ld: verts %4ld (%s) & %4ld (%s) are at the same location - deleted %4ld...\n",fl->label, v->label, (v->prev ? "mid" : "beg"), v->next->label, (v->next->next ? "mid" : "end"), (v->next->next ? v->next->label : v->label));
-      delete_vertex( v->next->next ? v->next : v );
+      fprintf(stderr, "HELLO WORLD!");
+      fprintf(stderr,"world_check WARNING: a fluxon %4ld: verts %4ld (%s) & %4ld (%s) are at the same location - deleted %4ld...\n",fl->label, v->label, (v->prev ? "mid" : "beg"), v->next->label, (v->next->next ? "mid" : "end"), (v->next->next ? v->next->label : v->label));
+      // delete_vertex( v->next->next ? v->next : v );
       if(world_check_code == 0)
 	world_check_code = 1;
       return 0;
@@ -977,16 +979,16 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
 	HULL_VERTEX *hv2 = &(vertices[ (ii+1 == v->neighbors.n) ? 0 : (ii+1) ]);
 	NUM a = norm_2d(hv->bisector);
 	NUM b;
-	
+
 	if(hv->open)
 	  b = 1000*a;
-	else { 
+	else {
 	  b = cart_2d(hv->p,hv->bisector);
 	  if(b>1000*a)
 	    b = 1000*a;
 	}
 	area += a*b/2;
-	
+
 	if(hv2->open)
 	  b = 1000*a;
 	else {
@@ -998,9 +1000,9 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
       }
       v->A = area;
     }
-  
-    
-    if(fl->fc0->world->verbosity >= 3) 
+
+
+    if(fl->fc0->world->verbosity >= 3)
       printf("---forces:\n");
 
     {
@@ -1021,7 +1023,7 @@ NUM fluxon_update_mag(FLUXON *fl, char global, void ((**f_funcs)())) {
   }
 
   fl->end->A = 0;
-  
+
   if(verbosity >= 3) printf("\n");
 
 
@@ -2263,7 +2265,7 @@ HULL_VERTEX *hull_neighbors(VERTEX *v, DUMBLIST *horde) {
   hull_2d_us(voronoi_buf, horde, v);
 
   if(horde->n==0) {
-    fprintf(stderr,"VERTEX %ld: hull_2d gave up (in hull_neighbors)! That's odd....\n",v->label);
+    fprintf(stderr,"VERTEX %ld: hull_2d gave up (in hull_neighbors)! That's very odd....\n",v->label);
     fflush(stderr);
   }
 

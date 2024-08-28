@@ -543,7 +543,7 @@ def plot_wind_map_latitude(configs):
 
     clr = np.log(2*fr1/fr0)**1/2
     clr = np.log(fr1/fr0)
-    sc11 = square_wind_ax.scatter(ph1, th1, c=clr, s = (4*fr1/fr0)**1/2, cmap="YlGnBu", alpha=0.75, label=r"A(21.5Rs)", marker='s', vmin=-1, vmax=3)
+    sc11 = square_wind_ax.scatter(ph1, th1, c=clr, s = (4*fr1/fr0)**1/2, cmap="YlGnBu", alpha=0.75, label=r"A(21.5Rs)", marker='s', vmin=-0.3, vmax=0)
 
     # Add a colorbar
     cbar_ax_lat3 = fig.add_axes([0.91, 0.395, 0.03, 0.137])
@@ -667,8 +667,8 @@ def plot_wind_map_latitude(configs):
     method = configs.get("flow_method")
     filename = f"png_cr{CR}_f{nwant}_op{n_open}_radial_wind_{method}.png"
     main_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/{filename}'
-    wind_file = f'{dat_dir}/batches/{batch}/data/wind/cr{CR}_f{nwant}_op{n_open}_radial_wind_{method}.npy'
-    label_file = f'{dat_dir}/batches/{batch}/data/wind/np_labels.txt'
+    wind_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/cr{CR}_f{nwant}_radial_wind_{method}.npy'
+    label_file = f'{dat_dir}/batches/{batch}/data/cr{CR}/wind/np_labels.txt'
     outer_file = f"{dat_dir}/batches/{batch}/imgs/windmap/{filename}"
 
     if not path.exists(os.path.dirname(main_file)):

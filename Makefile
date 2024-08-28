@@ -12,7 +12,7 @@ everything: paths libbuild install done
 done:
 	@echo "\n\nFlux is now installed!\n\n";
 
-install: libinstall pdlbuild pdltest pdlinstall #install_fluxpipe
+install: libinstall pdlbuild pdltest pdlinstall install_fluxpipe
 
 paths:
 	@/bin/sh -c 'fluxpipe/PREFIX_PATHS.sh';

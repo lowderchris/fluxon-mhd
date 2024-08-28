@@ -74,20 +74,17 @@ sub map_fluxon_b {
         $phi = atan2($y, $x);
 
 
-
-
         # Calculate magnetic field magnitude
         my $bfield = $fluxon->bfield();
         my $bmag = cat squeeze(sqrt($bfield(0,:)**2 + $bfield(1,:)**2 + $bfield(2,:)**2)),
                        squeeze(sqrt($bfield(3,:)**2 + $bfield(4,:)**2 + $bfield(5,:)**2));
 
-
-        if ($end_open) {
+        if (!$end_open) {
             $bmag = $bmag->(-1:0:-1,:);
         }
 
         ## First / last two points without b-field
-        $bmag = $bmag->slice('2:-2,:');
+        # $bmag = $bmag->slice('2:-2,:');
 
         # for my $id (0..5) {
         #     # printf "\n bmag: %6f,", $bmag($id)->sclr;
@@ -97,9 +94,9 @@ sub map_fluxon_b {
         # }
 
 
-        my $magnetic_beginning = squeeze($bmag(0,1));
+        my $magnetic_beginning = squeeze($bmag(1,1));
         my $magnetic_middle = squeeze($bmag($bmag->shape->(0)/2,1));
-        my $magnetic_ending = squeeze($bmag(-1,1));
+        my $magnetic_ending = squeeze($bmag(-2,1));
 
         # Append values to storage arrays
         push(@fluxon_positions, $fluxon_id);

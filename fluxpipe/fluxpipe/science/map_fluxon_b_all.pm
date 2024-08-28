@@ -15,6 +15,9 @@ Given a world and list of fluxons, generates a mapping of the representative mag
 =cut
 use PDL::Options;
 
+
+
+
 sub map_fluxon_b_all {
     my $output_filename = shift;
     my $fluxon_list = shift;
@@ -25,7 +28,7 @@ sub map_fluxon_b_all {
 
     # Open an output file
     open(my $fh, '>', $output_filename) or die "Could not open file '$output_filename': $!";
-    printf $fh "# fnum \t\t x \t\t y \t\t z \t\t\t radius \t\t theta \t\t phi \t\t A \t\t\t b_mag \t\t b_mag2 \t\t\t b_x \t\t b_y \t\t b_z\n";
+    printf $fh "fnum \t\t x \t\t y \t\t z \t\t\t radius \t\t theta \t\t phi \t\t A \t\t\t b_mag \t\t b_mag2 \t\t\t b_x \t\t b_y \t\t b_z\n";
 
     # Loop through open fluxons and generate magnetic field profiles
     for my $fluxon_id (0..scalar(@fluxons)-1) {
@@ -43,7 +46,7 @@ sub map_fluxon_b_all {
         my $x, my $y, my $z;
         my $radius, my $radius_vec;
         my $theta, my $phi;
-        my $bmag, my $bmag_2;
+        my $bmag_coord, my $bmag_value;
         my $magnetic_area;
 
         # Extract coordinates
@@ -65,29 +68,36 @@ sub map_fluxon_b_all {
         $theta = acos($z/$radius_vec*$solar_radius);
         $phi = atan2($y, $x);
 
-
         # Calculate magnetic field magnitude
         my $bfield = $fluxon->bfield;
-        $bmag = squeeze(sqrt($bfield(0,:)**2 + $bfield(1,:)**2 + $bfield(2,:)**2));
-        # $bmag = cat squeeze(sqrt($bfield(0,:)**2 + $bfield(1,:)**2 + $bfield(2,:)**2)),
-        $bmag_2 = squeeze(sqrt($bfield(3,:)**2 + $bfield(4,:)**2 + $bfield(5,:)**2));
+        $bmag_coord = squeeze(sqrt($bfield(0,:)**2 + $bfield(1,:)**2 + $bfield(2,:)**2));
+        $bmag_value = squeeze(sqrt($bfield(3,:)**2 + $bfield(4,:)**2 + $bfield(5,:)**2));
 
-
-        if ($end_open) {
-            $bmag = $bmag->(-1:0:-1,:);
-            $bmag_2 = $bmag_2->(-1:0:-1,:);
+        if (!$end_open) {
+            $bmag_coord = $bmag_coord->(-1:0:-1,:);
+            $bmag_value = $bmag_value->(-1:0:-1,:);
         }
+
+        # Fix the bottom magnetic field vertex
+        $bmag_value->((1)) .= $bmag_value->((2)) * $magnetic_area->((2)) / $magnetic_area->((1));
+        $bmag_value->((0)) .= $bmag_value->((1)) * $magnetic_area->((1)) / $magnetic_area->((0));
+
+        # print("\n\nmap_fluxon_b_all.pm: A:\n");
+        # print $magnetic_area . "\n\n";
+        # print "Bmag2:" . $bmag_value;
+        # print "\n";
+        # <STDIN>;
 
         for my $i (0..$radius->getdim(0)-1) {
             printf $fh "%05d %.8f %.8f %.8f %.8e %.8f %.8f %.8e %.8e %.8e %.8e %.8e %.8e\n", $fluxon_id,
             $x($i)->sclr, $y($i)->sclr, $z($i)->sclr,
             $radius($i)->sclr, $theta($i)->sclr, $phi($i)->sclr,
-            $magnetic_area($i)->sclr, $bmag($i)->sclr, $bmag_2($i)->sclr,
+            $magnetic_area($i)->sclr, $bmag_coord($i)->sclr, $bmag_value($i)->sclr,
             $bfield(0,$i)->sclr, $bfield(1,$i)->sclr, $bfield(2,$i)->sclr;
 
         }
-    }
 
+    }
     # Close output file
     close $fh;
 

@@ -18,16 +18,16 @@ Given a world and list of fluxons, generates a mapping of the representative exp
 use PDL::Options;
 
 sub map_fluxon_fr {
-    my $fn = shift;
+    my $file_handle = shift;
     my $fluxons = shift;
     my @fluxons = @{$fluxons};
 
     die "I need something to work on!" if scalar(@fluxons)<0;
 
     ## Open an output file
-    open(my $fh, '>', $fn) or die "Could not open file '$fn': $!";
+    open(my $fh, '>', $file_handle) or die "Could not open file '$file_handle': $!";
 
-    ## Loop through open fluxons and generate wind profiles
+    ## Loop through open fluxons and generate expansion profiles
     for my $fid(0..scalar(@fluxons)-1){
 
         my $me = $fluxons[$fid];
@@ -48,7 +48,7 @@ sub map_fluxon_fr {
         my $fr;
 
         ## Grab coordinates
-        if($en_open) {
+        if(1) { #$en_open) {
             $x = squeeze($me->dump_vecs->(0));
             $y = squeeze($me->dump_vecs->(1));
             $z = squeeze($me->dump_vecs->(2));
@@ -70,9 +70,15 @@ sub map_fluxon_fr {
             $A(0) .= $A(1);
         }
 
+        ## Calculate the expansion factor
+        $fr = $A / $A->((1)) * ($r->((1))) * ($r->((1))) / $r / $r;
+
+
         ## Write to file
         for my $i(0..$r->getdim(0)-1){
-            printf $fh "%05d %.8f %.8f %.8f %.8e %.8f %.8f %.8e\n", $fid, $x($i)->sclr, $y($i)->sclr, $z($i)->sclr, $r($i)->sclr, $th($i)->sclr, $ph($i)->sclr, $A($i)->sclr;
+            printf $fh "%05d %.8f %.8f %.8f %.8e %.8f %.8f %.8e %.8e\n",
+            $fid, $x($i)->sclr, $y($i)->sclr, $z($i)->sclr, $r($i)->sclr, $th($i)->sclr, $ph($i)->sclr,
+            $A($i)->sclr, $fr($i)->sclr;
         }
     }
 

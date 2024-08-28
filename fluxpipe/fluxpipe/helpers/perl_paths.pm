@@ -47,7 +47,7 @@ fix_envs();
 make_perl_incs();
 print "->Added flux directories to INC arrays<-\n";
 
-my $do_print = 0;
+my $do_print = 1;
 if ($do_print) {
     print "\n\nINC has:\n ";
     print map { " $_\n" } @INC;

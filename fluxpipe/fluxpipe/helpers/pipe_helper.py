@@ -172,6 +172,7 @@ def assimilate_args(configs, args=None):
             if value is not None:
                 configs[arg] = value
 
+
 def compute_configs(the_config):
     the_config['abs_rc_path']   = os.path.expanduser(the_config['rc_path'])
     the_config['abs_fl_mhdlib']   = os.path.expanduser(the_config['fl_mhdlib'])
@@ -186,12 +187,21 @@ def compute_configs(the_config):
         (start, stop, step) = ast.literal_eval(the_config["rotations"])
         the_config["rotations"] = list(np.arange(start, stop, step))
 
+    if the_config["flow_method"][0] == "[":
+        the_config["flow_method"]     = the_config["flow_method"].strip('[]').split(', ')
+    else:
+        the_config["flow_method"] = [the_config["flow_method"]]
+
     the_config["fluxon_count"]  = ast.literal_eval(the_config["fluxon_count"])
     the_config["adapts"]        = ast.literal_eval(the_config["adapts"])
 
     the_config['cr'] = the_config['rotations'][0]
     the_config['nwant'] = the_config['fluxon_count'][0]
-    the_config["n_jobs"] = str(len(the_config["rotations"]) * len(the_config["fluxon_count"])*len(the_config["adapts"]))
+    the_config["n_jobs"] = str(len(the_config["rotations"]) *
+                                len(the_config["fluxon_count"])*
+                                len(the_config["adapts"])*
+                                len(the_config["flow_method"])
+    )
 import os
 
 def update_magdir_paths(the_config):
@@ -1503,6 +1513,8 @@ def load_fits_magnetogram(datdir=None, batch=None, bo=2, bn=2, ret_all=False, fn
     brdat = hdulist[0].data
     header= hdulist[0].header
     brdat = brdat - np.mean(brdat)
+    header["CUNIT2"] = "rad"
+
     if ret_all:
         return brdat, header
     else:

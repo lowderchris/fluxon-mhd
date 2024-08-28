@@ -1,6 +1,6 @@
 =head1 NAME
-
 Fluxon Flow Mapper - Parallelized Solar Wind Flow Mapping Along Fluxon Structures
+
 
 =cut
 
@@ -22,7 +22,11 @@ use gen_fluxon_tflow qw(gen_fluxon_tflow);
 use gen_fluxon_schonflow qw(gen_fluxon_schonflow);
 use gen_fluxon_wsaflow qw(gen_fluxon_wsaflow do_image_plot);
 use gen_fluxon_cranmerflow qw(gen_fluxon_cranmerflow);
+use gen_fluxon_ghostsflow qw(gen_fluxon_ghostsflow);
+use gen_fluxon_tempestflow qw(gen_fluxon_tempestflow);
+use make_tempest_file qw(make_tempest_file);
 use pipe_helper qw(configurations);
+use PDL::Graphics::Gnuplot;
 
 
 my %configs = configurations();
@@ -55,10 +59,53 @@ Given a world and list of fluxons, generates a mapping of the solar wind flow al
 
 =cut
 
+# Subroutine to save full velocity profiles
+sub save_full_velocity_profiles {
+    my ($results, $file_path) = @_;
+
+    # Ensure results are sorted by fluxon_position
+    my @sorted_results = sort { $a->{fluxon_position} <=> $b->{fluxon_position} } @$results;
+
+    open(my $fh, '>', $file_path) or die "Could not open file '$file_path' $!";
+    print $fh "fluxon_position,radius,velocity\n";
+
+    foreach my $result (@sorted_results) {
+        my $fluxon_id = $result->{fluxon_position}->sclr;
+        my @r = listy($result->{r});  # Convert PDL object to Perl array
+        my @vr = listy($result->{vr});  # Convert PDL object to Perl array
+
+        # Debug: Print to ensure arrays are being correctly accessed
+        if (scalar(@r) != scalar(@vr)) {
+            warn "Mismatched array lengths for fluxon ID $fluxon_id: r length=" . scalar(@r) . ", vr length=" . scalar(@vr);
+            next;
+        }
+
+
+        for my $i (0 .. $#r) {
+            print $fh join(",", $fluxon_id, $r[$i], $vr[$i]), "\n";
+        }
+    }
+
+    close $fh;
+
+
+}
+
+sub listy {
+    my $pdl_obj = shift;
+    return $pdl_obj->list;  # Convert PDL object to Perl array
+}
+
+
+
 sub map_fluxon_flow_parallel_master {
     my $output_file_name = shift;
     my $fluxon_list = shift;
-    my $distance_array_degrees = shift;
+    # my $distance_array_degrees = shift;
+    my $flow_method = shift;
+    my $CR = shift;
+    my $n_want = shift;
+
     my @fluxons = @{$fluxon_list};
     make_path($temp_dir) unless -d $temp_dir;
     my $max_processes = shift || $concurrency;    # Set the number of parallel processes
@@ -84,6 +131,8 @@ sub map_fluxon_flow_parallel_master {
     use PDL;
     use PDL::Primitive;
     use PDL::Func;
+
+
 
 
     sub interpolate_2d_lonlat {
@@ -121,6 +170,34 @@ sub map_fluxon_flow_parallel_master {
         }
     }
 
+    for my $fluxon_index (0..scalar(@fluxons)-1) {
+        my $me = $fluxons[$fluxon_index];
+
+        # Check for open fieldline, and skip if not
+        my $start_open = ($me->{fc_start}->{label} == -1);
+        my $end_open = ($me->{fc_end}->{label} == -2);
+
+        # Calculate array of sphiserical coordinate positions and areas along the fluxon
+        # Work along the correct direction depending on which end is open
+        if($end_open) {
+            my $x = squeeze($me->dump_vecs->(0));
+            my $y = squeeze($me->dump_vecs->(1));
+            my $z = squeeze($me->dump_vecs->(2));
+            our $r1 = ($x**2 + $y**2 + $z**2)->sqrt * 696e6,;
+            our $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
+            our $bmag = pdl(map {$_->{b_mag}} ($me->vertices));
+
+        } else {
+            my $x = squeeze($me->dump_vecs->(0,-1:0:-1));
+            my $y = squeeze($me->dump_vecs->(1,-1:0:-1));
+            my $z = squeeze($me->dump_vecs->(2,-1:0:-1));
+            our $r1 = ($x**2 + $y**2 + $z**2)->sqrt * 696e6,;
+            our $r = 0.5 * $r1->range([[0],[1]],[$r1->dim(0)],'e')->sumover;
+            our $bmag = pdl(map {$_->{b_mag}} ($me->vertices))->(-1:0:-1);
+        }
+
+    }
+
     my $iteration_count = -1;
     my $fork_manager = Parallel::ForkManager->new($max_processes, $temp_dir);
 
@@ -145,7 +222,7 @@ sub map_fluxon_flow_parallel_master {
                 my $rounded_remaining_time = rint($time_remaining * 10) / 10;
                 my $rounded_remaining_minutes = rint($rounded_remaining_time / 6) / 10;
 
-                print "\r", "\t\t\tCalculated fluxons: ", $highest_fluxon_done, ' of ', $num_open_fluxons, ", ", $rounded_elapsed_time, "(s) elapsed, ", $rounded_remaining_time, "(s) [$rounded_remaining_minutes mins] remaining......";
+                print "\r", "\t\t\tCalculated $flow_method: ", $highest_fluxon_done, ' of ', $num_open_fluxons, ", ", $rounded_elapsed_time, "(s) elapsed, ", $rounded_remaining_time, "(s) [$rounded_remaining_minutes mins] remaining......";
             }
         }
     });
@@ -165,11 +242,44 @@ sub map_fluxon_flow_parallel_master {
     }
 
     my %configs = configurations();
-    my $flow_method = $configs{flow_method} || "parker";
 
     print "\t\tThe flow method is ''$flow_method.''\n\n\n";
 
 
+    # Precomputations
+
+    if ($flow_method eq "tempest"){
+        # # Make the tempest file
+        my $fmap_command =
+        "$configs{python_dir} fluxon-mhd/fluxpipe/fluxpipe/science/tempest.py --cr $CR --nwant $n_want";
+        # print "\n\n$fmap_command\n\n";
+        system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
+    } elsif ($flow_method eq "cranmer"){
+        my $fmap_command =
+        "$configs{python_dir} fluxon-mhd/fluxpipe/fluxpipe/science/cranmer_wind.py --cr $CR --nwant $n_want";
+        # print "\n\n$fmap_command\n\n";
+        system($fmap_command) == 0 or ( die "Python script returned error $?", exit );
+
+    } elsif ($flow_method eq "wsa"){
+        # run the python file footpoint_distances.py
+        system("$configs{python_dir}  fluxon-mhd/fluxpipe/fluxpipe/science/footpoint_distances_2.py --cr $CR");
+        my $distance_file = $configs{data_dir} . "/batches/" . $configs{batch_name} . "/data/cr" . $CR . "/floc/distances.csv";
+        open my $fh, '<', $distance_file or die "Could not open '$distance_file': $!";
+        # Read the file line by line and split each line
+        my @rows;
+        while (my $line = <$fh>) {
+            chomp $line;  # Remove newline character
+            my @values = split /, /, $line;  # Split the line into values
+            push @rows, pdl(@values);  # Convert the list of values into a PDL piddle and store it
+        }
+        close $fh;
+
+        # Combine all rows into a 2D PDL array
+        our $distance_array_degrees = cat(@rows);
+    }
+
+
+    # Loop through each fluxon
     for my $fluxon_id (0..$max_fluxon_id - 1) {
     # for my $fluxon_id (12..13 - 1) {
         $fork_manager->start and next;
@@ -178,48 +288,125 @@ sub map_fluxon_flow_parallel_master {
         my ($r_vr_scaled, $r_fr_scaled, $thetas, $phis);
 
         my $dist_interp;
+
         # Which method should we use to calculate the flow?
         if ($flow_method eq "wsa"){
+            our $distance_array_degrees;
             ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_wsaflow($fluxon, $distance_array_degrees, $fluxon_id);
+            our $vr = $r_vr_scaled(:, 1);
+            our $fr = $r_fr_scaled(:, 1);
+            our $rn = $r_fr_scaled(:, 0);
+
         } elsif ($flow_method eq "parker"){
             ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_tflow($fluxon);
+            our $vr = $r_vr_scaled(1, :)->transpose;
+            our $rn = $r_vr_scaled(0, :)->transpose;
+            our $fr = $r_fr_scaled(:, 1);
+            our $fn = $r_fr_scaled(:, 0);
+
         } elsif ($flow_method eq "schonfeld"){
             ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_schonflow($fluxon);
+
         } elsif ($flow_method eq "psw"){
             ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_pswflow($fluxon);
+
         } elsif ($flow_method eq "tempest"){
-            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_tempestflow($fluxon);
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_tempestflow($fluxon, $fluxon_id, $output_file_name);
+            our $vr = $r_vr_scaled(:, 1);
+            our $fr = $r_fr_scaled(:, 1);
+            our $rn = $r_fr_scaled(:, 0);
+
         } elsif ($flow_method eq "cranmer"){
-            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_cranmerflow($fluxon);
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_cranmerflow($fluxon, $fluxon_id);
+            our $vr = $r_vr_scaled(:, 1);
+            our $fr = $r_fr_scaled(:, 1);
+            our $rn = $r_fr_scaled(:, 0);
+
+        } elsif ($flow_method eq "ghosts") {
+            ($r_vr_scaled, $r_fr_scaled, $thetas, $phis) = gen_fluxon_ghostsflow($fluxon, $fluxon_id);
+            our $vr = $r_vr_scaled(:, 1);
+            our $fr = $r_fr_scaled(:, 1);
+            our $rn = $r_fr_scaled(:, 0);
         } else {
             die "Invalid flow method: $flow_method";
         }
 
+        our $vr;
+        our $fr;
+        our $rn;
+        my $zn = $rn - 1;
+        my $ones = ones($rn->dims);
+
+        my $bot_ind = 1;
+        my $top_ind = -2;
+
+
+        if (0) {
+            my $plot = PDL::Graphics::Gnuplot->new(persist => 1);
+            $plot->plot({title=>"Fluxon #$fluxon_id", logscale=>'xy', xlabel=>'z = r/R - 1', font=>'48'}, {legend=>"vr"},$zn, $vr);
+            $plot->replot({legend=>"vr", with =>'points'},$zn, $vr);
+
+
+            $plot->replot({legend=>"fr"},$zn, $fr);
+            $plot->replot({legend=>"fr", with=>"points"},$zn, $fr);
+
+            $plot->replot({legend=>"theta"},$zn, $thetas);
+            $plot->replot({legend=>"theta", with=>"points"},$zn, $thetas);
+
+            $plot->replot({legend=>"phi"},$zn, $phis);
+            $plot->replot({legend=>"phi", with=>"points"},$zn, $phis);
+
+            $plot->replot({legend=>"z"},$zn, $zn);
+            $plot->replot({legend=>"z", with=>"points"},$zn, $zn);
+
+            my $z0 = $zn(0);
+
+            print "\nZ0 = $z0\n\n";
+
+            <STDIN>;
+        }
 
         my $result = {
             fluxon_position  => pdl($fluxon_id),
 
+            r => $rn,
+            vr => $vr,
+
             phi_base    => squeeze(pdl($phis(0)    )),
             theta_base  => squeeze(pdl($thetas(0)  )),
-            phi_end     => squeeze(pdl($phis(-1)   )),
-            theta_end   => squeeze(pdl($thetas(-1) )),
+            phi_end     => squeeze(pdl($phis($top_ind)   )),
+            theta_end   => squeeze(pdl($thetas($top_ind) )),
 
-            radial_velocity_base    => squeeze($r_vr_scaled(1, 0   )),
-            radial_velocity_end     => squeeze($r_vr_scaled(1, -1  )),
+            radial_velocity_base    => squeeze(pdl($vr($bot_ind))),
+            radial_velocity_end     => squeeze(pdl($vr($top_ind))),
 
-            # flux_expansion_base     => squeeze($r_fr_scaled(1, 1   )),
-            # flux_expansion_end      => squeeze($r_fr_scaled(-2, 1  )),
-            # flux_expansion_middle   => squeeze($r_fr_scaled(-1, 1  )),
-            flux_expansion_base     => squeeze($r_fr_scaled(1, 0   )),
-            flux_expansion_end      => squeeze($r_fr_scaled(1, -1  )),
-            # flux_expansion_middle   => squeeze($r_fr_scaled(1, 1  )),
+            flux_expansion_base     => squeeze(pdl($fr($bot_ind))),
+            flux_expansion_end      => squeeze(pdl($fr($top_ind))),
         };
 
+        if (0) {
+            foreach my $key (keys %$result) {
+                my $value = $result->{$key};
+                print "$key: $value\n";
+            }
+        print "\n\n";
+        }
 
         $fork_manager->finish(0, $result);
     }
 
-    $fork_manager->wait_all_children;
+        $fork_manager->wait_all_children;
+
+    # Extract the directory part of $output_file_name
+    my ($output_filename, $output_dir) = fileparse($output_file_name);
+
+    # Create a new directory for full velocity profile results within the output directory
+    my $new_results_dir = File::Spec->catdir($output_dir, "full_velocity_profiles");
+    make_path($new_results_dir) unless -d $new_results_dir;
+
+    # Modify the filename to indicate it contains full velocity profiles
+    my $results_file = File::Spec->catfile($new_results_dir, "results_${flow_method}_full_velocity.dat");
+    save_full_velocity_profiles(\@results, $results_file);
 
     my $after_time = clock_gettime();
     my $elapsed_time = $after_time - $before_time;

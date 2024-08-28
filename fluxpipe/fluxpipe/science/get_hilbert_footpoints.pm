@@ -141,15 +141,14 @@ sub get_hilbert_footpoints {
 
         # Define tolerance and initial step size
         my $tolerance = $n_fluxons_wanted * 0.05;    # 5% tolerance
-        my $step      = $n_fluxons_wanted *
-          0.1;    # Initial step size as 10% of $n_fluxons_wanted
+        my $step      = $n_fluxons_wanted * 0.1;    # Initial step size as 10% of $n_fluxons_wanted
 
         # Initialize variables
         my $width       = 100;
         my $most        = $n_fluxons_wanted + $width;
         my $least       = $n_fluxons_wanted - $width;
         my $iterate     = 1;
-        my $try_fluxons = int( $n_fluxons_wanted * 2.0 );
+        my $try_fluxons = int( $n_fluxons_wanted * 1.5 );
         my $count       = 0;
         my $maxreps     = 30;
 

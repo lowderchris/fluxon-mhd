@@ -84,11 +84,12 @@ def plot_bmag(configs):
 
     sc00 = ax0.scatter(ph0, th0, c=np.abs(br0), s = np.abs(b0), cmap="winter",
                     alpha=0.75, label=r"B(1.0Rs)")
-    sc01 = ax0.scatter(ph1, th1, c=np.abs(br1), s = np.abs(b1), cmap="autumn",
-                    alpha=0.75, label=r"B(21.5Rs)", marker='s')
+    sc01 = ax0.scatter(ph1, th1, c=np.abs(br1), cmap="autumn",
+                    alpha=0.75, label=r"B(21.5Rs)", marker='s', vmax=np.median(br1)+2*np.std(br1))
+
     sc10 = ax1.scatter(ph0, th0, c=ar0, s = a0, cmap="winter",
                     alpha=0.75, label=r"A(1.0Rs)")
-    sc11 = ax1.scatter(ph1, th1, c=ar1, s = a1, cmap="autumn",
+    sc11 = ax1.scatter(ph1, th1, c=ar1, cmap="autumn",
                     alpha=0.75, label=r"A(21.5Rs)", marker='s')
 
     cbar01 = fig.colorbar(sc01, ax=ax0)

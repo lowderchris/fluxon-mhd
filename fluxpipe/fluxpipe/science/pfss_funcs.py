@@ -110,13 +110,20 @@ def load_and_condition_fits_file(fname, datdir, adapt):
     brdat = hdu_0.data
     header = hdu_0.header
 
+    header["CUNIT2"] = "rad"
+
+    # u.def_unit("sin", u.dimensionless_angles)
+    # u.add_enabled_units("sin")
 
     brdat = brdat - np.mean(brdat)
     radial_magnetogram = sunpy.map.Map(brdat, header)
 
+
+
     radial_magnetogram.meta['ctype1'] = 'CRLN-CEA'
     radial_magnetogram.meta['ctype2'] = 'CRLT-CEA'
     radial_magnetogram.meta['naxis'] = 2
+    # radial_magnetogram.meta['CUNIT2'] = 'Sine Latitude'
 
     radial_magnetogram.meta['crlt_obs'] = 0.0
     radial_magnetogram.meta['crln_obs'] = 0.0
@@ -467,7 +474,7 @@ def trace_lines(output, f_vars, open_path, closed_path, adapt):
     fl_closed = np.zeros([1, 5])
     flnum_closed = 0
 
-    r0 = 1.01 * const.R_sun
+    r0 = 1.001 * const.R_sun
     tracer = tracing.PythonTracer()
     # tracer = tracing.FortranTracer(max_steps=3000)
 
@@ -504,7 +511,7 @@ def trace_lines(output, f_vars, open_path, closed_path, adapt):
     return fl_open, fl_closed, skip_num, timeout_num, flnum_open, flnum_closed
 
 
-@timeout_decorator.timeout(5)
+# @timeout_decorator.timeout(5)
 def trace_each_single(coords, i, output, fl_open, fl_closed, flnum_open, flnum_closed, tracer, r0, f_sgn, adapt):
     # import pdb; pdb.set_trace()
     """Fieldline tracer for each fieldline
@@ -553,10 +560,10 @@ def trace_each_single(coords, i, output, fl_open, fl_closed, flnum_open, flnum_c
         this_flat = np.deg2rad(this_flat)
 
     coord_frame = output.coordinate_frame
-    # THE ARCSIN IS A TEST
+
     x0 = SkyCoord(this_flon * u.rad, np.arcsin(this_flat)
                   * u.rad, r0, frame=coord_frame)
-
+    first = True
     fl = output.trace(tracer, x0)
     fl = fl.field_lines[0]
     if fl.is_open:
@@ -569,16 +576,59 @@ def trace_each_single(coords, i, output, fl_open, fl_closed, flnum_open, flnum_c
         if fl_pol == -1:
             (fl_lats, fl_lons, fl_rads) = (
                 fl_lats[::-1], fl_lons[::-1], fl_rads[::-1])
-        fl_lats = np.concatenate((fl_lats, fl_lats[-1]*np.ones(10)), axis=0)
-        fl_lons = np.concatenate((fl_lons, fl_lons[-1]*np.ones(10)), axis=0)
-        fl_rads = np.concatenate((fl_rads, np.linspace(2.5, 22, 10)), axis=0)
+        if False:
+            # extend down to 1.001 R_sun
+            extend_num0 = 0
+            small_exponent = -4
+            lat_cat = fl_lats[0]*np.ones(extend_num0)
+            lon_cat = fl_lons[0]*np.ones(extend_num0)
+
+            (fl_lats, fl_lons, fl_rads) = (
+                fl_lats[extend_num0::], fl_lons[extend_num0::], fl_rads[extend_num0::])
+
+            lower = np.logspace(small_exponent, np.log10(fl_rads[0]-1), extend_num0, endpoint=False) + 1
+            fl_lats = np.concatenate((lat_cat, fl_lats), axis=0)
+            fl_lons = np.concatenate((lon_cat, fl_lons), axis=0)
+            fl_rads = np.concatenate((lower, fl_rads), axis=0)
+            # assert False
+
+        if True:
+            #extend up to 200 R_sun logarithmically
+            extend_height = np.amax(fl_rads)
+            extend_height2 = 21.5
+            extend_num2 = 10
+            fl_lats = np.concatenate((fl_lats, fl_lats[-1]*np.ones(extend_num2)), axis=0)
+            fl_lons = np.concatenate((fl_lons, fl_lons[-1]*np.ones(extend_num2)), axis=0)
+            higher2 = np.logspace(np.log10(extend_height), np.log10(extend_height2), extend_num2+1)[1:]
+            fl_rads = np.concatenate((fl_rads, higher2), axis=0)
+
+        fl_rads = np.round(fl_rads, 8)
+
+        # Boolean array to mark unique elements
+        unique_mask = np.concatenate(([True], fl_rads[1:] != fl_rads[:-1]))
+
+        # Apply mask to filter out duplicates
+        fl_rads = fl_rads[unique_mask]
+        fl_lats = fl_lats[unique_mask]
+        fl_lons = fl_lons[unique_mask]
+
+        # print("Filtered fl_rads:", fl_rads.T)
+        # print("Filtered fl_lats:", fl_lats.T)
+        # print("Filtered fl_lons:", fl_lons.T)
+        # import pdb; pdb.set_trace()
+
+        if first:
+            a=[print(x,"  \t",y,"\t",z) for x,y,z in zip(fl_rads, fl_lats, fl_lons)]
+            first = False
+            # 1/0
+
+
         prev_rad = 0.
         for j in np.arange(0, len(fl_lats)):
             # Output flnum, polarity, latitude, longitude, radius
-            if np.abs(fl_rads[j] - prev_rad) > 0.1:
-                fl_open = np.append(
-                    fl_open, [[flnum_open, f_sgn[i], fl_lats[j], fl_lons[j], fl_rads[j]]], axis=0)
-                prev_rad = fl_rads[j]
+            # if np.abs(fl_rads[j] - prev_rad) > 0.00001:
+            fl_open = np.append(fl_open, [[flnum_open, f_sgn[i], fl_lats[j], fl_lons[j], fl_rads[j]]], axis=0)
+            prev_rad = fl_rads[j]
         flnum_open += 1
     else:
         fl = fl.coords.spherical
@@ -605,7 +655,7 @@ import timeout_decorator
 from functools import partial
 
 # @timeout_decorator.timeout(5)
-def trace_each(coords, r0, adapt, output):
+def trace_each_OLD(coords, r0, adapt, output):
     i, this_flon, this_flat, f_sgn = coords
     fl_open = []
     fl_closed = []
@@ -629,9 +679,13 @@ def trace_each(coords, r0, adapt, output):
         if fl_pol == -1:
             fl_lats, fl_lons, fl_rads = fl_lats[::-1], fl_lons[::-1], fl_rads[::-1]
 
+
+        # Extend up to 21.5 R_sun
+        extend_height = 22
         fl_lats = np.concatenate((fl_lats, fl_lats[-1]*np.ones(10)), axis=0)
         fl_lons = np.concatenate((fl_lons, fl_lons[-1]*np.ones(10)), axis=0)
-        fl_rads = np.concatenate((fl_rads, np.linspace(2.5, 22, 10)), axis=0)
+        fl_rads = np.concatenate((fl_rads, np.linspace(2.5, extend_height, 10)), axis=0)
+
         prev_rad = 0.
         for j in np.arange(0, len(fl_lats)):
             if np.abs(fl_rads[j] - prev_rad) > 0.1:
@@ -656,7 +710,7 @@ def trace_each(coords, r0, adapt, output):
         flnum_closed += 1
     return fl_open, fl_closed, flnum_open, flnum_closed
 
-def trace_all(field_lines):
+def trace_all_OLD(field_lines):
     # i, this_flon, this_flat, f_sgn = coords
     fl_open = []
     fl_closed = []
@@ -708,7 +762,7 @@ def trace_all(field_lines):
     return fl_open, fl_closed, flnum_open, flnum_closed
 
 
-def trace_lines_parallel(pfss_output, f_vars, open_path, closed_path, adapt):
+def trace_lines_parallel_OLD(pfss_output, f_vars, open_path, closed_path, adapt):
     (f_lon, f_lat, f_sgn) = f_vars
 
     fl_open = []
