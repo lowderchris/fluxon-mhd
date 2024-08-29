@@ -155,10 +155,6 @@ do {
     $try++;
 } until (($done3pt && $done2pt) || $try==1E4);
 
-
-done_testing();
-
-
 SKIP: {
           skip 'Did not find a location that gave 3 simplex points', 1 unless $done3pt;
           ok(!all($coord3pt==$out_loc3),'trusting interpolation when only 3 simplex values found gives an incorrect interpolant');
