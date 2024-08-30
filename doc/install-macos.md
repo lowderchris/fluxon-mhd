@@ -1,10 +1,12 @@
 # macOS Installation
 
-To install the fluxon-mhd modeling framework, there are three main requirements - a perl installation with libraries, the perl data language toolset, and finally compiling the fluxon-mhd software itself. Some of the background perl installation requires root / admin access, but beyond that packages can be installed locally for ease of editing and recompilation.
+To install the fluxon-mhd modeling framework, there are three main requirements - a perl installation with libraries, the perl data language toolset, and finally compiling the fluxon-mhd software itself.
+
+Homebrew and the base perl installation will be installed as a user that has full system access, with further packages and flux itself installed locally. This provides both a buffer if the system perl is updated, and also allows regular access for users who do not have regular administrative privileges.
 
 ## Perl installation
 
-First, install the homebrew package, which will require sudo access.
+First, install the homebrew package, which will require being logged in as an admin user. Follow through the installation process.
 ```shell
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
@@ -38,7 +40,7 @@ echo 'eval `perl -I ~/Library/perl5/lib/perl5 -Mlocal::lib=~/Library/perl5`' >> 
 
 Write the following to ~/.perldlrc, making sure to reference the appropriate location local perl libraries will be installed to.
 ```shell
-push(@INC, "/Users/username/Library/perl5/lib/perl5/5.38.2");
+push(@INC, "/Users/<USERNAME>/Library/perl5/lib/perl5/5.38.2");
 
 require('PDL/default.perldlrc');
 
@@ -68,11 +70,14 @@ cpanm Term::ReadKey
 
 Finally, for the first install, and for future recompilations, set the perl and flux prefix paths.
 ```shell
-export PL_PREFIX='/Users/username/Library/perl5'
-export FL_PREFIX='/Users/username/Library/flux'
+export PL_PREFIX='/Users/<USERNAME>/Library/perl5'
+export FL_PREFIX='/Users/<USERNAME>/Library/flux'
 ```
 
 If you haven't already, clone the fluxon-mhd repository and then make everything from the base directory.
 ```shell
+git clone https://github.com/lowderchris/fluxon-mhd.git
+cd fluxon-mhd
+
 make everything
 ```
