@@ -2,7 +2,7 @@
 
 To install the fluxon-mhd modeling framework, there are three main requirements - a perl installation with libraries, the perl data language toolset, and finally compiling the fluxon-mhd software itself.
 
-Homebrew and the base perl installation will be installed as a user that has full system access, with further packages and flux itself installed locally. This provides both a buffer if the system perl is updated, and also allows regular access for users who do not have regular administrative privileges.
+Homebrew and the base perl installation will be installed as a user that has full system access, with further packages and flux itself installed locally. This provides both a buffer if the system perl is updated, and also allows regular access for users who do not have regular administrative privileges. Note that if you have an admin user account, you can also install everything within the homebrew perl library directory, updating paths below accordingly.
 
 ## Perl installation
 
@@ -29,13 +29,14 @@ brew install fftw
 
 The final suggested step as an admin user is to setup the cpanminus tool for installing perl packages.
 ```shell
-curl -L https://cpanmin.us | perl - --sudo App::cpanminus
+brew install cpanminus
 ```
 
 Set perl to install packages to a local library directory. Here we've chosen to use a perl5 directory inside the ~/Library folder, but this could be anywhere your user has permissions. This is then stored to automatically update in a .zprofile startup script for Zsh - modify if using a different shell.
 ```shell
 PERL_MM_OPT="INSTALL_BASE=~/Library/perl5" cpanm --local-lib=~/Library/perl5 local::lib
 echo 'eval `perl -I ~/Library/perl5/lib/perl5 -Mlocal::lib=~/Library/perl5`' >> ~/.zprofile
+source ~/.zprofile
 ```
 
 Write the following to ~/.perldlrc, making sure to reference the appropriate location local perl libraries will be installed to.
