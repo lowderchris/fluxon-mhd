@@ -10,6 +10,8 @@ export FL_MHDLIB="$HOME/flux"
 export PROFILE_FILE="$HOME/.zshrc"
 export DESIRED_PERL_VERSION="perl-5.36.0"
 
+export TARGET_LIB_DIR=\"$PL_PREFIX/lib/perl5\
+
 # ==============================================================================
 # Save environment variables to the profile file if they have changed
 # ==============================================================================
@@ -18,12 +20,12 @@ ENV_VARS=(
     "export FL_PREFIX=\"$FL_PREFIX\""
     "export FL_MHDLIB=\"$FL_MHDLIB\""
     "export PROFILE_FILE=\"$PROFILE_FILE\""
-    "export TARGET_LIB_DIR=\"$PL_PREFIX/lib/perl5\""
+    "export TARGET_LIB_DIR=\"$TARGET_LIB_DIR\""
     "export DESIRED_PERL_VERSION=\"$DESIRED_PERL_VERSION\""
 )
 
 # Define color codes for the script
-orange="\e[32m"
+orange="\e[36m"
 reset="\e[0m"
 
 # Wrapper function for colored echo
@@ -61,15 +63,16 @@ add_to_env_var_if_not_exists() {
     fi
 }
 
-colored_echo "Sourcing profile to apply changes..."
+colored_echo "Sourcing $PROFILE_FILE to apply changes..."
 source "$PROFILE_FILE"
+colored_echo "success!"
 
 # ==============================================================================
 # Helper Functions
 # ==============================================================================
 function check_error {
     if [ $? -ne 0 ]; then
-        colored_echo "Error encountered. Running diagnostics..."
+        echo "Error encountered. Running diagnostics..."
         DIAGNOSTICS_DIR="$FL_MHDLIB/doc"
         if [ -f "$DIAGNOSTICS_DIR/flux_diagnostics.pl" ]; then
             perl "$DIAGNOSTICS_DIR/flux_diagnostics.pl"
@@ -119,8 +122,9 @@ else
     colored_echo "Homebrew is already installed."
 fi
 
-colored_echo "Installing gnuplot and fftw via Homebrew..."
-brew install gnuplot fftw
+colored_echo "Installing dependencies via Homebrew..."
+source $PROFILE_FILE
+brew install gnuplot fftw cpanm qt
 check_error
 
 # ==============================================================================
@@ -190,6 +194,8 @@ cpanm PDL::Graphics::Gnuplot
 cpanm Math::RungeKutta
 cpanm Term::ReadKey
 check_error
+
+source $PROFILE_FILE
 
 PERL_VERSION=$(perl -e 'print $^V;')
 colored_echo "Library instantiated at $TARGET_LIB_DIR, Perl version: $PERL_VERSION"

@@ -9,7 +9,13 @@ export FL_PREFIX
 
 everything: libbuild install
 
-install: libinstall pdlbuild pdltest pdlinstall install_fluxpipe
+pipebuild:
+	cd doc/
+	chmod +X auto_install_macos.sh
+	source auto_install_macos.sh
+	# source auto_install_fluxpipe.sh
+
+install: libinstall pdlbuild pdltest pdlinstall #install_fluxpipe
 
 libbuild:
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make';
@@ -30,11 +36,11 @@ pdltest:
 pdlinstall:
 	/bin/sh -c 'cd pdl; make install;';
 
-install_fluxpipe:
-	@cd fluxpipe/ && make install_fluxpipe;
+# install_fluxpipe:
+# 	@cd fluxpipe/ && make install_fluxpipe;
 
-uninstall_fluxpipe:
-	@cd fluxpipe/ && make uninstall_fluxpipe;
+# uninstall_fluxpipe:
+# 	@cd fluxpipe/ && make uninstall_fluxpipe;
 
 clean:
 	rm -f *~ \#* ; \
@@ -55,5 +61,5 @@ uninstall:
 	@-rm -rf $(FL_PREFIX)/include/flux || true;
 	@echo "\tFlux uninstall complete.\n";
 
-	@cd fluxpipe/ && make uninstall_fluxpipe;
+# @cd fluxpipe/ && make uninstall_fluxpipe;
 
