@@ -88,3 +88,5 @@ cd fluxon-mhd
 
 make everything
 ```
+
+After this, make sure to follow the printed instructions for appending your PDLLIB path, and .perldlrc file.
