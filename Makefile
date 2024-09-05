@@ -9,12 +9,6 @@ export FL_PREFIX
 
 everything: libbuild install
 
-pipebuild:
-	cd doc/ && chmod +X install_flux2.sh
-	cd doc/ && source install_flux2.sh
-	cd fluxpipe/ && source install-fluxpipe.sh
-	cd doc/ && perl flux_diagnostics.pl
-
 install: libinstall pdlbuild pdltest pdlinstall
 
 libbuild:
@@ -36,12 +30,6 @@ pdltest:
 pdlinstall:
 	/bin/sh -c 'cd pdl; make install;';
 
-# install_fluxpipe:
-# 	@cd fluxpipe/ && make install_fluxpipe;
-
-# uninstall_fluxpipe:
-# 	@cd fluxpipe/ && make uninstall_fluxpipe;
-
 clean:
 	rm -f *~ \#* ; \
 	rm -f pdl/*.png; \
@@ -60,6 +48,3 @@ uninstall:
 	@-rm -rf $(FL_PREFIX)/lib/libflux.a || true;
 	@-rm -rf $(FL_PREFIX)/include/flux || true;
 	@echo "\tFlux uninstall complete.\n";
-
-# @cd fluxpipe/ && make uninstall_fluxpipe;
-
