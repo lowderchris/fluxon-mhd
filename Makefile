@@ -9,7 +9,7 @@ export FL_PREFIX
 
 everything: libbuild install
 
-install: libinstall pdlbuild pdltest pdlinstall install_fluxpipe
+install: libinstall pdlbuild pdltest pdlinstall
 
 libbuild:
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make';
@@ -30,12 +30,6 @@ pdltest:
 pdlinstall:
 	/bin/sh -c 'cd pdl; make install;';
 
-install_fluxpipe:
-	@cd fluxpipe/ && make install_fluxpipe;
-
-uninstall_fluxpipe:
-	@cd fluxpipe/ && make uninstall_fluxpipe;
-
 clean:
 	rm -f *~ \#* ; \
 	rm -f pdl/*.png; \
@@ -54,6 +48,3 @@ uninstall:
 	@-rm -rf $(FL_PREFIX)/lib/libflux.a || true;
 	@-rm -rf $(FL_PREFIX)/include/flux || true;
 	@echo "\tFlux uninstall complete.\n";
-
-	@cd fluxpipe/ && make uninstall_fluxpipe;
-
