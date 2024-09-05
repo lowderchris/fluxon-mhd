@@ -3,14 +3,11 @@
 # Fluxon-MHD Modeling Framework Installation Script for macOS using perlbrew
 # ==============================================================================
 
-
 export PL_PREFIX="$HOME/Library/perl"
 export FL_PREFIX="$HOME/Library/flux"
 export FL_MHDLIB="$HOME/flux"
-export PROFILE_FILE="$HOME/.zshrc"
+export PROFILE_FILE="$HOME/.zshenv"  # Use .zshenv for all profile-related changes
 export DESIRED_PERL_VERSION="perl-5.36.0"
-
-export TARGET_LIB_DIR=\"$PL_PREFIX/lib/perl5\
 
 # ==============================================================================
 # Save environment variables to the profile file if they have changed
@@ -20,28 +17,38 @@ ENV_VARS=(
     "export FL_PREFIX=\"$FL_PREFIX\""
     "export FL_MHDLIB=\"$FL_MHDLIB\""
     "export PROFILE_FILE=\"$PROFILE_FILE\""
-    "export TARGET_LIB_DIR=\"$TARGET_LIB_DIR\""
+    "export TARGET_LIB_DIR=\"$PL_PREFIX/lib/perl5\""
     "export DESIRED_PERL_VERSION=\"$DESIRED_PERL_VERSION\""
 )
 
 # Define color codes for the script
-orange="\e[36m"
+orange="\e[32m"
 reset="\e[0m"
 
 # Wrapper function for colored echo
 colored_echo() {
     echo -e "${orange}$1${reset}"
 }
-update_profile_file() {
+
+# Function to update profile and source it right after
+update_profile_file_and_source() {
     local var_to_check="$1"
     local file="$2"
     local var_name=$(echo "$var_to_check" | cut -d'=' -f1)
 
-    if grep -q "^$var_name=" "$file"; then
-        sed -i '' "s|^.*$var_name=.*|$var_to_check|" "$file"
-    else
+    # Append safely only if the variable doesn't exist, ensure proper formatting
+    if ! grep -q "^$var_name=" "$file"; then
         echo "$var_to_check" >> "$file"
+        colored_echo "Added $var_name to $file"
+    else
+        # Replace existing line safely
+        sed -i '' "s|^.*$var_name=.*|$var_to_check|" "$file"
+        colored_echo "Updated $var_name in $file"
     fi
+
+    # Source profile after every update to apply the changes
+    source "$file"
+    colored_echo "Sourced $file to apply changes."
 }
 
 # Function to add a path to an environment variable if it doesn't already exist (zsh compatible)
@@ -50,34 +57,28 @@ add_to_env_var_if_not_exists() {
     local new_value="$2"
     local file="$3"
 
-    # Get the current value of the environment variable
     local current_value=$(printenv "$env_var_name")
 
-    # Check if the environment variable already contains the new value
     if [[ ":$current_value:" != *":$new_value:"* ]]; then
-        # If not, append the new value
         export "$env_var_name"="${current_value:+$current_value:}$new_value"
-
-        # Update the profile file to make it persistent
-        update_profile_file "export $env_var_name=\"${current_value:+$current_value:}$new_value\"" "$file"
+        update_profile_file_and_source "export $env_var_name=\"${current_value:+$current_value:}$new_value\"" "$file"
     fi
 }
 
-colored_echo "Sourcing $PROFILE_FILE to apply changes..."
+colored_echo "Sourcing profile to apply changes..."
 source "$PROFILE_FILE"
-colored_echo "success!"
 
 # ==============================================================================
 # Helper Functions
 # ==============================================================================
 function check_error {
     if [ $? -ne 0 ]; then
-        echo "Error encountered. Running diagnostics..."
-        DIAGNOSTICS_DIR="$FL_MHDLIB/doc"
+        colored_echo "Error encountered. Running diagnostics..."
+        DIAGNOSTICS_DIR="$FL_PREFIX/fluxon-mhd/doc"
         if [ -f "$DIAGNOSTICS_DIR/flux_diagnostics.pl" ]; then
             perl "$DIAGNOSTICS_DIR/flux_diagnostics.pl"
         else
-            colored_echo "Diagnostics script flux_diagnostics.pl not found in $DIAGNOSTICS_DIR."
+            colored_echo "Diagnostics script flux_diagnostics.pl not found in $DIAGNOSTICS_DIR"
         fi
         exit 1
     fi
@@ -122,8 +123,9 @@ else
     colored_echo "Homebrew is already installed."
 fi
 
-colored_echo "Installing dependencies via Homebrew..."
-source $PROFILE_FILE
+source "$PROFILE_FILE"
+
+colored_echo "Installing gnuplot and fftw via Homebrew..."
 brew install gnuplot fftw cpanm qt
 check_error
 
@@ -173,7 +175,7 @@ EOF
     check_error
 else
     colored_echo "$DESIRED_PERL_VERSION is already installed."
-    perlbrew use $DESIRED_PERL_VERSION
+    perlbrew switch $DESIRED_PERL_VERSION
     check_error
 fi
 
@@ -194,8 +196,6 @@ cpanm PDL::Graphics::Gnuplot
 cpanm Math::RungeKutta
 cpanm Term::ReadKey
 check_error
-
-source $PROFILE_FILE
 
 PERL_VERSION=$(perl -e 'print $^V;')
 colored_echo "Library instantiated at $TARGET_LIB_DIR, Perl version: $PERL_VERSION"
@@ -235,18 +235,13 @@ check_error
 PDLLIB_DIR=$(grep -o '/Users[^ ]*auto/share/dist/Flux' "$PDLINSTALL_OUTPUT" | head -n 1)
 
 if [ -n "$PDLLIB_DIR" ]; then
-    colored_echo "Found Flux autoload directory: $PDLLIB_DIR"
-    add_to_env_var_if_not_exists "PDLLIB" "$PDLLIB_DIR" "$PROFILE_FILE"
+    colored_echo "Found Flux autoload directory: $PDLLIB_DIR "
+    add_to_env_var_if_not_exists "PDLLIB" "+$PDLLIB_DIR" "$PROFILE_FILE"
 else
     colored_echo "Error: Could not find the Flux autoload directory in the output."
     exit 1
 fi
 
 rm "$PDLINSTALL_OUTPUT"
-
-colored_echo "Running diagnostics test..."
-cd "$FL_MHDLIB/doc" || exit
-perl flux_diagnostics.pl
-check_error
 
 colored_echo "Fluxon-MHD setup complete!"

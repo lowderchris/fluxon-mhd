@@ -10,12 +10,12 @@ export FL_PREFIX
 everything: libbuild install
 
 pipebuild:
-	cd doc/
-	chmod +X auto_install_macos.sh
-	source auto_install_macos.sh
-	# source auto_install_fluxpipe.sh
+	cd doc/ && chmod +X install_flux2.sh
+	cd doc/ && source install_flux2.sh
+	cd fluxpipe/ && source install-fluxpipe.sh
+	cd doc/ && perl flux_diagnostics.pl
 
-install: libinstall pdlbuild pdltest pdlinstall #install_fluxpipe
+install: libinstall pdlbuild pdltest pdlinstall
 
 libbuild:
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make';
