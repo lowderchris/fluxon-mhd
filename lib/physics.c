@@ -69,7 +69,7 @@ struct FLUX_FORCES FLUX_FORCES[] = {
   {"f_vertex3","Vertex distribution pseudo-force",f_vertex3},
   {"f_vertex4","Vertex distribution pseudo-force (r^2 repulsion)",f_vertex4},
   {"f_vertex5","Vertex distribution pseudo-force",f_vertex5},
-  //  {"m_hydrostatic","Quasi-hydrostatic mass loading with N_0 and T_0 from powers of B_base; requires a b_",m_hydrostatic},
+  {"m_hydrostatic","Quasi-hydrostatic mass loading with N_0 and T_0 from powers of B_base; requires a b_",m_hydrostatic},
   {0,0,0}
 };
 
@@ -2055,7 +2055,84 @@ void f_p_eqa_radial(VERTEX *V, HULL_VERTEX *verts, int segflag) {
   
   return;
 }
-	
+
+/**********************************************************************
+ *
+ * m_hydrostatic
+ *
+ * Hydrostatic mass loading
+ * 
+ */
+
+void m_hydrostatic(VERTEX *V, HULL_VERTEX *verts, int segflag) {
+  static NUM scr2d[3],scr3d[3];
+  int i,n;
+  NUM sina, cosa;
+  NUM pmatrix[9];
+  VERTEX **nv = (VERTEX **)(V->neighbors.stuff);
+
+  NUM fac = V->line->flux * V->line->flux / (PI*PI*PI) / 8;
+  
+  if(!(V->next) || segflag)
+    return;
+
+  projmatrix(pmatrix,V->x,V->next->x);
+  
+  scr2d[0] = scr2d[1] = scr2d[2] = 0;
+
+  n = V->neighbors.n;
+  for(i=0; i< n; i++) {
+    NUM fperp;
+    NUM fpar;
+    NUM factor;
+    HULL_VERTEX *left = &(verts[i]);
+    HULL_VERTEX *right = (i!=0) ? &(verts[i-1]) : &(verts[n-1]);
+    VERTEX *v = nv[i];
+    NUM righta, lefta;
+
+    righta = right->a_r - v->a;   
+    TRIM_ANGLE(righta);
+
+    lefta = left->a_l - v->a;
+    TRIM_ANGLE(lefta);
+
+    
+    if(lefta<righta) 
+      lefta += 2*PI;
+
+    if(  (lefta - righta) > PI ) 
+      printf("ASSERTION FAILED: lefta-righta >0 (lefta = %5.3g, righta=%5.3g)\n",lefta,righta);
+    
+    factor = - fac * (2 * 8) / (v->r * v->r * v->r);
+    
+    fperp = factor * (lefta-righta + 0.5 * (sin(2*lefta) - sin(2*righta)));
+    fpar  = factor * ( cos(2*righta) - cos(2*lefta) );
+
+    {
+      NUM s, c;
+      s = sin(v->a);
+      c = cos(v->a);
+      scr2d[0] += c * fperp - s * fpar;
+      scr2d[1] += s * fperp +  c * fpar;
+    }
+
+    if(V->line->fc0->world->verbosity >= 4) {printf("m_hydrostatic: VERTEX %4ld, neighbor %5ld, a=%7.3g, r=%7.3g, righta=%7.3g(%c), lefta=%7.3g(%c), fperp=%7.3g, fpar=%7.3g\n",V->label,v->label,v->a*180/PI,v->r,lefta*180/PI,left->open?'o':'c',righta*180/PI,right->open?'o':'c',fperp,fpar);
+    }
+
+  }
+
+   vec_mmult_3d(scr3d,pmatrix,scr2d); /* Convert to 3-D */
+
+  if(V->line->fc0->world->verbosity >= 3) { printf("m_hydrostatic: VERTEX %4ld (fluxon %4ld); total force is %7.3g, %7.3g, %7.3g\n", V->label, V->line->label, scr3d[0],scr3d[1],scr3d[2]); }
+
+  sum_3d(V->f_s,V->f_s,scr3d);
+
+  V->f_s_tot += norm_3d(scr3d);
+  
+  return;
+}
+
+
 /**********************************************************************
  * Reconnection criteria: each accepts a vertex and a list of parameters whose
  * meaning is defined here and in the table at top.  It tests each of the vertex's
