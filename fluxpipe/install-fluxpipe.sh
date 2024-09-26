@@ -1,1 +1,0 @@
-echo "This command will install fluxpipe's python components"
