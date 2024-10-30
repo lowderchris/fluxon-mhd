@@ -1,14 +1,13 @@
 *~
 \#*
 .DS_Store
+.vscode/
 
 #test-coverage-related files & dirs
 *.gcov
 *.gcda
 *.gcno
 *.png
-*.pyc
-*.json
 cover_db/
 
 #the local sandbox build
@@ -16,10 +15,3 @@ sandbox/
 
 #any Inline stuff
 _Inline/
-
-#fluxpipe related files
-include/flux/
-blib/
-data/
-local/
-perltidy.ERR
