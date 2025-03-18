@@ -18,12 +18,12 @@ sandbox/
 #any Inline stuff
 _Inline/
 
-#fluxpipe related files
+#fluxpype related files
 include/flux/
 blib/
 data/
 local/
 perltidy.ERR
-fluxpipe/Makefile
-fluxpipe/Makefile.old
+fluxpype/Makefile
+fluxpype/Makefile.old
 pdl/depreciated/Makefile.bkk

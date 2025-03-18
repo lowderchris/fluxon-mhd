@@ -15,7 +15,7 @@ done:
 install: libinstall pdlbuild pdltest pdlinstall
 
 paths:
-	@/bin/sh -c 'fluxpipe/PREFIX_PATHS.sh';
+	@/bin/sh -c 'fluxpype/PREFIX_PATHS.sh';
 
 libbuild:
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make';

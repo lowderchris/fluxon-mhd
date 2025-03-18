@@ -17,7 +17,7 @@ The whole installation process is being integrated into the makefile. See instal
 - check ``which perl`` to see if you have perl
 - if not, follow the manual installation instructions under the perl section, below. Don't worry about the cpanminus part.
 
-#### 3. Put the PL and FL_PREFIX paths into /fluxpipe/PREFIX_PATHS.sh
+#### 3. Put the PL and FL_PREFIX paths into /fluxpype/PREFIX_PATHS.sh
 
  Examples:
   ``PL_PATH="/Users/cgilbert/perl5/perlbrew/perls/perl-5.32.0"``
@@ -25,8 +25,8 @@ The whole installation process is being integrated into the makefile. See instal
 
 #### 4. Build and Run the Makefile
 
-* Go to the fluxpipe directory
-  ``cd fluxon-mhd/fluxpipe``
+* Go to the fluxpype directory
+  ``cd fluxon-mhd/fluxpype``
 * Build the makefile
   ``perl Makefile.PL``
 * Return to the main directory
@@ -34,7 +34,7 @@ The whole installation process is being integrated into the makefile. See instal
 * Run the top-level make command
   ``make everything``
 
-Good job! Flux and Fluxpipe should both be working now.
+Good job! Flux and Fluxpype should both be working now.
 
 ## Manual Installation --------------------------------------
 
@@ -77,7 +77,7 @@ This is already depricated because all of these steps have been moved into the m
     ``conda create -n fluxenv``
     ``conda activate fluxenv``
     - If you are using an Apple Silicon M1/M2 architecture, please see the footnotes.
-  - navigate to the fluxpipe directory and
+  - navigate to the fluxpype directory and
     install the package by running
     ``pip install -e .``
 
@@ -121,22 +121,22 @@ This is already depricated because all of these steps have been moved into the m
   ``% cd $FL_PREFIX ``
   ``% sudo make everything ``
 
-### Install FLUXpipe -------------------------------
+### Install FLUXpype -------------------------------
 
-- Install the fluxpipe pdl package locally
-  ``% cd $FL_PREFIX/fluxpipe ``
+- Install the fluxpype pdl package locally
+  ``% cd $FL_PREFIX/fluxpype ``
   ``% cpanm --installdeps . ``
   ``% cpanm --notest --local-lib=local/ .``
 - Set the perl path to the local build and reload the terminal
-  ``echo 'export PERL5LIB=$FL_PREFIX/fluxpipe/local/lib/perl5:$PERL5LIB' >> ~/.zshrc ``
+  ``echo 'export PERL5LIB=$FL_PREFIX/fluxpype/local/lib/perl5:$PERL5LIB' >> ~/.zshrc ``
   ``source ~/.zshrc``
 - - Unfortunately this build must be recompiled after every change. To do this, run
-    ``cd $FL_PREFIX/fluxpipe ``
+    ``cd $FL_PREFIX/fluxpype ``
     ``cpanm --notest --local-lib=local/ .``
   - This can be configured to happen automatically in VSCode. You'll need the File Watcher extension.
     If you place the following lines in your settings.json file in vscode, it will keep your pdl build up to date whenever you save a file.
 
-    ``"filewatcher.commands": [ { "match": ".*\\.(pdl|pm|json)$", "isAsync": true, "event": "onFileChange", "cmd": "cd $FL_PREFIX/fluxpipe && cpanm --notest --local-lib=local/ . && echo $(date) " } ],``
+    ``"filewatcher.commands": [ { "match": ".*\\.(pdl|pm|json)$", "isAsync": true, "event": "onFileChange", "cmd": "cd $FL_PREFIX/fluxpype && cpanm --notest --local-lib=local/ . && echo $(date) " } ],``
 
 ### Footnotes --------------------------------------
 

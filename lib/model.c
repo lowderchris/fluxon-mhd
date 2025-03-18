@@ -109,7 +109,7 @@ static long w_c_springboard(FLUXON *fl, int lab, int link, int depth) {
         return 0;
       }
 
-      fprintf(stderr, "HELLO WORLD!"); //TODO fix the r-resolution
+      // fprintf(stderr, "HELLO WORLD!"); //TODO fix the r-resolution
       fprintf(stderr,"world_check WARNING: a fluxon %4ld: verts %4ld (%s) & %4ld (%s) are at the same location - deleted %4ld...\n",fl->label, v->label, (v->prev ? "mid" : "beg"), v->next->label, (v->next->next ? "mid" : "end"), (v->next->next ? v->next->label : v->label));
       // delete_vertex( v->next->next ? v->next : v );
       if(world_check_code == 0)
