@@ -65,10 +65,10 @@ cd fluxon-mhd
 make everything
 ```
 
-If Flux isn't found at the end of the install, try:
+If Flux.pm isn't found at the end of the install, try:
 
 ```sh
-export PERL5LIB=$(dirname $(find $CONDA_PREFIX -name Flux.pm))
+export PERL5LIB=$(dirname $(find $CONDA_PREFIX -name Flux.pm)):$PERL5LIB
 make everything
 ```
 To set up the necessary environment variables and update the appropriate configuration files, please download or navigate to the provided script located at [fluxon-mhd/doc/set_paths.sh](https://github.com/lowderchris/fluxon-mhd/blob/documentation/doc/set_paths.sh). Run the script, which will automatically add the Perl autoloader and Flux installation paths to your conda environment configuration files.
@@ -117,7 +117,7 @@ Run the configuration run script:
 ```sh
 python fluxpype/config_runner.py
 ```
-- For the paths to work out, the config file must be called from one directory above the file.
+- For the paths to work out, the config runner must be called from one directory above the file.
 
 
 ## FAQs & Troubleshooting
