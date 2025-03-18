@@ -433,7 +433,7 @@ char fl_eq(NUM a, NUM b);
 
 
 
-char *malloc_types[MALLOC_MAXTYPENO+1];
+extern char *malloc_types[MALLOC_MAXTYPENO+1];
 
 #define valid_malloc_type(x) ((x)>0 && (x)<=MALLOC_MAXTYPENO)
 
