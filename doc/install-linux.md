@@ -24,7 +24,7 @@ conda install -c conda-forge gcc gxx binutils c-compiler gsl perl perl-app-cpanm
 
 Confirm installation by typing `y` when prompted.
 
-## 3. Install the Perl Data Language (PDL)
+## 3. Install the Perl Data Language (PDL) and Dependencies
 
 ```sh
 cpanm Alien::Build::Plugin::Gather::Dino Capture::Tiny Chart::Gnuplot Config::IniFiles Devel::CheckLib File::HomeDir File::Map File::ShareDir File::ShareDir::Install File::Which Inline Inline::C Inline::Python List::MoreUtils Math::GSL Math::GSL::Alien Math::Interpolate Math::Interpolator Math::RungeKutta Moo::Role Net::SSLeay PDL PDL::GSL PDL::GSL::INTEG PDL::Graphics::Gnuplot PDL::Graphics::Simple Parallel::ForkManager Term::ReadKey Test::Builder Text::CSV local::lib
