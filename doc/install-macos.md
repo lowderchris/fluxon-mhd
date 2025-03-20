@@ -1,10 +1,10 @@
-# Macos Installation Instructions
+# macOS Installation Instructions
 
-These instructions were created by adapting the linux conda install to macos. Please let us know if anything breaks!
+These instructions were created by adapting the linux conda install to macOS. Please let us know if anything breaks!
 Extra troubleshooting steps are listed at the bottom.
 
 ## 1. Get Conda Environment Manager
-Depending on your mac's architechture, either get
+Depending on your mac's architecture, either get
 ```sh
 curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
 bash ~/Miniconda3-latest-MacOSX-arm64.sh
