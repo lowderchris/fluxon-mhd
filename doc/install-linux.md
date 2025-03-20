@@ -1,6 +1,6 @@
 # Linux Installation Instructions
 
-These instructions were created by installing FLUX on two different linux servers running AlmaLinux. Please let us know if anything breaks!
+These instructions were created by installing FLUX on two different linux servers running AlmaLinux. Please let us know if anything breaks! Extra troubleshooting steps are listed at the bottom.
 
 ## 1. Get Conda Environment Manager
 

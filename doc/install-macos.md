@@ -1,6 +1,7 @@
-# Linux Installation Instructions
+# Macos Installation Instructions
 
 These instructions were created by adapting the linux conda install to macos. Please let us know if anything breaks!
+Extra troubleshooting steps are listed at the bottom.
 
 ## 1. Get Conda Environment Manager
 Depending on your mac's architechture, either get
