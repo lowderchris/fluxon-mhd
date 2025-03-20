@@ -29,10 +29,10 @@ fi
 mkdir -p "$CONDA_PREFIX/etc/conda/activate.d"
 
 # Locate Flux.pm and set PERL5LIB
-export PERL5LIB=$(dirname "$(find "$CONDA_PREFIX" -name Flux.pm)"):$PERL5LIB
+export PERL5LIB=$(find "$CONDA_PREFIX" -name Flux.pm -exec dirname {} \; | tr '\n' ':')$PERL5LIB
 
 # Locate Flux module directory and set PDLLIB
-export PDLLIB=$(find "$CONDA_PREFIX" -type d -name "Flux" | grep "/share/dist/" | head -n 1):$PDLLIB
+export PDLLIB=$(find "$CONDA_PREFIX" -type d -name "Flux" 2>/dev/null | grep "/share/dist/" | awk 'NR==1'):$PDLLIB
 
 # Create the environment variable setup script
 cat > "$CONDA_PREFIX/etc/conda/activate.d/env_vars.sh" <<EOL
