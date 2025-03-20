@@ -69,6 +69,7 @@ A few other packages of note will be needed for the later fluxon-mhd install.
 ```shell
 cpanm File::ShareDir
 cpanm PDL::Graphics::Gnuplot
+cpanm PDL::GSL::INTERP
 cpanm Math::RungeKutta
 cpanm Term::ReadKey
 ```

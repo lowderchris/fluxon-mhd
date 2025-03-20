@@ -38,6 +38,7 @@ A few other packages of note will be needed for the later fluxon-mhd install.
 ```shell
 sudo cpanm File::ShareDir
 sudo cpanm Math::RungeKutta
+sudo cpanm PDL::GSL::INTERP
 sudo cpanm Term::ReadKey
 ```
 

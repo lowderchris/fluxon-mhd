@@ -1,0 +1,118 @@
+use strict;
+use warnings;
+use PDL;
+use PDL::NiceSlice;
+use PDL::Math;
+use PDL::GSL::INTERP;
+use PDL::Interpolate;
+
+=head1 NAME
+
+solve_wind - Compute the solar wind mach number from radial fluxel centers and area profiles using a graphical method.
+
+=head1 SYNOPSIS
+
+  use PDL;
+  my $x = pdl([1, 2, 3]);
+  my $a = pdl([1, 0.9, 0.8]);
+
+  my $result = solve_wind($x, $a);
+  print $result;
+
+=head1 DESCRIPTION
+
+This function computes the solar wind mach number from given radial fluxel centers and area profiles using a graphical method.
+
+=head2 Parameters
+
+=over 4
+
+=item * $x (PDL)
+
+N coordinate array, specifying radial fluxel centers (solar radii).
+
+=item * $a (PDL)
+
+N coordinate array of fluxel area profiles.
+
+=back
+
+=head2 Returns
+
+=over 4
+
+=item * $mach_number_interp (PDL)
+
+Computed solar wind mach number from input geometry.
+
+=back
+
+=head1 FUNCTIONS
+
+=head2 solve_wind
+
+The main function to compute the solar wind mach number.
+
+=cut
+
+sub solve_wind {
+    my ($x, $a) = @_;
+    
+    # Constants
+    my $sound_speed = 100 * 1e3; # converting to meters per second
+    my $solar_radius = 6.95e5 * 1e3; # converting to meters
+
+    # Gravitational potential
+    my $radius = $x * $solar_radius;
+    my $gravitational_potential = (-0.274 * 1e3) * $solar_radius**2 / $radius; 
+    
+    # Pseudo-area
+    my $pseudo_area = $a * exp(-$gravitational_potential / ($sound_speed**2)); 
+
+    # Mach number ranges
+    my $mach_number_sub = sequence(1000) * (1 - 1e-3) / 999 + 1e-3; # 1e-3 to 1
+    my $mach_number_sup = sequence(1000) * (3 - 1) / 999 + 1; # 1 to 3
+
+    # w function
+    my $w_func = sub {
+        my $mach_number = shift;
+        return $mach_number**2 - log($mach_number**2);
+    };
+
+    my $bern_crit = 1 - log(minimum($pseudo_area)**2);
+
+    my $w_vals = log($pseudo_area**2) + $bern_crit;
+
+    my $w_vals_sub = &$w_func($mach_number_sub);
+    my $w_vals_sup = &$w_func($mach_number_sup); 
+
+    # Interpolating functions using PDL::GSL::INTERP
+    # my $sub_interpolator = PDL::GSL::INTERP->init('linear', $w_vals_sub, $mach_number_sub);
+    # my $sup_interpolator = PDL::GSL::INTERP->init('linear', $w_vals_sup, $mach_number_sup);
+
+    # Interpolating functions using PDL::Interpolate
+    my $mach_vals_sub_interp = interp($w_vals_sub, $mach_number_sub, $w_vals)->clump(1);
+    my $mach_vals_sup_interp = interp($w_vals_sup, $mach_number_sup, $w_vals)->clump(1);
+
+
+    my $mach_vals_sub_interp = $sub_interpolator->interp($w_vals);
+    my $mach_vals_sup_interp = $sup_interpolator->interp($w_vals);
+
+    my $radius_crit = $radius->index(which($pseudo_area == minimum($pseudo_area)));
+
+    my $mach_number_interp = $mach_vals_sub_interp * ($radius <= $radius_crit)
+                           + $mach_vals_sup_interp * ($radius > $radius_crit);
+
+    return $mach_number_interp;
+}
+
+=cut
+
+# Example use
+if (!caller) {
+    my $x = pdl([1, 2, 3]); # example data
+    my $a = pdl([1, 0.9, 0.8]); # example data
+
+    my $result = solve_wind($x, $a);
+    print $result;
+}
