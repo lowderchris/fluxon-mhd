@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Source conda's initialization script to enable conda commands.
+source "$(conda info --base)/etc/profile.d/conda.sh"
+
+# Activate the conda environment 'fluxenv'
+conda activate fluxenv
+
 # Required content for the ~/.perldlrc file
 required_content=$(cat <<'EOF'
 require(q|PDL/default.perldlrc|);
@@ -35,36 +41,45 @@ fi
 mkdir -p "$CONDA_PREFIX/etc/conda/activate.d"
 
 # Locate Flux.pm and set PERL5LIB
-export PERL5LIB_new=$(find "$CONDA_PREFIX" -name Flux.pm -exec dirname {} \; | tr '\n' ":")
+export PERL5LIB_new=$(find "$CONDA_PREFIX" -name Flux.pm -exec dirname {} \; | head -n 1)
 echo Found perl5lib $PERL5LIB_new
 
 # Locate Flux module directory and set PDLLIB
 export PDLLIB_new=+$(find "$CONDA_PREFIX" -type d -name "Flux" 2>/dev/null | grep "/share/dist/" | awk 'NR==1')
 echo Found pdllib $PDLLIB_new
 
+# Set the prefixes for the conda environment
+export PL_PREFIX_new="$CONDA_PREFIX/lib/perl5/site_perl"
+export FL_PREFIX_new="$CONDA_PREFIX"
+
+
 # Create the environment variable setup script (activation script)
 cat > "$CONDA_PREFIX/etc/conda/activate.d/env_vars.sh" <<EOL
 #!/bin/bash
 
-# Set PERL5LIB to the directory containing Flux.pm
-export PERL5LIB="$PERL5LIB_new"
+# Dynamically locate Flux.pm and set PERL5LIB
+export PERL5LIB=\$(find "\$CONDA_PREFIX" -name Flux.pm -exec dirname {} \; | head -n 1)
+# echo "Found PERL5LIB: \$PERL5LIB"
 
-# Set PDLLIB to the Flux module directory
-export PDLLIB="$PDLLIB_new"
+# Dynamically locate the Flux module directory and set PDLLIB
+export PDLLIB=\$(find "\$CONDA_PREFIX" -type d -name "Flux" 2>/dev/null | grep "/share/dist/" | awk 'NR==1')
+# echo "Found PDLLIB: \$PDLLIB"
 
 # Set the FLUX prefixes for future recompiling
-export PL_PREFIX="$CONDA_PREFIX/lib/perl5/site_perl"
-export FL_PREFIX="$CONDA_PREFIX"
+export PL_PREFIX="\$CONDA_PREFIX/lib/perl5/site_perl"
+export FL_PREFIX="\$CONDA_PREFIX"
 
 # Print the environment variables for verification
-echo "PERL5LIB  is set to: $PERL5LIB_new"
-echo "PDLLIB    is set to: $PDLLIB_new"
-echo "FL_PREFIX is set to: $FL_PREFIX"
-echo "PL_PREFIX is set to: $PL_PREFIX"
+echo "PERL5LIB  is set to: \$PERL5LIB"
+echo "PDLLIB    is set to: \$PDLLIB"
+echo "FL_PREFIX is set to: \$FL_PREFIX"
+echo "PL_PREFIX is set to: \$PL_PREFIX"
 EOL
 
 unset PDLLIB_new
 unset PERL5LIB_new
+unset FL_PREFIX_new
+unset PL_PREFIX_new
 
 # Make the activation script executable
 chmod +x "$CONDA_PREFIX/etc/conda/activate.d/env_vars.sh"
@@ -84,11 +99,12 @@ cat > "$CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh" <<'EOL'
   unset FL_PREFIX
 
 # Inform the user
-echo "Deactivation: Environment variables have been unset."
+echo "Deactivation: Environment variables have been unset. \n"
 EOL
 
 # Make the deactivation script executable
 chmod +x "$CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh"
 
+
 # Confirmation message
-echo "Activation and deactivation scripts created successfully. Environment variables will be managed upon conda activation/deactivation."
+echo "Activation and deactivation scripts created successfully. Environment variables will be managed upon conda activation/deactivation. \n"

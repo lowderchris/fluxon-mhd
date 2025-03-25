@@ -27,7 +27,7 @@ Follow the prompts:
 ```sh
 conda create -n fluxenv
 conda activate fluxenv
-conda install -c conda-forge c-compiler gsl perl perl-app-cpanminus perl-extutils-makemaker make cmake automake autoconf libtool m4 patch libxcrypt gnuplot cairo pango qt pfsspy sqlite
+conda install -c conda-forge c-compiler gsl perl perl-app-cpanminus perl-extutils-makemaker make cmake automake autoconf libtool m4 patch libxcrypt gnuplot cairo pango qt pfsspy sqlite rich timeout-decorator
 ```
 
 Confirm installation by typing `y` when prompted.
@@ -38,15 +38,13 @@ Confirm installation by typing `y` when prompted.
 cpanm Alien::Build::Plugin::Gather::Dino Capture::Tiny Chart::Gnuplot Config::IniFiles Devel::CheckLib File::HomeDir File::Map File::ShareDir File::ShareDir::Install File::Which Inline Inline::C Inline::Python List::MoreUtils Math::GSL Math::GSL::Alien Math::Interpolate Math::Interpolator Math::RungeKutta Moo::Role Net::SSLeay PDL PDL::GSL PDL::GSL::INTEG PDL::Graphics::Gnuplot PDL::Graphics::Simple Parallel::ForkManager Term::ReadKey Test::Builder Text::CSV local::lib
 ```
 
-If the system struggles with `File::Map`, try:
+If the system struggles with `File`, try:
 
 ```sh
 export LDFLAGS=""
 export CFLAGS="-O2"
 export PERL_LDFLAGS=""
 export PERL_CFLAGS="-O2"
-export LD=x86_64-conda-linux-gnu-gcc
-export CC=x86_64-conda-linux-gnu-gcc
 ```
 
 If `Inline::C` isn’t found, run:
@@ -57,42 +55,12 @@ cpanm Inline::C
 
 ## 4. Get FLUX
 
-Set the prefixes for a conda installation:
-
-```sh
-export PL_PREFIX="$CONDA_PREFIX/lib/perl5/site_perl"
-export FL_PREFIX="$CONDA_PREFIX"
-mkdir -p "$FL_PREFIX"
-```
-
 Clone and configure Flux:
 
 ```sh
 git clone https://github.com/lowderchris/fluxon-mhd.git
 cd fluxon-mhd
-make everything
-```
-
-If Flux.pm isn't found at the end of the install, try:
-
-```sh
-export PERL5LIB=$(dirname $(find $CONDA_PREFIX -name Flux.pm)):$PERL5LIB
-make everything
-```
-To set up the necessary environment variables and update the appropriate configuration files, please download or navigate to the provided script located at [fluxon-mhd/doc/set_paths.sh](https://github.com/lowderchris/fluxon-mhd/blob/documentation/doc/set_paths.sh). Run the script, which will automatically add the Perl autoloader and Flux installation paths to your conda environment configuration files.
-
-```sh
-# Download the script
-wget https://github.com/lowderchris/fluxon-mhd/raw/documentation/doc/set_paths.sh
-
-# Run the script
-bash set_paths.sh
-```
-
-Confirm installation success:
-
-```sh
-perl -e "use Flux;"
+make condaflux
 ```
 
 ## 5. Get Fluxpype Wrapper (To run FLUX with)
@@ -101,7 +69,6 @@ perl -e "use Flux;"
 cd ..
 git clone https://github.com/GillySpace27/fluxpype.git
 cd fluxpype
-git checkout pythonify
 pip install -e .
 ```
 
@@ -162,3 +129,22 @@ python fluxpype/config_runner.py
     - ```cpanm Alien::Gnuplot```
 
 - if fluxpype cannot find the run file, check the paths at the top of ```config.ini``` to make sure that the path is correct.
+
+- If Flux.pm isn't found at the end of the flux install, try:
+
+```sh
+export PERL5LIB=$(dirname $(find $CONDA_PREFIX -name Flux.pm)):$PERL5LIB
+make everything
+```
+
+- To manually set the prefixes for a conda installation before using the makefile:
+
+```sh
+export PL_PREFIX="$CONDA_PREFIX/lib/perl5/site_perl"
+export FL_PREFIX="$CONDA_PREFIX"
+```
+- To confirm installation success:
+
+```sh
+perl -e "use Flux;"
+```

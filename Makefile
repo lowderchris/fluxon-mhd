@@ -7,6 +7,19 @@
 FL_PREFIX ?= /usr/local
 export FL_PREFIX
 
+
+condaflux: uninstall realclean condaenv everything condaenv condatest
+
+condatest:
+	@/bin/sh -c 'cd lib; source test_condaFlux.sh';
+
+condaenv:
+	@/bin/sh -c 'cd lib; source set_condaFlux_paths.sh';
+
+uninstallconda: uninstall
+	@/bin/sh -c 'cd lib; source uninstall_condaflux.sh';
+
+
 everything: libbuild install
 
 install: libinstall pdlbuild pdltest pdlinstall
@@ -45,6 +58,7 @@ realclean: clean
 
 uninstall:
 	@echo "\nUninstalling FLUX...";
-	@-rm -rf $(FL_PREFIX)/lib/libflux.a || true;
-	@-rm -rf $(FL_PREFIX)/include/flux || true;
+	@rm -rf $(FL_PREFIX)/lib/libflux.a
+	@rm -rf $(FL_PREFIX)/include/flux
 	@echo "\tFlux uninstall complete.\n";
+
