@@ -89,7 +89,7 @@ nano fluxpype/config.ini
 
 Set the code to do your desired run using the documentation (TBD)
 
-Run the configuration run script:
+Execute the configuration run script:
 
 ```sh
 python fluxpype/config_runner.py
@@ -115,17 +115,15 @@ python fluxpype/config_runner.py
     - ```conda install gsl```
     - ```cpanm --notest PDL::GSL```
 
-
 - if the wrong cpanm is getting in the way, delete it using the wrong path as follows
     - ```export PATH=$(echo "$PATH" | sed 's|/Users/cgilbert/perl5/perlbrew/bin:||')```
     - then try to use the huge cpanm installation command above
     - then run the set_paths.sh file
     - activate the environment
-    - make everything
+    - make condainstall
 
-- if the paths seem completely wrong, try these in the fluxon-mhd directory
-    - ```make uninstall```
-    - ```make clean```
+- if the paths seem completely wrong, try this in the fluxon-mhd directory
+    - ```make condainstall```
 
 - if the error is: Can't locate Alien/Gnuplot.pm in @INC
     - ```cpanm Alien::Gnuplot```
