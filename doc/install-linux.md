@@ -41,7 +41,7 @@ export LD=x86_64-conda-linux-gnu-gcc
 export CC=x86_64-conda-linux-gnu-gcc
 ```
 
-If `Inline::C` isn’t found, run:
+If `Inline::C` isn't found, run:
 
 ```sh
 cpanm Inline::C
