@@ -45,6 +45,8 @@ export LDFLAGS=""
 export CFLAGS="-O2"
 export PERL_LDFLAGS=""
 export PERL_CFLAGS="-O2"
+export LD=clang
+export CC=clang
 ```
 
 If `Inline::C` isn’t found, run:
