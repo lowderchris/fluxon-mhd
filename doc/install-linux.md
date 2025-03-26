@@ -49,51 +49,19 @@ cpanm Inline::C
 
 ## 4. Get FLUX
 
-Set the prefixes for a conda installation:
-
-```sh
-export PL_PREFIX="$CONDA_PREFIX/lib/perl5/site_perl"
-export FL_PREFIX="$CONDA_PREFIX"
-mkdir -p "$FL_PREFIX"
-```
-
-Clone and configure Flux:
+Clone and install Flux:
 
 ```sh
 git clone https://github.com/lowderchris/fluxon-mhd.git
 cd fluxon-mhd
-make everything
+make condaflux
 ```
-
-If Flux.pm isn't found at the end of the install, try:
-
-```sh
-export PERL5LIB=$(dirname $(find $CONDA_PREFIX -name Flux.pm)):$PERL5LIB
-make everything
-```
-To set up the necessary environment variables and update the appropriate configuration files, please download or navigate to the provided script located at [fluxon-mhd/doc/set_paths.sh](https://github.com/lowderchris/fluxon-mhd/blob/documentation/doc/set_paths.sh). Run the script, which will automatically add the Perl autoloader and Flux installation paths to your conda environment configuration files.
-
-```sh
-# Download the script
-wget https://github.com/lowderchris/fluxon-mhd/raw/documentation/doc/set_paths.sh
-
-# Run the script
-bash set_paths.sh
-```
-
-Confirm installation success:
-
-```sh
-perl -e "use Flux;"
-```
-
 ## 5. Get Fluxpype Wrapper (To run FLUX with)
 
 ```sh
 cd ..
 git clone https://github.com/GillySpace27/fluxpype.git
 cd fluxpype
-git checkout pythonify
 pip install -e .
 ```
 
@@ -128,3 +96,21 @@ python fluxpype/config_runner.py
     - ```conda install gsl```
     - ```cpanm --notest PDL::GSL```
 
+- If Flux.pm isn't found at the end of the flux install, try:
+
+```sh
+export PERL5LIB=$(dirname $(find $CONDA_PREFIX -name Flux.pm)):$PERL5LIB
+make everything
+```
+
+- To manually set the prefixes for a conda installation before using the makefile:
+
+```sh
+export PL_PREFIX="$CONDA_PREFIX/lib/perl5/site_perl"
+export FL_PREFIX="$CONDA_PREFIX"
+```
+- To confirm installation success:
+
+```sh
+perl -e "use Flux;"
+```
