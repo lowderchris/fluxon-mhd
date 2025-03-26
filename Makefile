@@ -7,7 +7,7 @@
 FL_PREFIX ?= /usr/local
 export FL_PREFIX
 
-.PHONY: everything install libbuild libinstall pdlMakefile pdlbuild pdltest pdlinstall clean realclean uninstall condainstall condacompile condatest condaenv condauninstall
+.PHONY: everything install libbuild libinstall pdlMakefile pdlbuild pdltest pdlinstall clean realclean uninstall condaflux condainstall condacompile condatest condaenv condauninstall
 
 everything: libbuild install
 
@@ -52,6 +52,8 @@ uninstall:
 	@echo "\tFlux uninstall complete.\n";
 
 # ------------ CONDA INSTALLATION ------------ #
+
+condaflux: condainstall
 
 condainstall: condauninstall condaenv condacompile
 
