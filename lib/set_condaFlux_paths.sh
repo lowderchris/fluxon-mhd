@@ -40,19 +40,6 @@ fi
 # Create activate.d directory if it doesn't exist
 mkdir -p "$CONDA_PREFIX/etc/conda/activate.d"
 
-# Locate Flux.pm and set PERL5LIB
-export PERL5LIB_new=$(find "$CONDA_PREFIX" -name Flux.pm -exec dirname {} \; | head -n 1)
-echo Found perl5lib $PERL5LIB_new
-
-# Locate Flux module directory and set PDLLIB
-export PDLLIB_new=+$(find "$CONDA_PREFIX" -type d -name "Flux" 2>/dev/null | grep "/share/dist/" | awk 'NR==1')
-echo Found pdllib $PDLLIB_new
-
-# Set the prefixes for the conda environment
-export PL_PREFIX_new="$CONDA_PREFIX/lib/perl5/site_perl"
-export FL_PREFIX_new="$CONDA_PREFIX"
-
-
 # Create the environment variable setup script (activation script)
 cat > "$CONDA_PREFIX/etc/conda/activate.d/env_vars.sh" <<EOL
 #!/bin/bash
@@ -75,11 +62,6 @@ echo "PDLLIB    is set to: \$PDLLIB"
 echo "FL_PREFIX is set to: \$FL_PREFIX"
 echo "PL_PREFIX is set to: \$PL_PREFIX"
 EOL
-
-unset PDLLIB_new
-unset PERL5LIB_new
-unset FL_PREFIX_new
-unset PL_PREFIX_new
 
 # Make the activation script executable
 chmod +x "$CONDA_PREFIX/etc/conda/activate.d/env_vars.sh"
