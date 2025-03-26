@@ -25,7 +25,7 @@ d_perl5lib=$(echo "$PERL5LIB" | awk -F: '{print $1}')
 if echo "$d_perl5lib" | grep -qi flux; then
     rm -rf "$d_perl5lib"
 else
-    echo "Skipping deletion of PERL5LIB directory: $d_perl5lib (does not contain 'flux')"
+    echo "Skipping deletion of PERL5LIB directory: $d_perl5lib (does not contain 'flux')\n"
 fi
 
 # Run test_conda.sh from the lib directory if it exists.
