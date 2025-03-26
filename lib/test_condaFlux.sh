@@ -8,7 +8,7 @@ conda activate fluxenv
 
 # Test if Flux is installed by trying to load it with Perl.
 if perl -e "use Flux;" ; then
-    echo "\nFlux is installed and working!\n"
+    echo "\nCondaFlux is installed and working!\n"
 else
-    echo "\nConda is NOT installed!\n"
+    echo "\nCondaFlux is NOT installed!\n"
 fi
