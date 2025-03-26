@@ -29,8 +29,8 @@ else
 fi
 
 # Run test_conda.sh from the lib directory if it exists.
-if [ -d "lib" ]; then
-    (cd lib && source test_conda.sh)
+if [ -e "test_condaFlux.sh" ]; then
+    (source test_condaFlux.sh)
 fi
-conda activate fluxenv
-echo "condaFlux uninstall complete. \n"
+
+echo "\ncondaFlux uninstall complete. \n"
