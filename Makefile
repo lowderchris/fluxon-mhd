@@ -57,6 +57,7 @@ condaflux: condauninstall condainstall  #uninstall and install from scratch
 
 condainstall: condaenv condacompile  # install from scratch
 
+# (Re)compile the code (use this when developing the C layer)
 condacompile: everything condaenv condatest
 
 condatest:
