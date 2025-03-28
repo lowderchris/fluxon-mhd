@@ -60,7 +60,8 @@ export FL_PREFIX="\$CONDA_PREFIX"
 echo "FL_PREFIX is set to: \$FL_PREFIX"
 echo "PL_PREFIX is set to: \$PL_PREFIX"
 echo "PERL5LIB  is set to: \$PERL5LIB"
-echo "PDLLIB    is set to: \$PDLLIB" \n
+echo "PDLLIB    is set to: \$PDLLIB"
+
 EOL
 
 # Make the activation script executable

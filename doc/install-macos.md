@@ -133,6 +133,11 @@ python fluxpype/config_runner.py
 - If Flux.pm isn't found at the end of the flux install, try:
 
 ```sh
+conda activate fluxenv
+```
+to repair the environment paths automatically. If that also fails, try this:
+
+```sh
 export PERL5LIB=$(dirname $(find $CONDA_PREFIX -name Flux.pm)):$PERL5LIB
 make everything
 ```

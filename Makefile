@@ -53,9 +53,9 @@ uninstall:
 
 # ------------ CONDA INSTALLATION ------------ #
 
-condaflux: condainstall
+condaflux: condauninstall condainstall  #uninstall and install from scratch
 
-condainstall: condauninstall condaenv condacompile
+condainstall: condaenv condacompile  # install from scratch
 
 condacompile: everything condaenv condatest
 
