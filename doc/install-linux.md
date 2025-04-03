@@ -11,7 +11,7 @@ bash Miniconda3-latest-Linux-x86_64.sh
 
 Follow the prompts:
 - Hold down the arrow key and then accept terms.
-- Accept Conda activation at startup.
+- Accept Conda activation at startup. (or initialize in path with ~/path/to/miniconda/bin/conda init tcsh)
 - Exit and reconnect to the SSH session/ shell session.
 
 ## 2. Create Conda Environment and Get Dependencies
