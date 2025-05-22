@@ -1,63 +1,116 @@
-# Linux Installation
+# Linux Installation Instructions
 
-To install the fluxon-mhd modeling framework, there are three main requirements - a perl installation with libraries, the perl data language toolset, and finally compiling the fluxon-mhd software itself.
+These instructions were created by installing FLUX on two different linux servers running AlmaLinux. Please let us know if anything breaks! Extra troubleshooting steps are listed at the bottom.
 
-Here we'll outline steps for installing on a Linux system - notably tested on an Ubuntu system. The broad steps can be applied for other flavors of Linux.
+## 1. Get Conda Environment Manager
 
-## Perl installation
-
-First, use apt-get to install cpanminus, an easier tool to use for installing perl packages.
-```shell
-sudo apt-get install cpanminus
+```sh
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
 ```
 
-Install PDL using cpanminus, forcing to bypass any dependency warnings.
-```shell
-sudo cpanm --force PDL
+Follow the prompts:
+- Hold down the arrow key and then accept terms.
+- Accept Conda activation at startup. (or initialize in path with ~/path/to/miniconda/bin/conda init tcsh)
+- Exit and reconnect to the SSH session/ shell session.
+
+## 2. Create Conda Environment and Get Dependencies
+
+```sh
+conda create -n fluxenv
+conda activate fluxenv
+conda install -c conda-forge gcc gxx binutils c-compiler gsl perl perl-app-cpanminus perl-extutils-makemaker make cmake automake autoconf libtool m4 patch libxcrypt gnuplot cairo pango qt pfsspy sqlite
 ```
 
-If problems are encountered with that PDL installation route, one can install an older version of PDL using apt-get. This may run into code compilation issues down the road.
-```shell
-sudo apt-get install pdl
+Confirm installation by typing `y` when prompted.
+
+## 3. Install the Perl Data Language (PDL) and Dependencies
+
+```sh
+cpanm Alien::Build::Plugin::Gather::Dino Capture::Tiny Chart::Gnuplot Config::IniFiles Devel::CheckLib File::HomeDir File::Map File::ShareDir File::ShareDir::Install File::Which Inline Inline::C Inline::Python List::MoreUtils Math::GSL Math::GSL::Alien Math::Interpolate Math::Interpolator Math::RungeKutta Moo::Role Net::SSLeay PDL PDL::GSL PDL::GSL::INTEG PDL::Graphics::Gnuplot PDL::Graphics::Simple Parallel::ForkManager Term::ReadKey Test::Builder Text::CSV local::lib
 ```
 
-Write the following to ~/.perldlrc, making sure to reference the appropriate location local perl libraries will be installed to.
-```shell
-push(@INC, "/usr/local/lib/aarch64-linux-gnu/perl/5.38.2");
+If the system struggles with `File::Map`, try:
 
-require('PDL/default.perldlrc');
-
-use PDL::AutoLoader;
-$PDL::AutoLoader::Rescan=1;
-
-1;
-
+```sh
+export LDFLAGS=""
+export CFLAGS="-O2"
+export PERL_LDFLAGS=""
+export PERL_CFLAGS="-O2"
+export LD=x86_64-conda-linux-gnu-gcc
+export CC=x86_64-conda-linux-gnu-gcc
 ```
 
-A few other packages of note will be needed for the later fluxon-mhd install.
-```shell
-sudo cpanm File::ShareDir
-sudo cpanm Math::RungeKutta
-sudo cpanm Term::ReadKey
+If `Inline::C` isn't found, run:
+
+```sh
+cpanm Inline::C
 ```
 
-Optionally, if you need graphics, install gnuplot
-```shell
-sudo apt-get install gnuplot
-sudo cpanm PDL::Graphics::Gnuplot
-```
+## 4. Get FLUX
 
-## FLUX installation
+Clone and install Flux:
 
-To build some of the C code, make sure you have a compiler installed.
-```shell
-sudo apt-get install gcc
-```
-
-If you haven't already, clone the fluxon-mhd repository and then make everything from the base directory.
-```shell
+```sh
 git clone https://github.com/lowderchris/fluxon-mhd.git
 cd fluxon-mhd
+make condaflux
+```
+## 5. Get Fluxpype Wrapper (To run FLUX with)
 
+```sh
+cd ..
+git clone https://github.com/GillySpace27/fluxpype.git
+cd fluxpype
+pip install -e .
+```
+
+If the GCC version is too old, fix it with:
+
+```sh
+export CC=$(which gcc)
+export CXX=$(which g++)
+```
+
+## 6. Configure the `config.ini` File
+
+```sh
+nano fluxpype/config.ini
+```
+
+Set the code to do your desired run using the documentation (TBD)
+
+Run the configuration run script:
+
+```sh
+python fluxpype/config_runner.py
+```
+- For the paths to work out, the config runner must be called from one directory above the file.
+
+
+## FAQs & Troubleshooting
+- If gnuplot is not detected correctly in PDL, try the following, and if it works, put this line into either the conda activation script or the bashrc file:
+    - ```export GNUPLOT_BINARY=$(realpath $(which gnuplot))```
+
+- If GSL is not found, use
+    - ```conda install gsl```
+    - ```cpanm --notest PDL::GSL```
+
+- If Flux.pm isn't found at the end of the flux install, try:
+
+```sh
+export PERL5LIB=$(dirname $(find $CONDA_PREFIX -name Flux.pm)):$PERL5LIB
 make everything
+```
+
+- To manually set the prefixes for a conda installation before using the makefile:
+
+```sh
+export PL_PREFIX="$CONDA_PREFIX/lib/perl5/site_perl"
+export FL_PREFIX="$CONDA_PREFIX"
+```
+- To confirm installation success:
+
+```sh
+perl -e "use Flux;"
 ```

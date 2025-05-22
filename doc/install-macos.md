@@ -1,92 +1,155 @@
-# macOS Installation
+# macOS Installation Instructions
 
-To install the fluxon-mhd modeling framework, there are three main requirements - a perl installation with libraries, the perl data language toolset, and finally compiling the fluxon-mhd software itself.
+These instructions were created by adapting the linux conda install to macOS. Please let us know if anything breaks!
+Extra troubleshooting steps are listed at the bottom.
 
-Homebrew and the base perl installation will be installed as a user that has full system access, with further packages and flux itself installed locally. This provides both a buffer if the system perl is updated, and also allows regular access for users who do not have regular administrative privileges. Note that if you have an admin user account, you can also install everything within the homebrew perl library directory, updating paths below accordingly.
-
-## Perl installation
-
-First, install the homebrew package, which will require being logged in as an admin user. Follow through the installation process.
-```shell
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+## 1. Get Conda Environment Manager
+Depending on your mac's architecture, either get
+```sh
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
+bash ~/Miniconda3-latest-MacOSX-arm64.sh
 ```
 
-Make sure at the end of this to follow the instructions for adding homebrew to your path
-```shell
-(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/<USERNAME>/.zprofile
-eval "$(/opt/homebrew)
+or
+
+``` sh
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+bash ~/Miniconda3-latest-MacOSX-x86_64.sh
 ```
 
-Next, use homebrew as an admin user to install perl.
-```shell
-brew install perl
+Follow the prompts:
+- Hold down the arrow key and then accept terms.
+- Accept Conda activation at startup.
+- Exit and reconnect to the SSH session/ shell session.
+
+## 2. Create Conda Environment and Get Dependencies
+
+```sh
+conda create -n fluxenv
+conda activate fluxenv
+conda install -c conda-forge c-compiler gsl perl perl-app-cpanminus perl-extutils-makemaker make cmake automake autoconf libtool m4 patch libxcrypt gnuplot cairo pango qt pfsspy sqlite rich timeout-decorator
 ```
 
-If you plan on using homebrew for other packages, and would like to keep perl from updating alongside other packages, the installation can be frozen.
-```shell
-brew pin perl
+Confirm installation by typing `y` when prompted.
+
+## 3. Install the Perl Data Language (PDL) and Dependencies
+
+```sh
+cpanm Alien::Build::Plugin::Gather::Dino Capture::Tiny Chart::Gnuplot Config::IniFiles Devel::CheckLib File::HomeDir File::Map File::ShareDir File::ShareDir::Install File::Which Inline Inline::C Inline::Python List::MoreUtils Math::GSL Math::GSL::Alien Math::Interpolate Math::Interpolator Math::RungeKutta Moo::Role Net::SSLeay PDL PDL::GSL PDL::GSL::INTEG PDL::Graphics::Gnuplot PDL::Graphics::Simple Parallel::ForkManager Term::ReadKey Test::Builder Text::CSV local::lib
 ```
 
-Two more homebrew packages will be needed later, which can also be installed via an admin user.
-```shell
-brew install gnuplot
-brew install fftw
+If the system struggles with `File`, try:
+
+```sh
+export LDFLAGS=""
+export CFLAGS="-O2"
+export PERL_LDFLAGS=""
+export PERL_CFLAGS="-O2"
+export LD=clang
+export CC=clang
 ```
 
-The final suggested step as an admin user is to setup the cpanminus tool for installing perl packages.
-```shell
-brew install cpanminus
+If `Inline::C` isn’t found, run:
+
+```sh
+cpanm Inline::C
 ```
 
-Set perl to install packages to a local library directory. Here we've chosen to use a perl5 directory inside the ~/Library folder, but this could be anywhere your user has permissions. This is then stored to automatically update in a .zprofile startup script for Zsh - modify if using a different shell.
-```shell
-PERL_MM_OPT="INSTALL_BASE=~/Library/perl5" cpanm --local-lib=~/Library/perl5 local::lib
-echo 'eval `perl -I ~/Library/perl5/lib/perl5 -Mlocal::lib=~/Library/perl5`' >> ~/.zprofile
-source ~/.zprofile
-```
+## 4. Get FLUX
 
-Write the following to ~/.perldlrc, making sure to reference the appropriate location local perl libraries will be installed to.
-```shell
-push(@INC, "/Users/<USERNAME>/Library/perl5/lib/perl5/5.38.2");
+Clone and configure Flux:
 
-require('PDL/default.perldlrc');
-
-use PDL::AutoLoader;
-$PDL::AutoLoader::Rescan=1;
-
-1;
-
-```
-
-## Perl Data Language (PDL) installation
-
-Using cpanm, install PDL and required depedencies.
-```shell
-cpanm PDL
-```
-
-A few other packages of note will be needed for the later fluxon-mhd install.
-```shell
-cpanm File::ShareDir
-cpanm PDL::Graphics::Gnuplot
-cpanm Math::RungeKutta
-cpanm Term::ReadKey
-```
-
-## FLUX installation
-
-Finally, for the first install, and for future recompilations, set the perl and flux prefix paths.
-```shell
-export PL_PREFIX='/Users/<USERNAME>/Library/perl5'
-export FL_PREFIX='/Users/<USERNAME>/Library/flux'
-```
-
-If you haven't already, clone the fluxon-mhd repository and then make everything from the base directory.
-```shell
+```sh
 git clone https://github.com/lowderchris/fluxon-mhd.git
 cd fluxon-mhd
+make condaflux
+```
 
+## 5. Get Fluxpype Wrapper (To run FLUX with)
+
+```sh
+cd ..
+git clone https://github.com/GillySpace27/fluxpype.git
+cd fluxpype
+pip install -e .
+```
+
+If the GCC version is too old, fix it with:
+
+```sh
+export CC=$(which gcc)
+export CXX=$(which g++)
+```
+
+## 6. Configure the `config.ini` File
+
+```sh
+nano fluxpype/config.ini
+```
+
+Set the code to do your desired run using the documentation (TBD)
+
+Execute the configuration run script:
+
+```sh
+python fluxpype/config_runner.py
+```
+- For the paths to work out, the config runner must be called from one directory above the file.
+
+
+## FAQs & Troubleshooting
+- If an error says that a perl file cannot be found, make sure there isn't a syntax error somewhere in that file, because it will say it cannot find it when it means it cannot compile it.
+
+- If gnuplot is not detected correctly in PDL, try the following, and if it works, put this line into either the conda activation script or the bashrc file:
+    - ```export GNUPLOT_BINARY=$(realpath $(which gnuplot))```
+
+- If GSL is not found, use
+    - ```conda install gsl```
+    - ```cpanm --notest PDL::GSL```
+
+- If net-SSLeay fails to install, try this
+    - ```conda install openssl=1.1.1```
+    - ```cpanm PDL::Graphics::Gnuplot```
+
+- If Math::GSL::Alien fails to install, try
+    - ```conda install gsl```
+    - ```cpanm --notest PDL::GSL```
+
+- if the wrong cpanm is getting in the way, delete it using the wrong path as follows
+    - ```export PATH=$(echo "$PATH" | sed 's|/Users/cgilbert/perl5/perlbrew/bin:||')```
+    - then try to use the huge cpanm installation command above
+    - then run the set_paths.sh file
+    - activate the environment
+    - make condainstall
+
+- if the paths seem completely wrong, try this in the fluxon-mhd directory
+    - ```make condainstall```
+
+- if the error is: Can't locate Alien/Gnuplot.pm in @INC
+    - ```cpanm Alien::Gnuplot```
+
+- if fluxpype cannot find the run file, check the paths at the top of ```config.ini``` to make sure that the path is correct.
+
+- If Flux.pm isn't found at the end of the flux install, try:
+
+```sh
+conda activate fluxenv
+```
+to repair the environment paths automatically. If that also fails, try this:
+
+```sh
+export PERL5LIB=$(dirname $(find $CONDA_PREFIX -name Flux.pm)):$PERL5LIB
 make everything
 ```
 
-After this, make sure to follow the printed instructions for appending your PDLLIB path, and .perldlrc file.
+- To manually set the prefixes for a conda installation before using the makefile:
+
+```sh
+export PL_PREFIX="$CONDA_PREFIX/lib/perl5/site_perl"
+export FL_PREFIX="$CONDA_PREFIX"
+```
+- To confirm installation success:
+
+```sh
+perl -e "use Flux;"
+```
