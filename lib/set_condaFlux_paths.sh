@@ -46,11 +46,9 @@ cat > "$CONDA_PREFIX/etc/conda/activate.d/env_vars.sh" <<EOL
 
 # Dynamically locate Flux.pm and set PERL5LIB
 export PERL5LIB=\$(find "\$CONDA_PREFIX" -name Flux.pm -exec dirname {} \; | head -n 1)
-# echo "Found PERL5LIB: \$PERL5LIB"
 
 # Dynamically locate the Flux module directory and set PDLLIB
 export PDLLIB=\$(find "\$CONDA_PREFIX" -type d -name "Flux" 2>/dev/null | grep "/share/dist/" | awk 'NR==1')
-# echo "Found PDLLIB: \$PDLLIB"
 
 # Set the FLUX prefixes for future recompiling
 export PL_PREFIX="\$CONDA_PREFIX/lib/perl5/site_perl"
