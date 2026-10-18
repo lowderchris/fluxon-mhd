@@ -65,14 +65,24 @@ cd fluxon-mhd
 make condaflux
 ```
 
+**Verify the core in a new terminal** (a fresh login shell is where stale paths in `~/.zprofile` or `~/.bashrc` show up):
+
+```sh
+perl -MPDL -MFlux -e 'print "ok\n"'
+```
+
+If this says `Can't locate Flux.pm`, `Permission denied`, or names another user's home directory, remove the stale `PERL5LIB` / `local::lib` lines from your shell startup file, open a new terminal, and try again.
+
 ## 5. Get Fluxpype Wrapper (To run FLUX with)
 
 ```sh
 cd ..
 git clone https://github.com/GillySpace27/fluxpype.git
 cd fluxpype
-pip install -e .
+./install.sh
 ```
+
+`install.sh` makes a virtual environment in `fluxpype/.venv` (Python 3.10 to 3.12), installs fluxpype, and runs `flux-doctor`, which checks Python, Perl, PDL, Flux and gnuplot and prints the fix for anything missing.
 
 If the GCC version is too old, fix it with:
 
@@ -81,21 +91,16 @@ export CC=$(which gcc)
 export CXX=$(which g++)
 ```
 
-## 6. Configure the `config.ini` File
+## 6. First Run
+
+Set `jsoc_email` in `fluxpype/fluxpype/config.ini` to your own [JSOC-registered](http://jsoc.stanford.edu/ajax/register_email.html) address (or export `JSOC_EMAIL`), then:
 
 ```sh
-nano fluxpype/config.ini
+source .venv/bin/activate
+flux-config-run --config quickstart
 ```
 
-Set the code to do your desired run using the documentation (TBD)
-
-Execute the configuration run script:
-
-```sh
-python fluxpype/config_runner.py
-```
-- For the paths to work out, the config runner must be called from one directory above the file.
-
+`--config` picks a profile from `config.ini`; it exits nonzero if any job fails. It can be run from any directory.
 
 ## FAQs & Troubleshooting
 - If an error says that a perl file cannot be found, make sure there isn't a syntax error somewhere in that file, because it will say it cannot find it when it means it cannot compile it.
