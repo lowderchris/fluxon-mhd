@@ -90,13 +90,3 @@ make everything
 ```
 
 After this, make sure to follow the printed instructions for appending your PDLLIB path, and .perldlrc file.
-
-**Verify the core in a new terminal** (a fresh login shell is where stale paths in `~/.zprofile` or `~/.bashrc` show up):
-
-```sh
-perl -MPDL -MFlux -e 'print "ok\n"'
-```
-
-If this says `Can't locate Flux.pm`, `Permission denied`, or names another user's home directory, remove the stale `PERL5LIB` / `local::lib` lines from your shell startup file, open a new terminal, and try again.
-
-Then install the Python wrapper, [fluxpype](https://github.com/GillySpace27/fluxpype): clone it and run `./install.sh` (see its README).

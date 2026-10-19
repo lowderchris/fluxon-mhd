@@ -19,10 +19,9 @@ libbuild:
 libinstall: libbuild
 	/bin/sh -c 'cd lib; FL_PREFIX=$(FL_PREFIX) make install';
 
-# Regenerate pdl/Makefile with current user's perl (avoids stale paths from a different user/machine)
 pdlMakefile:
-	@if [ -n "$(PL_PREFIX)" ]; then echo "\n\nWill install Flux perl modules into $(PL_PREFIX). Make sure this is in your @INC. See README.\n\n"; else echo "INFO: PL_PREFIX is not defined (this is probably OK)."; fi
-	/bin/sh -c 'cd pdl && perl Makefile.PL INSTALL_BASE="$(PL_PREFIX)"'
+	/bin/sh -c 'if [ -n "$(PL_PREFIX)" ]; then echo "\n\nWill install Flux perl modules into $(PL_PREFIX). Make sure this is in your @INC. See README.\n\n"; else echo "INFO: PL_PREFIX is not defined (this is probably OK)."; fi'; \
+	/bin/sh -c 'cd pdl; if [ ! -f Makefile ]; then perl Makefile.PL INSTALL_BASE=$(PL_PREFIX); fi';
 
 pdlbuild: pdlMakefile
 	/bin/sh -c 'cd pdl; if !(PERL_INSTALL_QUIET=1 make all); then (echo "\n\nRunning make for you. You are welcome!\n"; PERL_INSTALL_QUIET=1 make all); fi';
@@ -45,7 +44,6 @@ clean:
 
 realclean: clean
 	rm -rf sandbox
-	rm -f pdl/Makefile pdl/Makefile.old pdl/Flux/Makefile pdl/Flux/Makefile.old
 
 uninstall:
 	@echo "\nUninstalling FLUX...";
