@@ -1,17 +1,17 @@
-# FLUXON Python Tools
+# FLUX Python Tools
 
-## Notes
-Just a few quick notes about the Python tools being developed here for FLUXON. This is a fairly rough migration of odds-and-ends scripts to a more centralized location, and things will be tidied up during development.
+Here find some assembled Python tools for interfacing with and interpreting results from the FLUX core PDL code.
+
+## Plotting tools
+- plt-world.py - Plots a single snapshot of a fluxon world
+- plt-relax.py - Plots a sequence of relaxation steps for a fluxon world
+
 
 ## Scripts
 - rdworld.py - Read a .flux world output file into a Python class object. This allows for easy manipulation of fluxon data, and for visualization using...
-
 - vizworld.py - Render an interactive 3D visualization of the fluxon world. For now, this renders a pseudo-photospheric magnetic field, and interpolates the solar wind speed distribution at the defined outer boundary.
 
-## Setup
-A few variables will need to be defined within vizworld.py, depending on installation route and desired parameters.
-
-## Usage... for now
+## Usage
 
 For a more friendly working environment, iPython and the pylab modules can be loaded,
 
