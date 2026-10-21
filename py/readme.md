@@ -44,3 +44,5 @@ More details (connectivity, etc) can be siphoned from the original .flux world f
 Python 3, NumPy, Scipy are the standard set that these routines rely upon. iPython is optional, but provides a friendly environment in which to work.
 
 For the visualization routines, the package MayaVi is required, which provides a more user-friendly interface for VTK. The pip3 version of this package weaves a tangled web of dependencies, but at the time of writing this, the bleeding-edge Github version of [MayaVi](https://github.com/enthought/mayavi) version is working.
+
+See installation notes for a full description of getting an environment set up.
