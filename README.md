@@ -1,8 +1,6 @@
-This is FLUX, the Field Line Universal Relaxer.
+The Field Line Universal Relaxer (FLUX) is a prototype MHD solver that is currently able to find nonlinear force-free fields with an exactly specified topology in a quasi-static, infinitely conductive, low-beta medium. Unlike conventional extrapolation codes, FLUX accepts as input a collection of field lines that define the topology that you want to study. The FLUX engine relaxes the position of those field lines until they approximate the physical force-free state with the same topology that you specified.
 
-FLUX is a prototype MHD solver that is currently able to find nonlinear force-free fields with an exactly specified topology in a quasi-static, infinitely conductive, low-beta medium. Unlike conventional extrapolation codes, FLUX accepts as input a collection of field line shapes that do not necessarily have physical meaning but that do have the correct topology that you want to study. The FLUX engine relaxes the position of those field lines until they approximate the physical force-free state with the same topology that you specified.
-
-FLUX consists of two parts: a relaxation engine, written in C, and a control interface in Perl. The control interface is intended to be used with Perl Data Language (PDL). If you do not have PDL on your system, you can get it for free from http://pdl.perl.org. PDL compiles "out of the box" on most UNIX systems.
+FLUX consists of two parts: a relaxation engine, written in C, and control interfaces in Python and Perl. Most end-user interfaces are provided in Python.
 
 For more details see [Lowder, Gilly, and DeForest 2024](https://ui.adsabs.harvard.edu/abs/2024ApJ...965...13L/abstract) or the FLUX [wiki](https://github.com/lowderchris/fluxon-mhd/wiki).
 
@@ -36,7 +34,7 @@ Authors:
 - Charles Kankelborg (MSU)
 - Derek Lamb (SwRI)
 - Chris Lowder (SwRI)
-- Chris Gilly (SwRI)
+- Chris Gilly (then at SwRI)
 - Laurel Rachmeler (then at CU Boulder & SwRI)
 - Alisdair Davey (then at SwRI)
 
