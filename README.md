@@ -1,6 +1,6 @@
 The Field Line Universal Relaxer (FLUX) is a prototype MHD solver that is currently able to find nonlinear force-free fields with an exactly specified topology in a quasi-static, infinitely conductive, low-beta medium. Unlike conventional extrapolation codes, FLUX accepts as input a collection of field lines that define the topology that you want to study. The FLUX engine relaxes the position of those field lines until they approximate the physical force-free state with the same topology that you specified.
 
-FLUX consists of two parts: a relaxation engine, written in C, and control interfaces in Python and Perl. Most end-user interfaces are provided in Python.
+FLUX consists of two parts: a relaxation engine, written in C, and control interfaces in Python and Perl. Most user interfaces are provided in Python.
 
 For more details see [Lowder, Gilly, and DeForest 2024](https://ui.adsabs.harvard.edu/abs/2024ApJ...965...13L/abstract) or the FLUX [wiki](https://github.com/lowderchris/fluxon-mhd/wiki).
 
